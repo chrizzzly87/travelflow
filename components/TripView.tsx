@@ -77,6 +77,11 @@ import {
 import { MapCustomizeModal } from './maps/MapCustomizeModal';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
+import { useGoogleMyMapsActions } from './tripview/useGoogleMyMapsActions';
+import { buildMapIdeaMarkers, setIdeaReview } from '../shared/tripIdeas';
+import type { IdeaMapAction } from './maps/IdeaMapPopup';
+import { readTripIdeaLayerVisible, writeTripIdeaLayerVisible } from '../services/tripIdeaLayerStore';
+import { mergeRecommendationState, readStoredRecommendationState, writeStoredRecommendationState } from '../services/recommendationReactionsStore';
 import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
 import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGenerationRetryToast';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
@@ -617,6 +622,7 @@ interface TripViewModalLayerProps {
     onExportCitiesCalendar: () => void;
     onExportAllCalendar: () => void;
     onOpenPrintLayout: () => void;
+    tripInfoMyMapsPanel?: React.ReactNode;
     shouldEnableReleaseNotice: boolean;
     isShareOpen: boolean;
     shareMode: ShareMode;
@@ -658,6 +664,10 @@ interface TripViewModalLayerProps {
 
 const TripDiscoverOverlay = lazyWithRecovery('TripDiscoverOverlay', () =>
     import('./recommendations/TripDiscoverOverlay').then((module) => ({ default: module.TripDiscoverOverlay }))
+);
+
+const GoogleMyMapsPanel = lazyWithRecovery('GoogleMyMapsPanel', () =>
+    import('./tripview/GoogleMyMapsPanel').then((module) => ({ default: module.GoogleMyMapsPanel }))
 );
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
@@ -715,6 +725,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onExportCitiesCalendar,
     onExportAllCalendar,
     onOpenPrintLayout,
+    tripInfoMyMapsPanel,
     shouldEnableReleaseNotice,
     isShareOpen,
     shareMode,
@@ -817,6 +828,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onExportCitiesCalendar={onExportCitiesCalendar}
                     onExportAllCalendar={onExportAllCalendar}
                     onOpenPrintLayout={onOpenPrintLayout}
+                    myMapsPanel={tripInfoMyMapsPanel}
                 />
             </Suspense>
         )}
@@ -3247,6 +3259,10 @@ const useTripViewRender = ({
         typeof window !== 'undefined'
         && new URLSearchParams(window.location.search).get('discover') === '1'
     ));
+    const [discoverInitialTab, setDiscoverInitialTab] = useState<'discover' | 'saved'>('discover');
+    // Keyed by trip, so switching trips in the same view reads the new trip's choice.
+    const [ideaLayer, setIdeaLayer] = useState(() => ({ tripId: trip.id, visible: readTripIdeaLayerVisible(trip.id) }));
+    const showIdeaMarkers = ideaLayer.tripId === trip.id ? ideaLayer.visible : readTripIdeaLayerVisible(trip.id);
 
     const discoverCountryCodes = useMemo(() => {
         const codes = new Set<string>();
@@ -3261,10 +3277,113 @@ const useTripViewRender = ({
         [appLanguage, displayTrip],
     );
 
+    /**
+     * Saved ideas are trip data: `persist` alone only reaches this browser's
+     * copy, and the next load from the database replaced it without them. The
+     * commit is what writes the database, exactly as for any item edit.
+     * No toast: keep / skip is a stream of small decisions.
+     */
+    const commitRecommendationState = useCallback((
+        next: ITripRecommendationState,
+        label = 'Data: Updated saved ideas',
+    ) => {
+        markUserEdit();
+        setPendingLabel(label);
+        const updatedTrip: ITrip = { ...tripRef.current, recommendationState: next, updatedAt: Date.now() };
+        safeUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings, { skipToast: true });
+    }, [currentViewSettings, markUserEdit, safeUpdateTrip, scheduleCommit, setPendingLabel, tripRef]);
+
     const handleRecommendationStateChange = useCallback((next: ITripRecommendationState) => {
-        setPendingLabel('Data: Updated saved ideas');
-        safeUpdateTrip({ ...tripRef.current, recommendationState: next }, { persist: true });
-    }, [safeUpdateTrip, setPendingLabel, tripRef]);
+        commitRecommendationState(next);
+    }, [commitRecommendationState]);
+
+    /**
+     * What the trip and this device know together, as the ideas deck reads it.
+     * Ideas saved before their commit reached the database live only on the
+     * device, and the map must still show them.
+     */
+    const mergedIdeaState = useMemo(
+        () => mergeRecommendationState(displayTrip.recommendationState, readStoredRecommendationState(trip.id)),
+        [displayTrip.recommendationState, trip.id],
+    );
+
+    // Ideas saved on this device whose commit never reached the database
+    // (the ideas deck and early imports only wrote this browser's copy) are
+    // written back once, when an editable trip opens here.
+    const repairedIdeasTripIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!canEdit || isExamplePreview || agentPreviewTrip) return;
+        if (repairedIdeasTripIdRef.current === trip.id) return;
+        const tripCopyCount = trip.recommendationState?.saved?.length ?? 0;
+        if (mergedIdeaState.saved.length <= tripCopyCount) return;
+        repairedIdeasTripIdRef.current = trip.id;
+        commitRecommendationState(mergedIdeaState, 'Data: Saved ideas kept on this device');
+    }, [agentPreviewTrip, canEdit, commitRecommendationState, isExamplePreview, mergedIdeaState, trip.id, trip.recommendationState]);
+
+    const handleShowIdeaMarkersChange = useCallback((enabled: boolean) => {
+        setIdeaLayer({ tripId: trip.id, visible: enabled });
+        writeTripIdeaLayerVisible(trip.id, enabled);
+        trackEvent('trip_view__map_idea_markers--toggle', { trip_id: trip.id, active: enabled });
+    }, [trip.id]);
+
+    const myMapsActions = useGoogleMyMapsActions({
+        trip,
+        displayTrip,
+        tripRef,
+        appLanguage,
+        ideaState: mergedIdeaState,
+        commitRecommendationState,
+        // Someone who just imported a map wants to see it on the map.
+        onIdeasImported: () => handleShowIdeaMarkersChange(true),
+    });
+    const hasKeptIdeas = myMapsActions.keptIdeaIds.length > 0;
+
+    const ideaMarkers = useMemo(
+        () => buildMapIdeaMarkers(mergedIdeaState.saved),
+        [mergedIdeaState],
+    );
+
+    const openDiscover = useCallback((tab: 'discover' | 'saved') => {
+        setDiscoverInitialTab(tab);
+        setDiscoverOpen(true);
+    }, []);
+
+    const handleIdeaAction = useCallback((ideaId: string, action: IdeaMapAction) => {
+        const review = action === 'save' ? 'saved' : action === 'unsave' ? 'pending' : 'skipped';
+        trackEvent(`trip_view__idea_review--${action === 'save' ? 'keep' : action}`, {
+            trip_id: trip.id,
+            recommendation_id: ideaId,
+            source: 'map_popup',
+        });
+        const next = setIdeaReview(mergedIdeaState, ideaId, review);
+        writeStoredRecommendationState(trip.id, next);
+        commitRecommendationState(next);
+    }, [commitRecommendationState, mergedIdeaState, trip.id]);
+
+    const tripInfoCities = useMemo(
+        () => displayTrip.items.filter((item) => item.type === 'city'),
+        [displayTrip.items],
+    );
+
+    const tripInfoMyMapsPanel = (
+        <Suspense fallback={null}>
+            <GoogleMyMapsPanel
+                tripId={trip.id}
+                canEdit={canEdit}
+                cities={tripInfoCities}
+                language={appLanguage}
+                keptIdeaIds={myMapsActions.keptIdeaIds}
+                activityTitles={myMapsActions.activityTitles}
+                onExport={myMapsActions.exportKml}
+                onImportIdeas={myMapsActions.importIdeas}
+                onOpenIdeas={() => {
+                    closeTripInfoModal();
+                    openDiscover('saved');
+                }}
+            />
+        </Suspense>
+    );
 
     const timelineCanvas = (
         <TripTimelineCanvas
@@ -3599,7 +3718,7 @@ const useTripViewRender = ({
                         onUpdateTimelineItem={canEdit ? handleUpdateItem : undefined}
                         onSetLegTransport={canEdit ? handleSetLegTransport : undefined}
                         onAddTimelineActivity={canEdit ? handleOpenAddActivity : undefined}
-                        onOpenDiscover={discoverCountryCodes.length > 0 ? () => setDiscoverOpen(true) : undefined}
+                        onOpenDiscover={discoverCountryCodes.length > 0 || hasKeptIdeas ? () => openDiscover('discover') : undefined}
                         appLanguage={appLanguage}
                         timelineCanvas={timelineCanvas}
                         onTimelineTouchStart={handleTimelineTouchStart}
@@ -3676,6 +3795,11 @@ const useTripViewRender = ({
                         onOpenMapCustomize={openMapCustomize}
                         showActivityMarkers={mapPreferences.showActivityMarkers}
                         onShowActivityMarkersChange={(enabled) => handleMapPreferenceChange({ showActivityMarkers: enabled })}
+                        ideaMarkers={ideaMarkers}
+                        showIdeaMarkers={showIdeaMarkers}
+                        onShowIdeaMarkersChange={handleShowIdeaMarkersChange}
+                        onIdeaAction={handleIdeaAction}
+                        canEditIdeas={canEdit}
                         basemapDetail={mapBasemapDetail}
                         mapLookAxes={mapLookAxes}
                         tripOverlay={mapTripOverlay}
@@ -3822,6 +3946,7 @@ const useTripViewRender = ({
                             <TripDiscoverOverlay
                                 open={isDiscoverOpen}
                                 onClose={() => setDiscoverOpen(false)}
+                                initialTab={discoverInitialTab}
                                 trip={displayTrip}
                                 countryCodes={discoverCountryCodes}
                                 days={discoverDays}
@@ -3894,6 +4019,7 @@ const useTripViewRender = ({
                             closeTripInfoModal();
                             setViewMode('print');
                         }}
+                        tripInfoMyMapsPanel={tripInfoMyMapsPanel}
                         shouldEnableReleaseNotice={shouldEnableReleaseNotice}
                         isShareOpen={isShareOpen}
                         shareMode={shareMode}

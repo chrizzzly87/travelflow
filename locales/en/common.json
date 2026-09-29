@@ -404,6 +404,7 @@
         "general": "General",
         "history": "History",
         "export": "Export",
+        "importExport": "Import & export",
         "destination": "Destination",
         "debug": "Debug"
       },
@@ -474,6 +475,63 @@
           "title": "Print layout",
           "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
           "action": "Open print layout"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Route",
+          "stops": "Stops",
+          "activities": "Activities",
+          "dayTrips": "Day trips",
+          "ideas": "Ideas"
+        },
+        "export": {
+          "title": "Download for Google My Maps",
+          "description": "Save your stops, route, activities and ideas as a KML file. In My Maps, create a map and choose Import to add it.",
+          "action": "Download .kml",
+          "skipped_one": "{count} place without a map position was left out.",
+          "skipped_other": "{count} places without a map position were left out."
+        },
+        "import": {
+          "title": "Import from Google My Maps",
+          "description": "Paste the link to a map shared with “Anyone with the link”. Its pins are added to this trip's ideas, ready to plan onto a day.",
+          "linkLabel": "Google My Maps link",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Load map",
+          "loading": "Loading…",
+          "upload": "Upload a KML or KMZ file"
+        },
+        "preview": {
+          "untitled": "Untitled map",
+          "places_one": "{count} place",
+          "places_other": "{count} places",
+          "alreadyKept_one": "{count} is already in this trip",
+          "alreadyKept_other": "{count} are already in this trip",
+          "shapes_one": "{count} line or shape is left out",
+          "shapes_other": "{count} lines or shapes are left out",
+          "add_one": "Add {count} place to ideas",
+          "add_other": "Add {count} places to ideas",
+          "nothingNew": "Everything on this map is already in this trip.",
+          "cancel": "Cancel"
+        },
+        "progress": "Finding places on the map… {done} of {total}",
+        "done": {
+          "added_one": "{count} place added to your ideas.",
+          "added_other": "{count} places added to your ideas.",
+          "unlocated_one": "{count} couldn't be found on the map yet. You can set the place when you plan it.",
+          "unlocated_other": "{count} couldn't be found on the map yet. You can set the place when you plan them.",
+          "importAnother": "Import another map",
+          "onMap": "They're on the map now, faded until you save or skip them."
+        },
+        "openIdeas": "Open ideas",
+        "errors": {
+          "invalid_link": "That's not a Google My Maps link. In My Maps, click Share and copy the link. It contains /maps/d/.",
+          "not_shared": "This map isn't shared. In My Maps, set sharing to “Anyone with the link”, or upload the map as a KML file.",
+          "network": "Couldn't reach Google Maps. Check your connection and try again.",
+          "not_kml": "This file isn't a map. In My Maps, open the menu, choose Export to KML/KMZ and upload that file.",
+          "empty": "This map has no pins to import.",
+          "unsupported_file": "Couldn't read this file. Upload a .kml or .kmz file from My Maps."
         }
       },
       "destination": {
@@ -743,7 +801,9 @@
       "showLabels": "Show map labels",
       "hideLabels": "Hide map labels",
       "showActivityMarkers": "Show activity markers",
-      "hideActivityMarkers": "Hide activity markers"
+      "hideActivityMarkers": "Hide activity markers",
+      "showIdeaMarkers": "Show ideas on the map",
+      "hideIdeaMarkers": "Hide ideas on the map"
     },
     "floatingMap": {
       "move": "Move floating map preview",
@@ -784,6 +844,17 @@
       "occupySpace": "Occupy available space",
       "stretchToFill": "Stretch to fill space",
       "reverseSelectedCities": "Reverse selected cities"
+    },
+    "ideas": {
+      "keep": "Save",
+      "skip": "Skip",
+      "keepNamed": "Save {title}",
+      "skipNamed": "Skip {title}",
+      "reviewHint": "Imported and not reviewed yet. Save it to show it fully on the map, or skip it.",
+      "popupLabel": "Trip idea: {title}",
+      "statusToReview": "To review",
+      "statusSaved": "Saved",
+      "unsave": "Undo save"
     }
   },
   "tripRouteShell": {

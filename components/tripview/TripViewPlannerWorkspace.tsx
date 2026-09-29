@@ -1,4 +1,6 @@
 import React, { Suspense, useCallback, useRef } from 'react';
+import type { MapIdeaMarker } from '../../shared/tripIdeas';
+import type { IdeaMapAction } from '../maps/IdeaMapPopup';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -53,6 +55,11 @@ interface TripViewPlannerWorkspaceProps {
     onOpenMapCustomize?: () => void;
     showActivityMarkers?: boolean;
     onShowActivityMarkersChange?: (enabled: boolean) => void;
+    ideaMarkers?: MapIdeaMarker[];
+    showIdeaMarkers?: boolean;
+    onShowIdeaMarkersChange?: (enabled: boolean) => void;
+    onIdeaAction?: (ideaId: string, action: IdeaMapAction) => void;
+    canEditIdeas?: boolean;
     basemapDetail?: Record<string, boolean | undefined>;
     mapLookAxes?: { base: 'map' | 'satellite'; colorTheme: 'default' | 'faded' | 'monochrome'; lightPreset: 'dawn' | 'day' | 'dusk' | 'night' };
     tripOverlay?: Record<string, boolean | undefined>;
@@ -134,6 +141,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onOpenMapCustomize,
     showActivityMarkers,
     onShowActivityMarkersChange,
+    ideaMarkers,
+    showIdeaMarkers,
+    onShowIdeaMarkersChange,
+    onIdeaAction,
+    canEditIdeas,
     basemapDetail,
     mapLookAxes,
     tripOverlay,
@@ -387,6 +399,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     onOpenCustomize={onOpenMapCustomize}
                     showActivityMarkers={showActivityMarkers}
                     onShowActivityMarkersChange={onShowActivityMarkersChange}
+                    ideaMarkers={ideaMarkers}
+                    showIdeaMarkers={showIdeaMarkers}
+                    onShowIdeaMarkersChange={onShowIdeaMarkersChange}
+                    onIdeaAction={onIdeaAction}
+                    canEditIdeas={canEditIdeas}
                     basemapDetail={basemapDetail}
                     mapLookAxes={mapLookAxes}
                     tripOverlay={tripOverlay}

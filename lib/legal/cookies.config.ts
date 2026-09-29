@@ -63,6 +63,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Needed for shared and example trips, which cannot be written back to an account.',
     },
     {
+      name: 'tf_trip_idea_layer_v1',
+      purpose: 'Remembers for which trips you switched on the ideas layer of the map.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Only trip ids; the ideas themselves live on the trip.',
+    },
+    {
       name: 'tf_trip_map_preview_settle_v1',
       purpose: 'Remembers which map picture each trip card is already showing, so a trip you are still editing is not redrawn on every change.',
       duration: 'Persistent',

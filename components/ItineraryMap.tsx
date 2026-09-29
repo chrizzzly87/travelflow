@@ -15,7 +15,7 @@ import {
     RouteMode,
     RouteStatus,
 } from '../types';
-import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Lightbulb, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
@@ -25,6 +25,7 @@ import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { buildActivityIconMarkup } from './maps/activityIconMarkup';
 import { ActivityMapPopup } from './maps/ActivityMapPopup';
+import { IdeaMapPopup, type IdeaMapAction } from './maps/IdeaMapPopup';
 import { useMapMarkerAnchor } from './maps/useMapMarkerAnchor';
 import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
 import {
@@ -38,6 +39,8 @@ import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
+import { MARKER_HOVER_Z_INDEX, MARKER_TOOLTIP_HIDDEN_TRANSFORM, MARKER_TOOLTIP_SHOWN_TRANSFORM } from './maps/markerTooltip';
+import { buildMapIdeaSignature, type MapIdeaMarker } from '../shared/tripIdeas';
 import { resolveTripMapCityMarkerImageUrl } from './maps/tripMapCityMarkerMedia';
 import {
     buildTripMapCityLabelOverlayDescriptors,
@@ -124,6 +127,17 @@ interface ItineraryMapProps {
      */
     showActivityMarkers?: boolean;
     onShowActivityMarkersChange?: (enabled: boolean) => void;
+    /**
+     * The trip's saved ideas that have a position. The layer and its toggle
+     * only exist when this is non-empty and `onShowIdeaMarkersChange` is given.
+     */
+    ideaMarkers?: MapIdeaMarker[];
+    showIdeaMarkers?: boolean;
+    onShowIdeaMarkersChange?: (enabled: boolean) => void;
+    /** Save, undo a save, or skip from the pin's card. */
+    onIdeaAction?: (ideaId: string, action: IdeaMapAction) => void;
+    /** Save and Skip need an editable trip; the card still opens without. */
+    canEditIdeas?: boolean;
     /** What the customize sheet turned on or off on top of the chosen style. */
     basemapDetail?: MapboxBasemapDetailOverrides;
     /**
@@ -388,6 +402,9 @@ const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
 const CITY_MARKER_Z_INDEX = 320;
 const CITY_MARKER_SELECTED_Z_INDEX = 340;
 const ACTIVITY_MARKER_Z_INDEX = 240;
+/** Below planned activities: an idea never covers something already on the plan. */
+const IDEA_MARKER_Z_INDEX = 230;
+const EMPTY_IDEA_MARKERS: MapIdeaMarker[] = [];
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
 const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
 
@@ -979,7 +996,7 @@ const buildActivityMarkerHtml = (
         ? escapeHtml(title.trim())
         : '';
     const tooltipMarkup = tooltipLabel
-        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:translate(-50%, calc(-100% - 8px));pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:${profile.activity.tooltipPaddingY}px ${profile.activity.tooltipPaddingX}px;font-size:${profile.activity.tooltipFontSize}px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
+        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:${MARKER_TOOLTIP_HIDDEN_TRANSFORM};pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:${profile.activity.tooltipPaddingY}px ${profile.activity.tooltipPaddingX}px;font-size:${profile.activity.tooltipFontSize}px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
         : '';
 
     return `
@@ -988,6 +1005,33 @@ const buildActivityMarkerHtml = (
                 <div class="${palette.text}" style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;">${iconMarkup}</div>
             </div>
             ${tooltipMarkup}
+        </div>
+    `;
+};
+
+/**
+ * An idea pin: the activity pin's shape with a dashed ring, so it never reads
+ * as something already planned. An idea still to review is faded further.
+ */
+const buildIdeaMarkerHtml = (
+    type: ActivityType,
+    pending: boolean,
+    title: string,
+    profile: MarkerRenderProfile,
+): string => {
+    const size = Math.max(profile.activity.size - 2, 16);
+    const palette = getActivityTypePaletteParts(type);
+    const iconMarkup = buildActivityIconMarkup(type, profile.activity.iconSize);
+    const tooltip = title.trim()
+        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:${MARKER_TOOLTIP_HIDDEN_TRANSFORM};pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:${profile.activity.tooltipPaddingY}px ${profile.activity.tooltipPaddingX}px;font-size:${profile.activity.tooltipFontSize}px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);">${escapeHtml(title.trim())}</div>`
+        : '';
+    const fade = pending ? 'opacity:0.5;filter:saturate(0.45);' : '';
+    return `
+        <div data-idea-state="${pending ? 'pending' : 'kept'}" style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none;">
+            <div class="${palette.bg} ${palette.border}" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:9999px;border-width:2px;border-style:dashed;${fade}">
+                <div class="${palette.text}" style="display:flex;align-items:center;justify-content:center;">${iconMarkup}</div>
+            </div>
+            ${tooltip}
         </div>
     `;
 };
@@ -1478,6 +1522,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     customizeLabel: customizeLabelProp,
     showActivityMarkers,
     onShowActivityMarkersChange,
+    ideaMarkers = EMPTY_IDEA_MARKERS,
+    showIdeaMarkers = false,
+    onShowIdeaMarkersChange,
+    onIdeaAction,
+    canEditIdeas = false,
     basemapDetail,
     mapLookAxes,
     tripOverlay,
@@ -1553,6 +1602,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
         setUncontrolledActivityMarkersEnabled(next);
     }, [activityMarkersEnabled, onShowActivityMarkersChange]);
+    const ideaLayerAvailable = Boolean(onShowIdeaMarkersChange) && ideaMarkers.length > 0;
+    const ideaMarkersVisible = ideaLayerAvailable && showIdeaMarkers;
+    const ideaMarkersRef = useRef(ideaMarkers);
+    const ideaMarkersVisibleRef = useRef(ideaMarkersVisible);
+    const ideaMarkerHandlesRef = useRef<OverlayMarkerHandle[]>([]);
+    const [popupIdeaId, setPopupIdeaId] = useState<string | null>(null);
     const [popupActivityId, setPopupActivityId] = useState<string | null>(null);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
@@ -1837,6 +1892,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         activityMarkersEnabledRef.current = activityMarkersEnabled;
     }, [activityMarkersEnabled]);
 
+    // Declared before the drawing pass, so it reads this render's ideas.
+    useEffect(() => {
+        ideaMarkersRef.current = ideaMarkers;
+        ideaMarkersVisibleRef.current = ideaMarkersVisible;
+    }, [ideaMarkers, ideaMarkersVisible]);
+
     useEffect(() => {
         mapZoomLevelRef.current = mapZoomLevel;
     }, [mapZoomLevel]);
@@ -1987,8 +2048,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return `${city.id}->${nextCity.id}:${mode}`;
             })
             .join('||');
-        return `${citySignature}__${activitySignature}__${routeSignature}__${mapColorMode}`;
-    }, [cities, items, mapColorMode]);
+        return `${citySignature}__${activitySignature}__${routeSignature}__${mapColorMode}__${buildMapIdeaSignature(ideaMarkers)}`;
+    }, [cities, ideaMarkers, items, mapColorMode]);
 
     // Update Markers & Routes
     useEffect(() => {
@@ -2014,6 +2075,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             markersRef.current = [];
             activityMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
             activityMarkerMetaRef.current = [];
+            ideaMarkerHandlesRef.current.forEach((marker) => marker.setMap(null));
+            ideaMarkerHandlesRef.current = [];
             activityMarkerPositionByIdRef.current = new Map();
             routesRef.current.forEach((route) => route.setMap(null));
             routesRef.current = [];
@@ -2110,17 +2173,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 onClick?.();
             };
             const showTooltipHandler: EventListener = () => {
+                if (markerDiv) markerDiv.style.zIndex = `${MARKER_HOVER_Z_INDEX}`;
                 if (!tooltipNode) return;
                 Object.assign(tooltipNode.style, {
                     opacity: '1',
-                    transform: 'translate(-50%, calc(-100% - 14px))',
+                    transform: MARKER_TOOLTIP_SHOWN_TRANSFORM,
                 });
             };
             const hideTooltipHandler: EventListener = () => {
+                if (markerDiv) markerDiv.style.zIndex = `${currentZIndex}`;
                 if (!tooltipNode) return;
                 Object.assign(tooltipNode.style, {
                     opacity: '0',
-                    transform: 'translate(-50%, calc(-100% - 8px))',
+                    transform: MARKER_TOOLTIP_HIDDEN_TRANSFORM,
                 });
             };
 
@@ -2584,6 +2649,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         // Selection still fires, so the timeline stays in sync
                         // exactly as it did before the callout existed.
                         onActivityMarkerSelectRef.current?.(activityMarker.id);
+                        setPopupIdeaId(null);
                         setPopupActivityId(activityMarker.id);
                     },
                     tooltipText: activityMarker.title,
@@ -2639,6 +2705,27 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 });
                 markersRef.current.push(marker);
                 activityMarkerPositionByIdRef.current.set(dayTrip.id, dayTrip.destination);
+            });
+
+            // Saved ideas: built with everything else so they share the
+            // renderer, attached only while the traveller has the layer on.
+            ideaMarkersRef.current.forEach((idea) => {
+                if (!isEffectActive()) return;
+                const marker = createOverlayMarker({
+                    position: { lat: idea.lat, lng: idea.lng },
+                    html: buildIdeaMarkerHtml(idea.type, idea.pending, idea.title, effectiveMarkerRenderProfile),
+                    zIndex: IDEA_MARKER_Z_INDEX,
+                    clickable: true,
+                    onClick: () => {
+                        // One card at a time: an idea card replaces an activity one.
+                        setPopupActivityId(null);
+                        setPopupIdeaId(idea.id);
+                    },
+                    tooltipText: idea.title,
+                    markerDomId: `idea:${idea.id}`,
+                });
+                if (!ideaMarkersVisibleRef.current) marker.setMap(null);
+                ideaMarkerHandlesRef.current.push(marker);
             });
         }
 
@@ -3164,6 +3251,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
     }, [activityMarkersEnabled, isMapboxBasemapEnabled, mapInitialized, mapZoomLevel]);
 
+    useEffect(() => {
+        if (!mapInitialized) return;
+        const activeOverlayTarget = resolveActiveOverlayMapTarget({
+            isMapboxEnabled: isMapboxBasemapEnabled,
+            googleMap: googleMapRef.current,
+            mapboxMap: mapboxMapRef.current,
+        });
+        ideaMarkerHandlesRef.current.forEach((marker) => {
+            marker.setMap(ideaMarkersVisible ? activeOverlayTarget : null);
+        });
+    }, [ideaMarkersVisible, isMapboxBasemapEnabled, mapInitialized]);
+
     // Pan to selected
     useLayoutEffect(() => {
         if (!selectedItemIdRef.current) return;
@@ -3570,6 +3669,24 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         setPopupActivityId(null);
     }, []);
 
+    // The card belongs to a drawn pin: a skipped idea or a hidden layer takes it away.
+    const popupIdea = useMemo(
+        () => (popupIdeaId && ideaMarkersVisible ? ideaMarkers.find((idea) => idea.id === popupIdeaId) ?? null : null),
+        [ideaMarkers, ideaMarkersVisible, popupIdeaId],
+    );
+    const { anchor: ideaPopupAnchor, containerSize: ideaPopupContainerSize } = useMapMarkerAnchor(
+        mapContainerRef,
+        popupIdea ? `idea:${popupIdea.id}` : null,
+    );
+    const handleCloseIdeaPopup = useCallback(() => {
+        setPopupIdeaId(null);
+    }, []);
+    const handleIdeaAction = useCallback((ideaId: string, action: IdeaMapAction) => {
+        // Save and undo keep the card open to show the new state; skipping is done with it.
+        if (action === 'skip') setPopupIdeaId(null);
+        onIdeaAction?.(ideaId, action);
+    }, [onIdeaAction]);
+
     const handleOpenActivityDetails = useCallback((activityId: string) => {
         setPopupActivityId(null);
         onActivityMarkerSelectRef.current?.(activityId);
@@ -3630,6 +3747,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     markerCoordinatesSource={activityMarkerSourceById.get(popupActivity.id) || 'city'}
                     onClose={handleCloseActivityPopup}
                     onOpenDetails={handleOpenActivityDetails}
+                />
+            )}
+            {popupIdea && ideaPopupAnchor && !isPaywalled && (
+                <IdeaMapPopup
+                    idea={popupIdea}
+                    anchor={ideaPopupAnchor}
+                    containerSize={ideaPopupContainerSize}
+                    canEdit={canEditIdeas && Boolean(onIdeaAction)}
+                    onClose={handleCloseIdeaPopup}
+                    onAction={handleIdeaAction}
                 />
             )}
             {shouldShowMapLoadingOverlay && (
@@ -3808,6 +3935,27 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         >
                             <MapPinArea size={18} weight="bold" />
                             <span className="sr-only">{activityMarkersEnabled ? t('tripView.mapControls.hideActivityMarkers') : t('tripView.mapControls.showActivityMarkers')}</span>
+                        </Button>
+                    )}
+                    {!isPaywalled && ideaLayerAvailable && (
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
+                            onClick={() => onShowIdeaMarkersChange?.(!showIdeaMarkers)}
+                            disabled={mapActionsDisabled}
+                            className="rounded-lg"
+                            aria-pressed={showIdeaMarkers}
+                            aria-label={showIdeaMarkers ? t('tripView.mapControls.hideIdeaMarkers') : t('tripView.mapControls.showIdeaMarkers')}
+                            title={showIdeaMarkers ? t('tripView.mapControls.hideIdeaMarkers') : t('tripView.mapControls.showIdeaMarkers')}
+                            data-testid="map-idea-markers-toggle"
+                            {...getAnalyticsDebugAttributes('trip_view__map_idea_markers--toggle', {
+                                surface: 'map_controls',
+                                active: showIdeaMarkers,
+                            })}
+                        >
+                            <Lightbulb size={18} />
+                            <span className="sr-only">{showIdeaMarkers ? t('tripView.mapControls.hideIdeaMarkers') : t('tripView.mapControls.showIdeaMarkers')}</span>
                         </Button>
                     )}
                 </div>

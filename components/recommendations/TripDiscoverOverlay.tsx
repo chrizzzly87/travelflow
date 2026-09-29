@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
+import { Check, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { RecommendationSwipeDeck, type SwipeDecision } from './RecommendationSwipeDeck';
@@ -20,6 +21,7 @@ import {
     type Recommendation,
     type SavedRecommendation,
 } from '../../shared/recommendations';
+import { isIdeaPending, isIdeaSkipped, listActiveIdeas, setIdeaReview } from '../../shared/tripIdeas';
 import type { ITimelineItem, ITrip, ITripRecommendationState } from '../../types';
 import type { MobileDayPlanDay } from '../tripview/mobileDayPlanModel';
 
@@ -32,6 +34,8 @@ interface TripDiscoverOverlayProps {
     canEdit: boolean;
     onRecommendationStateChange: (next: ITripRecommendationState) => void;
     onAddActivity: (item: Partial<ITimelineItem>) => void;
+    /** Opens on the kept list when arriving from an import. */
+    initialTab?: 'discover' | 'saved';
 }
 
 type DiscoverTab = 'discover' | 'saved' | 'skipped';
@@ -57,8 +61,10 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
     canEdit,
     onRecommendationStateChange,
     onAddActivity,
+    initialTab = 'discover',
 }) => {
-    const [tab, setTab] = useState<DiscoverTab>('discover');
+    const { t } = useTranslation('common');
+    const [tab, setTab] = useState<DiscoverTab>(initialTab);
     const [pool, setPool] = useState<Recommendation[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -122,17 +128,31 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
         },
     ), [cityNames, dismissedIds, pool, savedIds]);
 
+    const activeIdeas = useMemo(() => listActiveIdeas(state.saved), [state.saved]);
+    const skippedIdeas = useMemo(() => state.saved.filter(isIdeaSkipped), [state.saved]);
+    const pendingIds = useMemo(
+        () => new Set(state.saved.filter(isIdeaPending).map((entry) => entry.recommendationId)),
+        [state.saved],
+    );
+
     /** A kept idea always has a card: the library row when it is loaded, the copy otherwise. */
     const savedCards = useMemo(
-        () => state.saved.map((saved) => byId.get(saved.recommendationId) ?? savedToRecommendation(saved)),
-        [byId, state.saved],
+        () => activeIdeas.map((saved) => byId.get(saved.recommendationId) ?? savedToRecommendation(saved)),
+        [activeIdeas, byId],
     );
-    /** A skipped idea was never copied onto the trip, so it only exists while the library is loaded. */
+    /**
+     * A skipped library idea was never copied onto the trip, so it only exists
+     * while the library is loaded. A skipped import stays on the trip instead,
+     * so a re-import does not bring it back.
+     */
     const skippedCards = useMemo(
-        () => state.dismissedIds
-            .map((id) => byId.get(id))
-            .filter((entry): entry is Recommendation => Boolean(entry)),
-        [byId, state.dismissedIds],
+        () => [
+            ...state.dismissedIds
+                .map((id) => byId.get(id))
+                .filter((entry): entry is Recommendation => Boolean(entry)),
+            ...skippedIdeas.map(savedToRecommendation),
+        ],
+        [byId, skippedIdeas, state.dismissedIds],
     );
 
     const applyDecision = useCallback((recommendation: Recommendation, decision: SwipeDecision) => {
@@ -171,9 +191,23 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
             trip_id: trip.id,
             recommendation_id: recommendationId,
         });
-        forget(recommendationId);
+        // A skipped import goes back to "to review"; a library idea back into the deck.
+        if (state.saved.some((entry) => entry.recommendationId === recommendationId)) {
+            commitState(setIdeaReview(state, recommendationId, 'pending'));
+        } else {
+            forget(recommendationId);
+        }
         setOpenDetailId(null);
-    }, [forget, trip.id]);
+    }, [commitState, forget, state, trip.id]);
+
+    const reviewIdea = useCallback((recommendationId: string, decision: 'keep' | 'skip') => {
+        trackEvent(decision === 'keep' ? 'trip_view__idea_review--keep' : 'trip_view__idea_review--skip', {
+            trip_id: trip.id,
+            recommendation_id: recommendationId,
+        });
+        commitState(setIdeaReview(state, recommendationId, decision === 'keep' ? 'saved' : 'skipped'));
+        if (decision === 'skip') setOpenDetailId(null);
+    }, [commitState, state, trip.id]);
 
     const removeSaved = useCallback((recommendationId: string) => {
         forget(recommendationId);
@@ -191,15 +225,15 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
         setAssigningId(null);
     }, [onAddActivity, removeSaved, trip.id]);
 
-    const savedCount = state.saved.length;
-    const skippedCount = state.dismissedIds.length;
+    const savedCount = activeIdeas.length;
+    const skippedCount = state.dismissedIds.length + skippedIdeas.length;
     const openDetail = useMemo(() => {
         if (!openDetailId) return null;
         return [...savedCards, ...skippedCards].find((entry) => entry.id === openDetailId) ?? null;
     }, [openDetailId, savedCards, skippedCards]);
     const openDetailSaved = useMemo(
-        () => state.saved.find((entry) => entry.recommendationId === openDetailId) ?? null,
-        [openDetailId, state.saved],
+        () => activeIdeas.find((entry) => entry.recommendationId === openDetailId) ?? null,
+        [activeIdeas, openDetailId],
     );
 
     const tabButtonClass = (value: DiscoverTab): string => (
@@ -301,7 +335,30 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                         recommendations={savedCards}
                         emptyMessage="Nothing kept yet. Swipe right on an idea to park it here."
                         onOpen={setOpenDetailId}
-                        renderAction={(recommendation) => (
+                        renderAction={(recommendation) => (pendingIds.has(recommendation.id) ? (
+                            <div className="flex items-center gap-0.5" data-testid="idea-review-actions">
+                                <button
+                                    type="button"
+                                    onClick={() => reviewIdea(recommendation.id, 'keep')}
+                                    className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-accent-600 dark:text-foreground dark:hover:text-accent-300"
+                                    aria-label={t('tripView.ideas.keepNamed', { title: recommendation.title })}
+                                    title={t('tripView.ideas.keep')}
+                                    {...getAnalyticsDebugAttributes('trip_view__idea_review--keep', { trip_id: trip.id })}
+                                >
+                                    <Check size={16} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => reviewIdea(recommendation.id, 'skip')}
+                                    className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-rose-600 dark:text-foreground"
+                                    aria-label={t('tripView.ideas.skipNamed', { title: recommendation.title })}
+                                    title={t('tripView.ideas.skip')}
+                                    {...getAnalyticsDebugAttributes('trip_view__idea_review--skip', { trip_id: trip.id })}
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        ) : (
                             <button
                                 type="button"
                                 onClick={() => removeSaved(recommendation.id)}
@@ -310,7 +367,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                             >
                                 <Trash2 size={15} />
                             </button>
-                        )}
+                        ))}
                     />
                 )}
 
@@ -350,6 +407,8 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                             onCancelAssigning={() => setAssigningId(null)}
                             onAssignToDay={assignToDay}
                             onRestore={() => restoreSkipped(openDetail.id)}
+                            onKeep={() => reviewIdea(openDetail.id, 'keep')}
+                            onSkip={() => reviewIdea(openDetail.id, 'skip')}
                         />
                     ) : undefined}
                 />

@@ -1,7 +1,9 @@
 import React from 'react';
-import { CalendarPlus, RotateCcw } from 'lucide-react';
+import { CalendarPlus, Check, RotateCcw, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { SavedRecommendation } from '../../shared/recommendations';
+import { isIdeaPending } from '../../shared/tripIdeas';
 import type { MobileDayPlanDay } from '../tripview/mobileDayPlanModel';
 
 interface DayGroup {
@@ -48,6 +50,9 @@ export const RecommendationDetailActions: React.FC<{
     onCancelAssigning: () => void;
     onAssignToDay: (saved: SavedRecommendation, day: MobileDayPlanDay) => void;
     onRestore: () => void;
+    /** Only offered while the idea is still to review (an import). */
+    onKeep?: () => void;
+    onSkip?: () => void;
 }> = ({
     saved,
     canEdit,
@@ -57,7 +62,10 @@ export const RecommendationDetailActions: React.FC<{
     onCancelAssigning,
     onAssignToDay,
     onRestore,
+    onKeep,
+    onSkip,
 }) => {
+    const { t } = useTranslation('common');
     if (!saved) {
         return (
             <button
@@ -108,7 +116,7 @@ export const RecommendationDetailActions: React.FC<{
         );
     }
 
-    return (
+    const assignButton = (
         <button
             type="button"
             onClick={onStartAssigning}
@@ -118,5 +126,34 @@ export const RecommendationDetailActions: React.FC<{
             <CalendarPlus size={15} />
             Add to a day
         </button>
+    );
+
+    if (!isIdeaPending(saved) || !onKeep || !onSkip) return assignButton;
+
+    return (
+        <div className="flex flex-col gap-2" data-testid="idea-review-detail">
+            <p className="text-xs leading-5 text-muted-foreground">{t('tripView.ideas.reviewHint')}</p>
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    onClick={onKeep}
+                    data-testid="idea-review-keep"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                >
+                    <Check size={15} />
+                    {t('tripView.ideas.keep')}
+                </button>
+                <button
+                    type="button"
+                    onClick={onSkip}
+                    data-testid="idea-review-skip"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                >
+                    <X size={15} />
+                    {t('tripView.ideas.skip')}
+                </button>
+            </div>
+            {assignButton}
+        </div>
     );
 };
