@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { buildDayTripMarkerHtml, buildTripMapDayTripDescriptors, collectDayTripMarkerIds, isDayTripRoundTrip } from './maps/tripMapDayTripModel';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { Button } from './ui/button';
 import type mapboxgl from 'mapbox-gl';
 import {
@@ -24,7 +23,7 @@ import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, ge
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
-import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { buildActivityIconMarkup } from './maps/activityIconMarkup';
 import { ActivityMapPopup } from './maps/ActivityMapPopup';
 import { IdeaMapPopup, type IdeaMapAction } from './maps/IdeaMapPopup';
 import { useMapMarkerAnchor } from './maps/useMapMarkerAnchor';
@@ -972,8 +971,6 @@ const isRoutePathLikelyStraight = (
     return hasStraightLikeDetour || hasStraightLikeShape;
 };
 
-const ACTIVITY_ICON_MARKUP_CACHE = new Map<string, string>();
-
 const escapeHtml = (value: string): string => (
     value
         .replace(/&/g, '&amp;')
@@ -982,21 +979,6 @@ const escapeHtml = (value: string): string => (
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;')
 );
-
-const buildActivityIconMarkup = (type: ActivityType, iconSize: number): string => {
-    const cacheKey = `${type}:${iconSize}`;
-    const cached = ACTIVITY_ICON_MARKUP_CACHE.get(cacheKey);
-    if (cached) return cached;
-    const markup = renderToStaticMarkup(
-        <ActivityTypeIcon type={type} size={iconSize} />
-    );
-    const styled = markup.replace(
-        '<svg',
-        `<svg style="width:${iconSize}px;height:${iconSize}px;display:block;stroke:currentColor;stroke-width:2.3;color:currentColor;fill:none;"`,
-    );
-    ACTIVITY_ICON_MARKUP_CACHE.set(cacheKey, styled);
-    return styled;
-};
 
 const buildActivityMarkerHtml = (
     type: ActivityType,

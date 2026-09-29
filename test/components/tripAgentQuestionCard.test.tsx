@@ -36,8 +36,8 @@ describe('TripAgentQuestionCard', () => {
 
         render(<TripAgentQuestionCard question="What now?" options={options} allowCustom onAnswer={onAnswer} />);
 
-        await user.type(screen.getByPlaceholderText('tripAgent.questionCustom'), 'Add two days in Hanoi');
-        await user.click(screen.getByRole('button', { name: 'tripAgent.questionSend' }));
+        await user.type(screen.getByPlaceholderText('questionCustom'), 'Add two days in Hanoi');
+        await user.click(screen.getByRole('button', { name: 'questionSend' }));
 
         expect(onAnswer).toHaveBeenCalledWith('Add two days in Hanoi');
     });
@@ -45,6 +45,6 @@ describe('TripAgentQuestionCard', () => {
     it('hides the custom field when the agent did not allow one', () => {
         render(<TripAgentQuestionCard question="Pick one" options={options} allowCustom={false} onAnswer={vi.fn()} />);
 
-        expect(screen.queryByPlaceholderText('tripAgent.questionCustom')).toBeNull();
+        expect(screen.queryByPlaceholderText('questionCustom')).toBeNull();
     });
 });

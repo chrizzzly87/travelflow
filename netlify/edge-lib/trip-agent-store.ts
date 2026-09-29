@@ -192,28 +192,61 @@ export const createTripAgentThread = async (
   tripId: string,
   actorId: string,
   title = DEFAULT_TRIP_AGENT_THREAD_TITLE,
+  threadId?: string,
 ): Promise<TripAgentThreadRecord> => {
-  const rows = await rest<ThreadRow[]>('trip_agent_threads?select=*', {
+  if (!threadId) {
+    const rows = await rest<ThreadRow[]>('trip_agent_threads?select=*', {
+      method: 'POST',
+      headers: serviceHeaders('return=representation'),
+      body: JSON.stringify({ trip_id: tripId, created_by: actorId, title: title.slice(0, 160) }),
+    });
+    return mapThread(rows[0]);
+  }
+  // A draft chat names its own id so the browser never waits for it. A retry
+  // of the same save is a no-op; an id that belongs to another trip is not.
+  const rows = await rest<ThreadRow[]>('trip_agent_threads?on_conflict=id&select=*', {
     method: 'POST',
-    headers: serviceHeaders('return=representation'),
-    body: JSON.stringify({ trip_id: tripId, created_by: actorId, title: title.slice(0, 160) }),
+    headers: serviceHeaders('return=representation,resolution=ignore-duplicates'),
+    body: JSON.stringify({ id: threadId, trip_id: tripId, created_by: actorId, title: title.slice(0, 160) }),
   });
-  return mapThread(rows[0]);
+  if (rows?.[0]) return mapThread(rows[0]);
+  const existing = await rest<ThreadRow[]>(
+    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&trip_id=eq.${encodeURIComponent(tripId)}&select=*&limit=1`,
+  );
+  if (!existing[0]) throw new Error('Trip Agent thread not found or archived.');
+  return mapThread(existing[0]);
 };
 
 /**
- * Names a chat after its first prompt so the history list is readable. The
- * default-title filter keeps a renamed thread untouched.
+ * Names a chat after its first prompt so the history list is readable at once.
+ * The default-title filter keeps a renamed thread untouched. Returns the title
+ * it set, or null when the chat already had a name.
  */
-export const titleTripAgentThreadFromPrompt = async (threadId: string, prompt: string): Promise<void> => {
+export const titleTripAgentThreadFromPrompt = async (threadId: string, prompt: string): Promise<string | null> => {
   const title = prompt.replace(/\s+/g, ' ').trim().slice(0, 60);
-  if (!title) return;
+  if (!title) return null;
+  const rows = await rest<Array<{ id: string }>>(
+    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&title=eq.${encodeURIComponent(DEFAULT_TRIP_AGENT_THREAD_TITLE)}&select=id`,
+    {
+      method: 'PATCH',
+      headers: serviceHeaders('return=representation'),
+      body: JSON.stringify({ title, updated_at: new Date().toISOString() }),
+    },
+  );
+  return rows?.length ? title : null;
+};
+
+/**
+ * Replaces the placeholder title from the first prompt with a generated one,
+ * only while the chat still carries that placeholder.
+ */
+export const retitleTripAgentThread = async (threadId: string, fromTitle: string, toTitle: string): Promise<void> => {
   await rest(
-    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&title=eq.${encodeURIComponent(DEFAULT_TRIP_AGENT_THREAD_TITLE)}`,
+    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&title=eq.${encodeURIComponent(fromTitle)}`,
     {
       method: 'PATCH',
       headers: serviceHeaders('return=minimal'),
-      body: JSON.stringify({ title, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ title: toTitle.slice(0, 160) }),
     },
   );
 };
@@ -223,6 +256,14 @@ export const archiveTripAgentThread = async (threadId: string, tripId: string): 
     method: 'PATCH',
     headers: serviceHeaders('return=minimal'),
     body: JSON.stringify({ status: 'archived', archived_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+  });
+};
+
+export const restoreTripAgentThread = async (threadId: string, tripId: string): Promise<void> => {
+  await rest(`trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&trip_id=eq.${encodeURIComponent(tripId)}`, {
+    method: 'PATCH',
+    headers: serviceHeaders('return=minimal'),
+    body: JSON.stringify({ status: 'active', archived_at: null, updated_at: new Date().toISOString() }),
   });
 };
 

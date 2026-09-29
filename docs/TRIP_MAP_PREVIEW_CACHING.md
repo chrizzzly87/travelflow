@@ -180,6 +180,15 @@ below, which is served when the render could not be fetched at all.
 4. **Keep the rate limiter.** The endpoint is unauthenticated by design — it is
    loaded from a plain `<img>` — and a cache miss still spends real money.
 
+## Day trips
+
+`dayTrips` carries a trip's day trips (see `docs/ACTIVITIES_AND_DAY_TRIPS.md`).
+It follows the rules above: it is set only when a trip has day trips, so no
+existing preview URL changed; it is in `PREVIEW_CACHE_QUERY_PARAMS`; and its
+spokes are straight dashes, so it adds no Directions calls. When a long
+itinerary's URL would exceed a provider limit, the renderer drops routed
+geometry first and the day-trip dashes last, keeping the destination pins.
+
 ## Format
 
 Mapbox renders are requested as WebP (`…/{w}x{h}@2x.webp`), which is roughly 35%

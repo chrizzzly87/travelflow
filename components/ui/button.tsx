@@ -38,6 +38,15 @@ const buttonVariants = cva(
         // Always pass `aria-pressed` so the selected state is announced, not just painted.
         toggle:
           "text-muted-foreground not-aria-pressed:hover:bg-secondary not-aria-pressed:hover:text-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary-hover",
+        // Social sign-in ("Continue with Google"): opaque card fill with a
+        // brand-tinted hover. Pick the tint with `data-provider` so light and
+        // dark hovers live together here — the login page once shipped only
+        // the light tints and hovered near-white in dark mode.
+        social:
+          "relative rounded-xl border border-border bg-card font-semibold text-foreground transition-colors hover:bg-secondary data-[last-used=true]:border-slate-400 dark:data-[last-used=true]:border-border " +
+          "data-[provider=google]:hover:border-[#ea4335]/40 data-[provider=google]:hover:bg-[#fff7f7] dark:data-[provider=google]:hover:border-[#ea4335]/50 dark:data-[provider=google]:hover:bg-[#ea4335]/12 " +
+          "data-[provider=facebook]:hover:border-[#1877f2]/40 data-[provider=facebook]:hover:bg-[#f3f8ff] dark:data-[provider=facebook]:hover:border-[#1877f2]/50 dark:data-[provider=facebook]:hover:bg-[#1877f2]/14 " +
+          "data-[provider=kakao]:hover:border-[#FFE812]/60 data-[provider=kakao]:hover:bg-[#fffde6] dark:data-[provider=kakao]:hover:border-[#FFE812]/50 dark:data-[provider=kakao]:hover:bg-[#FFE812]/12",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

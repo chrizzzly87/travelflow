@@ -15,6 +15,7 @@ import {
   getTripAgentActor,
   getTripAgentQuota,
   listTripAgentThreads,
+  restoreTripAgentThread,
   loadEditableTrip,
   loadTripAgentChangeSet,
   loadTripAgentChangeSetStatuses,
@@ -133,9 +134,10 @@ const userMessageSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
-const bodySchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('createThread'), tripId: tripIdSchema }).strict(),
+export const tripAgentBodySchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('createThread'), tripId: tripIdSchema, threadId: uuidSchema.optional() }).strict(),
   z.object({ action: z.literal('archiveThread'), tripId: tripIdSchema, threadId: uuidSchema }).strict(),
+  z.object({ action: z.literal('restoreThread'), tripId: tripIdSchema, threadId: uuidSchema }).strict(),
   z.object({
     action: z.literal('chat'),
     tripId: tripIdSchema,
@@ -204,7 +206,7 @@ export default async (request: Request) => {
     }
 
     if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' });
-    const body = bodySchema.parse(await request.json());
+    const body = tripAgentBodySchema.parse(await request.json());
     logContext = {
       action: body.action,
       tripId: body.tripId,
@@ -214,7 +216,11 @@ export default async (request: Request) => {
     const canonical = await loadEditableTrip(body.tripId, actor.userId, shareToken);
 
     if (body.action === 'createThread') {
-      return json(201, { thread: await createTripAgentThread(body.tripId, actor.userId) });
+      return json(201, { thread: await createTripAgentThread(body.tripId, actor.userId, undefined, body.threadId) });
+    }
+    if (body.action === 'restoreThread') {
+      await restoreTripAgentThread(body.threadId, body.tripId);
+      return json(200, { ok: true });
     }
     if (body.action === 'archiveThread') {
       await assertThreadInTrip(body.threadId, body.tripId);
@@ -317,7 +323,7 @@ export default async (request: Request) => {
       throw new Error(`TRIP_AGENT_PERSISTENCE_FAILED: ${boundedErrorMessage(error)}`);
     }
     const promptText = body.message.parts.find((part) => part.type === 'text')?.text || '';
-    await titleTripAgentThreadFromPrompt(body.threadId, promptText).catch(() => undefined);
+    const promptTitle = await titleTripAgentThreadFromPrompt(body.threadId, promptText).catch(() => null);
     console.info('[trip-agent] chat accepted', {
       ...logContext,
       contextCount: body.contextRefs.length,
@@ -332,6 +338,9 @@ export default async (request: Request) => {
       userMessage,
       contextRefs: body.contextRefs,
       abortSignal: request.signal,
+      // Set only for a chat's first message: the run then names the chat.
+      promptTitle,
+      promptText,
     });
   } catch (error) {
     const failure = classifyTripAgentFailure(error);

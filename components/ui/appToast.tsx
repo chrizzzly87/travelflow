@@ -52,55 +52,55 @@ const QUOTED_SEGMENT_REGEX = /(".*?"|“.*?”)/g;
 const TONE_META: Record<AppToastTone, AppToastToneMeta> = {
   success: {
     Icon: CheckCircle2,
-    borderClass: 'border-emerald-200 dark:border-emerald-400/30',
+    borderClass: '!border-emerald-200 dark:!border-emerald-400/30',
     iconWrapClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200',
     titleClass: 'text-emerald-800 dark:text-emerald-200',
   },
   error: {
     Icon: XCircle,
-    borderClass: 'border-rose-200 dark:border-rose-400/30',
+    borderClass: '!border-rose-200 dark:!border-rose-400/30',
     iconWrapClass: 'bg-rose-100 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200',
     titleClass: 'text-rose-800 dark:text-rose-200',
   },
   info: {
     Icon: Info,
-    borderClass: 'border-sky-200 dark:border-sky-400/30',
+    borderClass: '!border-sky-200 dark:!border-sky-400/30',
     iconWrapClass: 'bg-sky-100 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200',
     titleClass: 'text-sky-800 dark:text-sky-200',
   },
   warning: {
     Icon: AlertCircle,
-    borderClass: 'border-amber-200 dark:border-amber-400/30',
+    borderClass: '!border-amber-200 dark:!border-amber-400/30',
     iconWrapClass: 'bg-amber-100 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200',
     titleClass: 'text-amber-800 dark:text-amber-200',
   },
   loading: {
     Icon: LoaderCircle,
-    borderClass: 'border-accent-200 dark:border-accent-400/30',
+    borderClass: '!border-accent-200 dark:!border-accent-400/30',
     iconWrapClass: 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200',
     titleClass: 'text-accent-800 dark:text-accent-200',
   },
   add: {
     Icon: CheckCircle2,
-    borderClass: 'border-emerald-200 dark:border-emerald-400/30',
+    borderClass: '!border-emerald-200 dark:!border-emerald-400/30',
     iconWrapClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200',
     titleClass: 'text-emerald-800 dark:text-emerald-200',
   },
   remove: {
     Icon: Trash2,
-    borderClass: 'border-rose-200 dark:border-rose-400/30',
+    borderClass: '!border-rose-200 dark:!border-rose-400/30',
     iconWrapClass: 'bg-rose-100 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200',
     titleClass: 'text-rose-800 dark:text-rose-200',
   },
   update: {
     Icon: PencilLine,
-    borderClass: 'border-accent-200 dark:border-accent-400/30',
+    borderClass: '!border-accent-200 dark:!border-accent-400/30',
     iconWrapClass: 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200',
     titleClass: 'text-accent-800 dark:text-accent-200',
   },
   neutral: {
     Icon: Save,
-    borderClass: 'border-border',
+    borderClass: '!border-border',
     iconWrapClass: 'bg-secondary text-foreground',
     titleClass: 'text-foreground',
   },
@@ -148,7 +148,9 @@ export const showAppToast = ({
     dismissible,
     action,
     position: 'bottom-right',
-    className: `border bg-card/95 text-foreground shadow-xl backdrop-blur supports-[backdrop-filter]:bg-card/90 ${meta.borderClass} dark:shadow-none`,
+    // Surface and text come from the Sonner variables mapped in index.css; the
+    // border needs `!` because Sonner's own `border` rule outranks a class.
+    className: `border shadow-xl ${meta.borderClass} dark:shadow-none`,
     icon: (
       <span className={`inline-flex size-8 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
         <Icon size={20} className={tone === 'loading' && !iconVariant ? 'animate-spin' : undefined} />

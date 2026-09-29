@@ -81,7 +81,22 @@ export const ambiguousMentionLabels = (refs: TripAgentContextRef[]): Set<string>
  * Replaces the `@query` the caret sits behind with the chosen label, keeping a
  * trailing space so the next word is not swallowed into the mention.
  */
-export const insertMention = (text: string, label: string): string => {
-    const replaced = text.replace(/(^|\s)@[^\s]*$/, `$1@${label} `);
-    return replaced === text ? `${text}${text.endsWith(' ') || text === '' ? '' : ' '}@${label} ` : replaced;
+export const insertMention = (text: string, label: string): string => insertMentionAt(text, text.length, label).value;
+
+/**
+ * Inserts a mention at the caret, completing an `@query` typed right before
+ * it, so a stop can be added in the middle of a sentence as well as at its
+ * end. Returns the text and the caret position just after the mention.
+ */
+export const insertMentionAt = (text: string, caret: number, label: string): { value: string; caret: number } => {
+    const before = text.slice(0, caret);
+    const after = text.slice(caret);
+    const mention = `@${label}`;
+    const completed = before.replace(/(^|\s)@[^\s]*$/, `$1${mention}`);
+    const head = completed !== before
+        ? completed
+        : `${before}${before === '' || /\s$/.test(before) ? '' : ' '}${mention}`;
+    // One space after the mention, never two.
+    const separator = after.startsWith(' ') ? '' : ' ';
+    return { value: `${head}${separator}${after}`, caret: head.length + 1 };
 };

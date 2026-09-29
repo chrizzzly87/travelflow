@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AUTO_FIT_MIN_ZOOM, resolveAutoFitZoom, useTripResizeControls } from '../../../components/tripview/useTripResizeControls';
+import { AUTO_FIT_EXTENT_ATTRIBUTE, AUTO_FIT_MIN_ZOOM, resolveAutoFitZoom, useTripResizeControls } from '../../../components/tripview/useTripResizeControls';
 
 const DEFAULT_ZOOM_PRESETS = [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3];
 
@@ -55,7 +55,7 @@ describe('components/tripview/useTripResizeControls', () => {
 
   const attachTimelineViewport = (
     result: { current: ReturnType<typeof useTripResizeControls> },
-    dimensions: { width: number; height: number; scrollWidth?: number; scrollHeight?: number },
+    dimensions: { width: number; height: number; scrollWidth?: number; scrollHeight?: number; autoFitExtent?: number },
   ) => {
     const viewport = document.createElement('div');
     const timelineSurface = document.createElement('div');
@@ -83,6 +83,9 @@ describe('components/tripview/useTripResizeControls', () => {
     });
     content.style.width = `${dimensions.scrollWidth ?? dimensions.width}px`;
     content.style.height = `${dimensions.scrollHeight ?? dimensions.height}px`;
+    if (dimensions.autoFitExtent !== undefined) {
+      content.setAttribute(AUTO_FIT_EXTENT_ATTRIBUTE, String(dimensions.autoFitExtent));
+    }
     timelineSurface.className = 'timeline-scroll';
     timelineSurface.appendChild(content);
     viewport.appendChild(timelineSurface);
@@ -357,6 +360,36 @@ describe('components/tripview/useTripResizeControls', () => {
     expect(zoomUpdater(1)).toBe(AUTO_FIT_MIN_ZOOM);
   });
 
+  it('measures the trip itself, not the filler days that pad the vertical calendar to the viewport', () => {
+    const setZoomLevel = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      timelineView: 'horizontal',
+      layoutMode: 'horizontal',
+      zoomLevel: 0.2,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    // A 5-day trip at 0.2x is 120px + 32px padding, but filler days stretch the
+    // calendar to the full 700px viewport. Measuring the padded height kept the
+    // zoom stuck at 0.2x; the trip itself fits at 3x.
+    attachTimelineViewport(result, { width: 640, height: 700, scrollHeight: 700, autoFitExtent: 152 });
+    setZoomLevel.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        timelineView: 'vertical',
+      });
+    });
+
+    expect(setZoomLevel).toHaveBeenCalledTimes(1);
+    const zoomUpdater = setZoomLevel.mock.calls[0][0] as (value: number) => number;
+    expect(zoomUpdater(0.2)).toBe(0.8);
+  });
+
   it('resolves auto-fit zoom to the largest fitting preset, never below the readable floor', () => {
     const clamp = (value: number) => Math.max(0.2, Math.min(3, value));
 
@@ -364,8 +397,10 @@ describe('components/tripview/useTripResizeControls', () => {
     // Slightly too small for the next step: pick the step that fits instead of overflowing.
     expect(resolveAutoFitZoom(1.1, clamp, DEFAULT_ZOOM_PRESETS)).toBe(1);
     expect(resolveAutoFitZoom(0.7, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.6);
-    expect(resolveAutoFitZoom(0.25, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.6);
-    expect(resolveAutoFitZoom(0.05, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.6);
+    expect(resolveAutoFitZoom(0.5, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.4);
+    // A 16-day trip in an 800px-tall window needs ~0.34x: auto-fit settles on 0.4x, not 0.2x.
+    expect(resolveAutoFitZoom(0.34, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.4);
+    expect(resolveAutoFitZoom(0.05, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.4);
     expect(resolveAutoFitZoom(9, clamp, DEFAULT_ZOOM_PRESETS)).toBe(3);
     expect(resolveAutoFitZoom(Number.NaN, clamp, DEFAULT_ZOOM_PRESETS)).toBeNaN();
   });

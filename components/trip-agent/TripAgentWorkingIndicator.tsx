@@ -8,11 +8,11 @@ import { ThinkingOrb } from 'thinking-orbs';
  * long stretches with nothing on screen.
  */
 export const TripAgentWorkingIndicator: React.FC<{ label: string; hint?: string }> = ({ label, hint }) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('tripAgent');
 
     return (
         <div className="flex items-center gap-2.5 rounded-xl border border-border bg-secondary/70 px-2.5 py-2" role="status">
-            <ThinkingOrb state="searching" size={20} aria-label={t('tripAgent.activityWorking')} />
+            <ThinkingOrb state="searching" size={20} aria-label={t('activityWorking')} />
             <span className="min-w-0">
                 <span className="block truncate text-xs font-medium text-foreground">{label}</span>
                 {hint && <span className="block truncate text-[11px] text-muted-foreground">{hint}</span>}

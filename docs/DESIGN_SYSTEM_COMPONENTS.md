@@ -36,6 +36,16 @@ release.
    for panels, 36–40px control height. Avoid `rounded-2xl` on internal tooling.
 6. **Use logical properties** (`ps-*`, `pe-*`, `ms-*`, `me-*`, and `start-*`/`end-*` for
    insets) wherever direction may change.
+7. **Tooltips are `data-tooltip`, not Radix Tooltip.** Radix `Tooltip` never opens under
+   `preact/compat`: the trigger's `data-state` stays `closed` on hover and focus even though its
+   listeners are attached. It works under the real React that Vitest runs, so a unit test cannot
+   catch it. `components/ui/tooltip.tsx` was removed for that reason; do not re-add it with
+   `shadcn add tooltip` (upstream is the same Radix wrapper). Put `data-tooltip="…"` on the
+   element instead: `components/GlobalTooltipLayer.tsx` (mounted once in `App.tsx`) shows it on
+   hover and keyboard focus, above everything. It also picks up a button's `aria-label` or
+   `title`; opt out with `data-no-global-tooltip="true"`. Content is plain text and the layer
+   picks its own side. `test/components/aiElementsTooltips.test.tsx` fails if Radix Tooltip is
+   imported again.
 
 ---
 
@@ -272,6 +282,7 @@ was the light one, a disabled control turned bright grey, pressed toggles lost `
 | `soft` | Tinted accent action, quieter than `default` ("Ask AI", "Add activity"). |
 | `toggle` | Segmented controls. Pressed styling comes from `aria-pressed="true"`, so always pass it. |
 | `floating` | Controls sitting on the map: opaque card fill, `aria-pressed` fills with primary, `aria-expanded` tints. |
+| `social` | Social sign-in rows. Set `data-provider` (`google`, `facebook`, `kakao`) for the brand hover tint in both themes; use `components/auth/SocialLoginButton`, which the login page and the auth modal share. |
 | `link` / `destructive` | As named. |
 
 Sizes are `xs`, `sm`, `default`, `lg` and the square `icon-xs`, `icon-sm`, `icon`, `icon-lg`

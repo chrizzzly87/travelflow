@@ -166,17 +166,59 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             routeDurationHours: 0.5
         },
 
-        // ── Osaka (Days 9–12) ─────────────────────────────────────
+        // ── Osaka (Days 9–14), base for the Nara and Kobe day trips ─
         {
             id: "jp-city-osaka",
             type: "city",
             title: "Osaka",
             startDateOffset: 9,
-            duration: 3,
+            duration: 5,
             color: "bg-pink-100 border-pink-300 text-pink-900 dark:bg-pink-400/12 dark:text-pink-200 dark:border-pink-400/30",
             location: "Osaka, Japan",
             coordinates: { lat: 34.6937, lng: 135.5023 },
-            description: `Japan's kitchen and comedy capital. Osaka is all about street food, vibrant nightlife, and a laid-back attitude that contrasts with Tokyo's formality.\n\n### Must See\n- [ ] Osaka Castle and its park\n- [ ] Dotonbori neon-lit canal district\n- [ ] Shinsekai retro neighborhood\n- [ ] Sumiyoshi Taisha shrine\n\n### Must Try\n- [ ] Takoyaki (octopus balls) from a street stall\n- [ ] Okonomiyaki (savory pancake) at a local joint\n- [ ] Kushikatsu (deep-fried skewers) in Shinsekai\n- [ ] Cheesecake from Rikuro Ojisan\n\n### Must Do\n- [ ] Evening walk along Dotonbori canal\n- [ ] Explore Kuromon Ichiba Market\n- [ ] Visit Umeda Sky Building for sunset views\n- [ ] Bar-hop through Ura-Namba's hidden alleys`
+            description: `Japan's kitchen and comedy capital. Osaka is all about street food, vibrant nightlife, and a laid-back attitude that contrasts with Tokyo's formality.\n\n### Must See\n- [ ] Osaka Castle and its park\n- [ ] Dotonbori neon-lit canal district\n- [ ] Shinsekai retro neighborhood\n- [ ] Sumiyoshi Taisha shrine\n\n### Must Try\n- [ ] Takoyaki (octopus balls) from a street stall\n- [ ] Okonomiyaki (savory pancake) at a local joint\n- [ ] Kushikatsu (deep-fried skewers) in Shinsekai\n- [ ] Cheesecake from Rikuro Ojisan\n\n### Must Do\n- [ ] Evening walk along Dotonbori canal\n- [ ] Explore Kuromon Ichiba Market\n- [ ] Visit Umeda Sky Building for sunset views\n- [ ] Bar-hop through Ura-Namba's hidden alleys\n\n### Day Trips\n- [ ] Nara: giant Buddha, Nara Park deer and Kasuga Taisha (~40 min by Kintetsu train)\n- [ ] Kobe: Kitano, Kobe beef and the harbourfront at dusk (~25 min by JR Special Rapid)`
+        },
+
+        // Day trip: Nara
+        {
+            id: "jp-act-nara",
+            type: "activity",
+            title: "Nara Day Trip",
+            startDateOffset: 10.35,
+            duration: 0.4,
+            activityKind: 'day-trip',
+            stayCityId: 'jp-city-osaka',
+            color: "bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30",
+            location: "Nara, Japan",
+            coordinates: { lat: 34.6851, lng: 135.8430 },
+            activityType: ["culture", "sightseeing", "nature"],
+            description: `Japan's first permanent capital, an easy hop from Osaka. Temples, gardens and over a thousand free-roaming deer fit into a relaxed day on foot.\n\n### Must See\n- [ ] Todai-ji and its 15-metre bronze Great Buddha\n- [ ] Kasuga Taisha's lantern-lined approach\n- [ ] Nara Park and the bowing sika deer\n- [ ] Isuien Garden with Mount Wakakusa as its backdrop\n\n### Must Try\n- [ ] Kakinoha-zushi (sushi wrapped in persimmon leaves)\n- [ ] Mochi pounded at high speed at Nakatanidou\n\n### Getting There\n- [ ] Kintetsu Nara Line from Osaka-Namba to Kintetsu-Nara (~40 min); the park starts at the station`,
+            aiInsights: {
+                cost: "~1,300 JPY return by Kintetsu; Todai-ji hall ~800 JPY; deer crackers ~200 JPY",
+                bestTime: "Arrive by 9 AM to see Todai-ji before the tour groups; cherry blossoms peak in early April",
+                tips: "Bow to the deer and they often bow back, but put your crackers away once they are gone. Everything is walkable, so skip the buses and follow the park paths between sights."
+            }
+        },
+
+        // Day trip: Kobe
+        {
+            id: "jp-act-kobe",
+            type: "activity",
+            title: "Kobe Day Trip",
+            startDateOffset: 12.4,
+            duration: 0.45,
+            activityKind: 'day-trip',
+            stayCityId: 'jp-city-osaka',
+            color: "bg-teal-100 border-teal-300 text-teal-900 dark:bg-teal-400/12 dark:text-teal-200 dark:border-teal-400/30",
+            location: "Kobe, Hyogo, Japan",
+            coordinates: { lat: 34.6901, lng: 135.1955 },
+            activityType: ["food", "sightseeing", "culture"],
+            description: `A port city squeezed between the Rokko mountains and the sea, known for its cosmopolitan past and its beef. Hills in the morning, harbour at night.\n\n### Must See\n- [ ] Kitano-cho's 19th-century foreign merchant houses\n- [ ] Nunobiki Herb Gardens by ropeway, with views over the bay\n- [ ] Meriken Park, Port Tower and the earthquake memorial\n- [ ] Nankinmachi, Kobe's compact Chinatown\n\n### Must Try\n- [ ] Kobe beef teppanyaki (book lunch; it is cheaper than dinner)\n- [ ] Pork buns from Roshoki in Nankinmachi\n- [ ] A sake tasting in the Nada brewery district\n\n### Getting There\n- [ ] JR Special Rapid from Osaka Station to Sannomiya (~25 min)`,
+            aiInsights: {
+                cost: "~820 JPY return by JR; Kobe beef lunch sets from ~6,000 JPY; ropeway ~1,800 JPY return",
+                bestTime: "Kitano and the ropeway in the morning, then stay for the harbour lights after sunset",
+                tips: "Look for the bronze certificate or the chrysanthemum seal to be sure it is real Kobe beef. Harborland is a pleasant place to wait for the evening illuminations before the train back."
+            }
         },
 
         // ── Travel: Osaka → Hiroshima ────────────────────────────
@@ -184,7 +226,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             id: "jp-travel-osaka-hiroshima",
             type: "travel",
             title: "Osaka → Hiroshima",
-            startDateOffset: 12,
+            startDateOffset: 14,
             duration: 0.15,
             color: "bg-stone-800 border-stone-600 text-stone-100",
             transportMode: "train",
@@ -193,12 +235,12 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             routeDurationHours: 1.5
         },
 
-        // ── Hiroshima (Days 12–14) ────────────────────────────────
+        // ── Hiroshima (Days 14–16) ────────────────────────────────
         {
             id: "jp-city-hiroshima",
             type: "city",
             title: "Hiroshima",
-            startDateOffset: 12,
+            startDateOffset: 14,
             duration: 2,
             color: "bg-rose-100 border-rose-300 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30",
             location: "Hiroshima, Japan",
@@ -211,7 +253,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             id: "jp-act-miyajima",
             type: "activity",
             title: "Miyajima Island Day Trip",
-            startDateOffset: 13,
+            startDateOffset: 15,
             duration: 0.4,
             activityKind: 'day-trip',
             stayCityId: 'jp-city-hiroshima',
