@@ -404,6 +404,7 @@
         "general": "일반",
         "history": "기록",
         "export": "내보내기",
+        "importExport": "가져오기 및 내보내기",
         "destination": "여행지",
         "debug": "디버그"
       },
@@ -474,6 +475,56 @@
           "title": "인쇄용 보기",
           "description": "PDF나 종이로 쓰기 좋은 인쇄용 버전을 열어요.",
           "action": "인쇄용 보기 열기"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "경로",
+          "stops": "체류지",
+          "activities": "일정",
+          "dayTrips": "당일치기",
+          "ideas": "아이디어"
+        },
+        "export": {
+          "title": "Google My Maps용으로 다운로드",
+          "description": "체류지, 경로, 일정, 아이디어를 KML 파일로 저장하세요. My Maps에서 지도를 만든 뒤 가져오기를 선택하면 됩니다.",
+          "action": ".kml 다운로드",
+          "skipped_other": "지도 위치가 없는 장소 {count}곳은 제외되었습니다."
+        },
+        "import": {
+          "title": "Google My Maps에서 가져오기",
+          "description": "‘링크가 있는 모든 사용자’로 공유된 지도의 링크를 붙여 넣으세요. 지도의 핀이 이 여행의 아이디어에 추가되어 날짜별로 계획할 수 있습니다.",
+          "linkLabel": "Google My Maps 링크",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "지도 불러오기",
+          "loading": "불러오는 중…",
+          "upload": "KML 또는 KMZ 파일 업로드"
+        },
+        "preview": {
+          "untitled": "제목 없는 지도",
+          "places_other": "장소 {count}곳",
+          "alreadyKept_other": "{count}곳은 이미 이 여행에 있습니다",
+          "shapes_other": "선 또는 도형 {count}개는 제외됩니다",
+          "add_other": "장소 {count}곳을 아이디어에 추가",
+          "nothingNew": "이 지도의 모든 장소가 이미 이 여행에 있습니다.",
+          "cancel": "취소"
+        },
+        "progress": "지도에서 장소를 찾는 중… {total}곳 중 {done}곳",
+        "done": {
+          "added_other": "장소 {count}곳을 아이디어에 추가했습니다.",
+          "unlocated_other": "{count}곳은 아직 지도에서 찾지 못했습니다. 일정에 넣을 때 위치를 지정할 수 있습니다.",
+          "importAnother": "다른 지도 가져오기",
+          "onMap": "이제 지도에 표시됩니다. 저장하거나 건너뛸 때까지 흐리게 보입니다."
+        },
+        "openIdeas": "아이디어 열기",
+        "errors": {
+          "invalid_link": "Google My Maps 링크가 아닙니다. My Maps에서 공유를 누르고 링크를 복사하세요. 링크에 /maps/d/가 포함되어 있습니다.",
+          "not_shared": "이 지도는 공유되어 있지 않습니다. My Maps에서 ‘링크가 있는 모든 사용자’로 공유하거나 지도를 KML 파일로 업로드하세요.",
+          "network": "Google 지도에 연결할 수 없습니다. 연결을 확인하고 다시 시도하세요.",
+          "not_kml": "이 파일은 지도가 아닙니다. My Maps 메뉴에서 KML/KMZ로 내보내기를 선택한 뒤 그 파일을 업로드하세요.",
+          "empty": "이 지도에는 가져올 핀이 없습니다.",
+          "unsupported_file": "파일을 읽을 수 없습니다. My Maps에서 내보낸 .kml 또는 .kmz 파일을 업로드하세요."
         }
       },
       "destination": {
@@ -752,7 +803,9 @@
       "showMyLocation": "내 위치 표시",
       "centerOnMyLocation": "내 위치로 이동",
       "myLocationLocating": "위치를 찾는 중…",
-      "myLocationBlocked": "위치 접근이 차단되어 있습니다. 브라우저 설정에서 허용해 주세요."
+      "myLocationBlocked": "위치 접근이 차단되어 있습니다. 브라우저 설정에서 허용해 주세요.",
+      "showIdeaMarkers": "지도에 아이디어 표시",
+      "hideIdeaMarkers": "지도에서 아이디어 숨기기"
     },
     "floatingMap": {
       "move": "떠 있는 지도 미리보기 이동",
@@ -793,6 +846,17 @@
       "occupySpace": "빈 공간 채우기",
       "stretchToFill": "빈 곳까지 늘리기",
       "reverseSelectedCities": "선택한 도시 순서 뒤집기"
+    },
+    "ideas": {
+      "keep": "저장",
+      "skip": "건너뛰기",
+      "keepNamed": "{title} 저장",
+      "skipNamed": "{title} 건너뛰기",
+      "reviewHint": "가져온 뒤 아직 검토하지 않은 아이디어입니다. 저장하면 지도에 선명하게 표시되고, 건너뛸 수도 있습니다.",
+      "popupLabel": "아이디어: {title}",
+      "statusToReview": "검토 필요",
+      "statusSaved": "저장됨",
+      "unsave": "저장 취소"
     }
   },
   "tripRouteShell": {

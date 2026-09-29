@@ -1,6 +1,7 @@
 import type mapboxgl from 'mapbox-gl';
 
 import { isMapboxMapUsable } from './mapboxBasemapUtils';
+import { MARKER_HOVER_Z_INDEX, MARKER_TOOLTIP_HIDDEN_TRANSFORM, MARKER_TOOLTIP_SHOWN_TRANSFORM } from './markerTooltip';
 
 export type MapCoordinates = {
   lat: number;
@@ -93,15 +94,18 @@ export const createMapboxOverlayMarker = ({
     event.stopPropagation();
     onClick?.();
   };
+  let restingZIndex = zIndex;
   const showTooltip = () => {
+    element.style.zIndex = `${MARKER_HOVER_Z_INDEX}`;
     if (!tooltipNode) return;
     tooltipNode.style.opacity = '1';
-    tooltipNode.style.transform = 'translate(-50%, calc(-100% - 14px))';
+    tooltipNode.style.transform = MARKER_TOOLTIP_SHOWN_TRANSFORM;
   };
   const hideTooltip = () => {
+    element.style.zIndex = `${restingZIndex}`;
     if (!tooltipNode) return;
     tooltipNode.style.opacity = '0';
-    tooltipNode.style.transform = 'translate(-50%, calc(-100% - 8px))';
+    tooltipNode.style.transform = MARKER_TOOLTIP_HIDDEN_TRANSFORM;
   };
   if (clickable) {
     element.addEventListener('click', handleClick);
@@ -144,6 +148,7 @@ export const createMapboxOverlayMarker = ({
         marker.setLngLat(toLngLat(updates.position));
       }
       if (updates.zIndex !== undefined) {
+        restingZIndex = updates.zIndex;
         element.style.zIndex = `${updates.zIndex}`;
       }
       if (updates.html !== undefined) {

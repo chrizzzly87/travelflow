@@ -404,6 +404,7 @@
         "general": "Général",
         "history": "Historique",
         "export": "Exporter",
+        "importExport": "Import et export",
         "destination": "Destination",
         "debug": "Débogage"
       },
@@ -474,6 +475,70 @@
           "title": "Version imprimable",
           "description": "Ouvre une version imprimable de ce voyage, pratique en PDF ou sur papier.",
           "action": "Ouvrir la version imprimable"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Itinéraire",
+          "stops": "Étapes",
+          "activities": "Activités",
+          "dayTrips": "Excursions d'une journée",
+          "ideas": "Idées"
+        },
+        "export": {
+          "title": "Télécharger pour Google My Maps",
+          "description": "Enregistrez vos étapes, votre itinéraire, vos activités et vos idées dans un fichier KML. Dans My Maps, créez une carte et choisissez Importer.",
+          "action": "Télécharger le .kml",
+          "skipped_one": "{count} lieu sans position sur la carte a été ignoré.",
+          "skipped_many": "{count} lieux sans position sur la carte ont été ignorés.",
+          "skipped_other": "{count} lieux sans position sur la carte ont été ignorés."
+        },
+        "import": {
+          "title": "Importer depuis Google My Maps",
+          "description": "Collez le lien d'une carte partagée avec « Tous les utilisateurs disposant du lien ». Ses repères rejoignent les idées de ce voyage, prêts à être placés sur un jour.",
+          "linkLabel": "Lien Google My Maps",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Charger la carte",
+          "loading": "Chargement…",
+          "upload": "Importer un fichier KML ou KMZ"
+        },
+        "preview": {
+          "untitled": "Carte sans titre",
+          "places_one": "{count} lieu",
+          "places_many": "{count} lieux",
+          "places_other": "{count} lieux",
+          "alreadyKept_one": "{count} figure déjà dans ce voyage",
+          "alreadyKept_many": "{count} figurent déjà dans ce voyage",
+          "alreadyKept_other": "{count} figurent déjà dans ce voyage",
+          "shapes_one": "{count} ligne ou forme est ignorée",
+          "shapes_many": "{count} lignes ou formes sont ignorées",
+          "shapes_other": "{count} lignes ou formes sont ignorées",
+          "add_one": "Ajouter {count} lieu aux idées",
+          "add_many": "Ajouter {count} lieux aux idées",
+          "add_other": "Ajouter {count} lieux aux idées",
+          "nothingNew": "Tout ce qui figure sur cette carte est déjà dans ce voyage.",
+          "cancel": "Annuler"
+        },
+        "progress": "Recherche des lieux sur la carte… {done} sur {total}",
+        "done": {
+          "added_one": "{count} lieu ajouté à vos idées.",
+          "added_many": "{count} lieux ajoutés à vos idées.",
+          "added_other": "{count} lieux ajoutés à vos idées.",
+          "unlocated_one": "{count} lieu n'a pas encore été trouvé sur la carte. Vous pourrez le préciser en le planifiant.",
+          "unlocated_many": "{count} lieux n'ont pas encore été trouvés sur la carte. Vous pourrez les préciser en les planifiant.",
+          "unlocated_other": "{count} lieux n'ont pas encore été trouvés sur la carte. Vous pourrez les préciser en les planifiant.",
+          "importAnother": "Importer une autre carte",
+          "onMap": "Elles sont maintenant sur la carte, estompées jusqu'à ce que vous les enregistriez ou les ignoriez."
+        },
+        "openIdeas": "Ouvrir les idées",
+        "errors": {
+          "invalid_link": "Ce n'est pas un lien Google My Maps. Dans My Maps, cliquez sur Partager et copiez le lien : il contient /maps/d/.",
+          "not_shared": "Cette carte n'est pas partagée. Dans My Maps, partagez-la avec « Tous les utilisateurs disposant du lien » ou importez-la en fichier KML.",
+          "network": "Impossible de joindre Google Maps. Vérifiez votre connexion et réessayez.",
+          "not_kml": "Ce fichier n'est pas une carte. Dans My Maps, ouvrez le menu, choisissez Exporter au format KML/KMZ et importez ce fichier.",
+          "empty": "Cette carte n'a aucun repère à importer.",
+          "unsupported_file": "Impossible de lire ce fichier. Importez un fichier .kml ou .kmz issu de My Maps."
         }
       },
       "destination": {
@@ -752,7 +817,9 @@
       "showMyLocation": "Afficher ma position",
       "centerOnMyLocation": "Centrer sur ma position",
       "myLocationLocating": "Recherche de ta position…",
-      "myLocationBlocked": "L’accès à la position est bloqué. Autorise-le dans les réglages du navigateur."
+      "myLocationBlocked": "L’accès à la position est bloqué. Autorise-le dans les réglages du navigateur.",
+      "showIdeaMarkers": "Afficher les idées sur la carte",
+      "hideIdeaMarkers": "Masquer les idées sur la carte"
     },
     "floatingMap": {
       "move": "Déplacer l'aperçu flottant de la carte",
@@ -793,6 +860,17 @@
       "occupySpace": "Occuper l'espace disponible",
       "stretchToFill": "Étirer pour combler l'espace",
       "reverseSelectedCities": "Inverser les villes sélectionnées"
+    },
+    "ideas": {
+      "keep": "Enregistrer",
+      "skip": "Ignorer",
+      "keepNamed": "Enregistrer {title}",
+      "skipNamed": "Ignorer {title}",
+      "reviewHint": "Importée et pas encore examinée. Enregistrez-la pour l'afficher pleinement sur la carte, ou ignorez-la.",
+      "popupLabel": "Idée : {title}",
+      "statusToReview": "À examiner",
+      "statusSaved": "Enregistrée",
+      "unsave": "Annuler l'enregistrement"
     }
   },
   "tripRouteShell": {

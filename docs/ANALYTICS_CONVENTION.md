@@ -171,6 +171,14 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__calendar_export--activities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--all` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__my_maps_export` | — | `{ trip_id, place_count, skipped_count }` | `useGoogleMyMapsActions.ts` |
+| `trip_view__my_maps_import--load` | — | `{ trip_id, origin, place_count }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--add` | — | `{ trip_id, origin, place_count, added_count, unlocated_count }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--error` | — | `{ trip_id, origin, code }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--open_ideas` | — | `{ trip_id }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__map_idea_markers--toggle` | — | `{ trip_id, active }` | `TripView.tsx` |
+| `trip_view__idea_review--keep` | — | `{ trip_id, recommendation_id }` | `TripDiscoverOverlay.tsx` |
+| `trip_view__idea_review--skip` | — | `{ trip_id, recommendation_id }` | `TripDiscoverOverlay.tsx` |
 
 ### Trip Agent
 | Event | Detail | Payload | File |

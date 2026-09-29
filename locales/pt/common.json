@@ -404,6 +404,7 @@
         "general": "Geral",
         "history": "Histórico",
         "export": "Exportar",
+        "importExport": "Importar e exportar",
         "destination": "Destino",
         "debug": "Depuração"
       },
@@ -474,6 +475,70 @@
           "title": "Versão para impressão",
           "description": "Abre uma versão pronta a imprimir desta viagem, ideal para PDF ou para levar em papel.",
           "action": "Abrir a versão para impressão"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Rota",
+          "stops": "Paradas",
+          "activities": "Atividades",
+          "dayTrips": "Bate-voltas",
+          "ideas": "Ideias"
+        },
+        "export": {
+          "title": "Baixar para o Google My Maps",
+          "description": "Salve suas paradas, rota, atividades e ideias em um arquivo KML. No My Maps, crie um mapa e escolha Importar.",
+          "action": "Baixar .kml",
+          "skipped_one": "{count} lugar sem posição no mapa ficou de fora.",
+          "skipped_many": "{count} lugares sem posição no mapa ficaram de fora.",
+          "skipped_other": "{count} lugares sem posição no mapa ficaram de fora."
+        },
+        "import": {
+          "title": "Importar do Google My Maps",
+          "description": "Cole o link de um mapa compartilhado com “Qualquer pessoa com o link”. Os marcadores vão para as ideias desta viagem, prontos para entrar em um dia.",
+          "linkLabel": "Link do Google My Maps",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Carregar mapa",
+          "loading": "Carregando…",
+          "upload": "Enviar um arquivo KML ou KMZ"
+        },
+        "preview": {
+          "untitled": "Mapa sem título",
+          "places_one": "{count} lugar",
+          "places_many": "{count} lugares",
+          "places_other": "{count} lugares",
+          "alreadyKept_one": "{count} já está nesta viagem",
+          "alreadyKept_many": "{count} já estão nesta viagem",
+          "alreadyKept_other": "{count} já estão nesta viagem",
+          "shapes_one": "{count} linha ou forma fica de fora",
+          "shapes_many": "{count} linhas ou formas ficam de fora",
+          "shapes_other": "{count} linhas ou formas ficam de fora",
+          "add_one": "Adicionar {count} lugar às ideias",
+          "add_many": "Adicionar {count} lugares às ideias",
+          "add_other": "Adicionar {count} lugares às ideias",
+          "nothingNew": "Tudo neste mapa já está nesta viagem.",
+          "cancel": "Cancelar"
+        },
+        "progress": "Procurando lugares no mapa… {done} de {total}",
+        "done": {
+          "added_one": "{count} lugar adicionado às suas ideias.",
+          "added_many": "{count} lugares adicionados às suas ideias.",
+          "added_other": "{count} lugares adicionados às suas ideias.",
+          "unlocated_one": "{count} lugar ainda não foi encontrado no mapa. Você pode defini-lo ao planejá-lo.",
+          "unlocated_many": "{count} lugares ainda não foram encontrados no mapa. Você pode defini-los ao planejá-los.",
+          "unlocated_other": "{count} lugares ainda não foram encontrados no mapa. Você pode defini-los ao planejá-los.",
+          "importAnother": "Importar outro mapa",
+          "onMap": "Elas já estão no mapa, esmaecidas até você salvar ou descartar."
+        },
+        "openIdeas": "Abrir ideias",
+        "errors": {
+          "invalid_link": "Esse não é um link do Google My Maps. No My Maps, clique em Compartilhar e copie o link; ele contém /maps/d/.",
+          "not_shared": "Este mapa não está compartilhado. No My Maps, compartilhe com “Qualquer pessoa com o link” ou envie o mapa como arquivo KML.",
+          "network": "Não foi possível acessar o Google Maps. Verifique sua conexão e tente de novo.",
+          "not_kml": "Este arquivo não é um mapa. No My Maps, abra o menu, escolha Exportar para KML/KMZ e envie esse arquivo.",
+          "empty": "Este mapa não tem marcadores para importar.",
+          "unsupported_file": "Não foi possível ler este arquivo. Envie um arquivo .kml ou .kmz do My Maps."
         }
       },
       "destination": {
@@ -752,7 +817,9 @@
       "showMyLocation": "Mostrar minha localização",
       "centerOnMyLocation": "Centralizar na minha localização",
       "myLocationLocating": "Encontrando sua localização…",
-      "myLocationBlocked": "O acesso à localização está bloqueado. Permita nas configurações do navegador."
+      "myLocationBlocked": "O acesso à localização está bloqueado. Permita nas configurações do navegador.",
+      "showIdeaMarkers": "Mostrar ideias no mapa",
+      "hideIdeaMarkers": "Ocultar ideias no mapa"
     },
     "floatingMap": {
       "move": "Mover a pré-visualização flutuante do mapa",
@@ -793,6 +860,17 @@
       "occupySpace": "Ocupar o espaço disponível",
       "stretchToFill": "Esticar para preencher",
       "reverseSelectedCities": "Inverter as cidades selecionadas"
+    },
+    "ideas": {
+      "keep": "Salvar",
+      "skip": "Descartar",
+      "keepNamed": "Salvar {title}",
+      "skipNamed": "Descartar {title}",
+      "reviewHint": "Importada e ainda não revisada. Salve para vê-la por completo no mapa ou descarte.",
+      "popupLabel": "Ideia: {title}",
+      "statusToReview": "Para revisar",
+      "statusSaved": "Salva",
+      "unsave": "Desfazer salvamento"
     }
   },
   "tripRouteShell": {

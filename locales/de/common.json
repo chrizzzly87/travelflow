@@ -404,6 +404,7 @@
         "general": "Allgemein",
         "history": "Verlauf",
         "export": "Export",
+        "importExport": "Import & Export",
         "destination": "Ziel",
         "debug": "Debug"
       },
@@ -474,6 +475,63 @@
           "title": "Drucklayout",
           "description": "Öffne eine druckoptimierte Ansicht dieses Trips für PDFs, Ausdrucke oder Reisebriefings.",
           "action": "Drucklayout öffnen"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Route",
+          "stops": "Stationen",
+          "activities": "Aktivitäten",
+          "dayTrips": "Tagesausflüge",
+          "ideas": "Ideen"
+        },
+        "export": {
+          "title": "Für Google My Maps herunterladen",
+          "description": "Speichere Stationen, Route, Aktivitäten und Ideen als KML-Datei. Erstelle in My Maps eine Karte und wähle „Importieren“.",
+          "action": ".kml herunterladen",
+          "skipped_one": "{count} Ort ohne Kartenposition wurde ausgelassen.",
+          "skipped_other": "{count} Orte ohne Kartenposition wurden ausgelassen."
+        },
+        "import": {
+          "title": "Aus Google My Maps importieren",
+          "description": "Füge den Link einer Karte ein, die für „Jeder mit dem Link“ freigegeben ist. Ihre Pins landen in den Ideen dieser Reise und warten darauf, eingeplant zu werden.",
+          "linkLabel": "Google-My-Maps-Link",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Karte laden",
+          "loading": "Lädt…",
+          "upload": "KML- oder KMZ-Datei hochladen"
+        },
+        "preview": {
+          "untitled": "Karte ohne Titel",
+          "places_one": "{count} Ort",
+          "places_other": "{count} Orte",
+          "alreadyKept_one": "{count} ist schon in dieser Reise",
+          "alreadyKept_other": "{count} sind schon in dieser Reise",
+          "shapes_one": "{count} Linie oder Fläche wird ausgelassen",
+          "shapes_other": "{count} Linien oder Flächen werden ausgelassen",
+          "add_one": "{count} Ort zu den Ideen hinzufügen",
+          "add_other": "{count} Orte zu den Ideen hinzufügen",
+          "nothingNew": "Alles auf dieser Karte ist schon in dieser Reise.",
+          "cancel": "Abbrechen"
+        },
+        "progress": "Orte werden auf der Karte gesucht… {done} von {total}",
+        "done": {
+          "added_one": "{count} Ort zu deinen Ideen hinzugefügt.",
+          "added_other": "{count} Orte zu deinen Ideen hinzugefügt.",
+          "unlocated_one": "{count} Ort wurde noch nicht auf der Karte gefunden. Du kannst ihn beim Einplanen festlegen.",
+          "unlocated_other": "{count} Orte wurden noch nicht auf der Karte gefunden. Du kannst sie beim Einplanen festlegen.",
+          "importAnother": "Weitere Karte importieren",
+          "onMap": "Sie sind jetzt auf der Karte – blass, bis du sie merkst oder überspringst."
+        },
+        "openIdeas": "Ideen öffnen",
+        "errors": {
+          "invalid_link": "Das ist kein Google-My-Maps-Link. Klicke in My Maps auf „Teilen“ und kopiere den Link – er enthält /maps/d/.",
+          "not_shared": "Diese Karte ist nicht freigegeben. Stell die Freigabe in My Maps auf „Jeder mit dem Link“ oder lade die Karte als KML-Datei hoch.",
+          "network": "Google Maps ist gerade nicht erreichbar. Prüf deine Verbindung und versuch es noch einmal.",
+          "not_kml": "Diese Datei ist keine Karte. Wähle in My Maps im Menü „In KML/KMZ exportieren“ und lade diese Datei hoch.",
+          "empty": "Auf dieser Karte gibt es keine Pins zum Importieren.",
+          "unsupported_file": "Diese Datei lässt sich nicht lesen. Lade eine .kml- oder .kmz-Datei aus My Maps hoch."
         }
       },
       "destination": {
@@ -752,7 +810,9 @@
       "showMyLocation": "Meinen Standort anzeigen",
       "centerOnMyLocation": "Auf meinen Standort zentrieren",
       "myLocationLocating": "Standort wird ermittelt…",
-      "myLocationBlocked": "Standortzugriff ist blockiert. Erlaube ihn in deinen Browsereinstellungen."
+      "myLocationBlocked": "Standortzugriff ist blockiert. Erlaube ihn in deinen Browsereinstellungen.",
+      "showIdeaMarkers": "Ideen auf der Karte einblenden",
+      "hideIdeaMarkers": "Ideen auf der Karte ausblenden"
     },
     "floatingMap": {
       "move": "Schwebende Kartenvorschau verschieben",
@@ -793,6 +853,17 @@
       "occupySpace": "Freien Platz ausfüllen",
       "stretchToFill": "Bis zur Lücke strecken",
       "reverseSelectedCities": "Ausgewählte Städte tauschen"
+    },
+    "ideas": {
+      "keep": "Merken",
+      "skip": "Überspringen",
+      "keepNamed": "{title} merken",
+      "skipNamed": "{title} überspringen",
+      "reviewHint": "Importiert und noch nicht geprüft. Merk dir die Idee, damit sie voll auf der Karte erscheint, oder überspring sie.",
+      "popupLabel": "Idee: {title}",
+      "statusToReview": "Zu prüfen",
+      "statusSaved": "Gemerkt",
+      "unsave": "Nicht mehr merken"
     }
   },
   "tripRouteShell": {

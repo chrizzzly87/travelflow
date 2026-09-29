@@ -404,6 +404,7 @@
         "general": "Ogólne",
         "history": "Historia",
         "export": "Eksport",
+        "importExport": "Import i eksport",
         "destination": "Kierunek",
         "debug": "Debugowanie"
       },
@@ -474,6 +475,77 @@
           "title": "Wersja do druku",
           "description": "Otwórz wersję tej podróży gotową do druku — wygodną w PDF albo na papierze.",
           "action": "Otwórz wersję do druku"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Trasa",
+          "stops": "Przystanki",
+          "activities": "Aktywności",
+          "dayTrips": "Wycieczki jednodniowe",
+          "ideas": "Pomysły"
+        },
+        "export": {
+          "title": "Pobierz dla Google My Maps",
+          "description": "Zapisz przystanki, trasę, aktywności i pomysły w pliku KML. W My Maps utwórz mapę i wybierz Importuj.",
+          "action": "Pobierz .kml",
+          "skipped_one": "Pominięto {count} miejsce bez pozycji na mapie.",
+          "skipped_few": "Pominięto {count} miejsca bez pozycji na mapie.",
+          "skipped_many": "Pominięto {count} miejsc bez pozycji na mapie.",
+          "skipped_other": "Pominięto {count} miejsca bez pozycji na mapie."
+        },
+        "import": {
+          "title": "Importuj z Google My Maps",
+          "description": "Wklej link do mapy udostępnionej opcją „Każda osoba mająca link”. Jej pinezki trafią do pomysłów tej podróży i będzie można je rozplanować na dni.",
+          "linkLabel": "Link do Google My Maps",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Wczytaj mapę",
+          "loading": "Wczytywanie…",
+          "upload": "Prześlij plik KML lub KMZ"
+        },
+        "preview": {
+          "untitled": "Mapa bez tytułu",
+          "places_one": "{count} miejsce",
+          "places_few": "{count} miejsca",
+          "places_many": "{count} miejsc",
+          "places_other": "{count} miejsca",
+          "alreadyKept_one": "{count} jest już w tej podróży",
+          "alreadyKept_few": "{count} są już w tej podróży",
+          "alreadyKept_many": "{count} jest już w tej podróży",
+          "alreadyKept_other": "{count} jest już w tej podróży",
+          "shapes_one": "{count} linia lub kształt zostanie pominięty",
+          "shapes_few": "{count} linie lub kształty zostaną pominięte",
+          "shapes_many": "{count} linii lub kształtów zostanie pominiętych",
+          "shapes_other": "{count} linii lub kształtów zostanie pominiętych",
+          "add_one": "Dodaj {count} miejsce do pomysłów",
+          "add_few": "Dodaj {count} miejsca do pomysłów",
+          "add_many": "Dodaj {count} miejsc do pomysłów",
+          "add_other": "Dodaj {count} miejsca do pomysłów",
+          "nothingNew": "Wszystko z tej mapy jest już w tej podróży.",
+          "cancel": "Anuluj"
+        },
+        "progress": "Szukamy miejsc na mapie… {done} z {total}",
+        "done": {
+          "added_one": "Dodano {count} miejsce do pomysłów.",
+          "added_few": "Dodano {count} miejsca do pomysłów.",
+          "added_many": "Dodano {count} miejsc do pomysłów.",
+          "added_other": "Dodano {count} miejsca do pomysłów.",
+          "unlocated_one": "{count} miejsca nie znaleziono jeszcze na mapie. Możesz je wskazać podczas planowania.",
+          "unlocated_few": "{count} miejsc nie znaleziono jeszcze na mapie. Możesz je wskazać podczas planowania.",
+          "unlocated_many": "{count} miejsc nie znaleziono jeszcze na mapie. Możesz je wskazać podczas planowania.",
+          "unlocated_other": "{count} miejsca nie znaleziono jeszcze na mapie. Możesz je wskazać podczas planowania.",
+          "importAnother": "Importuj inną mapę",
+          "onMap": "Są już na mapie — przygaszone, dopóki ich nie zapiszesz lub nie pominiesz."
+        },
+        "openIdeas": "Otwórz pomysły",
+        "errors": {
+          "invalid_link": "To nie jest link do Google My Maps. W My Maps kliknij Udostępnij i skopiuj link — zawiera /maps/d/.",
+          "not_shared": "Ta mapa nie jest udostępniona. W My Maps ustaw dostęp „Każda osoba mająca link” albo prześlij mapę jako plik KML.",
+          "network": "Nie udało się połączyć z Google Maps. Sprawdź połączenie i spróbuj ponownie.",
+          "not_kml": "Ten plik nie jest mapą. W My Maps otwórz menu, wybierz Eksportuj do KML/KMZ i prześlij ten plik.",
+          "empty": "Na tej mapie nie ma pinezek do zaimportowania.",
+          "unsupported_file": "Nie udało się odczytać pliku. Prześlij plik .kml lub .kmz z My Maps."
         }
       },
       "destination": {
@@ -752,7 +824,9 @@
       "showMyLocation": "Pokaż moją lokalizację",
       "centerOnMyLocation": "Wyśrodkuj na mojej lokalizacji",
       "myLocationLocating": "Ustalanie Twojej lokalizacji…",
-      "myLocationBlocked": "Dostęp do lokalizacji jest zablokowany. Zezwól na niego w ustawieniach przeglądarki."
+      "myLocationBlocked": "Dostęp do lokalizacji jest zablokowany. Zezwól na niego w ustawieniach przeglądarki.",
+      "showIdeaMarkers": "Pokaż pomysły na mapie",
+      "hideIdeaMarkers": "Ukryj pomysły na mapie"
     },
     "floatingMap": {
       "move": "Przesuń pływający podgląd mapy",
@@ -793,6 +867,17 @@
       "occupySpace": "Zajmij wolne miejsce",
       "stretchToFill": "Rozciągnij do wypełnienia",
       "reverseSelectedCities": "Zamień kolejność wybranych miast"
+    },
+    "ideas": {
+      "keep": "Zapisz",
+      "skip": "Pomiń",
+      "keepNamed": "Zapisz {title}",
+      "skipNamed": "Pomiń {title}",
+      "reviewHint": "Zaimportowane i jeszcze nieprzejrzane. Zapisz, aby było w pełni widoczne na mapie, albo pomiń.",
+      "popupLabel": "Pomysł: {title}",
+      "statusToReview": "Do przejrzenia",
+      "statusSaved": "Zapisane",
+      "unsave": "Cofnij zapisanie"
     }
   },
   "tripRouteShell": {
