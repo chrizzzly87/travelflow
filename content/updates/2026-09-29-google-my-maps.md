@@ -1,11 +1,11 @@
 ---
-id: rel-2026-09-28-google-my-maps
-version: v0.198.0
+id: rel-2026-09-29-google-my-maps
+version: v0.203.0
 title: "Your Google My Maps, and your ideas on the map"
-date: 2026-09-28
-published_at: 2026-09-28T12:00:00Z
-status: draft
-notify_in_app: false
+date: 2026-09-29
+published_at: 2026-09-29T08:00:00Z
+status: published
+notify_in_app: true
 in_app_hours: 24
 summary: "Import a Google My Maps map into a trip, review its places right on the map, and download a trip as a map file for My Maps."
 ---

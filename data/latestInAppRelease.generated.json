@@ -1,13 +1,13 @@
 {
   "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
   "release": {
-    "id": "rel-2026-09-27-activities-day-trips",
-    "version": "v0.197.0",
-    "title": "Day trips, and activities that know their stay",
-    "date": "2026-09-28",
-    "summary": "Plan day trips that leave your stay and come back the same day, see them on the map with their own route, and add activities from one tidy button.",
+    "id": "rel-2026-09-29-google-my-maps",
+    "version": "v0.203.0",
+    "title": "Your Google My Maps, and your ideas on the map",
+    "date": "2026-09-29",
+    "summary": "Import a Google My Maps map into a trip, review its places right on the map, and download a trip as a map file for My Maps.",
     "status": "published",
-    "publishedAt": "2026-09-28T05:12:34Z",
+    "publishedAt": "2026-09-29T08:00:00Z",
     "notifyInApp": true,
     "inAppHours": 24,
     "items": [
@@ -15,81 +15,93 @@
         "visibleOnWebsite": true,
         "typeLabel": "New feature",
         "typeKey": "new",
-        "text": "🧭 Plan day trips: mark an outing like Sintra from Lisbon as a day trip and it gets its own marker and a dashed route out and back on the map."
+        "text": "📍 Paste a Google My Maps link and its pins land in your trip ideas, ready to plan onto a day."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "New feature",
         "typeKey": "new",
-        "text": "🏨 Every activity now belongs to a stay, and you can move it to another stay and day right from its details."
+        "text": "💡 Show your trip ideas on the map with one tap: new, unreviewed ideas appear faded, and ideas you save show in full."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "New feature",
         "typeKey": "new",
-        "text": "✨ New AI-planned trips suggest day trips from your bases instead of squeezing them in as extra stops."
+        "text": "🗨️ Tap an idea on the map to see its details, links and directions, and save or skip it right there."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "New feature",
         "typeKey": "new",
-        "text": "💬 The trip assistant can add, change and remove day trips for you, with ready-made day-trip prompts in its / menu that follow what you have selected."
+        "text": "✅ Save or skip imported ideas from the map or the ideas list; skipped ones leave the map and stay out of later imports."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🗂️ Upload a KML or KMZ file from My Maps when a map isn't shared publicly."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🗺️ Download your trip as a map file for Google My Maps, with separate layers for the route, stops, activities, day trips and ideas."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Improved",
         "typeKey": "improved",
-        "text": "🔗 Select a day trip or its stay in the calendar and a dashed line shows where it leaves from; day trips also carry their stay's colour."
+        "text": "🔎 Pins saved with only an address are found on the map automatically while importing."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Improved",
         "typeKey": "improved",
-        "text": "➕ The calendar's activities row has a single add button, like stays and transfers, and starts on the stay you have selected."
+        "text": "♻️ Importing the same map again only adds what's new, and skips places you've already planned."
       },
       {
         "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "🔁 A day trip can end in a different stay when your plans need it, tucked away under more options."
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "🏷️ Pin names on the map now appear right above the pin you point at, on top of neighbouring pins."
       },
       {
         "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "🗺️ Example trips now show their classic day trips on the map, and the Portugal road trip visits Sintra as a day trip from Lisbon."
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "☁️ Ideas you save are now stored with your trip, so they show up on every device and survive a reload."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Added optional `stayCityId`, `activityKind` and `dayTripReturnCityId` item fields with one shared stay resolver, replacing three date-window copies."
+        "text": "Import and export live in the trip details dialog; the tab is now called Import & export for editors."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Added a top-level `dayTrips` list to the itinerary schemas and prompts, a forgiving preparation step, and one shared placement builder for the worker, client and benchmark parsers."
+        "text": "KML parsing, a dependency-free KMZ reader and the trip KML writer, covered by unit tests with a synthetic My Maps fixture."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "The AI benchmark reports day-trip counts and downgraded day trips as non-blocking checks."
+        "text": "New analytics events for the My Maps export, load, add, error and open-ideas actions, the ideas map toggle, idea pin opens and keep/skip decisions."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Trip Agent schemas accept stay and day-trip fields plus the location resolver's provenance fields; unknown city references are rejected with a fixable hint."
+        "text": "Idea changes (deck swipes, imports, keep/skip) now go through the trip commit, not only the local save; ideas that only reached one device are written back once when the trip opens there."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Documented the model and every affected surface in `docs/ACTIVITIES_AND_DAY_TRIPS.md`."
+        "text": "Saved ideas carry an optional review state (to review / skipped); the ideas layer's on/off choice is remembered per trip in a registered browser key."
       }
     ],
-    "sourcePath": "../content/updates/2026-09-27-activities-day-trips.md"
+    "sourcePath": "../content/updates/2026-09-29-google-my-maps.md"
   }
 }

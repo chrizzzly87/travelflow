@@ -1605,9 +1605,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const ideaLayerAvailable = Boolean(onShowIdeaMarkersChange) && ideaMarkers.length > 0;
     const ideaMarkersVisible = ideaLayerAvailable && showIdeaMarkers;
     const ideaMarkersRef = useRef(ideaMarkers);
-    ideaMarkersRef.current = ideaMarkers;
     const ideaMarkersVisibleRef = useRef(ideaMarkersVisible);
-    ideaMarkersVisibleRef.current = ideaMarkersVisible;
     const ideaMarkerHandlesRef = useRef<OverlayMarkerHandle[]>([]);
     const [popupIdeaId, setPopupIdeaId] = useState<string | null>(null);
     const [popupActivityId, setPopupActivityId] = useState<string | null>(null);
@@ -1893,6 +1891,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         activityMarkersEnabledRef.current = activityMarkersEnabled;
     }, [activityMarkersEnabled]);
+
+    // Declared before the drawing pass, so it reads this render's ideas.
+    useEffect(() => {
+        ideaMarkersRef.current = ideaMarkers;
+        ideaMarkersVisibleRef.current = ideaMarkersVisible;
+    }, [ideaMarkers, ideaMarkersVisible]);
 
     useEffect(() => {
         mapZoomLevelRef.current = mapZoomLevel;
