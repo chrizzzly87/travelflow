@@ -402,6 +402,7 @@
         "general": "عمومی",
         "history": "تاریخ",
         "export": "برآمد",
+        "importExport": "امپورٹ اور ایکسپورٹ",
         "destination": "منزل",
         "debug": "ڈیبگ"
       },
@@ -472,6 +473,63 @@
           "title": "پرنٹ کا خاکہ",
           "description": "اس سفر کا پرنٹ کے لیے موزوں نسخہ کھولیں — پی ڈی ایف یا کاغذ کے لیے مفید۔",
           "action": "پرنٹ کا خاکہ کھولیں"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "راستہ",
+          "stops": "قیام گاہیں",
+          "activities": "سرگرمیاں",
+          "dayTrips": "ایک دن کے سفر",
+          "ideas": "آئیڈیاز"
+        },
+        "export": {
+          "title": "Google My Maps کے لیے ڈاؤن لوڈ کریں",
+          "description": "اپنی قیام گاہیں، راستہ، سرگرمیاں اور آئیڈیاز KML فائل میں محفوظ کریں۔ My Maps میں نقشہ بنائیں اور Import منتخب کریں۔",
+          "action": ".kml ڈاؤن لوڈ کریں",
+          "skipped_one": "نقشے پر مقام کے بغیر {count} جگہ شامل نہیں کی گئی۔",
+          "skipped_other": "نقشے پر مقام کے بغیر {count} جگہیں شامل نہیں کی گئیں۔"
+        },
+        "import": {
+          "title": "Google My Maps سے امپورٹ کریں",
+          "description": "ایسے نقشے کا لنک پیسٹ کریں جو “لنک رکھنے والا کوئی بھی” کے ساتھ شیئر ہو۔ اس کے پن اس سفر کے آئیڈیاز میں شامل ہو جائیں گے، کسی دن میں پلان کرنے کے لیے تیار۔",
+          "linkLabel": "Google My Maps لنک",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "نقشہ لوڈ کریں",
+          "loading": "لوڈ ہو رہا ہے…",
+          "upload": "KML یا KMZ فائل اپ لوڈ کریں"
+        },
+        "preview": {
+          "untitled": "بغیر عنوان کا نقشہ",
+          "places_one": "{count} جگہ",
+          "places_other": "{count} جگہیں",
+          "alreadyKept_one": "{count} پہلے سے اس سفر میں ہے",
+          "alreadyKept_other": "{count} پہلے سے اس سفر میں ہیں",
+          "shapes_one": "{count} لکیر یا شکل شامل نہیں ہوگی",
+          "shapes_other": "{count} لکیریں یا شکلیں شامل نہیں ہوں گی",
+          "add_one": "{count} جگہ آئیڈیاز میں شامل کریں",
+          "add_other": "{count} جگہیں آئیڈیاز میں شامل کریں",
+          "nothingNew": "اس نقشے کی ہر چیز پہلے سے اس سفر میں ہے۔",
+          "cancel": "منسوخ کریں"
+        },
+        "progress": "نقشے پر جگہیں تلاش ہو رہی ہیں… {total} میں سے {done}",
+        "done": {
+          "added_one": "{count} جگہ آپ کے آئیڈیاز میں شامل ہو گئی۔",
+          "added_other": "{count} جگہیں آپ کے آئیڈیاز میں شامل ہو گئیں۔",
+          "unlocated_one": "{count} جگہ ابھی نقشے پر نہیں ملی۔ پلان کرتے وقت آپ اس کا مقام طے کر سکتے ہیں۔",
+          "unlocated_other": "{count} جگہیں ابھی نقشے پر نہیں ملیں۔ پلان کرتے وقت آپ ان کا مقام طے کر سکتے ہیں۔",
+          "importAnother": "دوسرا نقشہ امپورٹ کریں",
+          "onMap": "اب یہ نقشے پر ہیں، محفوظ کرنے یا چھوڑنے تک ہلکے نظر آئیں گے۔"
+        },
+        "openIdeas": "آئیڈیاز کھولیں",
+        "errors": {
+          "invalid_link": "یہ Google My Maps کا لنک نہیں ہے۔ My Maps میں Share پر کلک کریں اور لنک کاپی کریں؛ اس میں /maps/d/ ہوتا ہے۔",
+          "not_shared": "یہ نقشہ شیئر نہیں ہے۔ My Maps میں شیئرنگ “لنک رکھنے والا کوئی بھی” پر رکھیں، یا نقشہ KML فائل کے طور پر اپ لوڈ کریں۔",
+          "network": "Google Maps سے رابطہ نہیں ہو سکا۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
+          "not_kml": "یہ فائل نقشہ نہیں ہے۔ My Maps میں مینو کھولیں، Export to KML/KMZ منتخب کریں اور وہ فائل اپ لوڈ کریں۔",
+          "empty": "اس نقشے میں امپورٹ کرنے کے لیے کوئی پن نہیں ہے۔",
+          "unsupported_file": "یہ فائل پڑھی نہیں جا سکی۔ My Maps سے .kml یا .kmz فائل اپ لوڈ کریں۔"
         }
       },
       "destination": {
@@ -741,7 +799,9 @@
       "showLabels": "شہروں کے نام دکھائیں",
       "hideLabels": "شہروں کے نام چھپائیں",
       "showActivityMarkers": "سرگرمی پن دکھائیں",
-      "hideActivityMarkers": "سرگرمی پن چھپائیں"
+      "hideActivityMarkers": "سرگرمی پن چھپائیں",
+      "showIdeaMarkers": "نقشے پر آئیڈیاز دکھائیں",
+      "hideIdeaMarkers": "نقشے پر آئیڈیاز چھپائیں"
     },
     "floatingMap": {
       "move": "تیرتے نقشے کا پیش منظر ہٹائیں",
@@ -782,6 +842,17 @@
       "occupySpace": "دستیاب جگہ بھریں",
       "stretchToFill": "خالی جگہ تک پھیلائیں",
       "reverseSelectedCities": "منتخب شہروں کی ترتیب الٹیں"
+    },
+    "ideas": {
+      "keep": "محفوظ کریں",
+      "skip": "چھوڑیں",
+      "keepNamed": "{title} محفوظ کریں",
+      "skipNamed": "{title} چھوڑیں",
+      "reviewHint": "امپورٹ ہوا اور ابھی دیکھا نہیں گیا۔ اسے محفوظ کریں تاکہ نقشے پر پوری طرح نظر آئے، یا چھوڑ دیں۔",
+      "popupLabel": "آئیڈیا: {title}",
+      "statusToReview": "دیکھنا باقی",
+      "statusSaved": "محفوظ",
+      "unsave": "محفوظ کرنا واپس لیں"
     }
   },
   "tripRouteShell": {

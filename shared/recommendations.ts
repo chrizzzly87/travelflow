@@ -110,6 +110,11 @@ export interface SavedRecommendation {
     costBand: CostBand | null;
     typicalDurationMinutes: number | null;
     sources: RecommendationSource[];
+    /**
+     * `pending` arrived without a decision (an import), `saved` was saved,
+     * `skipped` was declined. Missing predates review; see `shared/tripIdeas.ts`.
+     */
+    review?: 'pending' | 'saved' | 'skipped';
 }
 
 export interface RecommendationDataset {

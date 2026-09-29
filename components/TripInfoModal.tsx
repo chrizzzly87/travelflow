@@ -127,6 +127,8 @@ export interface TripInfoModalProps {
     onExportCitiesCalendar?: () => void;
     onExportAllCalendar?: () => void;
     onOpenPrintLayout?: () => void;
+    /** Google My Maps import and export, built by the trip view. */
+    myMapsPanel?: React.ReactNode;
 }
 
 interface SummaryCardProps {
@@ -229,6 +231,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     onExportCitiesCalendar,
     onExportAllCalendar,
     onOpenPrintLayout,
+    myMapsPanel,
 }) => {
     const { t } = useTranslation('common');
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
@@ -390,7 +393,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         </TabsTrigger>
                         <TabsTrigger value="export" className={tabClassName}>
                             <FileDown size={15} />
-                            <span>{t('tripView.infoDialog.tabs.export')}</span>
+                            <span>{t(canEdit && myMapsPanel ? 'tripView.infoDialog.tabs.importExport' : 'tripView.infoDialog.tabs.export')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="destination" className={tabClassName}>
                             <Globe2 size={15} />
@@ -748,6 +751,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 onAction={onOpenPrintLayout}
                             />
                         </div>
+                        {myMapsPanel}
                     </TabsContent>
 
                     <TabsContent value="destination" className="space-y-6">

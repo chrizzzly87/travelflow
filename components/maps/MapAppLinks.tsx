@@ -16,7 +16,7 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analytic
 
 export interface MapAppLinksProps extends MapDeepLinkTarget {
   /** Where the links are rendered, sent as an analytics payload property. */
-  source: 'map_popup' | 'details_panel' | 'stay';
+  source: 'map_popup' | 'idea_popup' | 'details_panel' | 'stay';
   size?: 'sm' | 'md';
   className?: string;
   /**

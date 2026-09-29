@@ -14,6 +14,7 @@ import { SUPPORTED_LOCALES } from '../../config/locales';
  * here is explicit `*One` / `*Many` keys, never an ICU plural block.
  */
 const TRANSLATED_BLOCKS = ['connectivity', 'tripView'] as const;
+const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
 const ICU_COMPLEX_SYNTAX = /\{\s*\w+\s*,\s*(plural|select|selectordinal)\s*,/;
 
 /**
@@ -36,6 +37,7 @@ const BRAND_NAMES = new Set([
   'tripView.mapCustomize.handoff.apple',
   'tripView.mapCustomize.renderer.google',
   'tripView.mapCustomize.renderer.mapbox',
+  'tripView.infoDialog.myMaps.title',
 ]);
 
 /**
@@ -83,7 +85,14 @@ const otherLocales = SUPPORTED_LOCALES.filter((locale) => locale !== 'en');
 describe('connectivity and tripView locale coverage', () => {
   it.each(otherLocales)('%s covers every connectivity and tripView key', (locale) => {
     const localeStrings = scopedStrings(locale);
-    const missing = [...englishStrings.keys()].filter((key) => !localeStrings.has(key));
+    // i18next plural suffixes follow each language's CLDR categories, so Korean
+    // has `key_other` where English has `key_one` too. Any form of the same
+    // plural key covers it; `pnpm i18n:validate` checks the exact set.
+    const pluralBase = (key: string): string => key.replace(PLURAL_SUFFIX, '');
+    const localeBases = new Set([...localeStrings.keys()].map(pluralBase));
+    const missing = [...englishStrings.keys()].filter((key) => (
+      !localeStrings.has(key) && !(PLURAL_SUFFIX.test(key) && localeBases.has(pluralBase(key)))
+    ));
     expect(missing, `${locale} is missing: ${missing.join(', ')}`).toEqual([]);
   });
 
