@@ -214,6 +214,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_user_location_v1',
+      purpose: 'Remembers whether you turned on your own position on trip maps, and your last known position on this device.',
+      duration: 'Persistent until you turn it off or clear site data',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Only written after you allow location access. Never sent to TravelFlow servers.',
+    },
+    {
       name: 'tf_route_cache_v1',
       purpose: 'Caches route calculations to reduce repeat map API requests.',
       duration: 'Up to 24 hours',

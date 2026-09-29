@@ -434,6 +434,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     fitToRouteKey={tripId}
                     isPaywalled={isPaywallLocked}
                     viewTransitionName={effectiveMapViewTransitionName}
+                    showUserLocation
+                    analyticsTripId={tripId}
                 />
               </Suspense>
             </GoogleMapsApiGate>

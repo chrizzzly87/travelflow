@@ -751,6 +751,11 @@
         "minimalistic": "مینیمال",
         "mine": "مال من",
         "customNote": "ترکیب تنظیمات خودتان."
+      },
+      "myLocation": {
+        "blocked": "دسترسی به موقعیت در تنظیمات مرورگر مسدود است.",
+        "description": "هنگام سفر نشان می‌دهد کجا هستید. فقط روی همین دستگاه ذخیره می‌شود.",
+        "label": "موقعیت من"
       }
     },
     "activityPlan": {
@@ -800,6 +805,10 @@
       "hideLabels": "پنهان کردن نام شهرها",
       "showActivityMarkers": "نمایش پین‌های فعالیت",
       "hideActivityMarkers": "پنهان کردن پین‌های فعالیت",
+      "showMyLocation": "نمایش موقعیت من",
+      "centerOnMyLocation": "مرکز روی موقعیت من",
+      "myLocationLocating": "در حال یافتن موقعیت شما…",
+      "myLocationBlocked": "دسترسی به موقعیت مسدود است. آن را در تنظیمات مرورگر مجاز کنید.",
       "showIdeaMarkers": "نمایش ایده‌ها روی نقشه",
       "hideIdeaMarkers": "پنهان کردن ایده‌ها روی نقشه"
     },

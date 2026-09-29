@@ -760,6 +760,11 @@
         "minimalistic": "Minimal",
         "mine": "Le mien",
         "customNote": "Votre propre combinaison de réglages."
+      },
+      "myLocation": {
+        "blocked": "L’accès à la position est bloqué dans les réglages du navigateur.",
+        "description": "Affiche où tu te trouves pendant ton voyage. Enregistré uniquement sur cet appareil.",
+        "label": "Ma position"
       }
     },
     "activityPlan": {
@@ -809,6 +814,10 @@
       "hideLabels": "Masquer les noms des villes",
       "showActivityMarkers": "Afficher les repères d'activités",
       "hideActivityMarkers": "Masquer les repères d'activités",
+      "showMyLocation": "Afficher ma position",
+      "centerOnMyLocation": "Centrer sur ma position",
+      "myLocationLocating": "Recherche de ta position…",
+      "myLocationBlocked": "L’accès à la position est bloqué. Autorise-le dans les réglages du navigateur.",
       "showIdeaMarkers": "Afficher les idées sur la carte",
       "hideIdeaMarkers": "Masquer les idées sur la carte"
     },

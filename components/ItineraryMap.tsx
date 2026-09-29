@@ -15,12 +15,20 @@ import {
     RouteMode,
     RouteStatus,
 } from '../types';
-import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Lightbulb, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Lightbulb, Locate, LocateFixed, LocateOff, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
-import { getAnalyticsDebugAttributes } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { enableUserLocation } from '../services/userLocationService';
+import { useTripUserLocation } from '../hooks/useTripUserLocation';
+import {
+    USER_LOCATION_MARKER_Z_INDEX,
+    USER_LOCATION_RECENTER_MIN_ZOOM,
+    buildUserLocationMarkerHtml,
+    createGoogleUserLocationOverlay,
+} from './maps/userLocationMarker';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { buildActivityIconMarkup } from './maps/activityIconMarkup';
@@ -60,7 +68,7 @@ import {
     resolveTripMapProjectedCityLabelLayouts,
     type TripMapProjectedCityLabelLayout,
 } from './maps/tripMapCityLabelLayout';
-import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
+import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig, type RuntimeMarkerHandle } from './maps/mapboxOverlayRuntime';
 import {
     resolveTripMapCityLabelOffsetPx,
     resolveTripMapDarkRoutePresentation,
@@ -171,6 +179,13 @@ interface ItineraryMapProps {
     routeLineWeight?: number;
     /** Localised by the owner: this component has no translation context. */
     customizeLabel?: string;
+    /**
+     * Offer the traveller's own position. Still only shown while the trip is
+     * running or the visitor appears to be in one of its countries.
+     */
+    showUserLocation?: boolean;
+    /** Trip id for analytics on the location control. */
+    analyticsTripId?: string;
 }
 
 const MAP_STYLES = {
@@ -1552,7 +1567,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     mapColorMode = DEFAULT_MAP_COLOR_MODE,
     onMapColorModeChange,
     isPaywalled = false,
-    viewTransitionName
+    viewTransitionName,
+    showUserLocation = false,
+    analyticsTripId,
 }) => {
     const { t } = useTranslation('common');
     const customizeLabel = customizeLabelProp ?? t('tripView.mapCustomize.open');
@@ -1614,6 +1631,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
+    const userLocation = useTripUserLocation({
+        enabled: showUserLocation && !isPaywalled,
+        items,
+        todayDayOffset,
+    });
+    const userLocationFix = userLocation.isOffered ? userLocation.fix : null;
+    const userLocationFixRef = useRef(userLocationFix);
+    userLocationFixRef.current = userLocationFix;
+    const userLocationMarkerRef = useRef<RuntimeMarkerHandle | null>(null);
+    const pendingUserLocationRecenterRef = useRef(false);
+    const [isUserLocationInView, setIsUserLocationInView] = useState(true);
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
@@ -3456,6 +3484,117 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => layer.setMap(null);
     }, [isMapboxBasemapEnabled, mapInitialized, showTransitLinesLayer]);
 
+    /**
+     * The traveller's own dot. Owned by its own effect rather than the marker
+     * rebuild above: that one tears everything down whenever the route changes,
+     * while this dot only ever moves. Mapbox draws markers on its own canvas, so
+     * the dot follows whichever surface is showing.
+     */
+    const hasUserLocationFix = Boolean(userLocationFix);
+    useEffect(() => {
+        if (!hasUserLocationFix || !mapInitialized) return;
+        const fix = userLocationFixRef.current;
+        if (!fix) return;
+        const position = { lat: fix.lat, lng: fix.lng };
+        const html = buildUserLocationMarkerHtml({ isLive: fix.isLive });
+        let handle: RuntimeMarkerHandle | null = null;
+        if (isMapboxBasemapEnabled) {
+            const mapboxMap = mapboxMapRef.current;
+            const mapboxModule = mapboxModuleRef.current;
+            if (!isMapboxSurfaceReady || !mapboxMap || !mapboxModule) return;
+            handle = createMapboxOverlayMarker({
+                map: mapboxMap,
+                mapboxModule,
+                position,
+                html,
+                zIndex: USER_LOCATION_MARKER_Z_INDEX,
+                centerAnchor: true,
+            });
+        } else {
+            const googleMap = googleMapRef.current as google.maps.Map | null;
+            if (!googleMap || !window.google?.maps?.OverlayView) return;
+            handle = createGoogleUserLocationOverlay({ map: googleMap, position, html });
+        }
+        userLocationMarkerRef.current = handle;
+        return () => {
+            handle?.setMap(null);
+            if (userLocationMarkerRef.current === handle) userLocationMarkerRef.current = null;
+        };
+    }, [hasUserLocationFix, isMapboxBasemapEnabled, isMapboxSurfaceReady, mapInitialized]);
+
+    const userLocationLat = userLocationFix?.lat;
+    const userLocationLng = userLocationFix?.lng;
+    const userLocationIsLive = userLocationFix?.isLive ?? false;
+
+    const recenterOnUserLocation = useCallback((position: { lat: number; lng: number }) => {
+        const googleMap = googleMapRef.current as google.maps.Map | null;
+        if (!googleMap) return;
+        googleMap.panTo(position);
+        const zoom = googleMap.getZoom?.();
+        if (!Number.isFinite(zoom) || Number(zoom) < USER_LOCATION_RECENTER_MIN_ZOOM) {
+            googleMap.setZoom(USER_LOCATION_RECENTER_MIN_ZOOM);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof userLocationLat !== 'number' || typeof userLocationLng !== 'number') return;
+        const position = { lat: userLocationLat, lng: userLocationLng };
+        userLocationMarkerRef.current?.update({
+            position,
+            html: buildUserLocationMarkerHtml({ isLive: userLocationIsLive }),
+        });
+        // A tap on the control before the first fix arrived: take the traveller
+        // there as soon as a live position exists.
+        if (userLocationIsLive && pendingUserLocationRecenterRef.current) {
+            pendingUserLocationRecenterRef.current = false;
+            recenterOnUserLocation(position);
+        }
+    }, [recenterOnUserLocation, userLocationIsLive, userLocationLat, userLocationLng]);
+
+    /** Whether the dot is on screen, so the control can call attention to itself when it is not. */
+    useEffect(() => {
+        if (typeof userLocationLat !== 'number' || typeof userLocationLng !== 'number' || !mapInitialized) return;
+        const googleMap = googleMapRef.current as google.maps.Map | null;
+        const mapsEvent = window.google?.maps?.event;
+        if (!googleMap || !mapsEvent) return;
+        const position = { lat: userLocationLat, lng: userLocationLng };
+        const check = () => {
+            const bounds = googleMap.getBounds?.();
+            if (!bounds) return;
+            setIsUserLocationInView(bounds.contains(position));
+        };
+        check();
+        const listener = googleMap.addListener('idle', check);
+        return () => mapsEvent.removeListener(listener);
+    }, [mapInitialized, userLocationLat, userLocationLng]);
+
+    const handleUserLocationControl = () => {
+        const fix = userLocationFixRef.current;
+        if (userLocation.enabled !== true || userLocation.status === 'denied' || !fix) {
+            pendingUserLocationRecenterRef.current = true;
+            trackEvent('trip_view__map_user_location--enable', {
+                trip_id: analyticsTripId,
+                surface: 'map_controls',
+            });
+            enableUserLocation();
+            return;
+        }
+        trackEvent('trip_view__map_user_location--recenter', {
+            trip_id: analyticsTripId,
+            surface: 'map_controls',
+            in_view: isUserLocationInView,
+        });
+        recenterOnUserLocation({ lat: fix.lat, lng: fix.lng });
+    };
+    const isUserLocationOutOfView = Boolean(userLocationFix) && !isUserLocationInView;
+    const userLocationControlLabel = userLocation.status === 'denied'
+        ? t('tripView.mapControls.myLocationBlocked')
+        : userLocation.status === 'locating' && !userLocationFix
+            ? t('tripView.mapControls.myLocationLocating')
+            : userLocationFix
+                ? t('tripView.mapControls.centerOnMyLocation')
+                : t('tripView.mapControls.showMyLocation');
+
     // Fit Bounds
     const handleFit = () => {
         scheduleFitWhenViewportReady();
@@ -3858,6 +3997,38 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             aria-label={isExpanded ? t('tripView.mapControls.shrinkMap') : t('tripView.mapControls.expandMap')}
                         >
                             {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                        </Button>
+                    )}
+
+                    {userLocation.isOffered && (
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
+                            onClick={handleUserLocationControl}
+                            disabled={mapActionsDisabled}
+                            data-testid="map-user-location-button"
+                            data-floating-map-control="true"
+                            data-out-of-view={isUserLocationOutOfView ? 'true' : undefined}
+                            className={isUserLocationOutOfView
+                                ? 'relative rounded-lg border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-300'
+                                : 'relative rounded-lg'}
+                            aria-label={userLocationControlLabel}
+                            title={userLocationControlLabel}
+                            {...getAnalyticsDebugAttributes(
+                                userLocationFix ? 'trip_view__map_user_location--recenter' : 'trip_view__map_user_location--enable',
+                                { surface: 'map_controls' },
+                            )}
+                        >
+                            {userLocation.status === 'denied'
+                                ? <LocateOff size={18} />
+                                : userLocationFix
+                                    ? <LocateFixed size={18} className={userLocation.status === 'locating' ? 'animate-pulse' : undefined} />
+                                    : <Locate size={18} className={userLocation.status === 'locating' ? 'animate-pulse' : undefined} />}
+                            {isUserLocationOutOfView && (
+                                <span aria-hidden="true" className="absolute -top-1 -end-1 size-2.5 rounded-full border-2 border-card bg-blue-500" />
+                            )}
+                            <span className="sr-only">{userLocationControlLabel}</span>
                         </Button>
                     )}
 

@@ -767,6 +767,11 @@
         "minimalistic": "Minimalny",
         "mine": "Mój",
         "customNote": "Twoje własne połączenie ustawień."
+      },
+      "myLocation": {
+        "blocked": "Dostęp do lokalizacji jest zablokowany w ustawieniach przeglądarki.",
+        "description": "Pokazuje, gdzie jesteś podczas podróży. Zapisywane tylko na tym urządzeniu.",
+        "label": "Moja lokalizacja"
       }
     },
     "activityPlan": {
@@ -816,6 +821,10 @@
       "hideLabels": "Ukryj nazwy miast",
       "showActivityMarkers": "Pokaż pinezki aktywności",
       "hideActivityMarkers": "Ukryj pinezki aktywności",
+      "showMyLocation": "Pokaż moją lokalizację",
+      "centerOnMyLocation": "Wyśrodkuj na mojej lokalizacji",
+      "myLocationLocating": "Ustalanie Twojej lokalizacji…",
+      "myLocationBlocked": "Dostęp do lokalizacji jest zablokowany. Zezwól na niego w ustawieniach przeglądarki.",
       "showIdeaMarkers": "Pokaż pomysły na mapie",
       "hideIdeaMarkers": "Ukryj pomysły na mapie"
     },
