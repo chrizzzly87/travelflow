@@ -3,7 +3,7 @@ id: rel-2026-10-09-openrouter-model-refresh
 version: v0.205.0
 title: "A faster, fresher AI benchmark lineup"
 date: 2026-10-09
-published_at: 2026-10-09T01:25:13Z
+published_at: 2026-10-09T01:37:21Z
 status: published
 notify_in_app: true
 in_app_hours: 24
