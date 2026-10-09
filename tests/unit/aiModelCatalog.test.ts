@@ -22,7 +22,10 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openai:gpt-5.4-pro')).toBe(true);
     expect(modelIds.has('anthropic:claude-sonnet-4.6')).toBe(true);
     expect(modelIds.has('openrouter:openrouter/free')).toBe(true);
-    expect(modelIds.has('openrouter:openai/gpt-oss-20b:free')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-oss-20b:free')).toBe(false);
+    expect(modelIds.has('openrouter:qwen/qwen3-coder:free')).toBe(false);
+    expect(modelIds.has('openrouter:openai/gpt-6-luna')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-6.1-sol')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.4-nano')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.4-mini')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.5')).toBe(true);
@@ -34,23 +37,31 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:openai/gpt-5.6-luna-pro')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-chat-latest')).toBe(true);
     expect(modelIds.has('openrouter:anthropic/claude-opus-4.8')).toBe(true);
-    expect(modelIds.has('openrouter:anthropic/claude-opus-4.8-fast')).toBe(true);
+    expect(modelIds.has('openrouter:anthropic/claude-opus-4.8-fast')).toBe(false);
+    expect(modelIds.has('openrouter:anthropic/claude-haiku-5.5')).toBe(true);
+    expect(modelIds.has('openrouter:anthropic/claude-sonnet-5.5')).toBe(true);
+    expect(modelIds.has('openrouter:anthropic/claude-opus-5.5')).toBe(true);
     expect(modelIds.has('openrouter:anthropic/claude-opus-5')).toBe(true);
     expect(modelIds.has('openrouter:anthropic/claude-sonnet-5')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.5-flash')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.7-flash')).toBe(true);
+    expect(modelIds.has('openrouter:google/gemini-3.8-flash')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.6-flash')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.5-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.1-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5.2')).toBe(true);
+    expect(modelIds.has('openrouter:z-ai/glm-5.3')).toBe(true);
+    expect(modelIds.has('openrouter:z-ai/glm-5.3-flash')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v3.2')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v4-pro-0813')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v4-flash-0731')).toBe(true);
+    expect(modelIds.has('openrouter:deepseek/deepseek-v4.1-flash')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.3')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.5')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.6')).toBe(true);
+    expect(modelIds.has('openrouter:x-ai/grok-4.7')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.20')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(false);
     expect(modelIds.has('openrouter:x-ai/grok-4.20-beta')).toBe(false);
@@ -59,6 +70,9 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:moonshotai/kimi-k3')).toBe(true);
     expect(modelIds.has('openrouter:qwen/qwen3.5-9b')).toBe(true);
     expect(modelIds.has('openrouter:qwen/qwen3.5-plus-20260420')).toBe(true);
+    expect(modelIds.has('openrouter:qwen/qwen3.8-flash')).toBe(true);
+    expect(modelIds.has('openrouter:qwen/qwen3.8-max-prime')).toBe(true);
+    expect(modelIds.has('openrouter:mistralai/mistral-large-4-0')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar-pro')).toBe(true);
     expect(modelIds.has('qwen:qwen/qwen3.5-plus-02-15')).toBe(true);
@@ -92,6 +106,7 @@ describe('config/aiModelCatalog', () => {
     expect(sorted.find((item) => item.id === 'openrouter:google/gemini-3.5-flash')?.providerLabel).toBe('Google Gemini');
     expect(sorted.find((item) => item.id === 'openrouter:x-ai/grok-4.3')?.providerLabel).toBe('xAI');
     expect(sorted.find((item) => item.id === 'openrouter:qwen/qwen3.5-plus-20260420')?.providerLabel).toBe('Qwen');
+    expect(sorted.find((item) => item.id === 'openrouter:mistralai/mistral-large-4-0')?.providerLabel).toBe('Mistral AI');
 
     expect(providerLabelOrder.indexOf('OpenAI')).toBeLessThan(providerLabelOrder.indexOf('Google Gemini'));
   });
@@ -103,6 +118,7 @@ describe('config/aiModelCatalog', () => {
     expect(grouped.Anthropic?.length).toBeGreaterThan(0);
     expect(grouped.Perplexity?.length).toBeGreaterThan(0);
     expect(grouped.Qwen?.length).toBeGreaterThan(0);
+    expect(grouped['Mistral AI']?.map((item) => item.id)).toContain('openrouter:mistralai/mistral-large-4-0');
     expect(grouped.xAI?.map((item) => item.id)).toContain('openrouter:x-ai/grok-4.3');
     expect(grouped['OpenRouter (Free)']?.length).toBeGreaterThan(0);
     expect(grouped['OpenRouter (Free)']?.map((item) => item.id)).toEqual(['openrouter:openrouter/free']);
@@ -128,6 +144,17 @@ describe('config/aiModelCatalog', () => {
       [...CREATE_TRIP_PREFERRED_MODEL_IDS]
     );
     expect([...CREATE_TRIP_PREFERRED_MODEL_IDS]).toEqual(expect.arrayContaining([
+      'openrouter:openai/gpt-6-luna',
+      'openrouter:openai/gpt-6.1-sol',
+      'openrouter:anthropic/claude-haiku-5.5',
+      'openrouter:anthropic/claude-sonnet-5.5',
+      'openrouter:anthropic/claude-opus-5.5',
+      'openrouter:google/gemini-3.8-flash',
+      'openrouter:x-ai/grok-4.7',
+      'openrouter:deepseek/deepseek-v4.1-flash',
+      'openrouter:z-ai/glm-5.3-flash',
+      'openrouter:qwen/qwen3.8-max-prime',
+      'openrouter:mistralai/mistral-large-4-0',
       'openrouter:openai/gpt-5.5',
       'openrouter:openai/gpt-5.6-sol',
       'openrouter:openai/gpt-5.6-luna-pro',
@@ -161,6 +188,23 @@ describe('config/aiModelCatalog', () => {
     );
 
     expect(BENCHMARK_DEFAULT_MODEL_IDS.every((modelId) => activeIds.has(modelId))).toBe(true);
+    expect(BENCHMARK_DEFAULT_MODEL_IDS).toHaveLength(8);
+  });
+
+  it('keeps reviewed reasoning capabilities available when live catalog loading fails', () => {
+    const haiku = AI_MODEL_CATALOG.find((item) => item.id === 'openrouter:anthropic/claude-haiku-5.5');
+    const qwenFlash = AI_MODEL_CATALOG.find((item) => item.id === 'openrouter:qwen/qwen3.8-flash');
+
+    expect(haiku).toMatchObject({
+      supportsStructuredOutput: true,
+      supportsReasoning: true,
+      reasoningEfforts: ['max', 'xhigh', 'high', 'medium', 'low'],
+      defaultReasoningEffort: 'medium',
+    });
+    expect(qwenFlash).toMatchObject({
+      supportsReasoning: true,
+      supportsReasoningMaxTokens: true,
+    });
   });
 
   it('keeps active OpenRouter picker models aligned with the server allowlist', () => {

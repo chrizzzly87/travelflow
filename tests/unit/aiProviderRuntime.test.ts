@@ -71,6 +71,19 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4-pro')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-6-luna')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-6.1-sol')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-haiku-5.5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-sonnet-5.5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-5.5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.8-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.7')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'deepseek/deepseek-v4.1-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'z-ai/glm-5.3-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'z-ai/glm-5.3')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'qwen/qwen3.8-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'qwen/qwen3.8-max-prime')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'mistralai/mistral-large-4-0')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-nano')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-mini')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.5')).toBeNull();
@@ -82,7 +95,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.6-luna-pro')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-chat-latest')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8')).toBeNull();
-    expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8-fast')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8-fast')?.code).toBe('MODEL_NOT_ALLOWED');
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-sonnet-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
@@ -932,6 +945,34 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(body.response_format).toEqual({ type: 'json_object' });
     expect(body.provider).toEqual({ require_parameters: true, sort: 'throughput' });
     expect(body).not.toHaveProperty('temperature');
+    expect(result.ok).toBe(true);
+  });
+
+  it('omits unsupported sampling parameters for reviewed GPT-6 reasoning models', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'openai/gpt-6.1-sol',
+        choices: [{ message: { content: '{"title":"GPT itinerary"}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"gpt-openrouter"}',
+      provider: 'openrouter',
+      model: 'openai/gpt-6.1-sol',
+      timeoutMs: 30_000,
+      reasoningEffort: 'low',
+    });
+
+    const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const body = JSON.parse(String(init.body));
+    expect(body).not.toHaveProperty('temperature');
+    expect(body.reasoning).toEqual({ effort: 'low', exclude: true });
     expect(result.ok).toBe(true);
   });
 
