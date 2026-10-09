@@ -14,6 +14,14 @@ const iso = (offsetMs: number): string => (
     new Date(Math.floor((Date.now() + offsetMs) / 60_000) * 60_000).toISOString().replace(/\.\d{3}Z$/, 'Z')
 );
 
+const safePublishedPair = (): [string, string] => {
+    const newer = new Date();
+    newer.setUTCHours(20, 0, 0, 0);
+    if (newer.getTime() > Date.now()) newer.setUTCDate(newer.getUTCDate() - 1);
+    const older = new Date(newer.getTime() - 60 * 60_000);
+    return [older.toISOString(), newer.toISOString()];
+};
+
 const note = (fields: Record<string, string>): string => [
     '---',
     `id: ${fields.id}`,
@@ -103,9 +111,10 @@ describe('updates:validate --fix', () => {
     });
 
     it('renumbers the release that lost the race for a version', async () => {
+        const [olderPublishedAt, newerPublishedAt] = safePublishedPair();
         const cwd = await workspace([
-            { id: 'rel-a', version: 'v0.163.0', published_at: iso(-120 * 60_000) },
-            { id: 'rel-b', version: 'v0.163.0', published_at: iso(-60 * 60_000) },
+            { id: 'rel-a', version: 'v0.163.0', published_at: olderPublishedAt },
+            { id: 'rel-b', version: 'v0.163.0', published_at: newerPublishedAt },
         ]);
 
         const result = await validate(cwd, '--fix');
@@ -116,9 +125,10 @@ describe('updates:validate --fix', () => {
     });
 
     it('leaves a healthy set untouched and reports nothing to change', async () => {
+        const [olderPublishedAt, newerPublishedAt] = safePublishedPair();
         const cwd = await workspace([
-            { id: 'rel-a', version: 'v0.1.0', published_at: iso(-120 * 60_000) },
-            { id: 'rel-b', version: 'v0.2.0', published_at: iso(-60 * 60_000) },
+            { id: 'rel-a', version: 'v0.1.0', published_at: olderPublishedAt },
+            { id: 'rel-b', version: 'v0.2.0', published_at: newerPublishedAt },
         ]);
         const before = await fs.readFile(path.join(cwd, 'content/updates/rel-b.md'), 'utf8');
 

@@ -45,6 +45,21 @@ describe('openRouterModelCatalogService', () => {
     });
   });
 
+  it('uses the reviewed Mistral family label for live catalog models', () => {
+    const models = normalizeOpenRouterCatalogResponse({
+      data: [{
+        ...compatibleModel,
+        id: 'mistralai/mistral-large-4-0',
+        name: 'Mistral: Mistral Large 4.0',
+      }],
+    });
+
+    expect(models[0]).toMatchObject({
+      providerLabel: 'Mistral AI',
+      providerShortName: 'Mistral',
+    });
+  });
+
   it('rejects batch, image-output, expired, and non-structured models', () => {
     expect(isTravelFlowCompatibleOpenRouterModel({ ...compatibleModel, id: 'google/gemini-3.7-flash:batch' })).toBe(false);
     expect(isTravelFlowCompatibleOpenRouterModel({

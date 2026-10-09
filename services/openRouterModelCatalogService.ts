@@ -35,6 +35,7 @@ const MODEL_FAMILY_LABELS: Record<string, { label: string; shortName: string }> 
     deepseek: { label: 'DeepSeek', shortName: 'DeepSeek' },
     google: { label: 'Google Gemini', shortName: 'Gemini' },
     minimax: { label: 'MiniMax', shortName: 'MiniMax' },
+    mistralai: { label: 'Mistral AI', shortName: 'Mistral' },
     moonshotai: { label: 'Moonshot AI', shortName: 'Kimi' },
     openai: { label: 'OpenAI', shortName: 'OpenAI' },
     qwen: { label: 'Qwen', shortName: 'Qwen' },
