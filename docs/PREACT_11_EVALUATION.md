@@ -1,6 +1,10 @@
 # Preact 11 upgrade and first-load reliability
 
 Date: 2026-10-13. Baseline: `4d3c93c38efaedb9bf6d533d7dcf8d8dd78c984c` (main).
+Measured candidate: `140d53f40bd1d563e3a94a394a2b37f5784d704b` (clean checkout).
+The candidate also contains the later main-only release timestamp correction
+`30ff6b41`; no application behavior changed in that correction.
+
 Tracking: [#554](https://github.com/chrizzzly87/travelflow/issues/554).
 
 ## Decision
@@ -112,13 +116,44 @@ the local browser fixtures do not establish that every live backend is healthy.
 
 ## Verification
 
-- Full local PR Quality pipeline: core tests, validators, prerender/build,
-  Chromium/WebKit production checks and offline/PWA checks.
+- Full local PR Quality stages: 2,828 tests passed in 475 files (one existing
+  skipped test), validators and prerender/build; 36 Chromium/WebKit production
+  checks and three offline/PWA checks passed. A wrong test button label was
+  corrected and the browser/PWA stages were resumed successfully.
+- The complete one-command benchmark ran successfully, including both frozen
+  baseline installation and builds, all measurements, comparison and cleanup.
+- All 36 cases also passed against the real [Netlify Deploy Preview for #557](https://deploy-preview-557--travelflowapp.netlify.app)
+  at candidate `140d53f4`, covering deployed routing and assets in both engines.
 - React Doctor changed-file scan: 100/100, no diagnostics.
 - Full TypeScript check: 601 pre-existing diagnostics on both the clean Preact 10
   baseline and upgraded tree; no added normalized diagnostics. Type checking is
-  not currently a clean CI gate and is tracked separately.
+  not currently a clean CI gate and is tracked in [#556](https://github.com/chrizzzly87/travelflow/issues/556).
 - No UI layout or direction-specific styling changed; cold RTL coverage checks
   the existing direction behavior. No product copy or locale keys changed.
 
-Measured table and raw samples are recorded below when the automatic run completes.
+## Measured results
+
+| Route | Ready before → after (ms) | Change | LCP before → after (ms) | Observed blocking before → after (ms) | Gzip JS delta (bytes) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `/` | 1990 → 1929 | -3.1% | 1864 → 1856 | 98 → 101 | +379 |
+| `/features` | 1685 → 1696 | +0.7% | 812 → 812 | 50 → 52 | +347 |
+| `/pricing` | 1265 → 1273 | +0.7% | 812 → 804 | 33 → 34 | +345 |
+| `/create-trip` | 2196 → 2202 | +0.3% | 1864 → 1880 | 93 → 99 | +366 |
+| `/create-trip/wizard` | 2827 → 2823 | -0.2% | 2452 → 2448 | 90 → 94 | +372 |
+| `/example/thailand-islands` | 2808 → 2825 | +0.6% | 4016 → 4032 | 251 → 254 | +364 |
+
+CLS is unchanged: 0.00585 for the three marketing routes and 0 for creation
+and trip routes. Both runtime cohorts recorded zero uncaught page errors.
+The small timing differences, including the homepage median reduction, do not
+establish a meaningful speedup. An earlier independent five-run comparison
+also found effectively neutral readiness (−1.3% to +1.7%).
+
+Raw samples: [before](performance/preact11-before.json),
+[after](performance/preact11-after.json). The automatic run used the same
+measurement harness and settings for both builds and ran sequentially without
+concurrent local browser tests.
+
+The initial fetched JavaScript remains roughly 372–768 KB gzip depending on
+route. Chunk loading and application work offer more performance opportunity
+than the runtime version change demonstrated here. Further changes should get
+their own measured baseline and production regression gate.

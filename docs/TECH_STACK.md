@@ -1,6 +1,6 @@
 # Tech Stack Overview
 
-Runtime last verified: 2026-10-13. Other sections retain their original review dates.
+Runtime last verified: 2026-10-13. Other architectural assessments below were originally reviewed on 2026-05-29.
 
 This file documents the current TravelFlow stack, major architecture decisions, and recommended next upgrades.
 
@@ -15,7 +15,7 @@ This file documents the current TravelFlow stack, major architecture decisions, 
 | Styling | Tailwind CSS v4 (`tailwindcss` + `@tailwindcss/vite`, currently `^4.1.18`) | Tokenized theme via CSS variables in `index.css`. No legacy `tailwind.config.js` required for current setup. |
 | Router | `react-router-dom` 7.13 | Browser router with locale-aware marketing routes and lazy loaded sections. |
 | Language/i18n | `i18next`, `react-i18next` | Path-based locale detection, JSON namespaces loaded dynamically via `import.meta.glob`. Single-brace interpolation only; no ICU MessageFormat plugin is registered (`i18next-icu` is an unused leftover dependency) — plurals use i18next suffix keys. |
-| Package manager | npm (`package-lock.json` present) | Build/deploy currently assumes npm commands. |
+| Package manager | pnpm 10.18.1 (`pnpm-lock.yaml`) | Pinned in `package.json`; CI installs with a frozen lockfile. |
 
 ### UI and component system
 
@@ -103,7 +103,7 @@ Implication:
 
 | Area | Current choice | Notes |
 | --- | --- | --- |
-| Primary deployment | Netlify | `npm run build` -> `dist`, edge functions + SPA routing in `netlify.toml`. |
+| Primary deployment | Netlify | `pnpm build:netlify` -> `dist`, edge functions + SPA routing in `netlify.toml`. |
 | Secondary config | Vercel config present | `vercel.json` exists for Vite SPA deploys. |
 | Node version | Node 20 in Netlify build env | Defined in `netlify.toml`. |
 | Asset delivery | Netlify static + edge headers | Long-cache headers for assets/fonts/images; OG image generation at edge. |
@@ -140,7 +140,9 @@ Complexity scale used below:
 | 7 | Add linting + formatting baseline (ESLint + Prettier) and then tighten TS config (`strict`) incrementally | Improves maintainability and catches classes of bugs earlier. | M-L |
 | 8 | Add production error monitoring (Sentry or similar) | Faster incident triage and better release confidence. | M |
 
-## Package manager decision: npm vs pnpm vs Bun
+## Historical package manager assessment: npm vs pnpm vs Bun (2026-05-29)
+
+The recommendation below has since been implemented: the repository now uses pnpm.
 
 ### Key clarification
 
