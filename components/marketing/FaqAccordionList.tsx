@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { activateBootControls } from '../../services/bootInteractionBridge';
 import { CaretDown } from '@phosphor-icons/react';
 import type { FaqItemWithSection } from '../../data/faqContent';
 
@@ -22,6 +23,8 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
   compact = false,
 }) => {
   const isPlain = variant === 'plain';
+  const bootScope = `faq:${items[0]?.id ?? 'empty'}`;
+  useEffect(() => activateBootControls(bootScope), [bootScope]);
 
   return (
     <div className={isPlain ? '' : 'rounded-2xl border border-border bg-card dark:border-border dark:bg-card'}>
@@ -39,6 +42,8 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
             <button
               id={triggerId}
               type="button"
+              data-tf-boot-replay={triggerId}
+              data-tf-boot-scope={bootScope}
               aria-expanded={isOpen}
               aria-controls={panelId}
               onClick={() => onToggle(item, !isOpen)}

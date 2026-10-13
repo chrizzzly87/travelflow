@@ -7,6 +7,7 @@ import {
   BOOT_INTENT_MOBILE_MENU,
   consumeBootIntent,
   hasPreHydrationInteraction,
+  activateBootControls,
 } from '../../services/bootInteractionBridge';
 
 /**
@@ -38,7 +39,71 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  (window as unknown as { __TF_BOOT__?: { dispose?: () => void } }).__TF_BOOT__?.dispose?.();
   delete (window as unknown as Record<string, unknown>).__TF_BOOT__;
+});
+
+describe('early control replay', () => {
+  const control = () => document.getElementById('theme') as HTMLButtonElement;
+  beforeEach(() => {
+    document.body.innerHTML += '<button id="theme" data-tf-boot-replay="theme" data-tf-boot-scope="theme">Theme</button>';
+    runBridge();
+  });
+
+  it('delivers an early click once when its owner hydrates, after the header is sealed', () => {
+    let clicks = 0;
+    control().click();
+    control().click();
+    consumeBootIntent(BOOT_INTENT_MOBILE_MENU);
+    expect(control().getAttribute('data-tf-boot-pending')).toBe('true');
+    control().addEventListener('click', () => { clicks++; });
+    const cleanup = activateBootControls('theme');
+    expect(clicks).toBe(1);
+    expect(control().hasAttribute('data-tf-boot-pending')).toBe(false);
+    control().click();
+    expect(clicks).toBe(2);
+    cleanup();
+  });
+
+  it('holds partially hydrated clicks until the owner confirms readiness', () => {
+    let clicks = 0;
+    control().addEventListener('click', () => { clicks++; });
+    control().click();
+    expect(clicks).toBe(0);
+    const cleanup = activateBootControls('theme');
+    expect(clicks).toBe(1);
+    cleanup();
+  });
+
+  it('does not replay into disabled or removed controls', () => {
+    let clicks = 0;
+    control().click();
+    control().disabled = true;
+    control().addEventListener('click', () => { clicks++; });
+    const cleanup = activateBootControls('theme');
+    expect(clicks).toBe(0);
+    cleanup();
+    control().disabled = false;
+    control().click();
+    control().remove();
+    expect(() => activateBootControls('theme')()).not.toThrow();
+  });
+
+  it('keeps a live scope ready when an overlapping owner cleans up', () => {
+    let clicks = 0;
+    control().addEventListener('click', () => { clicks++; });
+    const firstCleanup = activateBootControls('theme');
+    const secondCleanup = activateBootControls('theme');
+    firstCleanup();
+    firstCleanup();
+    control().click();
+    expect(clicks).toBe(1);
+    secondCleanup();
+    control().click();
+    expect(clicks).toBe(1);
+    activateBootControls('theme')();
+    expect(clicks).toBe(2);
+  });
 });
 
 describe('pre-hydration interaction bridge', () => {

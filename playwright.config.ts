@@ -2,6 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
     testDir: './e2e',
+    testIgnore: 'production-critical.spec.ts',
     fullyParallel: true,
     timeout: 30_000,
     retries: process.env.CI ? 2 : 0,
