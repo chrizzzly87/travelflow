@@ -5,6 +5,7 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/theme/useTheme';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { cn } from '../../lib/utils';
+import { activateBootControls } from '../../services/bootInteractionBridge';
 
 interface ThemeToggleProps {
     /** 'bar' is the compact icon button in the desktop header; 'row' is the
@@ -16,11 +17,9 @@ interface ThemeToggleProps {
 }
 
 /**
- * A real forwardRef, not a plain function component. The app renders through
- * preact/compat, where a function component silently never receives `ref` — so
- * anything that may end up behind a Radix `asChild`, a tooltip trigger, or a
- * focus-managing parent has to forward explicitly or the ref lands as undefined
- * and keyboard handling dies quietly.
+ * Keep explicit ref forwarding for Radix triggers and focus-managing parents.
+ * Preact 11 forwards refs automatically, while our React 18 test/type peer
+ * still requires forwardRef; this wrapper works in both runtimes.
  */
 export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
     ({ variant = 'bar', className, analyticsSurface = 'nav' }, ref) => {
@@ -42,14 +41,18 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
         // turns the correction into a genuine post-hydration update, which preact
         // does apply.
         const [hydrated, setHydrated] = useState(false);
-        useEffect(() => { setHydrated(true); }, []);
+        const bootScope = `theme:${analyticsSurface}`;
+        useEffect(() => {
+            setHydrated(true);
+            return activateBootControls(bootScope);
+        }, [bootScope]);
 
         const isDark = hydrated && resolvedTheme === 'dark';
 
         const label = isDark ? t('nav.themeToLight') : t('nav.themeToDark');
 
         const handleClick = (): void => {
-            trackEvent(`${analyticsSurface}__theme--toggle`, { to: isDark ? 'light' : 'dark' });
+            trackEvent(`${analyticsSurface}__theme--toggle`, { to: resolvedTheme === 'dark' ? 'light' : 'dark' });
             toggle();
         };
 
@@ -64,6 +67,8 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
                 <button
                     ref={ref}
                     type="button"
+                    data-tf-boot-replay={bootScope}
+                    data-tf-boot-scope={bootScope}
                     onClick={handleClick}
                     aria-pressed={isDark}
                     className={cn(
@@ -86,6 +91,8 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
             <button
                 ref={ref}
                 type="button"
+                data-tf-boot-replay={bootScope}
+                data-tf-boot-scope={bootScope}
                 onClick={handleClick}
                 aria-pressed={isDark}
                 aria-label={label}

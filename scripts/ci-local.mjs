@@ -21,15 +21,16 @@ import process from 'node:process';
 const ROOT = process.cwd();
 
 /**
- * CI installs Chromium into a clean runner every time. Locally it is already
- * there, and the download is ~150MB, so it is skipped unless the browser is
- * genuinely missing.
+ * CI installs both engines into a clean runner. Locally skip the downloads
+ * when Chromium and WebKit are already available.
  */
-const chromiumMissing = () => {
+const browsersMissing = () => {
   const cacheRoot = process.env.PLAYWRIGHT_BROWSERS_PATH
     || path.join(process.env.HOME ?? '', 'Library', 'Caches', 'ms-playwright');
   try {
-    return !fs.readdirSync(cacheRoot).some((entry) => entry.startsWith('chromium'));
+    const entries = fs.readdirSync(cacheRoot);
+    return !entries.some((entry) => entry.startsWith('chromium'))
+      || !entries.some((entry) => entry.startsWith('webkit'));
   } catch {
     return true;
   }
@@ -52,12 +53,13 @@ const STAGES = [
   },
   {
     name: 'browser',
-    label: 'Install Playwright Chromium',
+    label: 'Install Playwright Chromium and WebKit',
     command: 'npx',
-    args: ['playwright', 'install', '--with-deps', 'chromium'],
+    args: ['playwright', 'install', '--with-deps', 'chromium', 'webkit'],
     slow: true,
-    skipIf: () => (chromiumMissing() ? null : 'Chromium already installed'),
+    skipIf: () => (browsersMissing() ? null : 'Chromium and WebKit already installed'),
   },
+  { name: 'production', label: 'Run production route and first-interaction suite', args: ['test:e2e:production'], slow: true },
   { name: 'e2e', label: 'Run offline/PWA end-to-end suite', args: ['test:e2e:pwa'], slow: true },
 ];
 

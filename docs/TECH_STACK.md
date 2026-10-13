@@ -1,6 +1,6 @@
 # Tech Stack Overview
 
-Last updated: 2026-05-29
+Runtime last verified: 2026-10-13. Other sections retain their original review dates.
 
 This file documents the current TravelFlow stack, major architecture decisions, and recommended next upgrades.
 
@@ -10,7 +10,7 @@ This file documents the current TravelFlow stack, major architecture decisions, 
 
 | Area | Current choice | Notes |
 | --- | --- | --- |
-| Frontend framework | Preact compat production runtime + React 18.3.1 test peer + TypeScript | SPA architecture. Existing React imports are preserved; Vite aliases shipped runtime imports to `preact/compat`. Entry point is `index.tsx`; routing is in `App.tsx`. |
+| Frontend framework | Preact 11.0.1 compat production runtime + React 18.3.1 test peer + TypeScript | SPA architecture. Existing React imports are preserved; Vite aliases shipped runtime imports to `preact/compat`. Entry point is `index.tsx`; routing is in `App.tsx`. See [the measured upgrade evaluation](PREACT_11_EVALUATION.md). |
 | Build tool | Vite 6 (`@preact/preset-vite` for production app builds, `@vitejs/plugin-react` for Vitest transforms) | Uses explicit compatibility aliases in `vite.config.ts` and keeps test transforms aligned with the React peer graph. |
 | Styling | Tailwind CSS v4 (`tailwindcss` + `@tailwindcss/vite`, currently `^4.1.18`) | Tokenized theme via CSS variables in `index.css`. No legacy `tailwind.config.js` required for current setup. |
 | Router | `react-router-dom` 7.13 | Browser router with locale-aware marketing routes and lazy loaded sections. |
