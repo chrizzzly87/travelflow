@@ -3,7 +3,7 @@ id: rel-2026-10-13-preact11-first-interaction
 version: v0.206.0
 title: "More reliable first interactions"
 date: 2026-10-13
-published_at: 2026-10-13T02:00:00Z
+published_at: 2026-10-13T02:07:40Z
 status: published
 notify_in_app: false
 in_app_hours: 24
