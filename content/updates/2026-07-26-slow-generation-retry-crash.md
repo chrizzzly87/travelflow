@@ -3,8 +3,8 @@ id: rel-2026-07-26-slow-generation-retry-crash
 version: v0.158.0
 title: "Slow trip generation no longer breaks the trip view"
 date: 2026-07-26
-published_at: 2026-07-26T08:30:00Z
-status: draft
+published_at: 2026-07-26T06:47:27Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trips that take unusually long to generate stay usable, with the restart option available instead of a blank screen."
