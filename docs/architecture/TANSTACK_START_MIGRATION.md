@@ -9,11 +9,14 @@ Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target unt
 Tracking issue: [#559 — Migrate TravelFlow to TanStack Start on an isolated integration branch](https://github.com/chrizzzly87/travelflow/issues/559).
 Implementation PR: [#560 — Migrate application foundation to native TanStack Start](https://github.com/chrizzzly87/travelflow/pull/560) (merged into integration on 2026-10-18).
 Implementation branch: `codex/tanstack-start-foundation`.
+Current follow-up: [PR #563 — Fix pending navigation, consent races and session hydration](https://github.com/chrizzzly87/travelflow/pull/563), branch `codex/tanstack-start-performance`, closes [#562](https://github.com/chrizzzly87/travelflow/issues/562).
+Follow-up preview: https://deploy-preview-563--travelflowapp.netlify.app, runtime revision `3f8fa31c`.
 PR target: `codex/tanstack-start-integration`; never `main`.
 Implementation commits: `f83b32bc` (native foundation), `b127e152` (hosted directory-path locale fix).
 Verified preview: https://deploy-preview-560--travelflowapp.netlify.app, deployed revision `b127e152218ad2eb47e41e546c572842b1191dea`.
 All 38 production browser checks also pass on the actual Netlify preview. Production is unchanged.
 [Benchmark report and raw data](../performance/tanstack-start-2026-10-18/README.md).
+[Hosted homepage Lighthouse follow-up](../performance/tanstack-start-2026-10-18/homepage-lighthouse.md): three-run mobile median performance **72 → 88**, LCP **7.10 → 3.29 s**, CLS zero. This compares foundation to follow-up; the production baseline comparison is separate.
 
 | Workstream | Status | Evidence / next gate |
 | --- | --- | --- |
@@ -35,7 +38,7 @@ Use native TanStack route layouts for public pages, auth/account, creation, trip
 
 The initial approach of translating the legacy route registry into generated route copies has been discarded. A temporary navigation adapter supports existing callers during conversion; production route ownership and test history are native TanStack. Replace obsolete prefetch and prerender workarounds according to their purpose, preserving first-click handling, theme initialization and supported URLs where still needed.
 
-Next milestone: publish the navigation/consent follow-up preview and measure hosted Lighthouse before/after. The follow-up passes 2,852 core tests (484 files), 44 production browser checks and three offline/PWA checks locally. The real navigation replaces fabricated pending chrome; session changes invalidate only session-bound routes and retire private preloads. Consent cannot cover a held press, synchronizes across tabs, and is rechecked after analytics script loading. Foundation remote CI is green and merged into integration. Review the testable preview. Keep real OAuth/login/reset,
+Next milestone: finish follow-up remote CI and review the updated preview. All 44 production checks pass on its actual hosted runtime revision `3f8fa31c`; three hosted mobile Lighthouse runs per revision show median 72 → 88 and LCP 7.10 → 3.29 seconds. The follow-up passes 2,852 core tests (484 files), 44 production browser checks and three offline/PWA checks locally. The real navigation replaces fabricated pending chrome; session changes invalidate only session-bound routes and retire private preloads. Consent cannot cover a held press, synchronizes across tabs, and is rechecked after analytics script loading. Foundation remote CI is green and merged into integration. Review the testable preview. Keep real OAuth/login/reset,
 active member/admin actions and paid generation as explicit acceptance items; the automated
 smoke checks do not certify those real-provider flows. Follow-up performance work should
 profile pricing/example readiness regressions, route chunk boundaries and localized SSR

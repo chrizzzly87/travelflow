@@ -1,5 +1,7 @@
 # TanStack Start foundation: local comparison
 
+The subsequent navigation/consent follow-up has a separate [hosted mobile Lighthouse report](./homepage-lighthouse.md): three-run median performance 72 → 88, LCP 7.10 → 3.29 seconds. It compares the foundation to the follow-up, not the production baseline below.
+
 ## Revisions and method
 
 Baseline application: `ca90ba7bb` (production). Its raw report records planning-only
