@@ -11,7 +11,7 @@ vi.mock('../../services/profileService', () => ({ getCurrentUserProfile: mocks.p
 import { AuthProvider, useAuthContext } from '../../contexts/AuthContext';
 function Probe() {
     const auth = useAuthContext();
-    return <><output>{auth.access?.userId ?? 'signed-out'}</output><button onClick={() => { void auth.refreshAccess(); }}>Refresh</button><button onClick={() => { void auth.logout(); }}>Logout</button></>;
+    return <><output>{auth.access?.userId ?? 'signed-out'}</output><output data-testid="auth-loading">{String(auth.isLoading)}</output><button onClick={() => { void auth.refreshAccess(); }}>Refresh</button><button onClick={() => { void auth.logout(); }}>Logout</button></>;
 }
 afterEach(cleanup);
 describe('auth access requests across session changes', () => {
@@ -66,6 +66,27 @@ describe('auth access requests across session changes', () => {
         expect(screen.getByText('signed-out')).toBeVisible();
         await act(async () => { finishNextRequest({ userId: 'member-b', role: 'user', isAnonymous: false }); });
         expect(await screen.findByText('member-b')).toBeVisible();
+    });
+
+    it.each(['resolve', 'reject'])('does not let the initial request %s settle a newer account bootstrap', async (completion) => {
+        let resolveInitial!: (value: any) => void;
+        let rejectInitial!: (reason: Error) => void;
+        let resolveNext!: (value: any) => void;
+        mocks.access.mockImplementationOnce(() => new Promise((resolve, reject) => { resolveInitial = resolve; rejectInitial = reject; }));
+        render(<MemoryRouter><AuthProvider><Probe /></AuthProvider></MemoryRouter>);
+        await waitFor(() => expect(resolveInitial).toBeTypeOf('function'));
+        mocks.access.mockImplementationOnce(() => new Promise(resolve => { resolveNext = resolve; }));
+        await act(async () => { mocks.onAuthChange?.('SIGNED_IN', { ...session, user: { ...session.user, id: 'member-b' } }); });
+        await waitFor(() => expect(resolveNext).toBeTypeOf('function'));
+        await act(async () => {
+            if (completion === 'resolve') resolveInitial({ userId: 'real-user', isAnonymous: false });
+            else rejectInitial(new Error('old account request failed'));
+        });
+        expect(screen.getByTestId('auth-loading')).toHaveTextContent('true');
+        expect(screen.queryByText('real-user')).toBeNull();
+        await act(async () => { resolveNext({ userId: 'member-b', role: 'user', accountStatus: 'active', isAnonymous: false }); });
+        expect(await screen.findByText('member-b')).toBeVisible();
+        expect(screen.getByTestId('auth-loading')).toHaveTextContent('false');
     });
 
 });

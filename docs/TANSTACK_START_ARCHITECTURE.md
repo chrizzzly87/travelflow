@@ -140,3 +140,35 @@ separate production rollout.
 
 Use the installed versions and their types as implementation evidence; latest online
 examples can target APIs newer than the repository's pinned dependency graph.
+
+## Pending navigation and consent interactions
+
+Native navigation keeps the previous route until the pending threshold (500 ms);
+this threshold does not delay a route that is already ready. Marketing pending UI
+reuses the real header/footer with working links and a small progress line. Do not
+restore fabricated navigation skeletons or an auth spinner/disabled Login control.
+The account-menu chunk fallback is a working profile link. Any navigation rendered in the SSR fallback must belong to the initial module
+graph. Do not put that chrome behind an additional manual React.lazy boundary:
+Start can activate a client-only route before the nested fallback finishes
+hydrating. Keep optional account tools and business workspaces split separately.
+
+Primary hero text and actions render immediately. Decorative entrance animations
+must not start essential content at zero opacity or move the intended first target.
+Inspect real Lighthouse LCP candidates before claiming an improvement.
+
+The boot bridge tracks physical pointers across hydration, independently of replayed
+control events. Consent UI waits until a held press ends; inserting a fixed overlay
+between pointerdown and pointerup can steal the original click. Exercise this with
+application JavaScript delayed, not only an already-hydrated component fixture.
+
+Consent controls subscribe to same-page and cross-tab choices. Analytics checks
+consent both before downloading its script and after the asynchronous download,
+so withdrawing consent cancels a pending send. Storage keys/categories are unchanged.
+
+Session-sensitive route areas/loaders declare `staticData: { sessionBound: true }`.
+The native lifecycle follows parent metadata rather than duplicating URL lists.
+On a settled identity/role/status/anonymous-binding change, retire sensitive caches
+and preloads. Reload only if a current/pending route is session-bound. Loading flags
+or token refresh alone must not invalidate public page work. Preserve immediate
+logout/account clears; publish initial session/profile results in a transition so
+unfinished route hydration can complete.

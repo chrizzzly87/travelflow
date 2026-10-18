@@ -1,5 +1,5 @@
 /**
- * Client bridge to the inline boot script in `index.html`
+ * Client bridge to `src/document/interaction-boot.js`
  * (`<script data-tf-hydration-bridge>`).
  *
  * Prerendered pages paint a fully formed page long before the React tree that
@@ -20,6 +20,8 @@
 export interface BootInteractionBridge {
   /** True once the visitor has pressed, typed or scrolled, even pre-hydration. */
   interacted: boolean;
+  /** Active presses are tracked before React mounts, including multiple pointers. */
+  pointerActive?: boolean;
   /** `data-tf-boot-intent` of the last control pressed while the page was inert. */
   intent: string | null;
   /** Set by the first consumer; stops the inline script recording further intents. */
@@ -43,6 +45,8 @@ export const BOOT_INTENT_MOBILE_MENU = 'mobile-menu';
  * UI that waits for a first interaction must treat this as that interaction —
  * otherwise it waits for a second one the visitor has no reason to make.
  */
+export const hasActiveBootPointer = (): boolean => readBridge()?.pointerActive === true;
+
 export const hasPreHydrationInteraction = (): boolean => readBridge()?.interacted === true;
 
 /**
@@ -88,9 +92,12 @@ export const activateBootControls = (scope: string): (() => void) => {
     if (control.matches('[disabled], [aria-disabled="true"]')) continue;
     if (entry.kind === 'pointerdown') {
       // Radix Select opens on mouse pointerdown; a click alone does not open it.
-      control.dispatchEvent(new PointerEvent('pointerdown', {
+      const pointer = new PointerEvent('pointerdown', {
         bubbles: true, cancelable: true, button: 0, pointerType: 'mouse', pointerId: 1, isPrimary: true,
-      }));
+      });
+      // This wakes a control; it is not a new physical press to await.
+      Object.defineProperty(pointer, '__tfBootReplay', { value: true });
+      control.dispatchEvent(pointer);
     }
     control.click();
   }

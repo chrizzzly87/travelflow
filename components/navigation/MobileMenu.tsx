@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from '@/app/navigation';
-import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
@@ -306,17 +306,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         {...mobileNavDebugAttributes('logout')}
                                     >
                                         Logout
-                                    </button>
-                                ) : isLoading ? (
-                                    <button
-                                        type="button"
-                                        disabled
-                                        className="inline-flex w-full cursor-wait items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-center text-base font-medium text-muted-foreground opacity-80 dark:border-border dark:text-muted-foreground"
-                                        aria-disabled="true"
-                                        aria-live="polite"
-                                    >
-                                        <Loader2 size={16} className="animate-spin" />
-                                        {t('nav.login')}
                                     </button>
                                 ) : (
                                     <NavLink

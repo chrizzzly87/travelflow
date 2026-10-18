@@ -79,6 +79,13 @@ describe('components/navigation/MobileMenu legal links', () => {
     mocks.profile = null;
   });
 
+  it('keeps Login available as a normal link during auth bootstrap', async () => {
+    mocks.isLoading = true;
+    await render(React.createElement(MemoryRouter, null, React.createElement(MobileMenu, { isOpen: true, onClose: vi.fn() })));
+    expect(screen.getByRole('link', { name: 'Login', exact: true })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('button', { name: 'Login', exact: true })).toBeNull();
+  });
+
   it('shows legal links in the mobile menu for anonymous users', async () => {
     await render(
       React.createElement(

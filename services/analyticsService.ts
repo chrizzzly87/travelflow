@@ -121,7 +121,8 @@ const runWithUmami = async (runner: (umami: UmamiApi) => void): Promise<void> =>
     if (!isBrowser() || !isConfigured() || !hasAnalyticsConsent()) return;
 
     const scriptReady = await ensureUmamiScript();
-    if (!scriptReady) return;
+    // Consent can be withdrawn during the asynchronous script download.
+    if (!scriptReady || !hasAnalyticsConsent()) return;
 
     if (window.umami && typeof window.umami.track === 'function') {
         runner(window.umami);

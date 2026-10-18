@@ -166,3 +166,41 @@ test('an encoded trip opens its details and mobile navigation', async ({ page })
   await expect(title).toHaveValue('Runtime Taiwan Loop edited');
   await expect(title).toBeDisabled();
 });
+
+for (const choice of [{ label: 'Essential only', stored: 'essential' }, { label: 'Accept all', stored: 'all' }]) {
+  test(`cookie banner accepts ${choice.stored} on the first click after an early interaction`, async ({ page }) => {
+    const release = await holdApplicationScripts(page);
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.mouse.wheel(0, 80);
+    release();
+    const button = page.getByRole('button', { name: choice.label, exact: true });
+    await expect(button).toBeVisible();
+    await button.click();
+    await expect(button).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBe(choice.stored);
+    await page.reload();
+    await page.mouse.wheel(0, 80);
+    await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+    await expect(page.getByRole('button', { name: choice.label, exact: true })).toHaveCount(0);
+  });
+}
+
+test('cookie banner cannot cover a press that starts before hydration', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const release = await holdApplicationScripts(page);
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const cta = page.getByRole('link', { name: 'Start Planning', exact: true });
+  await cta.evaluate(element => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 730));
+  const box = await cta.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  release();
+  await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+  // Wait for the queued banner task while the original press is still held.
+  await page.waitForTimeout(250);
+  await expect(page.getByRole('button', { name: 'Accept all', exact: true })).toHaveCount(0);
+  await page.mouse.up();
+  await expect(page).toHaveURL(/\/create-trip\/?$/);
+  expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
+});

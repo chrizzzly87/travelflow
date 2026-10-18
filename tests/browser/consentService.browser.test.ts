@@ -55,6 +55,20 @@ describe('services/consentService', () => {
     unsubscribe();
   });
 
+  it('synchronizes a valid choice from another tab and removes its storage subscription', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeToConsentChanges(listener);
+    const event = (key: string, newValue: string) => new StorageEvent('storage', { key, newValue, storageArea: window.localStorage });
+    window.dispatchEvent(event('another-key', 'all'));
+    window.dispatchEvent(event(CONSENT_STORAGE_KEY, 'invalid'));
+    expect(listener).not.toHaveBeenCalled();
+    window.dispatchEvent(event(CONSENT_STORAGE_KEY, 'essential'));
+    expect(listener).toHaveBeenCalledExactlyOnceWith('essential');
+    unsubscribe();
+    window.dispatchEvent(event(CONSENT_STORAGE_KEY, 'all'));
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it('handles storage write failures without throwing', () => {
     const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('quota');

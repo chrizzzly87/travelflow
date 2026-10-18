@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { ConsentChoice, readStoredConsent, saveConsent } from '../../services/consentService';
+import { ConsentChoice, readStoredConsent, saveConsent, subscribeToConsentChanges } from '../../services/consentService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { APP_NAME } from '../../config/appGlobals';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
-import { hasPreHydrationInteraction } from '../../services/bootInteractionBridge';
+import { hasActiveBootPointer, hasPreHydrationInteraction } from '../../services/bootInteractionBridge';
 
 export const CookieConsentBanner: React.FC = () => {
     const { t } = useTranslation('common');
@@ -15,6 +15,8 @@ export const CookieConsentBanner: React.FC = () => {
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const [consent, setConsent] = useState<ConsentChoice | null>(() => readStoredConsent());
     const [shouldRender, setShouldRender] = useState(false);
+
+    useEffect(() => subscribeToConsentChanges(setConsent), []);
 
     useEffect(() => {
         const isTestEnv = typeof process !== 'undefined' &&
@@ -25,27 +27,18 @@ export const CookieConsentBanner: React.FC = () => {
             return;
         }
 
-        // A tap or scroll that happened before this tree mounted still counts:
-        // otherwise the banner waits for a second interaction the visitor has
-        // no reason to make, and it never appears on a slow first mobile load.
-        // Read it here rather than as initial state — rendering the banner on
-        // the hydration render adds a node the prerendered DOM does not have,
-        // and preact/compat hydrates that against the wrong element.
-        if (hasPreHydrationInteraction()) {
-            setShouldRender(true);
-            return;
-        }
-
         let mountTimeoutId: number | null = null;
 
         const triggerBanner = () => {
-            removeListeners();
+            if (mountTimeoutId !== null) return;
             // Render on the next macrotask rather than inside the interaction that
             // armed the banner. Mounting on `mousedown` inserted a fixed bar over
             // the bottom of the viewport while the pointer was still down, so a
             // click started on a control down there resolved against the banner.
             mountTimeoutId = window.setTimeout(() => {
                 mountTimeoutId = null;
+                if (hasActiveBootPointer()) return;
+                removeListeners();
                 setShouldRender(true);
             }, 0);
         };
@@ -53,6 +46,7 @@ export const CookieConsentBanner: React.FC = () => {
         const removeListeners = () => {
             window.removeEventListener('scroll', triggerBanner);
             window.removeEventListener('pointerup', triggerBanner);
+            window.removeEventListener('pointercancel', triggerBanner);
             window.removeEventListener('keyup', triggerBanner);
         };
 
@@ -68,8 +62,12 @@ export const CookieConsentBanner: React.FC = () => {
         // `pointerup` covers both mouse and touch, `scroll` covers a plain swipe.
         window.addEventListener('scroll', triggerBanner, { passive: true });
         window.addEventListener('pointerup', triggerBanner, { passive: true });
+        window.addEventListener('pointercancel', triggerBanner, { passive: true });
         window.addEventListener('keyup', triggerBanner, { passive: true });
 
+        // An early completed interaction still arms the banner, while a press
+        // spanning hydration must finish before a fixed overlay can appear.
+        if (hasPreHydrationInteraction()) triggerBanner();
         return cleanup;
     }, []);
 

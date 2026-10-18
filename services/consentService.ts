@@ -47,8 +47,16 @@ export const subscribeToConsentChanges = (listener: (choice: ConsentChoice) => v
         }
     };
 
+    const handleStorage = (event: StorageEvent) => {
+        if (event.key !== CONSENT_STORAGE_KEY || !isConsentChoice(event.newValue)) return;
+        try { if (event.storageArea !== window.localStorage) return; } catch { return; }
+        if (event.newValue === 'essential') purgeOptionalBrowserStorage();
+        listener(event.newValue);
+    };
+    window.addEventListener('storage', handleStorage);
     window.addEventListener(CONSENT_CHANGE_EVENT, handler as EventListener);
     return () => {
+        window.removeEventListener('storage', handleStorage);
         window.removeEventListener(CONSENT_CHANGE_EVENT, handler as EventListener);
     };
 };

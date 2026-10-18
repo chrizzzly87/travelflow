@@ -7,7 +7,7 @@ Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target unt
 ## Progress dashboard — 2026-10-18
 
 Tracking issue: [#559 — Migrate TravelFlow to TanStack Start on an isolated integration branch](https://github.com/chrizzzly87/travelflow/issues/559).
-Implementation PR: [#560 — Migrate application foundation to native TanStack Start](https://github.com/chrizzzly87/travelflow/pull/560) (draft).
+Implementation PR: [#560 — Migrate application foundation to native TanStack Start](https://github.com/chrizzzly87/travelflow/pull/560) (merged into integration on 2026-10-18).
 Implementation branch: `codex/tanstack-start-foundation`.
 PR target: `codex/tanstack-start-integration`; never `main`.
 Implementation commits: `f83b32bc` (native foundation), `b127e152` (hosted directory-path locale fix).
@@ -17,7 +17,7 @@ All 38 production browser checks also pass on the actual Netlify preview. Produc
 
 | Workstream | Status | Evidence / next gate |
 | --- | --- | --- |
-| Baseline and acceptance criteria | Baseline captured | Five measured runs plus warmup against production baseline `ca90ba7bb`; equivalent after measurements pending. |
+| Baseline and acceptance criteria | Before/after captured | Five measured runs plus warmup against production baseline `ca90ba7bb` and the foundation candidate; mixed results documented below. |
 | Framework and native routing | Implemented and preview deployed | Native Start document, route layouts, loaders, intent preloading and Netlify adapter; production build prerenders eight documents. |
 | Encapsulated application domains | Implemented and preview deployed | Shared shell, trip session, persistence, creation, view preferences, auth boundaries and admin route area separated. Local regression and hosted critical-flow checks pass; live account/provider acceptance remains. |
 | Public rendering and first interaction | Targeted checks passing | SSR image mismatch and premature auth-context hydration update repaired. 38 production Chromium/WebKit checks pass, including delayed-JavaScript controls, localized/RTL entry, creation and encoded trips. The early Updates language-switch regression additionally passed 16 repeated checks. |
@@ -26,7 +26,7 @@ All 38 production browser checks also pass on the actual Netlify preview. Produc
 | Production build | Passing locally | Latest build prerendered eight documents; service-worker generation succeeded. All 38 production browser and three offline/PWA checks pass, including restored iOS install metadata. |
 | Active docs and release note | Updated | Architecture, deployment, testing, locale, contributor, agent and Lighthouse guidance updated; dated guidance archived. Exactly one release entry remains draft. |
 | React/type diagnostics | Reviewed, limitations remain | React Doctor: 61/100, zero errors, ten warnings. Full-project TypeScript remains an existing tracked problem (#556); 493 full-project diagnostics remain, with zero in the new native/domain modules in the checked candidate. No clean full-project type check is claimed. |
-| PR, integration merge and preview | Draft PR open | #560 targets integration and references #559. Both implementation commits are pushed. Actual preview revision and 38 hosted browser checks verified. Remote CI must pass before any integration merge. |
+| PR, integration merge and preview | Foundation merged into integration | #560 passed remote CI and merged as `e95a241f`. Production is unchanged. Follow-up branch `codex/tanstack-start-performance` addresses [#562](https://github.com/chrizzzly87/travelflow/issues/562) and [#561](https://github.com/chrizzzly87/travelflow/issues/561). |
 | Before/after benchmark | Measured and documented | Clean `b127e152` candidate versus production baseline, same five-run method. Readiness: home −7.5%, wizard −27.8%, pricing +18.0%, example +9.6%. Mixed result; see raw evidence and limits. |
 
 ### Architecture direction
@@ -35,7 +35,7 @@ Use native TanStack route layouts for public pages, auth/account, creation, trip
 
 The initial approach of translating the legacy route registry into generated route copies has been discarded. A temporary navigation adapter supports existing callers during conversion; production route ownership and test history are native TanStack. Replace obsolete prefetch and prerender workarounds according to their purpose, preserving first-click handling, theme initialization and supported URLs where still needed.
 
-Next milestone: finish remote CI and review the testable preview. Keep real OAuth/login/reset,
+Next milestone: publish the navigation/consent follow-up preview and measure hosted Lighthouse before/after. The follow-up passes 2,852 core tests (484 files), 44 production browser checks and three offline/PWA checks locally. The real navigation replaces fabricated pending chrome; session changes invalidate only session-bound routes and retire private preloads. Consent cannot cover a held press, synchronizes across tabs, and is rechecked after analytics script loading. Foundation remote CI is green and merged into integration. Review the testable preview. Keep real OAuth/login/reset,
 active member/admin actions and paid generation as explicit acceptance items; the automated
 smoke checks do not certify those real-provider flows. Follow-up performance work should
 profile pricing/example readiness regressions, route chunk boundaries and localized SSR

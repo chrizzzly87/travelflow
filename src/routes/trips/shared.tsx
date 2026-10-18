@@ -7,6 +7,7 @@ import { tripLoaderDeps } from '../../../features/trips/routeData';
 import { TripRouteLoadingShell } from '../../../components/tripview/TripRouteLoadingShell';
 import { ShareUnavailablePage } from '../../../pages/ShareUnavailablePage';
 export const Route = createFileRoute('/_trips/s/$token')({
+    staticData: { sessionBound: true },
     loaderDeps: tripLoaderDeps,
     loader: ({ params, deps, location, abortController }) => loadSharedTrip({ token: params.token, versionId: deps.versionId, signal: abortController.signal }),
     staleTime: 0, preloadStaleTime: 0, gcTime: 0,

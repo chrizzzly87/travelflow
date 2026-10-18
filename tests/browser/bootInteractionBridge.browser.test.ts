@@ -7,6 +7,7 @@ import {
   BOOT_INTENT_MOBILE_MENU,
   consumeBootIntent,
   hasPreHydrationInteraction,
+  hasActiveBootPointer,
   activateBootControls,
 } from '../../services/bootInteractionBridge';
 
@@ -59,6 +60,13 @@ describe('early control replay', () => {
     cleanup();
   });
 
+  it('does not mistake replayed pointerdown for a physical press that is still held', () => {
+    control().setAttribute('data-tf-boot-event', 'pointerdown');
+    control().click();
+    activateBootControls('theme');
+    expect(hasActiveBootPointer()).toBe(false);
+  });
+
   it('holds partially hydrated clicks until the owner confirms readiness', () => {
     let clicks = 0;
     control().addEventListener('click', () => { clicks++; });
@@ -101,6 +109,23 @@ describe('early control replay', () => {
 });
 
 describe('pre-hydration interaction bridge', () => {
+  it('tracks presses across hydration and waits for every pointer to finish or cancel', () => {
+    runBridge();
+    const pointer = (type: string, id: number) => {
+      const event = new Event(type, { bubbles: true });
+      Object.defineProperty(event, 'pointerId', { value: id });
+      burger().dispatchEvent(event);
+    };
+    pointer('pointerdown', 1);
+    pointer('pointerdown', 2);
+    consumeBootIntent(BOOT_INTENT_MOBILE_MENU);
+    expect(hasActiveBootPointer()).toBe(true);
+    pointer('pointerup', 1);
+    expect(hasActiveBootPointer()).toBe(true);
+    pointer('pointercancel', 2);
+    expect(hasActiveBootPointer()).toBe(false);
+  });
+
   it('hands a tap that landed on the inert burger to the header when it hydrates', () => {
     runBridge();
 

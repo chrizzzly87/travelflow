@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { NavLink } from '@/app/navigation';
-import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import { List, UserCircle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -193,10 +193,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         {isAuthenticated ? (
                             <Suspense
                                 fallback={(
-                                    <span
-                                        className="hidden size-10 rounded-full border border-border bg-secondary lg:inline-flex"
-                                        aria-hidden="true"
-                                    />
+                                    <NavLink to="/profile" aria-label="Profile"
+                                        onClick={() => handleNavClick('profile')}
+                                        className="hidden size-10 items-center justify-center rounded-full border border-border bg-card text-foreground lg:inline-flex"
+                                        {...navDebugAttributes('profile')}>
+                                        <UserCircle size={22} />
+                                    </NavLink>
                                 )}
                             >
                                 <AccountMenu
@@ -209,17 +211,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                     className="hidden lg:block"
                                 />
                             </Suspense>
-                        ) : isLoading ? (
-                            <NavLink
-                                to={buildLocalizedMarketingPath('login', activeLocale)}
-                                onClick={handleLoginClick}
-                                className={`${loginClass} items-center gap-2 opacity-70`}
-                                aria-busy="true"
-                                {...navDebugAttributes('login')}
-                            >
-                                <Loader2 size={14} className="animate-spin" />
-                                {t('nav.login')}
-                            </NavLink>
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}

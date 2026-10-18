@@ -252,6 +252,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             : null
     );
 
+    const publishAuthResult = useCallback((publish: () => void) => {
+        // Initial data can arrive before a native route finishes hydrating.
+        // Explicit account clears/logout remain urgent at their call sites.
+        if (!hasBootstrappedRef.current) startTransition(publish);
+        else publish();
+    }, []);
+
     const resetProfileState = useCallback(() => {
         profileLoadRequestIdRef.current += 1;
         setProfile(null);
@@ -317,22 +324,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const requestId = profileLoadRequestIdRef.current + 1;
         profileLoadRequestIdRef.current = requestId;
-        setIsProfileLoading(true);
+        publishAuthResult(() => setIsProfileLoading(true));
 
         try {
             const profileService = await loadProfileService();
             const nextProfile = await profileService.getCurrentUserProfile();
             if (profileLoadRequestIdRef.current !== requestId) return;
-            setProfile(nextProfile);
+            publishAuthResult(() => setProfile(nextProfile));
         } catch {
             if (profileLoadRequestIdRef.current !== requestId) return;
-            setProfile(null);
+            publishAuthResult(() => setProfile(null));
         } finally {
             if (profileLoadRequestIdRef.current === requestId) {
-                setIsProfileLoading(false);
+                publishAuthResult(() => setIsProfileLoading(false));
             }
         }
-    }, []);
+    }, [publishAuthResult, resetProfileState]);
 
     const refreshAccess = useCallback(async () => {
         const requestId = ++accessLoadRequestIdRef.current;
@@ -348,13 +355,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
         if (accessLoadRequestIdRef.current !== requestId) return;
-        setAccess(nextAccess);
+        publishAuthResult(() => setAccess(nextAccess));
         if (nextAccess?.userId && !nextAccess.isAnonymous) {
             await refreshProfile();
             return;
         }
         resetProfileState();
-    }, [refreshProfile, resetProfileState]);
+    }, [refreshProfile, resetProfileState, publishAuthResult]);
 
     useEffect(() => {
         let cancelled = false;
@@ -445,6 +452,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         const bootstrap = async () => {
+            let requestId = accessLoadRequestIdRef.current;
             try {
                 const [authService, supabase] = await Promise.all([
                     loadAuthService(),
@@ -457,7 +465,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         setSession(null);
                         setAccess(null);
                         resetProfileState();
-                        setIsLoading(false);
+                        startTransition(() => setIsLoading(false));
                     }
                     hasBootstrappedRef.current = true;
                     return;
@@ -526,7 +534,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         resetProfileState();
                     }
                     currentSessionUserId = nextUserId;
-                    setSession(nextSession);
+                    if (nextSession) publishAuthResult(() => setSession(nextSession));
+                    else setSession(null);
                     if (nextSession) {
                         // Only strip auth hash once a real session exists, so the
                         // bootstrap fallback can still read the tokens if needed.
@@ -534,7 +543,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const refresh = refreshAccess();
                         const requestId = accessLoadRequestIdRef.current;
                         void refresh.catch(error => authDebug('stateChange:accessError', error)).finally(() => {
-                            if (!cancelled && accessLoadRequestIdRef.current === requestId) setIsLoading(false);
+                            if (!cancelled && accessLoadRequestIdRef.current === requestId) startTransition(() => setIsLoading(false));
                         });
                         return;
                     }
@@ -542,23 +551,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     resetProfileState();
                 });
 
-                setSession(activeSession);
+                publishAuthResult(() => setSession(activeSession));
                 logAuthStateEvent('INITIAL_SESSION', Boolean(activeSession));
                 if (activeSession) {
-                    await refreshAccess();
+                    const refresh = refreshAccess();
+                    requestId = accessLoadRequestIdRef.current;
+                    await refresh;
                 } else {
                     setAccess(null);
                     resetProfileState();
                 }
-                if (!cancelled) setIsLoading(false);
+                if (!cancelled && accessLoadRequestIdRef.current === requestId) startTransition(() => setIsLoading(false));
                 if (cancelled) return;
 
 
 
                 hasBootstrappedRef.current = true;
             } catch (error) {
-                if (!cancelled) {
-                    setIsLoading(false);
+                if (!cancelled && accessLoadRequestIdRef.current === requestId) {
+                    startTransition(() => setIsLoading(false));
                 }
                 authDebug('bootstrap:error', error);
             } finally {
@@ -617,7 +628,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             unsubscribe();
         };
-    }, [logAuthStateEvent, refreshAccess, resetProfileState]);
+    }, [logAuthStateEvent, refreshAccess, resetProfileState, publishAuthResult]);
 
     const loginWithPassword = useCallback(async (email: string, password: string) => {
         if (shouldEnableE2EAuthSandbox()) {
