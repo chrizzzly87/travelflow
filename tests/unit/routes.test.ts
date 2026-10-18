@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import {
   buildLocalizedCreateTripPath,
   buildLocalizedMarketingPath,
@@ -124,6 +125,21 @@ describe('config/routes', () => {
     expect(getNamespacesForToolPath('/checkout?tier=tier_mid')).toEqual(['common', 'pricing', 'profile', 'auth']);
     expect(getNamespacesForToolPath('/u/traveler')).toEqual(['common', 'profile']);
     expect(getNamespacesForToolPath('/trip/abc')).toEqual(['common']);
+  });
+
+  it.each(['/features/', '/pricing/', '/blog/', '/inspirations/', '/faq/', '/updates/'])('keeps the same page when a hosted trailing-slash path changes language: %s', (pathname) => {
+    expect(isLocalizedMarketingPath(pathname)).toBe(true);
+    expect(buildLocalizedLocation({ pathname, targetLocale: 'de', search: '?tag=one&tag=two', hash: '#details' }))
+      .toBe(`/de${pathname.slice(0, -1)}?tag=one&tag=two#details`);
+    expect(localizeMarketingPath(`/de${pathname}`, 'en')).toBe(pathname.slice(0, -1));
+  });
+
+  it('normalizes hosted trailing slashes before choosing route namespaces', () => {
+    expect(stripLocalePrefix('/de/features/')).toBe('/features');
+    expect(stripLocalePrefix('/de/')).toBe('/');
+    expect(getNamespacesForMarketingPath('/features/')).toEqual(['common', 'features']);
+    expect(getNamespacesForMarketingPath('/de/pricing/')).toEqual(['common', 'pricing']);
+    expect(getNamespacesForMarketingPath('/faq/')).toEqual(['common', 'faq']);
   });
 
   it('marks onboarding-exempt paths', () => {

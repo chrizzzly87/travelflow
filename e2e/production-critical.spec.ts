@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
   assetErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('console', message => {
-    if (message.type() === 'error' && /hydration|Minified React error #(418|422|423|425)|server HTML|did not match|Suspense boundary.*hydrating/i.test(message.text())) pageErrors.push(message.text());
+    if (message.type() === 'error' && /hydration|Minified React error #(418|421|422|423|425)|server HTML|did not match|Suspense boundary.*hydrating/i.test(message.text())) pageErrors.push(message.text());
   });
   page.on('response', (response) => {
     if (response.status() >= 400 && /\/assets\/.*\.(js|css)(\?|$)/.test(response.url())) {
@@ -51,6 +51,19 @@ for (const route of ['/', '/features', '/pricing', '/blog', '/inspirations', '/f
     await expect(page.locator('main h1').first()).toHaveText(initialHeading!);
   });
 }
+
+test('a hosted directory URL keeps its page when changing language', async ({ page }) => {
+  await page.goto('/features/');
+  const heading = await page.locator('main h1').first().textContent();
+  await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+  await page.getByRole('combobox', { name: 'Language', exact: true }).click();
+  await page.getByRole('option', { name: 'Deutsch', exact: true }).click();
+  await expect(page).toHaveURL(/\/de\/features\/?$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  await page.goBack();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('main h1').first()).toHaveText(heading!);
+});
 
 test.describe('mobile first tap', () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });

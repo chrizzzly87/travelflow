@@ -16,3 +16,4 @@ summary: "Framework migration under development and validation on an isolated pr
 - [ ] [Internal] 🧪 Track critical-flow regression coverage and equivalent before/after performance measurements before preview acceptance.
 - [ ] [Internal] 🛠️ Repair deterministic image hydration and defer the initial auth hint without interrupting public-page hydration.
 - [ ] [Internal] 🧩 Split route loaders and preserve the native offline module graph alongside the framework document.
+- [ ] [Internal] 🌐 Normalize hosted directory paths before locale and namespace resolution so language changes preserve the current page.
