@@ -1,6 +1,8 @@
 import path from 'path';
 import { defineConfig } from 'vite';
-import preact from '@preact/preset-vite';
+import react from '@vitejs/plugin-react';
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import netlify from '@netlify/vite-plugin-tanstack-start';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
@@ -42,37 +44,29 @@ export default defineConfig(({ mode }) => {
                 },
             },
         },
-        plugins: [preact(), tailwindcss()],
+        plugins: [
+            tanstackStart({
+                router: {
+                    virtualRouteConfig: './src/virtualRoutes.ts',
+                    codeSplittingOptions: { defaultBehavior: [['loader'], ['component'], ['pendingComponent'], ['errorComponent'], ['notFoundComponent']] },
+                },
+                spa: { enabled: true, maskPath: '/__offline-shell', prerender: { outputPath: '/spa' } },
+                prerender: { enabled: true, autoStaticPathsDiscovery: false, crawlLinks: false, concurrency: 4 },
+                pages: ['/', '/features', '/pricing', '/faq', '/blog', '/updates', '/inspirations'].map(path => ({ path, prerender: { enabled: true } })),
+            }),
+            netlify({ dev: { edgeFunctions: { enabled: process.env.NETLIFY_DEV_EDGE === 'true' } } }),
+            react(),
+            tailwindcss(),
+        ],
         build: {
             sourcemap: mode !== 'production',
-            // Keep global dependency preloading off: targeted warmups are the intended
-            // fast path here, and broad modulepreload fanout regressed first-load cost.
-            modulePreload: false,
             assetsInlineLimit: 0,
-            minify: mode === 'production' ? 'terser' : 'esbuild',
-            terserOptions: mode === 'production'
-                ? {
-                    compress: {
-                        pure_funcs: ['console.log', 'console.info', 'console.debug'],
-                    },
-                }
-                : undefined,
-            esbuild: {
-                pure: mode === 'production'
-                    ? ['console.log', 'console.info', 'console.debug']
-                    : [],
-            },
+            // Vite 8's native minifier and Start's matched-route preload manifest
+            // own this build; no global manual chunk warmup or preload suppression.
         },
         resolve: {
             alias: [
-                { find: '@', replacement: path.resolve(__dirname, '.') },
-                { find: /^react-dom\/client$/, replacement: 'preact/compat/client' },
-                { find: /^react-dom\/server$/, replacement: 'preact/compat/server' },
-                { find: /^react-dom\/test-utils$/, replacement: 'preact/test-utils' },
-                { find: /^react-dom$/, replacement: 'preact/compat' },
-                { find: /^react\/jsx-runtime$/, replacement: 'preact/compat/jsx-runtime' },
-                { find: /^react\/jsx-dev-runtime$/, replacement: 'preact/compat/jsx-dev-runtime' },
-                { find: /^react$/, replacement: 'preact/compat' },
+                { find: '@', replacement: path.resolve(import.meta.dirname, '.') },
             ],
         },
     };

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,6 @@ import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindow } from './PlaneWindow/PlaneWindow';
 import { buildPath } from '../../config/routes';
-import { warmRouteAssets } from '../../services/navigationPrefetch';
 
 const heroTitleGradient: GradientStop[] = [
     { color: '#0f766e', position: 0 },
@@ -143,9 +142,6 @@ export const HeroSection: React.FC = () => {
     const heroCtaDebugAttributes = (ctaName: string) =>
         getAnalyticsDebugAttributes(`home__hero_cta--${ctaName}`);
 
-    const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildPath('createTrip'), 'manual');
-    };
 
     return (
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
@@ -175,9 +171,9 @@ export const HeroSection: React.FC = () => {
                         <Link
                             to={buildPath('createTrip')}
                             onClick={() => handleCtaClick('start_planning')}
-                            onMouseEnter={prewarmCreateTripRoute}
-                            onFocus={prewarmCreateTripRoute}
-                            onTouchStart={prewarmCreateTripRoute}
+
+
+
                             className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300 dark:hover:shadow-none"
                             {...heroCtaDebugAttributes('start_planning')}
                         >

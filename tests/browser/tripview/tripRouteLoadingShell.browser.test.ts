@@ -17,7 +17,7 @@ vi.mock('../../../services/tripRouteShellPreview', () => ({
   readTripRouteShellPreviewDays: () => mocks.previewDays,
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   useParams: () => mocks.routeParams,
 }));
 

@@ -253,9 +253,12 @@ export const extractLocaleFromPath = (pathname: string): AppLanguage | null => {
 };
 
 export const stripLocalePrefix = (pathname: string): string => {
-    const locale = extractLocaleFromPath(pathname);
-    if (!locale) return pathname || '/';
-    const stripped = pathname.replace(new RegExp(`^/${locale}(?=/|$)`), '') || '/';
+    // Static hosts can append a directory slash. Helpers consume canonical paths
+    // so locale changes and namespace selection agree with native route matching.
+    const path = pathname.replace(/\/+$/, '') || '/';
+    const locale = extractLocaleFromPath(path);
+    if (!locale) return path;
+    const stripped = path.replace(new RegExp(`^/${locale}(?=/|$)`), '') || '/';
     return stripped.startsWith('/') ? stripped : `/${stripped}`;
 };
 

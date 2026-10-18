@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { Check, CopySimple, Sparkle } from '@phosphor-icons/react';
 import { AlertTriangle, WifiOff, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ import { Spinner } from '../ui/spinner';
 import { CopyTripButton } from './CopyTripButton';
 import { tripDockCardSmBottomClass } from './tripBottomDock';
 
-const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
+const IS_DEV = Boolean(import.meta.env.DEV);
 
 interface TripViewStatusBannersProps {
     shareStatus?: ShareMode;

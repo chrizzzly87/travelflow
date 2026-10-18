@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import {
     CheckCircle,

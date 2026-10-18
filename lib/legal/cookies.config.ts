@@ -40,6 +40,20 @@ export const doesRegistryNameMatch = (registeredName: string, keyName: string): 
 export const COOKIE_REGISTRY: CookieRegistry = {
   essential: [
     {
+      name: 'tsr-scroll-restoration-v1_3',
+      purpose: 'Restores page scroll positions when navigating backward or forward.',
+      duration: 'Browser tab session',
+      provider: 'TravelFlow / TanStack Router',
+      storage: 'sessionStorage',
+    },
+    {
+      name: 'tanstack_router_reload:*',
+      purpose: 'Prevents repeated reloads when a newer app version replaces a route module.',
+      duration: 'Browser tab session',
+      provider: 'TravelFlow / TanStack Router',
+      storage: 'sessionStorage',
+    },
+    {
       name: 'tf_cookie_consent_choice_v1',
       purpose: 'Stores the user consent decision for optional analytics.',
       duration: 'Persistent',
@@ -597,24 +611,8 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Debug-only key.',
     },
     {
-      name: 'tf_debug_prefetch_section_expanded',
-      purpose: 'Stores debugger prefetch diagnostics section expansion state.',
-      duration: 'Persistent',
-      provider: 'TravelFlow',
-      storage: 'localStorage',
-      notes: 'Debug-only key.',
-    },
-    {
       name: 'tf_debug_view_transition_section_expanded',
       purpose: 'Stores debugger view-transition diagnostics section expansion state.',
-      duration: 'Persistent',
-      provider: 'TravelFlow',
-      storage: 'localStorage',
-      notes: 'Debug-only key.',
-    },
-    {
-      name: 'tf_debug_prefetch_overlay',
-      purpose: 'Stores debugger prefetch overlay toggle.',
       duration: 'Persistent',
       provider: 'TravelFlow',
       storage: 'localStorage',

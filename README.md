@@ -1,10 +1,12 @@
 # TravelFlow
 
-TravelFlow is a React + TypeScript + Vite app for generating and managing travel itineraries.
+TravelFlow generates and manages travel itineraries. This integration branch migrates the app to TanStack Start with React, TypeScript and native TanStack routing. Production rollout and performance acceptance are tracked separately in [the migration plan](docs/architecture/TANSTACK_START_MIGRATION.md) and [issue #559](https://github.com/chrizzzly87/travelflow/issues/559).
+
+Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment.
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 22 (see `.node-version`)
 - pnpm 10+ (via Corepack)
 
 ## Local Setup
@@ -47,22 +49,22 @@ TF_ADMIN_API_KEY=replace_with_a_long_random_secret
 pnpm dev
 ```
 
-For internal edge API routes (for example `/api/internal/ai/benchmark`), run Netlify dev instead:
+Plain development does not establish Edge API parity. For internal edge API routes (for example `/api/internal/ai/benchmark`), use the Netlify wrapper:
 
 ```bash
 pnpm dev:netlify
 ```
 
-Then open the app via `http://localhost:8888` so `/api/*` routes are handled by Netlify Edge Functions.
+Open the port reported by Netlify (normally `http://localhost:8888`). Adapter Edge emulation is also available with `NETLIFY_DEV_EDGE=true pnpm dev`; verify API behavior on the actual deploy preview before claiming parity.
 
 For async trip-generation worker parity and local troubleshooting, use:
 
-- [docs/AI_TRIP_GENERATION_LOCAL_DEV.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_LOCAL_DEV.md)
+- [docs/AI_TRIP_GENERATION_LOCAL_DEV.md](docs/AI_TRIP_GENERATION_LOCAL_DEV.md)
 
 ## Routes
 
 - `/` marketing landing page
-- `/es/*`, `/de/*`, `/fr/*`, `/pt/*`, `/ru/*`, `/it/*`, `/pl/*`, `/ko/*` localized marketing pages (English stays on root paths)
+- `/es/*`, `/de/*`, `/fr/*`, `/pt/*`, `/ru/*`, `/it/*`, `/pl/*`, `/ko/*`, `/fa/*`, `/ur/*` localized marketing pages (English stays on root paths)
 - `/create-trip` trip creation flow
 - `/trip/:tripId` planner (owner/admin stays; non-owner viewers route to `/s/:token` when an active share exists; without share they are routed to login/share-unavailable)
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)
@@ -77,8 +79,8 @@ For async trip-generation worker parity and local troubleshooting, use:
 
 ## Admin security and isolation
 
-- Admin UI is route-isolated behind `/admin/*` and lazy-loaded as a separate workspace router, so public and normal-user routes do not preload admin page code.
-- Browser bundles are always publicly retrievable in any SPA deployment, so no database secrets or service-role credentials are shipped client-side.
+- Admin UI has its own native pathless route area, browser rendering policy, access guard and leaf modules. Public and normal-user navigation must not preload admin page code.
+- Browser bundles are publicly retrievable. No database secrets or service-role credentials may be shipped client-side; selective client rendering is not an authorization mechanism.
 - Admin data access is enforced server-side via Supabase RLS + RPC permission checks (`has_admin_permission`) and edge authorization for privileged identity actions (`/api/internal/admin/iam`).
 - Compatibility note: current RBAC includes a temporary fail-open path for legacy admins without explicit role rows; strict role-only enforcement is tracked in `docs/AUTH_ROLES_IMPLEMENTATION_NOTES.md`.
 
@@ -125,7 +127,7 @@ For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, u
 pnpm build
 ```
 
-The production output is generated in `dist/`.
+The build emits public assets/prerendered pages in `dist/client` and server output in `dist/server`. The Netlify adapter owns server deployment and document routing; uploading only static files is insufficient. See [the deployment guide](docs/NETLIFY_TANSTACK_START.md).
 
 `pnpm build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.
 
@@ -135,9 +137,9 @@ Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
 All available `pnpm` commands in this repo:
 
-- `pnpm dev` — Start Vite dev server.
+- `pnpm dev` — Start the TanStack Start development server through Vite.
 - `pnpm build` — Run image optimization (inspirations + blog), validations, and production Vite build.
-- `pnpm preview` — Preview the production build locally.
+- `pnpm preview` — Convenience preview; use the built-server browser harness and deploy preview for migration acceptance.
 - `pnpm release:prepare` — Generate missing blog source images, then run the full production build pipeline.
 - `pnpm updates:validate` — Validate `content/updates/*.md` formatting and release metadata.
 - `pnpm blog:validate` — Validate blog markdown metadata/content.

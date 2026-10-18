@@ -8,8 +8,8 @@
  * render instead of one paint later.
  *
  * The theme is also applied before this module ever loads, by the inline script
- * in index.html. That script is not optional: marketing routes are prerendered
- * by scripts/prerender-routes.mjs, so without it every prerendered page paints
+ * in src/document/theme-boot.js. Start emits it in server-rendered documents;
+ * without it every prerendered page paints
  * light and then snaps. This module must therefore agree with that script about
  * the storage key, the class name and the tone attribute — see THEME_BOOT_KEYS
  * below, which is asserted against the script in the unit tests.
@@ -25,7 +25,7 @@ export type ResolvedTheme = 'light' | 'dark';
 export type DarkTone = 'warm' | 'slate';
 
 /**
- * Duplicated verbatim in the inline boot script in index.html. The unit tests
+ * Duplicated verbatim in src/document/theme-boot.js. The unit tests
  * read that script and assert these three values still appear in it, so the two
  * cannot drift apart silently.
  */

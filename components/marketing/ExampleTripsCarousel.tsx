@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/app/navigation';
 import { ArrowRight } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { ITrip, IViewSettings } from '../../types';
 import { exampleTripCards, getExampleTripUiCopy } from '../../data/exampleTripCards';
-import { getExampleTemplateMiniCalendar, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
+import { exampleTripPreviews } from '../../data/exampleTripPreviews.generated';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ExampleTripCard } from './ExampleTripCard';
 
@@ -50,10 +49,7 @@ export const ExampleTripsCarousel: React.FC = () => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('home');
     const uiCopy = getExampleTripUiCopy(i18n.resolvedLanguage || i18n.language);
-    const tripViewPrefetchRef = useRef<Promise<unknown> | null>(null);
-    const [isMobileViewport, setIsMobileViewport] = useState(() => (
-        typeof window !== 'undefined' ? window.matchMedia(MOBILE_QUERY).matches : false
-    ));
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const trackRef = useRef<HTMLDivElement | null>(null);
@@ -88,79 +84,13 @@ export const ExampleTripsCarousel: React.FC = () => {
         [],
     );
 
-    const prewarmTripView = useCallback(() => {
-        if (!tripViewPrefetchRef.current) {
-            tripViewPrefetchRef.current = import('../TripView')
-                .catch(() => {
-                    tripViewPrefetchRef.current = null;
-                    return null;
-                });
-        }
-    }, []);
-
     const handleCardClick = useCallback((templateId: string, transitionKey: string) => {
-        const factory = TRIP_FACTORIES[templateId];
-        if (!factory) return;
-        prewarmTripView();
         trackEvent('home__carousel_card', { template: templateId });
-
         const target = `/example/${encodeURIComponent(templateId)}`;
-        const nowMs = Date.now();
-        const generated = factory(new Date(nowMs).toISOString());
-        const resolvedView: IViewSettings = {
-            layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
-            timelineView: generated.defaultView?.timelineView ?? 'horizontal',
-            mapStyle: generated.defaultView?.mapStyle ?? 'standard',
-            zoomLevel: generated.defaultView?.zoomLevel ?? 1,
-            routeMode: generated.defaultView?.routeMode,
-            showCityNames: generated.defaultView?.showCityNames,
-            sidebarWidth: generated.defaultView?.sidebarWidth,
-            timelineHeight: generated.defaultView?.timelineHeight,
-        };
-        const selectedCard = exampleTripCards.find((card) => (card.templateId || '') === templateId) || null;
-        const templateCountries = selectedCard?.countries?.flatMap((country) => (
-            country.name ? [country.name] : []
-        )) || [];
-        const preparedTrip: ITrip = {
-            ...generated,
-            createdAt: nowMs,
-            updatedAt: nowMs,
-            isFavorite: false,
-            isExample: true,
-            exampleTemplateId: templateId,
-            exampleTemplateCountries: templateCountries,
-            sourceKind: 'example',
-            sourceOwnerType: 'system_catalog',
-            sourceOwnerHandle: 'travelflow_examples',
-            defaultView: resolvedView,
-        };
-
-        const navigation = () => navigate(target, {
-            state: {
-                useExampleSharedTransition: true,
-                prefetchedExampleTrip: preparedTrip,
-                prefetchedExampleView: resolvedView,
-                prefetchedTemplateTitle: selectedCard?.title,
-                prefetchedTemplateCountries: templateCountries,
-            },
-        });
-
-        emitViewTransitionDebug({
-            phase: 'card-click',
-            templateId,
-            transitionKey,
-            targetPath: target,
-        });
-
-        emitViewTransitionDebug({
-            phase: 'navigate-direct',
-            templateId,
-            transitionKey,
-            targetPath: target,
-        });
-
-        navigation();
-    }, [navigate, prewarmTripView]);
+        emitViewTransitionDebug({ phase: 'card-click', templateId, transitionKey, targetPath: target });
+        // Route-owned loading resolves the selected example; marketing does not construct a trip.
+        navigate(target, { state: { useExampleSharedTransition: true } });
+    }, [navigate]);
 
     const applyDesktopTransforms = useCallback(() => {
         const track = trackRef.current;
@@ -473,7 +403,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                     <div ref={trackRef} className="flex w-max gap-6 will-change-transform">
                         {doubledCards.map(({ card, loopId }, index) => {
                             const miniCalendar = card.templateId
-                                ? getExampleTemplateMiniCalendar(card.templateId)
+                                ? exampleTripPreviews[card.templateId] ?? null
                                 : null;
                             const transitionKey = `desktop-${card.templateId || card.id}-${loopId}`;
                             const examplePath = card.templateId
@@ -492,9 +422,9 @@ export const ExampleTripsCarousel: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={(event) => handleCardButtonClick(event, card.templateId, transitionKey)}
-                                        onMouseEnter={prewarmTripView}
-                                        onFocus={prewarmTripView}
-                                        onTouchStart={prewarmTripView}
+
+
+
                                         data-prefetch-href={examplePath}
                                         className="block w-full cursor-pointer select-none text-left transition-transform duration-150 ease-out [-webkit-touch-callout:none] [-webkit-user-select:none] hover:scale-[1.02] active:scale-[0.96] [&_*]:select-none [&_*]:[-webkit-touch-callout:none] [&_*]:[-webkit-user-select:none]"
                                         {...(card.templateId
@@ -532,7 +462,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                     <div className="flex items-start gap-5 py-4">
                         {mobileLoopCards.map(({ card, loopId }) => {
                             const miniCalendar = card.templateId
-                                ? getExampleTemplateMiniCalendar(card.templateId)
+                                ? exampleTripPreviews[card.templateId] ?? null
                                 : null;
                             const transitionKey = `mobile-${card.templateId || card.id}-${loopId}`;
                             const examplePath = card.templateId
@@ -547,8 +477,8 @@ export const ExampleTripsCarousel: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={(event) => handleCardButtonClick(event, card.templateId, transitionKey)}
-                                        onTouchStart={prewarmTripView}
-                                        onFocus={prewarmTripView}
+
+
                                         data-prefetch-href={examplePath}
                                         className="block w-full cursor-pointer select-none text-left transition-transform duration-150 ease-out [-webkit-touch-callout:none] [-webkit-user-select:none] active:scale-[0.96] [&_*]:select-none [&_*]:[-webkit-touch-callout:none] [&_*]:[-webkit-user-select:none]"
                                         {...(card.templateId

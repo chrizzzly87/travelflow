@@ -20,7 +20,7 @@ Almost all of the offline behaviour already existed before this feature:
 | --- | --- |
 | Trips persisted locally | `services/storageService.ts` (`travelflow_trips_v1`) |
 | All account trips mirrored locally on sync | `services/dbService.ts` (`syncTripsFromDb`) |
-| Trip resolves from cache when offline | `routes/TripLoaderRoute.tsx` |
+| Trip resolves from cache when offline | `features/trips/loadOwnedTrip.ts` |
 | Offline edit queue and sync on reconnect | `services/offlineChangeQueue.ts`, `services/tripSyncManager.ts` |
 | Offline banners and badge | `components/ConnectivityStatusBanner.tsx`, `components/GlobalConnectivityBadge.tsx` |
 
@@ -37,7 +37,7 @@ shell layer. It adds no sync, merge or conflict machinery.
 | `shared/serviceWorkerRoutes.ts` | The request-strategy table, unit-tested |
 | `scripts/templates/sw.js` | The worker source, with `__BUILD_HASH__` / `__PRECACHE_MANIFEST__` placeholders |
 | `scripts/lib/serviceWorkerManifest.mjs` | Pure precache-list and hash helpers |
-| `scripts/build-service-worker.mjs` | Writes `dist/sw.js`; runs **last** in the build |
+| `scripts/build-service-worker.mjs` | Writes `dist/client/sw.js`; runs **last** in the build |
 | `services/serviceWorkerRegistration.ts` | Registers the worker after first paint |
 | `routes/TripsRoute.tsx` | The `/trips` start page |
 
@@ -45,11 +45,13 @@ The template lives in `scripts/templates/`, not `public/`, on purpose: a build
 that skips the generator then publishes no worker at all rather than a broken
 one carrying unsubstituted placeholders.
 
-`scripts/build-service-worker.mjs` must run after `scripts/prerender-routes.mjs`,
-because the precache list is derived from `dist/spa.html`, which prerendering
-writes after `vite build` has finished. This is why the project does not use
-`vite-plugin-pwa`: a Workbox manifest generated during the vite phase cannot see
-that file.
+`scripts/build-service-worker.mjs` runs after the Start build. The native SPA-shell
+configuration in `vite.config.ts` emits `dist/client/spa.html` using the separate
+`/__offline-shell` mask. The generator derives entry scripts, stylesheet links and
+the native module-preload graph from that document. A missing entry script fails
+the build. Precache the complete initial module graph: caching only the entry
+script breaks a cold offline boot when its static imports are separate files.
+Route-specific chunks are still cached when first fetched online.
 
 ## Caching strategies
 

@@ -1,4 +1,4 @@
-import i18n from 'i18next';
+import i18n, { createInstance, type i18n as I18nInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, isLocale } from './config/locales';
@@ -82,17 +82,17 @@ const loadLocaleNamespace = async (language: string, namespace: string) => {
     return {};
 };
 
-export const preloadLocaleNamespaces = async (language: string, namespaces: string[]): Promise<void> => {
+export const preloadLocaleNamespaces = async (language: string, namespaces: string[], instance: I18nInstance = i18n): Promise<void> => {
     const normalizedLanguage = isLocale(language) ? language : DEFAULT_LOCALE;
     const uniqueNamespaces = Array.from(new Set(namespaces.filter(Boolean)));
 
     await Promise.all(uniqueNamespaces.map(async (namespace) => {
         const cacheKey = `${normalizedLanguage}:${namespace}`;
-        if (preloadCache.has(cacheKey) || i18n.hasResourceBundle(normalizedLanguage, namespace)) return;
+        if ((instance === i18n && preloadCache.has(cacheKey)) || instance.hasResourceBundle(normalizedLanguage, namespace)) return;
 
         const resources = await loadLocaleNamespace(normalizedLanguage, namespace);
-        i18n.addResourceBundle(normalizedLanguage, namespace, resources, true, true);
-        preloadCache.add(cacheKey);
+        instance.addResourceBundle(normalizedLanguage, namespace, resources, true, true);
+        if (instance === i18n) preloadCache.add(cacheKey);
     }));
 };
 
@@ -131,4 +131,15 @@ if (typeof window !== 'undefined') {
     });
 }
 
+/** One resource store per server request; never mutate the browser singleton for SSR. */
+export const createRequestI18n = (): I18nInstance => {
+    const instance = createInstance();
+    void instance.use(resourcesToBackend(loadLocaleNamespace)).init({
+        lng: DEFAULT_LOCALE, fallbackLng: DEFAULT_LOCALE, supportedLngs: SUPPORTED_LOCALES,
+        defaultNS: 'common', ns: [], initImmediate: false,
+        interpolation: { prefix: '{', suffix: '}', escapeValue: false, defaultVariables: { appName: APP_NAME } },
+        react: { useSuspense: true },
+    });
+    return instance;
+};
 export default i18n;

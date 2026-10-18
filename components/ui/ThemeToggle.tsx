@@ -1,10 +1,11 @@
-import React, { forwardRef, useEffect, useState } from 'react';
+import React, { forwardRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun } from 'lucide-react';
 
 import { useTheme } from '../../contexts/theme/useTheme';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { cn } from '../../lib/utils';
+import { useHydrated } from '../../hooks/useHydrated';
 import { activateBootControls } from '../../services/bootInteractionBridge';
 
 interface ThemeToggleProps {
@@ -16,34 +17,16 @@ interface ThemeToggleProps {
     analyticsSurface?: string;
 }
 
-/**
- * Keep explicit ref forwarding for Radix triggers and focus-managing parents.
- * Preact 11 forwards refs automatically, while our React 18 test/type peer
- * still requires forwardRef; this wrapper works in both runtimes.
- */
+/** Ref forwarding supports Radix triggers and focus-managing parents. */
 export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
     ({ variant = 'bar', className, analyticsSurface = 'nav' }, ref) => {
         const { t } = useTranslation('common');
         const { resolvedTheme, toggle } = useTheme();
 
-        // Two-pass render, the same pattern SiteHeader uses for its active-link
-        // underline, and for the same reason.
-        //
-        // Marketing routes are prerendered, and preact's hydrate() does not patch
-        // attributes or text on DOM that already exists — it only diffs structure.
-        // So a first client render that disagrees with the prerendered markup is
-        // silently ignored: the button keeps the build-time label, icon and
-        // aria-pressed, and only corrects itself once something else forces a real
-        // re-render (resizing the window, for instance).
-        //
-        // Prerender has no window, so it always emits the light state. Rendering
-        // that same light state on the first client pass and flipping afterwards
-        // turns the correction into a genuine post-hydration update, which preact
-        // does apply.
-        const [hydrated, setHydrated] = useState(false);
+        // Match the SSR label before reading browser theme preferences.
+        const hydrated = useHydrated();
         const bootScope = `theme:${analyticsSurface}`;
         useEffect(() => {
-            setHydrated(true);
             return activateBootControls(bootScope);
         }, [bootScope]);
 

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
@@ -165,8 +166,8 @@ vi.mock('react-i18next', () => ({
 
 import { CreateTripClassicLabPage } from '../../pages/CreateTripClassicLabPage';
 
-const renderPage = () =>
-  render(
+const renderPage = async () =>
+  await render(
     <MemoryRouter initialEntries={['/create-trip']}>
       <CreateTripClassicLabPage onOpenManager={vi.fn()} onTripGenerated={vi.fn()} />
     </MemoryRouter>
@@ -207,8 +208,8 @@ describe('pages/CreateTripClassicLabPage', () => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
   });
 
-  it('renders special notes directly after dates and hides model selection for non-admins', () => {
-    renderPage();
+  it('renders special notes directly after dates and hides model selection for non-admins', async () => {
+    await renderPage();
 
     const datesHeading = screen.getByText('dates.title');
     const notesHeading = screen.getByText('notes.title');
@@ -217,10 +218,10 @@ describe('pages/CreateTripClassicLabPage', () => {
     expect(screen.queryByText('modelPicker.label')).not.toBeInTheDocument();
   });
 
-  it('shows the model selection controls for admins', () => {
+  it('shows the model selection controls for admins', async () => {
     mocks.authState.isAdmin = true;
 
-    renderPage();
+    await renderPage();
 
     expect(screen.getAllByText('modelPicker.label')).toHaveLength(2);
   });
@@ -228,7 +229,7 @@ describe('pages/CreateTripClassicLabPage', () => {
   it('shows seasonal destination recommendations when the field is focused without a query', async () => {
     const user = userEvent.setup();
 
-    renderPage();
+    await renderPage();
 
     await user.click(screen.getByPlaceholderText('destination.searchPlaceholder'));
 

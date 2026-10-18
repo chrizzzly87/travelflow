@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
 
 /**
  * Same-origin URLs that are always precached, independent of the build output.
- * Everything here must exist in `dist/` or the worker's `cache.addAll` — and
+ * Everything here must exist in `dist/client/` or the worker's `cache.addAll` — and
  * therefore the install — will fail.
  */
 export const FIXED_PRECACHE_URLS = [
@@ -29,6 +29,7 @@ export const FIXED_PRECACHE_URLS = [
 ];
 
 const MODULE_SCRIPT_PATTERN = /<script\b[^>]*\btype=["']module["'][^>]*\bsrc=["']([^"']+)["'][^>]*>/gi;
+const MODULE_PRELOAD_PATTERN = /<link\b[^>]*\brel=["']modulepreload["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi;
 const STYLESHEET_PATTERN = /<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi;
 
 const collectMatches = (html, pattern) => {
@@ -57,10 +58,11 @@ export const extractShellAssets = (html) => {
     throw new Error('Shell HTML is empty; cannot derive the precache manifest.');
   }
 
-  const scripts = collectMatches(html, MODULE_SCRIPT_PATTERN).filter(isLocalBuildUrl);
+  const entryScripts = collectMatches(html, MODULE_SCRIPT_PATTERN).filter(isLocalBuildUrl);
+  const scripts = [...new Set([...entryScripts, ...collectMatches(html, MODULE_PRELOAD_PATTERN).filter(isLocalBuildUrl)])];
   const stylesheets = collectMatches(html, STYLESHEET_PATTERN).filter(isLocalBuildUrl);
 
-  if (scripts.length === 0) {
+  if (entryScripts.length === 0) {
     throw new Error(
       'No module entry script found in the shell HTML. '
       + 'Has the build output or prerender step changed shape?'

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
@@ -36,7 +37,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),
@@ -177,7 +178,7 @@ describe('pages/LoginPage auth flows', () => {
 
   it('submits credentials when Enter is pressed in the password field', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123{enter}');
@@ -191,7 +192,7 @@ describe('pages/LoginPage auth flows', () => {
 
   it('switches to session-only persistence when remember login is unchecked', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.click(screen.getByRole('checkbox', { name: 'labels.rememberLogin' }));
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
@@ -223,7 +224,7 @@ describe('pages/LoginPage auth flows', () => {
     });
     mocks.processQueuedTripGenerationAfterAuth.mockResolvedValue({ tripId: 'trip-123' });
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await waitFor(() => {
       expect(mocks.processAnonymousAssetClaimAfterAuth).toHaveBeenCalledWith('8d4d4796-5fe3-4e5d-856d-2c6d6a0138d6');
@@ -247,7 +248,7 @@ describe('pages/LoginPage auth flows', () => {
       new QueuedTripGenerationError('Queued trip generation failed.', { tripId: 'trip-failed-77' }),
     );
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await waitFor(() => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-2');
@@ -268,7 +269,7 @@ describe('pages/LoginPage auth flows', () => {
       }),
     );
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await waitFor(() => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-9');
@@ -278,7 +279,7 @@ describe('pages/LoginPage auth flows', () => {
 
   it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     const emailInput = screen.getByLabelText('labels.email') as HTMLInputElement;
     const passwordInput = screen.getByLabelText('labels.password') as HTMLInputElement;
@@ -294,7 +295,7 @@ describe('pages/LoginPage auth flows', () => {
 
   it('blocks register submit until terms consent checkbox is checked', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.click(screen.getByRole('button', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'new-user@example.com');
@@ -319,7 +320,7 @@ describe('pages/LoginPage auth flows', () => {
       data: { session: { access_token: 'session-token' } },
     });
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.click(screen.getByRole('button', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'accepted@example.com');
@@ -339,7 +340,7 @@ describe('pages/LoginPage auth flows', () => {
     const user = userEvent.setup();
     mocks.auth.loginWithPassword.mockRejectedValueOnce(new Error('Supabase auth is not configured.'));
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123');

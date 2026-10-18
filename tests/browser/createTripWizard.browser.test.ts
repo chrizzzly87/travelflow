@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -273,7 +273,7 @@ describe('pages/CreateTripV3Page', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /wizard\.intent\.options\.known_dates_need_destination\.title/i }));
+    await user.click(await screen.findByRole('button', { name: /wizard\.intent\.options\.known_dates_need_destination\.title/i }));
 
     expect(screen.getByText('wizard.dates.title')).toBeInTheDocument();
     expect(screen.queryByText('wizard.destination.title')).not.toBeInTheDocument();
@@ -307,7 +307,7 @@ describe('pages/CreateTripV3Page', () => {
         .toBe('flex');
     });
 
-    await user.click(screen.getByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
+    await user.click(await screen.findByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
     await waitForWizardText('wizard.destination.title');
     await waitFor(() => {
       expect(screen.getByLabelText('country-select')).toHaveValue('Japan');
@@ -373,7 +373,7 @@ describe('pages/CreateTripV3Page', () => {
       ],
     });
 
-    await user.click(screen.getByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
+    await user.click(await screen.findByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
     await waitForWizardText('wizard.destination.title');
     await continueWizard(user);
     await waitForWizardText('wizard.dates.title');
@@ -420,7 +420,7 @@ describe('pages/CreateTripV3Page', () => {
         .toBe('exact');
     });
 
-    await user.click(screen.getByRole('button', { name: /wizard\.intent\.options\.known_dates_need_destination\.title/i }));
+    await user.click(await screen.findByRole('button', { name: /wizard\.intent\.options\.known_dates_need_destination\.title/i }));
     await waitForWizardText('wizard.dates.title');
     await waitForWizardText('2026-04-01:2026-04-03');
 
@@ -486,7 +486,7 @@ describe('pages/CreateTripV3Page', () => {
         .toBe('flex');
     });
 
-    await user.click(screen.getByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
+    await user.click(await screen.findByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
     await waitForWizardText('wizard.destination.title');
     await waitFor(() => {
       expect(screen.getByLabelText('country-select')).toHaveValue('Japan');

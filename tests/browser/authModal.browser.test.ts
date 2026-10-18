@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -26,8 +27,8 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@/app/navigation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/app/navigation')>();
   return {
     ...actual,
     useNavigate: () => mocks.navigate,
@@ -116,7 +117,7 @@ vi.mock('react-i18next', () => ({
 
 import { AuthModal } from '../../components/auth/AuthModal';
 
-const renderModal = () => render(
+const renderModal = async () => await render(
   React.createElement(
     MemoryRouter,
     { initialEntries: ['/'] },
@@ -152,7 +153,7 @@ describe('components/auth/AuthModal', () => {
 
   it('uses session-only persistence when remember login is unchecked before password sign-in', async () => {
     const user = userEvent.setup();
-    renderModal();
+    await renderModal();
 
     await user.click(screen.getByRole('checkbox', { name: 'labels.rememberLogin' }));
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
@@ -166,8 +167,8 @@ describe('components/auth/AuthModal', () => {
     expect(screen.queryByText('states.alreadyAuthenticated')).not.toBeInTheDocument();
   });
 
-  it('keeps the dialog inside the viewport and drops the password-reset hint', () => {
-    renderModal();
+  it('keeps the dialog inside the viewport and drops the password-reset hint', async () => {
+    await renderModal();
 
     expect(screen.queryByText('copy.passwordResetHint')).not.toBeInTheDocument();
 
@@ -179,8 +180,8 @@ describe('components/auth/AuthModal', () => {
     expect(scrollArea).toContainElement(screen.getByLabelText('labels.email'));
   });
 
-  it('hides the header intro lines on small screens and keeps the title', () => {
-    renderModal();
+  it('hides the header intro lines on small screens and keeps the title', async () => {
+    await renderModal();
 
     expect(screen.getByRole('heading', { name: 'hero.title' })).toBeInTheDocument();
     expect(screen.getByText('hero.eyebrow').className).toContain('hidden');
@@ -189,7 +190,7 @@ describe('components/auth/AuthModal', () => {
 
   it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {
     const user = userEvent.setup();
-    renderModal();
+    await renderModal();
 
     const emailInput = screen.getByLabelText('labels.email') as HTMLInputElement;
     const passwordInput = screen.getByLabelText('labels.password') as HTMLInputElement;
@@ -205,7 +206,7 @@ describe('components/auth/AuthModal', () => {
 
   it('blocks register submit until terms consent checkbox is checked', async () => {
     const user = userEvent.setup();
-    renderModal();
+    await renderModal();
 
     await user.click(screen.getByRole('radio', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'new-user@example.com');
@@ -230,7 +231,7 @@ describe('components/auth/AuthModal', () => {
       data: { session: { access_token: 'session-token' } },
     });
 
-    renderModal();
+    await renderModal();
 
     await user.click(screen.getByRole('radio', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'accepted@example.com');
@@ -250,7 +251,7 @@ describe('components/auth/AuthModal', () => {
     const user = userEvent.setup();
     mocks.auth.loginWithPassword.mockRejectedValueOnce(new Error('Supabase auth is not configured.'));
 
-    renderModal();
+    await renderModal();
 
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123');

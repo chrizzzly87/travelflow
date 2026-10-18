@@ -16,7 +16,7 @@ describe('production client runtime environment guard', () => {
 
   it('keeps the interactive login route out of static prerendering', () => {
     const prerenderScript = fs.readFileSync(
-      path.join(projectRoot, 'scripts/prerender-routes.mjs'),
+      path.join(projectRoot, 'vite.config.ts'),
       'utf8',
     );
 

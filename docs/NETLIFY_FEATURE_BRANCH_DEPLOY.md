@@ -4,10 +4,14 @@ Use this when you need a safe deployed test URL for a branch before merging.
 
 ## Standard flow
 1. Push your feature branch to GitHub.
-2. Open or update a PR targeting `main`.
+2. Open or update a PR against the intended integration base. For the TanStack migration, use `codex/tanstack-start-integration`; production `main` requires separate preview acceptance.
 3. Netlify auto-creates/updates the **Deploy Preview** for that PR.
 4. Wait for the `netlify/travelflowapp/deploy-preview` check to pass.
 5. Test on the preview URL (for example `https://deploy-preview-<PR_NUMBER>--travelflowapp.netlify.app`).
+
+Verify the repository remote and linked site first. TravelFlow uses `travelflowapp`
+(site ID `1abc3d37-f6af-4810-9097-489b2a282ac6`). See
+[Start deployment ownership](NETLIFY_TANSTACK_START.md) for server artifacts and routing.
 
 ## Required env keys for preview parity
 At minimum, ensure these exist for Deploy Preview context (or all contexts):
@@ -39,7 +43,7 @@ Optional compatibility keys:
   - Updated PR CI (`pr-quality`) to checkout `pull_request.head.sha` so it validates the same commit Netlify deploys.
 
 ## Branch and PR hygiene standard
-1. Start each issue from the latest `main` in a dedicated feature branch.
+1. Start each issue from its intended base in a dedicated feature branch. Migration child branches start from the integration branch.
 2. Keep branch scope to one issue/theme; avoid mixing unrelated work.
 3. Commit incrementally during the implementation (small, reviewable commits).
 4. Push branch updates continuously and keep one PR per feature branch.
@@ -76,36 +80,15 @@ Linking the project first (`netlify link --id ...`) and running a full `netlify 
 - Use alias deploys only to check **static and client-side rendering**.
 - Verify anything touching `/api/*` on a real Netlify **Deploy Preview** or on production.
 
-## Manual CLI deploy with env parity (mandatory for auth flows)
-Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.
+## Manual deployment limitations
 
-Always build locally with injected env, then deploy with `--no-build` to avoid CLI rebuild-time env masking.
-
-1. Link the worktree once:
-   - `pnpm dlx netlify link --id 1abc3d37-f6af-4810-9097-489b2a282ac6`
-2. Prepare an env file (pick one):
-   - If `.env.local` exists and is up to date, use it.
-   - Otherwise export from Netlify (CLI-compatible fallback):
-     - `pnpm dlx netlify env:list --json > .netlify/.env.deploy.json`
-     - `node -e "const fs=require('fs');const src='.netlify/.env.deploy.json';const dst='.netlify/.env.deploy';const data=JSON.parse(fs.readFileSync(src,'utf8'));const lines=Object.entries(data).map(([k,v])=>\`${k}=\${JSON.stringify(String(v))}\`);fs.writeFileSync(dst, lines.join('\\n')+'\\n');"`
-3. Build locally with env file safely parsed:
-   - `.env.local` path:
-     - `pnpm dlx dotenv-cli -e .env.local -- pnpm build`
-   - Netlify-exported env path:
-     - `pnpm dlx dotenv-cli -e .netlify/.env.deploy -- pnpm build`
-4. Deploy the prebuilt output without rebuilding:
-   - `pnpm dlx netlify deploy --no-build --dir=dist --alias <alias-name>`
-5. Reuse the same alias to update an existing preview URL.
-6. Prefer a stable semantic alias (for example `codex-issue-103-104-openrouter`) rather than ephemeral worktree IDs (for example `af73-*`) to avoid stale/broken alias reuse.
-7. After deploy, verify status before sharing:
-   - `curl -s -o /dev/null -w '%{http_code}\n' https://<alias>--travelflowapp.netlify.app/`
-   - `curl -s -o /dev/null -w '%{http_code}\n' https://<alias>--travelflowapp.netlify.app/admin/ai-benchmark/telemetry`
-
-Notes:
-- Do not use `source .env.local` for deployment commands; values containing special characters can fail shell parsing and silently skip env injection.
-- Avoid `netlify deploy --build` for auth-sensitive checks in this repo. The CLI build path can resolve masked `VITE_SUPABASE_*` values and produce `Supabase auth is not configured`.
-- Never commit `.env.local` or pulled env files.
-- Symptom of missing env injection: login fails, `Supabase auth is not configured`, or JS chunk errors caused by bad runtime config.
+Use the Git-backed PR deploy preview for acceptance. A static alias upload such as
+`netlify deploy --dir=dist` omits the Start server and does not establish parity
+with the configured Edge Functions. Upload success is insufficient evidence.
+The adapter generates server deployment artifacts; `dist/client` alone is not a
+complete deploy. Keep build-time environment files private and never source an
+environment file as shell code. Do not export all Netlify environment values into
+tool output while diagnosing a build.
 
 ## Diagnosing a Netlify-only build failure
 
@@ -132,6 +115,7 @@ Inspect the flag without printing secrets:
 
 ```bash
 pnpm dlx netlify env:list --json
+# Inspect metadata locally; do not print or share raw values.
 ```
 
 ## Useful checks

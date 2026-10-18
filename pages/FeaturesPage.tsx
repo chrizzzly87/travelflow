@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { MapPinLine, Printer, Ticket } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
@@ -11,7 +11,6 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { warmRouteAssets } from '../services/navigationPrefetch';
 
 interface OutcomeItem {
     title: string;
@@ -41,9 +40,6 @@ export const FeaturesPage: React.FC = () => {
     const outcomeItems = t('outcomes.items', { returnObjects: true }) as OutcomeItem[];
     const airport = t('airport', { returnObjects: true }) as AirportCopy;
 
-    const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildPath('createTrip'), 'manual');
-    };
 
     return (
         <MarketingLayout>
@@ -76,9 +72,9 @@ export const FeaturesPage: React.FC = () => {
                                 <Link
                                     to={buildPath('createTrip')}
                                     onClick={() => trackEvent('features__hero_cta--start_planning')}
-                                    onMouseEnter={prewarmCreateTripRoute}
-                                    onFocus={prewarmCreateTripRoute}
-                                    onTouchStart={prewarmCreateTripRoute}
+
+
+
                                     className={primaryCtaClasses}
                                     {...getAnalyticsDebugAttributes('features__hero_cta--start_planning')}
                                 >
@@ -182,9 +178,9 @@ export const FeaturesPage: React.FC = () => {
                         <Link
                             to={buildPath('createTrip')}
                             onClick={() => trackEvent('features__bottom_cta')}
-                            onMouseEnter={prewarmCreateTripRoute}
-                            onFocus={prewarmCreateTripRoute}
-                            onTouchStart={prewarmCreateTripRoute}
+
+
+
                             className="mt-10 inline-flex items-center justify-center rounded-lg bg-white px-8 py-4 text-base font-semibold text-accent-700 shadow-lg shadow-slate-900/20 transition-[scale,translate,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.96] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-600"
                             {...getAnalyticsDebugAttributes('features__bottom_cta')}
                         >

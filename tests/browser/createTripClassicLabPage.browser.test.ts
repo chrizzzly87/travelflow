@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
+import { screen } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   authState: {
@@ -195,8 +196,8 @@ vi.mock('react-i18next', () => ({
 
 import { CreateTripClassicLabPage } from '../../pages/CreateTripClassicLabPage';
 
-const renderPage = () =>
-  render(
+const renderPage = async () =>
+  await render(
     React.createElement(
       MemoryRouter,
       { initialEntries: ['/create-trip'] },
@@ -242,8 +243,8 @@ describe('pages/CreateTripClassicLabPage', () => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
   });
 
-  it('renders special notes directly after dates and before traveler preferences', () => {
-    renderPage();
+  it('renders special notes directly after dates and before traveler preferences', async () => {
+    await renderPage();
 
     const datesHeading = screen.getByText('dates.title');
     const notesHeading = screen.getByText('notes.title');
@@ -255,7 +256,7 @@ describe('pages/CreateTripClassicLabPage', () => {
 
   it('shows exact-date day/night summaries and blocks same-day ranges', async () => {
     const user = (await import('@testing-library/user-event')).default.setup();
-    renderPage();
+    await renderPage();
 
     for (const button of screen.getAllByRole('button', { name: 'set-same-day-range' })) {
       await user.click(button);

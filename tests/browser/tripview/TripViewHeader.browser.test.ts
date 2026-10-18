@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 
 import { TripViewHeader } from '../../../components/tripview/TripViewHeader';
 
@@ -92,10 +93,10 @@ describe('components/tripview/TripViewHeader', () => {
     accountMenuMocks.props = [];
   });
 
-  it('uses the title as the trip details trigger and moves the trips entry into the account menu', () => {
+  it('uses the title as the trip details trigger and moves the trips entry into the account menu', async () => {
     const props = buildProps();
 
-    render(
+    await render(
       React.createElement(MemoryRouter, null,
         React.createElement(TripViewHeader, props),
       ),
@@ -116,13 +117,13 @@ describe('components/tripview/TripViewHeader', () => {
     expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__trip_info--open', { source: 'header_title' });
   });
 
-  it('offers a way into site navigation, which the planner otherwise has none of', () => {
+  it('offers a way into site navigation, which the planner otherwise has none of', async () => {
     // The trip page is its own header: the logo goes home and nothing else in
     // it leads anywhere, so on a phone the planner was a dead end.
     const props = buildProps();
     props.isMobile = true;
 
-    render(
+    await render(
       React.createElement(MemoryRouter, null,
         React.createElement(TripViewHeader, props),
       ),
@@ -137,14 +138,14 @@ describe('components/tripview/TripViewHeader', () => {
     expect(screen.queryByTestId('mobile-menu')).not.toBeInTheDocument();
   });
 
-  it('puts the burger last in the row, where every other header puts it', () => {
+  it('puts the burger last in the row, where every other header puts it', async () => {
     // The burger is the same control on every screen. It first landed between
     // Share and the account avatar here, so a thumb reaching for it had to find
     // it in a different place depending on which page was open.
     const props = buildProps();
     props.isMobile = true;
 
-    render(
+    await render(
       React.createElement(MemoryRouter, null,
         React.createElement(TripViewHeader, props),
       ),
@@ -155,11 +156,11 @@ describe('components/tripview/TripViewHeader', () => {
     expect(row?.lastElementChild).toBe(burger);
   });
 
-  it('hides the account label on mobile while keeping the profile menu available', () => {
+  it('hides the account label on mobile while keeping the profile menu available', async () => {
     const props = buildProps();
     props.isMobile = true;
 
-    render(
+    await render(
       React.createElement(MemoryRouter, null,
         React.createElement(TripViewHeader, props),
       ),
@@ -169,13 +170,13 @@ describe('components/tripview/TripViewHeader', () => {
     expect(accountMenuMocks.props.at(-1)?.showCaret).toBe(false);
   });
 
-  it('falls back to the login button for guests', () => {
+  it('falls back to the login button for guests', async () => {
     const props = buildProps();
     props.canUseAuthenticatedSession = false;
     props.accountEmail = null;
     props.accountUserId = null;
 
-    render(
+    await render(
       React.createElement(MemoryRouter, null,
         React.createElement(TripViewHeader, props),
       ),
@@ -187,10 +188,10 @@ describe('components/tripview/TripViewHeader', () => {
     expect(screen.queryByTestId('account-menu')).not.toBeInTheDocument();
   });
 
-  it('offers the dark-mode toggle on desktop, as the site header does', () => {
+  it('offers the dark-mode toggle on desktop, as the site header does', async () => {
     // Below lg the burger's menu carries the toggle; above it the trip page used
     // to have no way to switch theme at all.
-    render(
+    await render(
       React.createElement(MemoryRouter, null,
         React.createElement(TripViewHeader, buildProps()),
       ),

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from '@/tests/helpers/routerHarness';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({
@@ -56,8 +57,8 @@ const LocationProbe: React.FC = () => {
   return React.createElement('div', { 'data-testid': 'location-probe' }, `${location.pathname}${location.search}`);
 };
 
-const renderPublicProfilePage = (initialPath: string) => {
-  return render(
+const renderPublicProfilePage = async (initialPath: string) => {
+  return await render(
     React.createElement(
       MemoryRouter,
       { initialEntries: [initialPath] },
@@ -131,7 +132,7 @@ describe('pages/PublicProfilePage', () => {
       nextOffset: 1,
     });
 
-    renderPublicProfilePage('/u/traveler');
+    await renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
       expect(screen.getByText('Traveler One')).toBeInTheDocument();
@@ -167,7 +168,7 @@ describe('pages/PublicProfilePage', () => {
       },
     });
 
-    renderPublicProfilePage('/u/traveler');
+    await renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
       expect(screen.getByText('Traveler One')).toBeInTheDocument();
@@ -201,7 +202,7 @@ describe('pages/PublicProfilePage', () => {
       },
     });
 
-    renderPublicProfilePage('/u/traveler-old');
+    await renderPublicProfilePage('/u/traveler-old');
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe').textContent).toBe('/u/traveler-new');
@@ -237,7 +238,7 @@ describe('pages/PublicProfilePage', () => {
       },
     });
 
-    renderPublicProfilePage('/u/TrAvElEr');
+    await renderPublicProfilePage('/u/TrAvElEr');
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe').textContent).toBe('/u/traveler');
@@ -290,7 +291,7 @@ describe('pages/PublicProfilePage', () => {
         nextOffset: 2,
       });
 
-    renderPublicProfilePage('/u/traveler');
+    await renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
       expect(screen.getByText('Trip One')).toBeInTheDocument();
@@ -316,7 +317,7 @@ describe('pages/PublicProfilePage', () => {
     });
     mocks.auth.isAuthenticated = false;
 
-    renderPublicProfilePage('/u/unknown-handle');
+    await renderPublicProfilePage('/u/unknown-handle');
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
@@ -331,10 +332,10 @@ describe('pages/PublicProfilePage', () => {
     expect(screen.getByText('publicProfile.notFoundInvalidPassportTitle')).toBeInTheDocument();
   });
 
-  it('keeps the public profile loading state visually neutral while the handle lookup is pending', () => {
+  it('keeps the public profile loading state visually neutral while the handle lookup is pending', async () => {
     mocks.resolvePublicProfileByHandle.mockImplementation(() => new Promise(() => {}));
 
-    const view = renderPublicProfilePage('/u/unknown-handle');
+    const view = await renderPublicProfilePage('/u/unknown-handle');
 
     expect(screen.getByTestId('public-profile-loading-placeholder')).toBeInTheDocument();
     expect(view.container.querySelector('.animate-pulse')).toBeNull();
@@ -350,7 +351,7 @@ describe('pages/PublicProfilePage', () => {
     });
     mocks.auth.isAuthenticated = true;
 
-    renderPublicProfilePage('/u/unknown-handle');
+    await renderPublicProfilePage('/u/unknown-handle');
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
@@ -395,7 +396,7 @@ describe('pages/PublicProfilePage', () => {
       nextOffset: 1,
     });
 
-    renderPublicProfilePage('/u/viewer_traveler');
+    await renderPublicProfilePage('/u/viewer_traveler');
 
     await waitFor(() => {
       expect(screen.getByText('Viewer Traveler')).toBeInTheDocument();
@@ -436,7 +437,7 @@ describe('pages/PublicProfilePage', () => {
     });
     mocks.getPublicTripsPageByUserId.mockRejectedValueOnce(new Error('Public trips unavailable'));
 
-    renderPublicProfilePage('/u/traveler');
+    await renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
       expect(screen.getByText('Traveler One')).toBeInTheDocument();
@@ -476,7 +477,7 @@ describe('pages/PublicProfilePage', () => {
       },
     });
 
-    renderPublicProfilePage('/u/traveler');
+    await renderPublicProfilePage('/u/traveler');
 
     await screen.findByTestId('location-probe');
 
@@ -511,7 +512,7 @@ describe('pages/PublicProfilePage', () => {
       },
     });
 
-    renderPublicProfilePage('/u/traveler');
+    await renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
       expect(screen.getByText('publicProfile.visibilityPrivate')).toBeInTheDocument();
@@ -557,7 +558,7 @@ describe('pages/PublicProfilePage', () => {
       profile: mocks.auth.profile,
     });
 
-    renderPublicProfilePage('/u/traveler');
+    await renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'summary.editProfile' })).toBeInTheDocument();
