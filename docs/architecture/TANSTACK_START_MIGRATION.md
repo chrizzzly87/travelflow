@@ -10,21 +10,24 @@ Tracking issue: [#559 — Migrate TravelFlow to TanStack Start on an isolated in
 Implementation PR: [#560 — Migrate application foundation to native TanStack Start](https://github.com/chrizzzly87/travelflow/pull/560) (draft).
 Implementation branch: `codex/tanstack-start-foundation`.
 PR target: `codex/tanstack-start-integration`; never `main`.
-The native foundation is now recorded in the implementation branch. The deployed PR revision still requires verification after push; an older preview is not migration acceptance. Production is unchanged.
+Implementation commits: `f83b32bc` (native foundation), `b127e152` (hosted directory-path locale fix).
+Verified preview: https://deploy-preview-560--travelflowapp.netlify.app, deployed revision `b127e152218ad2eb47e41e546c572842b1191dea`.
+All 38 production browser checks also pass on the actual Netlify preview. Production is unchanged.
+[Benchmark report and raw data](../performance/tanstack-start-2026-10-18/README.md).
 
 | Workstream | Status | Evidence / next gate |
 | --- | --- | --- |
 | Baseline and acceptance criteria | Baseline captured | Five measured runs plus warmup against production baseline `ca90ba7bb`; equivalent after measurements pending. |
-| Framework and native routing | Implemented locally | Native Start document, route layouts, loaders, intent preloading and Netlify adapter; production build prerenders eight documents. |
-| Encapsulated application domains | Implemented locally | Shared shell, trip session, persistence, creation, view preferences, auth boundaries and admin route area separated. Final integrated checks pending. |
-| Public rendering and first interaction | Targeted checks passing | SSR image mismatch and premature auth-context hydration update repaired. 36 production Chromium/WebKit checks pass, including delayed-JavaScript controls, localized/RTL entry, creation and encoded trips. The early Updates language-switch regression additionally passed 16 repeated checks. |
+| Framework and native routing | Implemented and preview deployed | Native Start document, route layouts, loaders, intent preloading and Netlify adapter; production build prerenders eight documents. |
+| Encapsulated application domains | Implemented and preview deployed | Shared shell, trip session, persistence, creation, view preferences, auth boundaries and admin route area separated. Local regression and hosted critical-flow checks pass; live account/provider acceptance remains. |
+| Public rendering and first interaction | Targeted checks passing | SSR image mismatch and premature auth-context hydration update repaired. 38 production Chromium/WebKit checks pass, including delayed-JavaScript controls, localized/RTL entry, creation and encoded trips. The early Updates language-switch regression additionally passed 16 repeated checks. |
 | Authentication and access | Regression coverage passing | Verified route guards, account/session races, inactive-account revocation and server-rendered auth-hint isolation covered. Live provider flows remain preview acceptance items. |
-| Full regression suite | Last full fast stage passed | 481 files passed; 2,825 tests passed, one skipped. Coverage: statements 94.03%, branches 83.90%, functions 98.56%, lines 96.29%. |
-| Production build | Passing locally | Latest build prerendered eight documents; service-worker generation succeeded. All 36 production browser and three offline/PWA checks pass, including restored iOS install metadata. |
-| Active docs and release note | In progress | Architecture/deployment/testing guidance and one draft release entry exist; final evidence and remaining outdated instructions need completion. |
-| React/type diagnostics | Reviewed, limitations remain | React Doctor: 61/100, zero errors, ten warnings. Full-project TypeScript remains an existing tracked problem (#556); final new-module review pending. |
-| PR, integration merge and preview | Draft PR open | #560 targets integration and references #559. Foundation implementation is ready to push; deployed revision verification and integration merge remain pending. |
-| Before/after benchmark | Pending | Baseline exists; no performance improvement claimed until equivalent candidate measurements are published. |
+| Full regression suite | Last full fast stage passed | 481 files passed; 2,832 tests passed, one skipped. Coverage: statements 94.03%, branches 84.08%, functions 98.56%, lines 96.29%. |
+| Production build | Passing locally | Latest build prerendered eight documents; service-worker generation succeeded. All 38 production browser and three offline/PWA checks pass, including restored iOS install metadata. |
+| Active docs and release note | Updated | Architecture, deployment, testing, locale, contributor, agent and Lighthouse guidance updated; dated guidance archived. Exactly one release entry remains draft. |
+| React/type diagnostics | Reviewed, limitations remain | React Doctor: 61/100, zero errors, ten warnings. Full-project TypeScript remains an existing tracked problem (#556); 493 full-project diagnostics remain, with zero in the new native/domain modules in the checked candidate. No clean full-project type check is claimed. |
+| PR, integration merge and preview | Draft PR open | #560 targets integration and references #559. Both implementation commits are pushed. Actual preview revision and 38 hosted browser checks verified. Remote CI must pass before any integration merge. |
+| Before/after benchmark | Measured and documented | Clean `b127e152` candidate versus production baseline, same five-run method. Readiness: home −7.5%, wizard −27.8%, pricing +18.0%, example +9.6%. Mixed result; see raw evidence and limits. |
 
 ### Architecture direction
 
@@ -32,7 +35,22 @@ Use native TanStack route layouts for public pages, auth/account, creation, trip
 
 The initial approach of translating the legacy route registry into generated route copies has been discarded. A temporary navigation adapter supports existing callers during conversion; production route ownership and test history are native TanStack. Replace obsolete prefetch and prerender workarounds according to their purpose, preserving first-click handling, theme initialization and supported URLs where still needed.
 
-Next milestone: push the validated foundation, measure the committed candidate, publish equivalent benchmarks and verify its actual Netlify preview. The emitted home preload graph no longer includes the trip workspace, trip persistence or full blog service. Update this dashboard, PR and issue with the resulting evidence.
+Next milestone: finish remote CI and review the testable preview. Keep real OAuth/login/reset,
+active member/admin actions and paid generation as explicit acceptance items; the automated
+smoke checks do not certify those real-provider flows. Follow-up performance work should
+profile pricing/example readiness regressions, route chunk boundaries and localized SSR
+before changing code. The emitted home preload graph excludes trip workspace, persistence
+and the full blog service. Integration merge is allowed after its gates; production promotion
+remains a separate reviewed decision.
+
+### Manual preview review
+
+1. Open home/features/pricing on a cold mobile browser; immediately use menu, theme and language.
+2. Open `/create-trip` and `/create-trip/wizard`, enter the intended trip details and confirm the flow.
+3. Open `/example/thailand-islands`, then a real owned/shared trip; check edits, history, permissions and reload.
+4. Sign in with a real account, check return destination, logout and password reset; use an authorized admin account to review admin routing.
+5. Reopen a previously loaded/synced trip offline. No production schema change is part of this preview.
+
 
 ## Goal and decisions
 
