@@ -10,6 +10,11 @@ test.beforeEach(async ({ page }) => {
   page.on('console', message => {
     if (message.type() === 'error' && /hydration|Minified React error #(418|421|422|423|425)|server HTML|did not match|Suspense boundary.*hydrating/i.test(message.text())) pageErrors.push(message.text());
   });
+  page.on('requestfailed', request => {
+    if (/\/assets\/.*\.(js|css)(\?|$)/.test(request.url())) {
+      console.warn(`Asset request failed: ${request.failure()?.errorText} ${request.url()}`);
+    }
+  });
   page.on('response', (response) => {
     if (response.status() >= 400 && /\/assets\/.*\.(js|css)(\?|$)/.test(response.url())) {
       assetErrors.push(`${response.status()} ${response.url()}`);

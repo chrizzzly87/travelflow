@@ -89,4 +89,18 @@ describe('auth access requests across session changes', () => {
         expect(screen.getByTestId('auth-loading')).toHaveTextContent('false');
     });
 
+    it('still blocks account data while a member is replaced by an anonymous identity', async () => {
+        mocks.access.mockResolvedValue({ userId: 'real-user', role: 'user', accountStatus: 'active', isAnonymous: false });
+        render(<MemoryRouter><AuthProvider><Probe /></AuthProvider></MemoryRouter>);
+        expect(await screen.findByText('real-user')).toBeVisible();
+        let finish!: (value: any) => void;
+        mocks.access.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        await act(async () => { mocks.onAuthChange?.('SIGNED_IN', { user: { id: 'visitor', is_anonymous: true, app_metadata: { provider: 'anonymous' } } }); });
+        expect(screen.getByTestId('auth-loading')).toHaveTextContent('true');
+        expect(screen.queryByText('real-user')).toBeNull();
+        expect(screen.getByText('signed-out')).toBeVisible();
+        await act(async () => { finish({ userId: 'visitor', role: 'user', accountStatus: 'active', isAnonymous: true }); });
+        expect(screen.getByTestId('auth-loading')).toHaveTextContent('false');
+    });
+
 });

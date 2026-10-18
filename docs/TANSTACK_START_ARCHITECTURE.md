@@ -172,3 +172,14 @@ and preloads. Reload only if a current/pending route is session-bound. Loading f
 or token refresh alone must not invalidate public page work. Preserve immediate
 logout/account clears; publish initial session/profile results in a transition so
 unfinished route hydration can complete.
+
+### Anonymous visitor session handoff
+
+A first anonymous browser session resolves its capabilities in the background.
+It must not re-enter account loading and unmount an already interactive planner
+or creation wizard. Access remains empty until bound capabilities resolve; no
+member/admin authority is inferred from the anonymous session. Replacement of
+an existing identity still clears its capabilities and blocks account loading.
+The regression covers preserved input DOM identity, edited draft text and an
+open dialog, plus the member-to-anonymous privacy case. Native protected-route
+guards and backend authorization remain independently enforced.

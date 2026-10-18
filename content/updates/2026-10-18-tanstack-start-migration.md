@@ -22,3 +22,4 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Improved] ⚡ Show essential homepage content immediately for a faster first view.
 - [x] [Fixed] 🖱️ Prevent the cookie banner from interrupting a click while the page loads.
 - [ ] [Internal] 🔐 Scope session revalidation through native route metadata and preserve initial authenticated hydration and account-switch loading generations.
+- [x] [Fixed] 📝 Keep open trip details and unfinished planner inputs when a guest session starts in the background.

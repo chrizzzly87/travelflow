@@ -529,7 +529,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     accessLoadRequestIdRef.current += 1;
                     const nextUserId = nextSession?.user?.id ?? null;
                     if (currentSessionUserId !== nextUserId) {
-                        setIsLoading(Boolean(nextSession));
+                        // A first anonymous visitor session grants no account access.
+                        // Resolve its capabilities in the background without replacing
+                        // an already interactive planner. Real identity changes still
+                        // hide the old account while its replacement is verified.
+                        const createsAnonymousVisitor = currentSessionUserId === null && isAnonymousSession(nextSession);
+                        if (nextSession && !createsAnonymousVisitor) setIsLoading(true);
+                        else publishAuthResult(() => setIsLoading(false));
                         setAccess(null);
                         resetProfileState();
                     }
