@@ -1,49 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { decode } from 'blurhash';
+import { createBlurhashPlaceholder } from './images/blurhashPlaceholder';
+import { useHydrated } from '../hooks/useHydrated';
 import { IMAGE_PLACEHOLDERS } from '../data/imagePlaceholders.generated';
 import { buildImageCdnUrl, buildImageSrcSet, isImageCdnEnabled } from '../utils/imageDelivery';
 import { cn } from '../lib/utils';
 
-const blurhashDataUrlCache = new Map<string, string>();
-
 const normalizePlaceholderPath = (value: string): string => {
-    if (!value) return value;
-    try {
-        const normalized = new URL(value, window.location.origin);
-        return normalized.pathname;
-    } catch {
-        return value.split('#')[0].split('?')[0];
-    }
-};
-
-const clampDimension = (value: number): number => {
-    const normalized = Number.isFinite(value) ? Math.round(value) : 32;
-    return Math.max(1, normalized);
-};
-
-const createBlurhashDataUrl = (hash: string, width: number, height: number): string | null => {
-    if (!hash) return null;
-    const key = `${hash}:${width}x${height}`;
-    const cached = blurhashDataUrlCache.get(key);
-    if (cached) return cached;
-    try {
-        const w = clampDimension(Math.min(width, 48));
-        const h = clampDimension(Math.min(height, 48));
-        const pixels = decode(hash, w, h);
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const context = canvas.getContext('2d');
-        if (!context) return null;
-        const imageData = context.createImageData(w, h);
-        imageData.data.set(pixels);
-        context.putImageData(imageData, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
-        blurhashDataUrlCache.set(key, dataUrl);
-        return dataUrl;
-    } catch {
-        return null;
-    }
+    try { return new URL(value, 'https://travelflow.invalid').pathname; }
+    catch { return value.split('#')[0].split('?')[0]; }
 };
 
 export interface ProgressiveImageProps {
@@ -63,7 +27,7 @@ export interface ProgressiveImageProps {
     skipFade?: boolean;
 }
 
-export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
+const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
     src,
     alt,
     width,
@@ -79,6 +43,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     disableCdn = false,
     skipFade = false,
 }) => {
+    const hydrated = useHydrated();
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
 
@@ -90,13 +55,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     const resolvedWidth = width ?? placeholderMeta?.width ?? 1536;
     const resolvedHeight = height ?? placeholderMeta?.height ?? 1024;
     const blurhashValue = placeholderBlurhash || placeholderMeta?.blurhash || '';
-    const placeholderDataUrl = useMemo(() => {
-        if (!blurhashValue) return null;
-        if (typeof document === 'undefined') return null;
-        const sourceWidth = placeholderMeta?.width ?? resolvedWidth;
-        const sourceHeight = placeholderMeta?.height ?? resolvedHeight;
-        return createBlurhashDataUrl(blurhashValue, sourceWidth, sourceHeight);
-    }, [blurhashValue, placeholderMeta?.height, placeholderMeta?.width, resolvedWidth, resolvedHeight]);
+    const placeholderDataUrl = useMemo(() => createBlurhashPlaceholder(blurhashValue), [blurhashValue]);
 
     const avifSrcSet = useMemo(
         () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
@@ -156,7 +115,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                     className={cn(
                         className || 'size-full object-cover',
                         'outline outline-1 -outline-offset-1 outline-black/10 transition-opacity duration-300 motion-reduce:transition-none dark:outline-white/10',
-                        isLoaded || skipFade ? 'opacity-100' : 'opacity-0',
+                        !hydrated || isLoaded || skipFade ? 'opacity-100' : 'opacity-0',
                     )}
                     onLoad={() => setIsLoaded(true)}
                     onError={() => {
@@ -168,3 +127,6 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         </div>
     );
 };
+
+/** A different resource gets a fresh load/error lifecycle. */
+export const ProgressiveImage: React.FC<ProgressiveImageProps> = props => <ProgressiveImageContent key={props.src} {...props} />;

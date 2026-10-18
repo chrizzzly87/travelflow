@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
  *
  * Separate from `playwright.config.ts` because the service worker only exists
  * in a production build: `registerServiceWorker` no-ops under `vite dev`, and
- * `dist/sw.js` is written by `scripts/build-service-worker.mjs` at the very end
+ * `dist/client/sw.js` is written by `scripts/build-service-worker.mjs` at the very end
  * of the build. Run `pnpm build` (or `pnpm build:netlify`) first.
  */
 export default defineConfig({
@@ -20,7 +20,8 @@ export default defineConfig({
         trace: 'on-first-retry',
     },
     webServer: {
-        command: 'npx vite preview --host 127.0.0.1 --port 4174 --strictPort',
+        command: 'node scripts/serve-built-site.mjs',
+        env: { PORT: '4174' },
         url: 'http://127.0.0.1:4174',
         reuseExistingServer: false,
         timeout: 60_000,

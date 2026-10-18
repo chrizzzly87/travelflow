@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { ArrowRight, CalendarDots, Compass, Info, MapPin } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { FlagIcon } from '../flags/FlagIcon';

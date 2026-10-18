@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from '@/app/navigation';
 import {
     AirplaneTilt,
     Bicycle,
@@ -250,7 +250,7 @@ const MODEL_PREFERENCE_NOTE_KEY_BY_ID: Record<string, string> = {
 };
 const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set<string>(CREATE_TRIP_PREFERRED_MODEL_IDS);
 const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
-const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
+const IS_DEV = Boolean(import.meta.env.DEV);
 
 const createRegionDisplayNames = (locale: string): Intl.DisplayNames | null => {
     try {

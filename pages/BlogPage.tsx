@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getPublishedBlogPostsForLocales } from '../services/blogService';
 import { ProgressiveImage } from '../components/ProgressiveImage';
-import { isPrerenderedDocument } from '../services/prerenderHydrationState';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import type { BlogPost } from '../services/blogService';
@@ -70,7 +69,7 @@ const BlogCard: React.FC<{
     // <picture> + blurhash regardless (identically on the client's first
     // hydration render) so the image is captured in the static markup and loads
     // from the CDN on the live site instead of freezing as a fallback icon.
-    const showImage = !hasImageError || isPrerenderedDocument();
+    const showImage = !hasImageError;
     const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
     const isPendingTarget = isPendingBlogTransitionTarget(post.language, post.slug);
     const usesTitleOnlyTransition = shouldUseTitleOnlyBlogTransition(post.language, post.slug);

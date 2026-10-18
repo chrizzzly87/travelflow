@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from '@/app/navigation';
 import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
@@ -7,11 +7,10 @@ import { LanguageSelect } from './LanguageSelect';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { AppLanguage } from '../../types';
-import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
-import { buildLocalizedLocation } from '../../services/localeRoutingService';
-import { preloadLocaleNamespaces } from '../../i18n';
+import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { useLocaleNavigation } from '../../hooks/useLocaleNavigation';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
@@ -48,6 +47,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const { t, i18n } = useTranslation('common');
     const routeLocation = useSafeRouteLocation();
     const navigate = useNavigate();
+    const changeLocale = useLocaleNavigation();
     const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
     const panelRef = useRef<HTMLDivElement | null>(null);
@@ -148,22 +148,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         setPendingLocale(nextLocale);
         onClose();
 
-        if (!isToolRoute(routeLocation.pathname)) {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(routeLocation.pathname));
-        } else {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(routeLocation.pathname));
-        }
-
-        applyDocumentLocale(nextLocale);
-        void i18n.changeLanguage(nextLocale);
-
-        const target = buildLocalizedLocation({
-            pathname: routeLocation.pathname,
-            search: routeLocation.search,
-            hash: routeLocation.hash,
-            targetLocale: nextLocale,
-        });
-        navigate(target);
+        void changeLocale(nextLocale);
         trackEvent('mobile_nav__language_switch', { from: activeLocale, to: nextLocale });
     };
 

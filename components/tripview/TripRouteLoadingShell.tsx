@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from '@/app/navigation';
 
 import { AppBootstrapShell } from '../bootstrap/AppBootstrapShell';
 import { readPersistedTripViewSettings } from '../../services/tripViewSettingsService';

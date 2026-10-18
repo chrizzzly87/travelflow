@@ -11,7 +11,7 @@ import {
 } from '../../services/bootInteractionBridge';
 
 /**
- * Exercises the real inline script shipped in index.html — the one that keeps a
+ * Exercises the real inline script shipped by the native document head — the one that keeps a
  * pre-hydration tap from being silently dropped on a prerendered page.
  *
  * Regression: on mobile the prerendered page paints a finished header seconds
@@ -19,13 +19,7 @@ import {
  * that window hit an inert <button>, nothing happened, and the visitor was left
  * with no way into navigation or login.
  */
-const INDEX_HTML = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
-
-const extractBridgeScript = (): string => {
-  const match = INDEX_HTML.match(/<script data-tf-hydration-bridge>([\s\S]*?)<\/script>/);
-  if (!match) throw new Error('index.html no longer contains the hydration bridge script');
-  return match[1];
-};
+const extractBridgeScript = (): string => fs.readFileSync(path.resolve(__dirname, '../../src/document/interaction-boot.js'), 'utf8');
 
 const runBridge = () => {
   // eslint-disable-next-line no-new-func

@@ -9,8 +9,8 @@
  * never covered. Eyeballing pages does not find those; this does.
  *
  * Run against a built + prerendered app:
- *   npx vite build && node scripts/prerender-routes.mjs
- *   npx vite preview --port 4201 --strictPort &
+ *   pnpm build:netlify
+ *   PORT=4201 node scripts/serve-built-site.mjs
  *   node scripts/audit-dark-mode.mjs
  *
  * Note the luminance function below linearises each channel before weighting.
@@ -22,7 +22,7 @@ import { chromium } from '@playwright/test';
 const BASE = process.env.TF_AUDIT_BASE || 'http://localhost:4201';
 const ROUTES = [
   '/', '/features', '/inspirations', '/inspirations/countries', '/inspirations/themes',
-  '/inspirations/festivals', '/inspirations/weekend-getaways', '/inspirations/best-time-to-travel',
+  '/inspirations/events-and-festivals', '/inspirations/weekend-getaways', '/inspirations/best-time-to-travel',
   '/blog', '/updates', '/pricing', '/faq', '/contact',
   '/imprint', '/privacy', '/terms', '/cookies',
   '/login', '/create-trip', '/profile', '/profile/settings', '/trips', '/404-does-not-exist',

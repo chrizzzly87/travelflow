@@ -1,5 +1,7 @@
 @import "tailwindcss" source(none);
 @import "./styles/flagpack.css";
+@import "./styles/document.css";
+@import "./styles/loading-shell.css";
 @import "./styles/tremor-theme.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -14,38 +16,14 @@
   background: transparent !important;
 }
 
+/* One atomic utility pass avoids cross-route responsive cascade collisions.
+ * Start discovers this root stylesheet through its matched-route manifest. */
 @source "./**/*.{ts,tsx}";
-@source not "./app/routes/DeferredAppRoutes.tsx";
-@source not "./components/CreateTripForm.tsx";
-@source not "./components/admin/**/*.tsx";
-@source not "./pages/Admin*.tsx";
-@source not "./pages/FeaturesPage.tsx";
-@source not "./pages/UpdatesPage.tsx";
-@source not "./pages/BlogPage.tsx";
-@source not "./pages/BlogPostPage.tsx";
-@source not "./pages/InspirationsPage.tsx";
-@source not "./pages/inspirations/**/*.tsx";
-@source not "./pages/LoginPage.tsx";
-@source not "./pages/ResetPasswordPage.tsx";
-@source not "./pages/ContactPage.tsx";
-@source not "./pages/ImprintPage.tsx";
-@source not "./pages/PrivacyPage.tsx";
-@source not "./pages/TermsPage.tsx";
-@source not "./pages/CookiesPage.tsx";
-@source not "./pages/ProfilePage.tsx";
-@source not "./pages/PublicProfilePage.tsx";
-@source not "./pages/ProfileSettingsPage.tsx";
-@source not "./pages/ProfileOnboardingPage.tsx";
-@source not "./pages/AdminWorkspaceRouter.tsx";
-@source not "./pages/PricingPage.tsx";
-@source not "./pages/FaqPage.tsx";
-@source not "./pages/ShareUnavailablePage.tsx";
-@source not "./pages/NotFoundPage.tsx";
-@source not "./pages/CreateTripV1Page.tsx";
-@source not "./pages/CreateTripV2Page.tsx";
-@source not "./pages/CreateTripV3Page.tsx";
-@source not "./pages/CreateTripSplitWorkspaceLabPage.tsx";
-@source not "./pages/CreateTripJourneyArchitectLabPage.tsx";
+@source not "./tests/**";
+@source not "./test/**";
+@source not "./scripts/**";
+@source not "./src/routeTree.gen.ts";
+@source "./node_modules/@tremor/react/dist/**/*.{js,cjs}";
 
 /*
  * Featured country route cards read their palette from data/countryRoutes.json,

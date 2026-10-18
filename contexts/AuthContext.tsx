@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getFreePlanEntitlements } from '../config/planCatalog';
 import { trackEvent } from '../services/analyticsService';
@@ -223,6 +223,10 @@ export const resolveAuthContextValue = (context: AuthContextValue | null): AuthC
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [hydrated, setHydrated] = useState(false);
+    // Persisted browser hints cannot affect SSR. Defer their context update so
+    // React can finish hydrating native route boundaries before personalizing UI.
+    useEffect(() => { startTransition(() => setHydrated(true)); }, []);
     const routeLocation = useSafeRouteLocation();
     const [session, setSession] = useState<Session | null>(null);
     const [access, setAccess] = useState<UserAccessContext | null>(null);
@@ -241,6 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const hasBootstrappedRef = useRef(false);
     const isBootstrappingRef = useRef(false);
     const profileLoadRequestIdRef = useRef(0);
+    const accessLoadRequestIdRef = useRef(0);
     const optimisticAuthHintRef = useRef<PersistedSupabaseSessionHint | null>(
         shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
             ? readPersistedSupabaseSessionHint()
@@ -330,6 +335,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const refreshAccess = useCallback(async () => {
+        const requestId = ++accessLoadRequestIdRef.current;
         if (shouldEnableE2EAuthSandbox()) {
             const snapshot = getE2EAuthSandboxSnapshot();
             setSession(snapshot.session);
@@ -341,6 +347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
+        if (accessLoadRequestIdRef.current !== requestId) return;
         setAccess(nextAccess);
         if (nextAccess?.userId && !nextAccess.isAnonymous) {
             await refreshProfile();
@@ -501,6 +508,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 stripAuthHash();
 
+                let currentSessionUserId = activeSession?.user?.id ?? null;
+                unsubscribe = authService.subscribeToAuthState((_event, nextSession) => {
+                    logAuthStateEvent(_event, Boolean(nextSession));
+                    authDebug('stateChange', {
+                        event: _event,
+                        hasSession: Boolean(nextSession),
+                        userId: nextSession?.user?.id ?? null,
+                        isAnonymous: isAnonymousSession(nextSession),
+                        hasHash: typeof window !== 'undefined' ? window.location.hash.includes('access_token=') : false,
+                    });
+                    accessLoadRequestIdRef.current += 1;
+                    const nextUserId = nextSession?.user?.id ?? null;
+                    if (currentSessionUserId !== nextUserId) {
+                        setIsLoading(Boolean(nextSession));
+                        setAccess(null);
+                        resetProfileState();
+                    }
+                    currentSessionUserId = nextUserId;
+                    setSession(nextSession);
+                    if (nextSession) {
+                        // Only strip auth hash once a real session exists, so the
+                        // bootstrap fallback can still read the tokens if needed.
+                        stripAuthHash();
+                        const refresh = refreshAccess();
+                        const requestId = accessLoadRequestIdRef.current;
+                        void refresh.catch(error => authDebug('stateChange:accessError', error)).finally(() => {
+                            if (!cancelled && accessLoadRequestIdRef.current === requestId) setIsLoading(false);
+                        });
+                        return;
+                    }
+                    setAccess(null);
+                    resetProfileState();
+                });
+
                 setSession(activeSession);
                 logAuthStateEvent('INITIAL_SESSION', Boolean(activeSession));
                 if (activeSession) {
@@ -512,26 +553,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (!cancelled) setIsLoading(false);
                 if (cancelled) return;
 
-                unsubscribe = authService.subscribeToAuthState((_event, nextSession) => {
-                    logAuthStateEvent(_event, Boolean(nextSession));
-                    authDebug('stateChange', {
-                        event: _event,
-                        hasSession: Boolean(nextSession),
-                        userId: nextSession?.user?.id ?? null,
-                        isAnonymous: isAnonymousSession(nextSession),
-                        hasHash: typeof window !== 'undefined' ? window.location.hash.includes('access_token=') : false,
-                    });
-                    setSession(nextSession);
-                    if (nextSession) {
-                        // Only strip auth hash once a real session exists, so the
-                        // bootstrap fallback can still read the tokens if needed.
-                        stripAuthHash();
-                        void refreshAccess();
-                        return;
-                    }
-                    setAccess(null);
-                    resetProfileState();
-                });
+
 
                 hasBootstrappedRef.current = true;
             } catch (error) {
@@ -556,6 +578,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             triggerBootstrap();
             return () => {
                 cancelled = true;
+                accessLoadRequestIdRef.current += 1;
+                profileLoadRequestIdRef.current += 1;
                 // React Strict Mode re-runs effects in dev. If a bootstrap run was
                 // cancelled during that cycle, allow the next effect pass to start it.
                 if (!hasBootstrappedRef.current) {
@@ -584,6 +608,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         return () => {
             cancelled = true;
+            accessLoadRequestIdRef.current += 1;
+            profileLoadRequestIdRef.current += 1;
             // React Strict Mode re-runs effects in dev. If a bootstrap run was
             // cancelled during that cycle, allow the next effect pass to start it.
             if (!hasBootstrappedRef.current) {
@@ -671,6 +697,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const logout = useCallback(async () => {
+        // In-flight access/profile responses must not restore a signed-out session.
+        accessLoadRequestIdRef.current += 1;
+        setAccess(null);
+        setSession(null);
+        resetProfileState();
         if (shouldEnableE2EAuthSandbox()) {
             await logoutFromE2EAuthSandbox();
             setAccess(null);
@@ -699,7 +730,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isDevAdminBypassDisabled,
             routeLocation.pathname
         );
-        const useDevAdminBypass = shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
+        const useDevAdminBypass = hydrated && shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
         // Development bypass for local admin testing.
         if (useDevAdminBypass) {
             return {
@@ -742,7 +773,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
         }
 
-        const optimisticAuthHint = isLoading && shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
+        const optimisticAuthHint = hydrated && isLoading && shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
             ? optimisticAuthHintRef.current
             : null;
         const effectiveSession = session ?? (
@@ -788,6 +819,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, [
         access,
+        hydrated,
         profile,
         isDevAdminBypassDisabled,
         isLoading,

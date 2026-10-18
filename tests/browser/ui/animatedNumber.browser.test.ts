@@ -1,15 +1,23 @@
 // @vitest-environment jsdom
-import * as PreactCompat from 'preact/compat';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { formatAnimatedNumberText } from '../../../components/ui/animatedNumberFormat';
 import {
-  formatAnimatedNumberText,
-  isPreactCompatReactModule,
+  AnimatedNumber,
 } from '../../../components/ui/animated-number';
 
 describe('components/ui/AnimatedNumber', () => {
-  it('detects Preact compat so number-flow custom elements can be bypassed', () => {
-    expect(isPreactCompatReactModule(PreactCompat)).toBe(true);
+  it('renders a readable number before animated custom elements are available', () => {
+    render(React.createElement(AnimatedNumber, { value: 42, suffix: ' km' }));
+    expect(screen.getByText('42 km')).toBeVisible();
+  });
+
+  it('updates readable text when custom animation elements are unavailable', () => {
+    const view = render(React.createElement(AnimatedNumber, { value: 12, suffix: ' km' }));
+    view.rerender(React.createElement(AnimatedNumber, { value: 13, suffix: ' km' }));
+    expect(screen.getByText('13 km')).toBeVisible();
   });
 
   it('formats fallback text with locale, prefix, and suffix', () => {

@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({
     to,
     children,

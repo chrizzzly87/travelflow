@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useCallback, useDeferredValue, useMemo } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from '@/app/navigation';
 import { ArrowLeft, Compass, Globe } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';

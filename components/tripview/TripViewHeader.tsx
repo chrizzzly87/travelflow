@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { Info, Menu, Pencil, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

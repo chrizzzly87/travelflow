@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   location: {
@@ -75,7 +76,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),
@@ -194,7 +195,7 @@ describe('pages/PricingPage', () => {
   });
 
   it('routes paid plans into the dedicated checkout page', async () => {
-    render(React.createElement(PricingPage));
+    await render(React.createElement(PricingPage));
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'tiers.explorer.cta' })).toHaveAttribute(
@@ -222,7 +223,7 @@ describe('pages/PricingPage', () => {
       issues: [],
     });
 
-    render(React.createElement(PricingPage));
+    await render(React.createElement(PricingPage));
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'tiers.explorer.cta' })).toHaveAttribute(
@@ -233,7 +234,7 @@ describe('pages/PricingPage', () => {
   });
 
   it('does not render the voucher entry form on pricing', async () => {
-    render(React.createElement(PricingPage));
+    await render(React.createElement(PricingPage));
 
     await waitFor(() => {
       expect(screen.queryByPlaceholderText('voucher.placeholder')).not.toBeInTheDocument();
@@ -241,7 +242,7 @@ describe('pages/PricingPage', () => {
   });
 
   it('keeps unconfigured paid tiers disabled on pricing', async () => {
-    render(React.createElement(PricingPage));
+    await render(React.createElement(PricingPage));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'tiers.globetrotter.cta' })).toBeDisabled();
@@ -290,7 +291,7 @@ describe('pages/PricingPage', () => {
       lastEventAt: '2026-03-08T10:00:00.000Z',
     });
 
-    render(React.createElement(PricingPage));
+    await render(React.createElement(PricingPage));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'shared.currentPlanCta' })).toBeDisabled();
@@ -343,7 +344,7 @@ describe('pages/PricingPage', () => {
       lastEventAt: '2026-03-08T10:00:00.000Z',
     });
 
-    render(React.createElement(PricingPage));
+    await render(React.createElement(PricingPage));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'shared.currentPlanCta' })).toBeDisabled();
@@ -400,7 +401,7 @@ describe('pages/PricingPage', () => {
       issues: [],
     });
 
-    render(React.createElement(PricingPage));
+    await render(React.createElement(PricingPage));
 
     await waitFor(() => {
       expect(mocks.refreshCurrentPaddleSubscription).toHaveBeenCalledTimes(1);

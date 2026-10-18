@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import {
     AirplaneTilt,
@@ -61,7 +61,7 @@ import {
     resolveDestinationName,
 } from '../services/destinationService';
 import { decodeTripPrefill } from '../services/tripPrefillDecoder';
-import { TripView } from '../components/TripView';
+import { LazyTripView } from '../components/tripview/LazyTripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
 import {
@@ -1505,7 +1505,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     if (isGenerating && previewTrip) {
         return (
             <div className="relative h-screen w-screen">
-                <TripView
+                <Suspense fallback={<TripGenerationSkeleton />}><LazyTripView
                     trip={previewTrip}
                     onUpdateTrip={setPreviewTrip}
                     onOpenManager={onOpenManager}
@@ -1513,7 +1513,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     onViewSettingsChange={NOOP}
                     canShare={false}
                     initialMapFocusQuery={generationSummary.mapFocus || generationSummary.destination}
-                />
+                /></Suspense>
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-card/95 px-5 py-4 shadow-xl backdrop-blur-sm dark:bg-card/95 dark:border-accent-400/25 dark:shadow-none">
                         <div className="flex items-center gap-3">

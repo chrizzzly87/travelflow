@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from '@/app/navigation';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { DestinationGuideView } from '../../components/inspirations/DestinationGuideView';
 import { DestinationGuideNotFound } from '../../components/inspirations/DestinationGuideNotFound';

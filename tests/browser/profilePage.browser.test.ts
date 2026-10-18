@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React, { Suspense } from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
 import { makeTrip } from '../helpers/tripFixtures';
 
 const siteHeaderSpy = vi.hoisted(() => vi.fn());
@@ -105,7 +106,7 @@ const LocationProbe: React.FC = () => {
   return React.createElement('div', { 'data-testid': 'location-probe' }, `${location.pathname}${location.search}`);
 };
 
-const renderProfilePage = (initialPath: string) => render(
+const renderProfilePage = async (initialPath: string) => await render(
   React.createElement(
     MemoryRouter,
     { initialEntries: [initialPath] },
@@ -157,7 +158,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('uses tab query state and switches tabs via URL updates', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=favorites&recentSort=updated');
+    await renderProfilePage('/profile?tab=favorites&recentSort=updated');
 
     await waitFor(() => {
       expect(screen.getByText('Trip A')).toBeInTheDocument();
@@ -176,7 +177,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('updates recent sort query parameter from the sort toggle', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=recent&recentSort=created');
+    await renderProfilePage('/profile?tab=recent&recentSort=created');
 
     await waitFor(() => {
       expect(screen.getAllByText('Trip A').length).toBeGreaterThan(0);
@@ -194,7 +195,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
   it('prefers the real profile creation timestamp for member since', async () => {
     mocks.getAllTrips.mockReturnValue([]);
 
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     await waitFor(() => {
       expect(screen.getByText('May 2024')).toBeInTheDocument();
@@ -208,7 +209,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       makeTrip({ id: 'trip-private', title: 'Trip Private', showOnPublicProfile: false, updatedAt: 200 }),
     ]);
 
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     await waitFor(() => {
       expect(screen.getByText('Trip Public')).toBeInTheDocument();
@@ -233,7 +234,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       makeTrip({ id: 'trip-legacy', title: 'Trip Legacy', showOnPublicProfile: undefined, updatedAt: 200 }),
     ]);
 
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     await waitFor(() => {
       expect(screen.getByText('Trip Public')).toBeInTheDocument();
@@ -249,7 +250,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
   });
 
   it('uses the shared page content grid width', async () => {
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     await waitFor(() => {
       expect(screen.getByTestId('profile-page-container')).toBeInTheDocument();
@@ -262,7 +263,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
   });
 
   it('keeps header create-trip CTA enabled on profile route', async () => {
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     await waitFor(() => {
       expect(screen.getByTestId('site-header')).toBeInTheDocument();
@@ -272,7 +273,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
   });
 
   it('shows a clear create-trip shortcut on profile home', async () => {
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /create trip/i })).toBeInTheDocument();
@@ -286,7 +287,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       configurable: true,
       value: undefined,
     });
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     const shareButton = await screen.findByRole('button', { name: /summary\.shareProfile/i });
     await waitFor(() => {
@@ -300,11 +301,11 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     openSpy.mockRestore();
   });
 
-  it('defers hero rendering while profile session data is hydrating', () => {
+  it('defers hero rendering while profile session data is hydrating', async () => {
     mocks.auth.isProfileLoading = true;
     mocks.auth.profile = null;
 
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     expect(screen.queryByText('fallback.displayName')).not.toBeInTheDocument();
     expect(mocks.auth.refreshProfile).not.toHaveBeenCalled();
@@ -327,7 +328,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
         })
       )));
 
-      renderProfilePage('/profile?tab=all&recentSort=updated');
+      await renderProfilePage('/profile?tab=all&recentSort=updated');
 
       await waitFor(() => {
         expect(screen.getByText('Trip 1')).toBeInTheDocument();
@@ -345,7 +346,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
   // back to true this test fails, which is the cue to restore the interaction
   // test that used to live here (see git history for this file).
   it('does not offer the passport while PASSPORT_FEATURE_ENABLED is off', async () => {
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     await screen.findByTestId('location-probe');
 
@@ -355,7 +356,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('archives a single trip from profile cards after confirmation', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     await waitFor(() => {
       expect(screen.getByText('Trip A')).toBeInTheDocument();
@@ -373,7 +374,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('offers undo after single archive and restores the trip when undo is clicked', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     await waitFor(() => {
       expect(screen.getByText('Trip A')).toBeInTheDocument();
@@ -408,7 +409,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
   it('does not archive a trip when single archive confirmation is canceled', async () => {
     const user = userEvent.setup();
     mocks.confirmDialog.mockResolvedValueOnce(false);
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     await waitFor(() => {
       expect(screen.getByText('Trip A')).toBeInTheDocument();
@@ -426,7 +427,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('archives selected trips from selection mode via Delete hotkey', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
     await user.click(checkboxes[0]);
@@ -442,7 +443,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('archives selected trips from selection mode via archive toolbar button', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
     await user.click(checkboxes[0]);
@@ -457,7 +458,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('archives selected trips from selection mode via Backspace hotkey', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
     await user.click(checkbox);
@@ -472,7 +473,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('clears selected trips via Escape key', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
     await user.click(checkbox);
@@ -487,7 +488,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('does not trigger delete hotkey archive while typing in input', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
     await user.click(checkbox);
@@ -506,7 +507,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('toggles favorite state for selected trips from the selection toolbar', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
     await user.click(checkboxes[0]);
@@ -520,7 +521,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
   it('toggles visibility state for selected trips from the selection toolbar', async () => {
     const user = userEvent.setup();
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
     await user.click(checkboxes[0]);
@@ -539,7 +540,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       makeTrip({ id: 'trip-b', title: 'Trip B', status: 'expired', updatedAt: 500 }),
     ]);
 
-    renderProfilePage('/profile?tab=all&recentSort=updated');
+    await renderProfilePage('/profile?tab=all&recentSort=updated');
 
     const tripACheckbox = await screen.findByRole('checkbox', { name: /Trip A/i });
     await user.click(tripACheckbox);
@@ -559,7 +560,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       lastName: 'Wisniewski',
     };
 
-    renderProfilePage('/profile');
+    await renderProfilePage('/profile');
 
     await waitFor(() => {
       expect(screen.getByText(/Chris Wisniewski/i)).toBeInTheDocument();

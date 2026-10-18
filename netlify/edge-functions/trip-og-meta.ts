@@ -233,7 +233,7 @@ const buildTripRouteMetadata = async (
   return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
 };
 
-export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
+export const resolveTripDocumentMetadata = async (request: Request): Promise<Metadata | null> => {
   const url = new URL(request.url);
   const routeTarget = parseRouteTarget(url);
   const mapRuntime = await resolveEdgeMapRuntimeAsync(request);
@@ -250,6 +250,15 @@ export default async (request: Request, context: { next: () => Promise<Response>
       parseBooleanOverride(url.searchParams.get("cityNames")),
   };
 
+  if (!routeTarget) return null;
+  return routeTarget.token
+      ? buildShareMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection)
+      : buildTripRouteMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection);
+};
+
+export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
+  const url = new URL(request.url);
+  const routeTarget = parseRouteTarget(url);
   const baseResponse = await context.next();
   const fallbackResponse = baseResponse.clone();
   const contentType = baseResponse.headers.get("content-type") || "";
@@ -263,10 +272,8 @@ export default async (request: Request, context: { next: () => Promise<Response>
   }
 
   try {
-    const metadata = routeTarget.token
-      ? await buildShareMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection)
-      : await buildTripRouteMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection);
-
+    const metadata = await resolveTripDocumentMetadata(request);
+    if (!metadata) return baseResponse;
     const html = await baseResponse.text();
     const rewrittenHtml = injectMetaTags(html, metadata);
     const headers = new Headers(baseResponse.headers);

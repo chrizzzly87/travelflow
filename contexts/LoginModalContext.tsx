@@ -1,5 +1,5 @@
 import React, { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/app/navigation';
 import { useAuth } from '../hooks/useAuth';
 import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 import { trackEvent } from '../services/analyticsService';

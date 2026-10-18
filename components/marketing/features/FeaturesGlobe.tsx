@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../../lib/utils';
-import { isPrerenderCapture } from '../../../services/prerenderHydrationState';
+import { useHydrated } from '../../../hooks/useHydrated';
 import { useTheme } from '../../../contexts/theme/useTheme';
 import {
     ensureRuntimeLocationLoaded,
@@ -148,21 +148,8 @@ export const FeaturesGlobe: React.FC = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [isFallback, setIsFallback] = useState(false);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-    // Everything below the container is WebGL-dependent, and /features is
-    // prerendered. The prerender browser has no WebGL, so the capture froze the
-    // fallback markup into features.html — and preact/compat's hydrate() does not
-    // patch attributes on DOM it reuses. The client (which DOES have WebGL)
-    // rendered isFallback=false against that markup and the corrections were
-    // silently dropped: the canvas kept `opacity-0`, and the overlay layer kept
-    // the fallback card's `inset-x-6 bottom-6 p-5` classes, which is why the Paris
-    // panel sat below the globe and the other panels were clipped out of sight. A
-    // client-side navigation re-rendered from scratch and looked fine.
-    //
-    // Rendering nothing until mounted — and holding that empty state through the
-    // capture — makes the prerendered HTML and the client's first render identical
-    // (an empty box of the right size), so the globe, the canvas and the panels
-    // all arrive through a real post-hydration diff that preact does apply.
-    const [mounted, setMounted] = useState(false);
+    // WebGL and browser measurements start after the deterministic SSR fallback hydrates.
+    const mounted = useHydrated();
 
     const cardMap = useMemo(() => {
         const cards = t('globe.cards', { returnObjects: true }) as GlobeCardCopy[];
@@ -256,11 +243,6 @@ export const FeaturesGlobe: React.FC = () => {
             rotateDeg: -5,
         },
     ], [compactLayout, phoneLayout]);
-
-    useEffect(() => {
-        if (isPrerenderCapture()) return;
-        setMounted(true);
-    }, []);
 
     useEffect(() => {
         const unsubscribe = subscribeRuntimeLocation((snapshot) => {

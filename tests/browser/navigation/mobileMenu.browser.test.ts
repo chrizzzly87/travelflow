@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   isAuthenticated: false,
@@ -78,8 +79,8 @@ describe('components/navigation/MobileMenu legal links', () => {
     mocks.profile = null;
   });
 
-  it('shows legal links in the mobile menu for anonymous users', () => {
-    render(
+  it('shows legal links in the mobile menu for anonymous users', async () => {
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/trip/example'] },
@@ -96,12 +97,12 @@ describe('components/navigation/MobileMenu legal links', () => {
     expect(screen.getByRole('link', { name: 'Cookies' })).toHaveAttribute('href', '/cookies');
   });
 
-  it('shows only the admin dashboard shortcut on mobile for admins', () => {
+  it('shows only the admin dashboard shortcut on mobile for admins', async () => {
     mocks.isAuthenticated = true;
     mocks.isAdmin = true;
     mocks.profile = { username: 'owner' };
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/profile'] },
@@ -122,7 +123,7 @@ describe('components/navigation/MobileMenu legal links', () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/trip/example'] },
@@ -141,12 +142,12 @@ describe('components/navigation/MobileMenu legal links', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it('hides stamps and public-profile shortcuts from the authenticated mobile account section', () => {
+  it('hides stamps and public-profile shortcuts from the authenticated mobile account section', async () => {
     mocks.isAuthenticated = true;
     mocks.isAdmin = false;
     mocks.profile = { username: 'owner' };
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/profile'] },

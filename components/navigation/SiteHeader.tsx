@@ -1,19 +1,17 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from '@/app/navigation';
 import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
-import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
+import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
-import { buildLocalizedLocation } from '../../services/localeRoutingService';
-import { preloadLocaleNamespaces } from '../../i18n';
+import { useLocaleNavigation } from '../../hooks/useLocaleNavigation';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
-import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootInteractionBridge';
@@ -68,32 +66,13 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    // A tap on the burger can land seconds before this chunk exists — the
-    // prerendered header is painted long before it is interactive. The inline
-    // boot script records that tap here; open the menu once we are mounted.
-    //
-    // This has to be an effect, not lazy initial state: opening during the
-    // hydration render adds a sibling the prerendered DOM does not have, and
-    // preact/compat hydrates it against whatever node follows the header
-    // without applying attributes — the drawer came out inline in the page
-    // flow, with no role="dialog". Reconciling after mount renders it properly.
+    // Replay an intent captured before the bundle once the menu can mount.
     useEffect(() => {
         if (consumeBootIntent(BOOT_INTENT_MOBILE_MENU)) setIsMobileMenuOpen(true);
     }, []);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
-    // The active-nav underline is derived after mount, not on the first render.
-    // The prerendered markup has no active link, and preact/compat does NOT
-    // reconcile a className that only differs between the server DOM and the
-    // first client render during hydration — so computing "active" on the first
-    // render leaves the DOM stuck inactive (vnode already says active, so no
-    // later re-render patches it). Rendering inactive first (matching the
-    // server) and flipping `hydrated` in an effect makes the underline a real
-    // post-hydration change that preact applies. Same two-pass pattern the
-    // banners use.
-    const [hydrated, setHydrated] = useState(false);
-    useEffect(() => { setHydrated(true); }, []);
     const routeLocation = useSafeRouteLocation();
-    const navigate = useNavigate();
+    const changeLocale = useLocaleNavigation();
     const { t, i18n } = useTranslation('common');
     const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
@@ -126,22 +105,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
         setPendingLocale(nextLocale);
 
-        if (!isToolRoute(routeLocation.pathname)) {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(routeLocation.pathname));
-        } else {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(routeLocation.pathname));
-        }
-
-        applyDocumentLocale(nextLocale);
-        void i18n.changeLanguage(nextLocale);
-
-        const target = buildLocalizedLocation({
-            pathname: routeLocation.pathname,
-            search: routeLocation.search,
-            hash: routeLocation.hash,
-            targetLocale: nextLocale,
-        });
-        navigate(target);
+        void changeLocale(nextLocale);
         trackEvent('navigation__language_switch', { from: activeLocale, to: nextLocale });
     };
 
@@ -169,9 +133,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const navDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`navigation__${target}`);
 
-    const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildLocalizedCreateTripPath(selectedLocale), 'manual');
-    };
 
     const isGlass = variant === 'glass';
 
@@ -206,21 +167,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
                         {(['features', 'inspirations', 'updates', 'blog', 'pricing'] as const).map((routeKey) => {
                             const path = buildLocalizedMarketingPath(routeKey, activeLocale);
-                            // Inactive on the first render (matches the prerendered markup);
-                            // after `hydrated` flips, derive the active link from the current
-                            // URL. window.location is correct from the first client render and
-                            // react-router updates it synchronously on navigation; referencing
-                            // routeLocation.pathname keeps this recomputing on route changes.
-                            const currentPath = ((hydrated && typeof window !== 'undefined' ? window.location.pathname : routeLocation.pathname) || '/').replace(/\/+$/, '') || '/';
-                            const linkPath = path.replace(/\/+$/, '') || '/';
-                            const isActive = hydrated && (currentPath === linkPath || currentPath.startsWith(`${linkPath}/`));
                             return (
                                 <NavLink
                                     key={routeKey}
                                     to={path}
                                     onClick={() => handleNavClick(routeKey)}
-                                    className={navLinkClass({ isActive })}
-                                    aria-current={isActive ? 'page' : undefined}
+                                    className={navLinkClass}
                                     {...navDebugAttributes(routeKey)}
                                 >
                                     {t(`nav.${routeKey}`)}
@@ -258,14 +210,16 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 />
                             </Suspense>
                         ) : isLoading ? (
-                            <span
-                                className={`${loginClass} cursor-wait items-center gap-2 opacity-70`}
-                                aria-disabled="true"
-                                aria-live="polite"
+                            <NavLink
+                                to={buildLocalizedMarketingPath('login', activeLocale)}
+                                onClick={handleLoginClick}
+                                className={`${loginClass} items-center gap-2 opacity-70`}
+                                aria-busy="true"
+                                {...navDebugAttributes('login')}
                             >
                                 <Loader2 size={14} className="animate-spin" />
                                 {t('nav.login')}
-                            </span>
+                            </NavLink>
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}
@@ -280,9 +234,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             <NavLink
                                 to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
-                                onMouseEnter={prewarmCreateTripRoute}
-                                onFocus={prewarmCreateTripRoute}
-                                onTouchStart={prewarmCreateTripRoute}
+
+
+
                                 className="inline-flex min-h-10 items-center rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300"
                                 {...navDebugAttributes('create_trip')}
                             >

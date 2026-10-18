@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   auth: {
@@ -82,18 +83,18 @@ describe('pages/UpdatesPage internal release visibility', () => {
     ]);
   });
 
-  it('hides private release items for non-admin viewers by default', () => {
-    render(React.createElement(UpdatesPage));
+  it('hides private release items for non-admin viewers by default', async () => {
+    await render(React.createElement(UpdatesPage));
 
     expect(screen.getByText('Public item')).toBeInTheDocument();
     expect(screen.queryByText('Private item')).toBeNull();
     expect(screen.queryByText('Internal view enabled. Hidden release items are visible.')).toBeNull();
   });
 
-  it('shows private release items for authenticated admins', () => {
+  it('shows private release items for authenticated admins', async () => {
     mocks.auth.isAdmin = true;
 
-    render(React.createElement(UpdatesPage));
+    await render(React.createElement(UpdatesPage));
 
     expect(screen.getByText('Public item')).toBeInTheDocument();
     expect(screen.getByText('Private item')).toBeInTheDocument();

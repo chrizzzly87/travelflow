@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import {
     Backpack,
@@ -17,7 +17,6 @@ import {
 } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ProgressiveImage } from '../components/ProgressiveImage';
-import { isPrerenderedDocument } from '../services/prerenderHydrationState';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
@@ -123,7 +122,7 @@ const CARD_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bott
 const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }) => {
     const media = destinationCardMedia[destination.title];
     const [hasImageError, setHasImageError] = useState(false);
-    const showPhoto = Boolean(media) && (!hasImageError || isPrerenderedDocument());
+    const showPhoto = Boolean(media) && !hasImageError;
     const start = suggestedStartForDays(destination.durationDays);
     const end = addDaysLocal(start, destination.durationDays - 1);
     const countries = resolveDestinationCodes(destination.destinationCodes);
@@ -203,7 +202,7 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
 const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ event, nextDate }) => {
     const media = festivalCardMedia[event.name];
     const [hasImageError, setHasImageError] = useState(false);
-    const showPhoto = Boolean(media) && (!hasImageError || isPrerenderedDocument());
+    const showPhoto = Boolean(media) && !hasImageError;
     const cityLabel = event.cities?.length
         ? (event.cities.length > 1 ? `${event.cities[0]} +${event.cities.length - 1}` : event.cities[0])
         : null;
