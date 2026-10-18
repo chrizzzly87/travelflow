@@ -4,8 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from '../helpers/routerHarness';
 const mocks = vi.hoisted(() => ({ auth: { isAuthenticated: true, isLoading: false, session: { user: { id: 'user-a' } }, access: null as any, logout: vi.fn() }, track: vi.fn() }));
+// Chrome rendering has its own integration suite; keep this legal-policy test
+// independent of MarketingLayout's application providers.
+vi.mock('../../components/bootstrap/MarketingRouteLoadingShell', () => ({ MarketingRouteLoadingShell: () => <div aria-busy="true" /> }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => mocks.auth }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'de', resolvedLanguage: 'de' } }) }));
+vi.mock('react-i18next', async (importOriginal) => ({
+    ...await importOriginal<typeof import('react-i18next')>(),
+    useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'de', resolvedLanguage: 'de' } }),
+}));
 vi.mock('../../services/analyticsService', () => ({ trackEvent: mocks.track, getAnalyticsDebugAttributes: () => ({}) }));
 vi.mock('../../features/auth/useAccountLanguageSync', () => ({ useAccountLanguageSync: () => {} }));
 import AccountTermsNotice from '../../features/auth/AccountTermsNotice';

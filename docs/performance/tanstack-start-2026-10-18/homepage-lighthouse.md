@@ -9,7 +9,11 @@ Before: [foundation preview #560](https://deploy-preview-560--travelflowapp.netl
 revision `363d233b` (same runtime as `b127e152`).
 After: [follow-up preview #563](https://deploy-preview-563--travelflowapp.netlify.app/),
 revision `3f8fa31c`. Verified Netlify deploy `6ad4ec69b56825e4edbb71cd` is ready
-with that exact commit before the after runs.
+with that exact commit before the after runs. Subsequent commits add evidence and
+replace the legacy analytics environment reader with direct Vite environment keys
+so the consent regression tests also work without a local environment file. The
+Lighthouse comparison is specifically for the measured runtime above; no separate
+savings are attributed to that configuration cleanup.
 
 | Mobile lab measurement | Before median | After median |
 | --- | ---: | ---: |
