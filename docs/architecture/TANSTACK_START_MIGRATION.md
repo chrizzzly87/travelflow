@@ -4,6 +4,33 @@ Status: in progress, preview only. Decision date: 2026-10-18.
 Integration branch: `codex/tanstack-start-integration`.
 Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target until human preview acceptance.
 
+## Progress dashboard — 2026-10-18
+
+Tracking issue: https://github.com/chrizzzly87/travelflow/issues/559.
+Implementation branch: `codex/tanstack-start-foundation`.
+Published planning commit: `aec813be`. Implementation remains local and uncommitted at this checkpoint.
+No migration PR or deploy preview exists yet. Production is unchanged.
+
+| Workstream | Status | Evidence / next gate |
+| --- | --- | --- |
+| Baseline and acceptance criteria | Baseline captured | Five measured runs plus warmup; retain equivalent after measurements. |
+| Framework and native routing | Implementing | Official Start/Netlify integration; native route areas with optional locale prefixes. |
+| Encapsulated application domains | Implementing | Shared shell, trip session, persistence, creation and view preferences extracted; behavior still being checked. |
+| Public rendering and speed | Implementing | Public content rendered directly; carousel preview data separated from full trip templates. No performance gain claimed yet. |
+| Authentication and access | Implementing | Five new auth-race / route-boundary tests pass; full auth and terms behavior still needs verification. |
+| Full regression suite | Failing | Latest run: 442 passing and 33 failing files; 2,662 passing, 88 failing, one skipped test. Includes obsolete runtime assumptions and router fixture timing; investigate each failure. |
+| Active docs and release note | In progress | This dashboard records actual state; architecture, contributor and deployment guidance still need completion. |
+| Build, browser, offline and after benchmark | Pending | Run on the final native architecture; an earlier foundation build does not validate current changes. |
+| PR, integration merge and preview | Pending | PR base must be `codex/tanstack-start-integration`; never merge migration directly into main. |
+
+### Architecture direction
+
+Use native TanStack route layouts for public pages, auth/account, creation, trip workspace and admin. Routes own their loading, access checks and rendering boundaries. Public pages must not import the trip workspace or admin application graph through the shared shell. Keep trip session state scoped to trip identity and extract persistence, creation and view preferences into separate modules.
+
+The initial approach of translating the legacy route registry into generated route copies has been discarded. A temporary navigation adapter supports existing callers during conversion; production route ownership and test history are native TanStack. Replace obsolete prefetch and prerender workarounds according to their purpose, preserving first-click handling, theme initialization and supported URLs where still needed.
+
+Next milestone: restore a green native-router regression suite and a working browser smoke check, then finish production build and preview validation. Report completed milestones with test evidence and update this dashboard and the tracking issue.
+
 ## Goal and decisions
 
 Move TravelFlow to TanStack Start and TanStack Router on the supported React runtime, preserving URLs, locales, accessibility, analytics, authentication and trip persistence. Retain the existing Netlify API/edge contracts; a framework migration does not justify rewriting working business logic or moving credentials into browser code.
