@@ -335,3 +335,16 @@ test('features essential hero does not wait for an entrance animation or applica
   })).toBe(true);
   release();
 });
+
+test('mobile language selection works inside the navigation focus trap without answering consent', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/features');
+  await page.locator('[data-tf-boot-intent="mobile-menu"]').click();
+  const navigation = page.getByRole('dialog', { name: 'Navigation menu' });
+  await navigation.getByRole('combobox', { name: 'Language', exact: true }).click();
+  await page.getByRole('option', { name: 'Deutsch', exact: true }).click();
+  await expect(page).toHaveURL(/\/de\/features\/?$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  await expect(navigation).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
+});

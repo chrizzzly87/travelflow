@@ -11,6 +11,7 @@ interface LanguageSelectProps {
     ariaLabel: string;
     triggerClassName?: string;
     contentAlign?: 'start' | 'center' | 'end';
+    portalContainer?: HTMLElement | null;
 }
 
 export const LanguageSelect: React.FC<LanguageSelectProps> = ({
@@ -19,6 +20,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
     ariaLabel,
     triggerClassName,
     contentAlign = 'end',
+    portalContainer,
 }) => {
     useEffect(() => activateBootControls('language-select'), []);
     return (
@@ -35,6 +37,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
                 </span>
             </SelectTrigger>
             <SelectContent
+                portalContainer={portalContainer}
                 side="bottom"
                 align={contentAlign}
                 sideOffset={8}

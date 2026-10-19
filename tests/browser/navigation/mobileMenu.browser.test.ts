@@ -57,8 +57,8 @@ vi.mock('react-i18next', async (importOriginal) => {
         if (key === 'footer.cookies') return 'Cookies';
         if (key === 'nav.login') return 'Login';
         if (key === 'nav.account') return 'Account';
-        if (key === 'settings.breadcrumb.profile') return 'Profile';
-        if (key === 'settings.breadcrumb.settings') return 'Settings';
+        if (key === 'nav.profile') return 'Profile';
+        if (key === 'nav.settings') return 'Settings';
         return key;
       },
       i18n: {

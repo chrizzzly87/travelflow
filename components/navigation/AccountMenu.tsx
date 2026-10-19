@@ -132,7 +132,7 @@ const labelFromPath = (pathname: string): string => {
     return 'Account';
 };
 
-/** Optional member content. The public Account trigger never waits for this module. */
+/** Lightweight member actions share the header’s already loaded common namespace. */
 export const AccountMenuContent: React.FC<AccountMenuProps & { onAction?: () => void }> = ({
     email, userId = null, isAdmin, showRecentTripsSection = true,
     showCurrentPageSummary = true, onOpenTripManager, onPrewarmTripManager, onAction,
@@ -140,7 +140,7 @@ export const AccountMenuContent: React.FC<AccountMenuProps & { onAction?: () => 
     const navigate = useNavigate();
     const routeLocation = useSafeRouteLocation();
     const { logout, profile } = useAuth();
-    const { t } = useTranslation(['common', 'profile']);
+    const { t } = useTranslation('common');
     const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => (
         showRecentTripsSection
             ? sortByCreatedDesc(getAllTrips()).slice(0, 5)
@@ -263,7 +263,7 @@ export const AccountMenuContent: React.FC<AccountMenuProps & { onAction?: () => 
                             {...getAnalyticsDebugAttributes('navigation__account_menu--profile')}
                         >
                             <User size={16} />
-                            {t('settings.breadcrumb.profile', { ns: 'profile' })}
+                            {t('nav.profile')}
                         </button></DropdownMenuItem>
                         <DropdownMenuItem asChild><button
                             type="button"
@@ -272,7 +272,7 @@ export const AccountMenuContent: React.FC<AccountMenuProps & { onAction?: () => 
                             {...getAnalyticsDebugAttributes('navigation__account_menu--settings')}
                         >
                             <GearSix size={16} />
-                            {t('settings.breadcrumb.settings', { ns: 'profile' })}
+                            {t('nav.settings')}
                         </button></DropdownMenuItem>
                         {onOpenTripManager && (
                             <DropdownMenuItem asChild><button

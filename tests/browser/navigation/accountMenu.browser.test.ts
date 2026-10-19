@@ -48,8 +48,8 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       if (key === 'nav.createTrip') return 'Create Trip';
       if (key === 'nav.myTrips') return 'My Trips';
-      if (key === 'settings.breadcrumb.profile') return 'Profile';
-      if (key === 'settings.breadcrumb.settings') return 'Settings';
+      if (key === 'nav.profile') return 'Profile';
+      if (key === 'nav.settings') return 'Settings';
       return key;
     },
   }),

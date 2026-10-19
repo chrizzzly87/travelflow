@@ -27,4 +27,5 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Fixed] 🔒 Keep pages usable when the browser blocks access to local preferences.
 - [x] [Fixed] 🌓 Keep the chosen appearance consistent from the first view and when device settings change.
 - [x] [Improved] 🍪 Show cookie choices immediately when a decision is still needed.
-- [x] [Improved] 👤 Keep the account entry steady while sign-in status is checked.
+- [x] [Improved] 👤 Keep the account entry steady while sign-in status is checked and show its actions immediately when opened.
+- [x] [Fixed] 🌐 Change the language from mobile navigation without keyboard focus getting stuck.

@@ -14,13 +14,13 @@ and discarded the active workspace; a translation module rejection occurred befo
 any router/React error boundary existed. The local fixes preserve the guest workspace
 and transport request-owned translation resources through native router hydration.
 Saved unprefixed-workspace language is restored after the delivered document hydrates.
-The first-paint candidate passes 491 core files / 2,891 tests (one skipped), 64 production browser
+The first-paint candidate passes 492 core files / 2,893 tests (one skipped), 66 production browser
 checks and three offline/PWA checks locally. The hosted trip-dialog fix at `f16942d6` additionally passed 12 independent delayed-asset mobile repetitions, including title editing, without dialog dismissal or page errors.
 
 The new first-visible-frame requirements are tracked in
 [#565](https://github.com/chrizzzly87/travelflow/issues/565): immediately visible
 undecided consent, coherent theme state and stable account entry without optimistic
-auth authority. Implementation and combined local gates now pass: stored/system theme at first paint and across navigation, pre-hydration consent choices, permanent account entry, mobile nested focus and safe login return URLs. Exact-head hosted confirmation and new Lighthouse measurements remain; the older Lighthouse comparison does not certify these newer changes. README now links the architecture, routing, feature ownership,
+auth authority. Implementation and combined local gates now pass: stored/system theme at first paint and across navigation, pre-hydration consent choices, permanent account entry, immediately complete verified-member actions from the common namespace, mobile account/language focus and safe login return URLs. Exact-head hosted confirmation and new Lighthouse measurements remain; the older Lighthouse comparison does not certify these newer changes. README now links the architecture, routing, feature ownership,
 testing and deployment entry points.
 
 ## Progress dashboard — 2026-10-19
@@ -28,7 +28,7 @@ testing and deployment entry points.
 Tracking issue: [#559 — Migrate TravelFlow to TanStack Start on an isolated integration branch](https://github.com/chrizzzly87/travelflow/issues/559).
 Implementation PR: [#560 — Migrate application foundation to native TanStack Start](https://github.com/chrizzzly87/travelflow/pull/560) (merged into integration on 2026-10-18).
 Implementation branch: `codex/tanstack-start-foundation`.
-Current follow-up: [PR #563 — Fix pending navigation, consent races and session hydration](https://github.com/chrizzzly87/travelflow/pull/563), branch `codex/tanstack-start-performance`, closes [#562](https://github.com/chrizzzly87/travelflow/issues/562).
+Current follow-up: [PR #563 — Stabilize first-paint theme, consent, account navigation and hydration](https://github.com/chrizzzly87/travelflow/pull/563), branch `codex/tanstack-start-performance`, closes [#562](https://github.com/chrizzzly87/travelflow/issues/562).
 Follow-up preview: https://deploy-preview-563--travelflowapp.netlify.app, last verified hosted runtime `f16942d6` (new first-paint candidate awaiting deployment).
 PR target: `codex/tanstack-start-integration`; never `main`.
 Implementation commits: `f83b32bc` (native foundation), `b127e152` (hosted directory-path locale fix).
@@ -42,10 +42,10 @@ All 38 production browser checks also pass on the actual Netlify preview. Produc
 | Baseline and acceptance criteria | Before/after captured | Five measured runs plus warmup against production baseline `ca90ba7bb` and the foundation candidate; mixed results documented below. |
 | Framework and native routing | Implemented and preview deployed | Native Start document, route layouts, loaders, intent preloading and Netlify adapter; production build prerenders eight documents. |
 | Encapsulated application domains | Implemented and preview deployed | Shared shell, trip session, persistence, creation, view preferences, auth boundaries and admin route area separated. Local regression and hosted critical-flow checks pass; live account/provider acceptance remains. |
-| Public rendering and first interaction | Targeted checks passing | SSR image mismatch and premature auth-context hydration update repaired. 64 production Chromium/WebKit checks pass locally, including delayed-JavaScript controls, first-frame theme/consent/account states, localized/RTL entry, creation and encoded trips. The early Updates language-switch regression additionally passed 16 repeated checks. |
+| Public rendering and first interaction | Targeted checks passing | SSR image mismatch and premature auth-context hydration update repaired. 66 production Chromium/WebKit checks pass locally, including delayed-JavaScript controls, first-frame theme/consent/account states, localized/RTL entry, creation and encoded trips. The early Updates language-switch regression additionally passed 16 repeated checks. |
 | Authentication and access | Regression coverage passing | Verified route guards, account/session races, inactive-account revocation and server-rendered auth-hint isolation covered. Live provider flows remain preview acceptance items. |
-| Full regression suite | Last full fast stage passed | 491 files passed; 2,891 tests passed, one skipped. |
-| Production build | Passing locally | Latest build prerendered eight documents; service-worker generation succeeded. All 64 production browser and three offline/PWA checks pass locally, including iOS install metadata. |
+| Full regression suite | Last full fast stage passed | 492 files passed; 2,893 tests passed, one skipped. |
+| Production build | Passing locally | Latest build prerendered eight documents; service-worker generation succeeded. All 66 production browser and three offline/PWA checks pass locally, including iOS install metadata. |
 | Active docs and release note | Updated | Architecture, deployment, testing, locale, contributor, agent and Lighthouse guidance updated; dated guidance archived. Exactly one release entry remains draft. |
 | React/type diagnostics | Reviewed, limitations remain | React Doctor: 61/100, zero errors, eight warnings. Full-project TypeScript remains an existing tracked problem (#556); 474 full-project diagnostics remain, with zero in the new native/domain modules in the checked candidate. No clean full-project type check is claimed. |
 | PR, integration merge and preview | Foundation merged into integration | #560 passed remote CI and merged as `e95a241f`. Production is unchanged. Follow-up branch `codex/tanstack-start-performance` addresses [#562](https://github.com/chrizzzly87/travelflow/issues/562) and [#561](https://github.com/chrizzzly87/travelflow/issues/561). |
@@ -57,7 +57,7 @@ Use native TanStack route layouts for public pages, auth/account, creation, trip
 
 The initial approach of translating the legacy route registry into generated route copies has been discarded. A temporary navigation adapter supports existing callers during conversion; production route ownership and test history are native TanStack. Replace obsolete prefetch and prerender workarounds according to their purpose, preserving first-click handling, theme initialization and supported URLs where still needed.
 
-Next milestone: publish and verify the first-paint candidate on preview #563, then repeat Lighthouse on that exact runtime. Local combined gates pass (2,891 core tests, 64 production browser checks, three offline/PWA checks). Hosted `f16942d6` passed 12 delayed-dialog mobile edit repetitions; newer appearance/consent/account work still needs hosted confirmation. The earlier three-run Lighthouse comparison remains historical evidence (72 → 88 median), not a current candidate score. Keep real OAuth/login/reset, active member/admin actions and paid generation as explicit preview acceptance items. Production remains unchanged.
+Next milestone: publish and verify the first-paint candidate on preview #563, then repeat Lighthouse on that exact runtime. Local combined gates pass (2,893 core tests, 66 production browser checks, three offline/PWA checks). Hosted `f16942d6` passed 12 delayed-dialog mobile edit repetitions; newer appearance/consent/account work still needs hosted confirmation. The earlier three-run Lighthouse comparison remains historical evidence (72 → 88 median), not a current candidate score. Keep real OAuth/login/reset, active member/admin actions and paid generation as explicit preview acceptance items. Production remains unchanged.
 
 ### Manual preview review
 

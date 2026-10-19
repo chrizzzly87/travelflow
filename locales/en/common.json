@@ -1,5 +1,7 @@
 {
   "nav": {
+    "profile": "Profile",
+    "settings": "Settings",
     "account": "Account",
     "features": "Features",
     "inspirations": "Inspirations",

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CaretDown, UserCircle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from '@/app/navigation';
@@ -7,14 +7,11 @@ import { useLoginModal } from '../../hooks/useLoginModal';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { buildLoginPathWithNext } from '../../services/authNavigationService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { activateBootControls } from '../../services/bootInteractionBridge';
 import { extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE, localeToDir, normalizeLocale } from '../../config/locales';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-
-const MemberContent = lazy(() => loadLazyComponentWithRecovery('AccountMenu', () =>
-    import('./AccountMenu').then(module => ({ default: module.AccountMenuContent }))));
+import { AccountMenuContent } from './AccountMenu';
 
 interface AccountEntryProps {
     className?: string;
@@ -59,15 +56,12 @@ export const AccountEntry: React.FC<AccountEntryProps> = ({ className, compact =
             reloadOnSuccess: true,
         });
     };
-    const safeActions = <>
-        {isAuthenticated ? <DropdownMenuItem asChild>
-            <NavLink to="/profile" onClick={() => { close(); trackEvent('navigation__account_menu--profile'); }}
-                {...getAnalyticsDebugAttributes('navigation__account_menu--profile')}>{t('nav.account')}</NavLink>
-        </DropdownMenuItem> : <DropdownMenuItem asChild disabled={isLoginSubmitting}>
+    const guestActions = <>
+        <DropdownMenuItem asChild disabled={isLoginSubmitting}>
             <NavLink to={loginTarget} onClick={login} {...getAnalyticsDebugAttributes('navigation__login')}>
                 {t('nav.login')}
             </NavLink>
-        </DropdownMenuItem>}
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
             <NavLink to="/trips" onClick={() => { close(); trackEvent('navigation__account_menu--my_trips'); }}
                 {...getAnalyticsDebugAttributes('navigation__account_menu--my_trips')}>{t('nav.myTrips')}</NavLink>
@@ -94,11 +88,9 @@ export const AccountEntry: React.FC<AccountEntryProps> = ({ className, compact =
             event.preventDefault();
         }} aria-label={t('nav.account')}
             className="z-[2100] w-[min(92vw,320px)] rounded-xl border-border bg-card p-1.5 text-foreground shadow-2xl">
-            {isAuthenticated ? <Suspense fallback={safeActions}>
-                <MemberContent email={access?.email ?? null} userId={access?.userId ?? null}
+            {isAuthenticated ? <AccountMenuContent email={access?.email ?? null} userId={access?.userId ?? null}
                     isAdmin={isAdmin} onOpenTripManager={onOpenTripManager}
-                    onPrewarmTripManager={onPrewarmTripManager} onAction={close} />
-            </Suspense> : safeActions}
+                    onPrewarmTripManager={onPrewarmTripManager} onAction={close} /> : guestActions}
         </DropdownMenuContent>
     </DropdownMenu>;
 };

@@ -155,8 +155,20 @@ Native navigation keeps the previous route until the pending threshold (500 ms);
 this threshold does not delay a route that is already ready. Marketing pending UI
 reuses the real header/footer with working links and a small progress line. Do not
 restore fabricated navigation skeletons or an auth spinner/disabled Login control.
-The public Account trigger is permanent; only verified member tools are loaded on demand. Guest and unresolved menus retain working navigation actions, including a safe Login URL with the original path, search and fragment. The mobile navigation itself portals into the document body to escape header stacking contexts. Its dropdown content portals into that navigation dialog so nested focus handling and Escape remain correct. Consent stays above ordinary page chrome and below modal navigation; it must not block account actions while its decision remains unanswered. Any navigation rendered in the SSR fallback must belong to the initial module
-graph. Do not put that chrome behind an additional manual React.lazy boundary:
+The public Account trigger is permanent. Its lightweight guest/member navigation is
+eager and uses the already delivered common namespace; opening a verified member
+menu must not replace a temporary fallback or wait for profile translations. Full
+account, planner and admin workspaces remain split by their native route boundaries.
+Guest and unresolved menus retain working actions, including a safe Login URL with
+the original path, search and fragment.
+
+The mobile navigation portals into the document body to escape header stacking
+contexts. Its account dropdown and language listbox portal into that navigation
+dialog so nested focus handling and Escape remain correct. Consent stays above
+ordinary page chrome and below modal navigation; it must not block account actions
+while its decision remains unanswered.
+
+Any navigation rendered in the SSR fallback must belong to the initial module graph. Do not put that chrome behind an additional manual React.lazy boundary:
 Start can activate a client-only route before the nested fallback finishes
 hydrating. Keep optional account tools and business workspaces split separately.
 
@@ -208,3 +220,16 @@ external-state effect, after its required namespaces load. Persistence belongs t
 that document subscription, not module initialization; stale preference loads cannot
 overwrite a newer language choice or navigation. Blocked browser-storage getters
 are treated as unavailable rather than throwing through initialization.
+
+## Framework references and project choices
+
+- [TanStack Start authentication](https://tanstack.com/start/latest/docs/framework/react/guide/authentication): route guards improve navigation; each private data/API boundary must still authorize the request.
+- [React external-store contract](https://react.dev/reference/react/useSyncExternalStore): browser preference stores need cached snapshots and a deterministic server snapshot. The pre-paint theme/consent scripts handle browser-only presentation without changing initial React markup.
+- [Supabase server-side auth guidance](https://supabase.com/docs/guides/auth/server-side/advanced-guide): verified identity and correct cache boundaries matter. This migration retains the existing Supabase authentication provider and backend permission model; it does not introduce a parallel custom session system.
+
+Public prerenders are visitor-independent. A stable Account entry is deliberate:
+member identity and capabilities appear only after verification, without pretending
+that a static response knows a visitor's session. If private account rendering later
+moves to request-specific SSR, transport verified request-owned auth context through
+native route hooks and keep those responses out of shared caches. Never implement
+personalization by fabricating a session from a local presentation hint.

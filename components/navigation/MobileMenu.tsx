@@ -171,6 +171,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         language switcher for that reason. */}
                     <div className="space-y-2 border-b border-border px-4 py-3 dark:border-border">
                         <LanguageSelect
+                            portalContainer={panelNode}
                             ariaLabel={t('language.label')}
                             value={selectedLocale}
                             onChange={handleLocaleChange}
