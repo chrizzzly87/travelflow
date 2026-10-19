@@ -8,7 +8,7 @@ Latest measured preview: [homepage Lighthouse report](docs/performance/tanstack-
 
 Trip follow-up: [ownership and benchmark report](docs/performance/tanstack-start-2026-10-19/trip-runtime.md), example-trip readiness 3.50 → 2.98 s with about 10% less fetched JavaScript (gzip estimate). Hosted preview #567 passes 72 browser checks; live account/provider acceptance remains separate.
 
-Navigation follow-up: [issue #568](https://github.com/chrizzzly87/travelflow/issues/568), on `codex/tanstack-start-navigation`. See [foreground navigation and account home](docs/TANSTACK_START_ARCHITECTURE.md#foreground-navigation-and-account-home) for pending feedback, page transitions and profile ownership. Preview acceptance is pending for this follow-up.
+Navigation follow-up: [issue #568](https://github.com/chrizzzly87/travelflow/issues/568), on `codex/tanstack-start-navigation`. See [foreground navigation and account home](docs/TANSTACK_START_ARCHITECTURE.md#foreground-navigation-and-account-home) for pending feedback, page transitions and profile ownership. [PR #569](https://github.com/chrizzzly87/travelflow/pull/569) records current validation and deployment status; [test the navigation preview](https://deploy-preview-569--travelflowapp.netlify.app/).
 
 ## Working on the TanStack Start app
 

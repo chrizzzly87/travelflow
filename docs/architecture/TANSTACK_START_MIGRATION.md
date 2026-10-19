@@ -140,5 +140,8 @@ separately from the trip library and public profile.
 Local acceptance passes: 505 test files / 2,937 tests, one existing skip; all 78
 Chromium/WebKit production checks and three offline/PWA checks. React Doctor stays
 at 61/100 with zero errors; TypeScript has no new normalized diagnostics (473
-existing versus 474 baseline). Hosted acceptance remains pending on the PR. Canonical prerender paths and further measured
+existing versus 474 baseline). Runtime commit: `faf632f6`.
+[PR #569](https://github.com/chrizzzly87/travelflow/pull/569), linked to issue #568,
+records hosted acceptance and current CI/deploy status.
+[Navigation preview](https://deploy-preview-569--travelflowapp.netlify.app/). Canonical prerender paths and further measured
 trip-view decomposition remain subsequent #561 work. No main or production merge.
