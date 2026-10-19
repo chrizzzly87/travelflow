@@ -375,3 +375,52 @@ test('mobile language selection works inside the navigation focus trap without a
   await expect(navigation).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
 });
+
+test('ordinary trip viewing and details do not require optional generation or authoring modules', async ({ page }) => {
+  const optionalRequests: string[] = [];
+  await page.route('**/assets/{aiService,tripGenerationRetryService,tripGenerationQueueService,destinationService,countryAliasService,TripClaimConflictDialog}-*.js', route => {
+    optionalRequests.push(new URL(route.request().url()).pathname);
+    return route.abort('failed');
+  });
+  await page.goto('/example/thailand-islands');
+  await page.getByRole('button', { name: /Open trip details/ }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Trip meta', exact: true })).toBeVisible();
+  expect(optionalRequests).toEqual([]);
+});
+
+
+test('claim recovery has a complete native creation link and hands focus to login and back', async ({ page }) => {
+  const trip = {
+    id: 'runtime-conflict-trip', title: 'Runtime Mallorca Draft', startDate: '2027-04-01',
+    createdAt: 1_800_000_000_000, updatedAt: 1_800_000_000_000, items: [],
+    aiMeta: { generation: { state: 'failed', inputSnapshot: {
+      flow: 'wizard', destinationLabel: 'Mallorca', startDate: '2027-04-01', endDate: '2027-04-10',
+      createdAt: '2027-01-01T00:00:00Z', payload: { options: { countries: ['Mallorca, Spain'], notes: 'Retain this draft' } },
+    } } },
+  };
+  const encoded = LZString.compressToEncodedURIComponent(JSON.stringify({ trip }));
+  await page.goto(`/trip/${encoded}?claim_conflict=already_claimed#details`);
+  const recovery = page.getByRole('dialog', { name: 'This trip draft was already claimed', exact: true });
+  await expect(recovery).toBeVisible();
+  const create = recovery.getByRole('link', { name: 'Create similar trip', exact: true });
+  const href = await create.getAttribute('href');
+  expect(href).toMatch(/^\/create-trip\/wizard\?prefill=/);
+  const encodedPrefill = new URL(href!, 'https://travelflow.local').searchParams.get('prefill');
+  const prefill = JSON.parse(Buffer.from(encodedPrefill!, 'base64url').toString('utf8'));
+  expect(prefill.countries).toEqual(['Mallorca']);
+  expect(prefill.notes).toBe('Retain this draft');
+  const login = recovery.getByRole('button', { name: 'Sign in with the original account', exact: true });
+  await expect(login).toBeFocused();
+  await login.click();
+  const auth = page.getByRole('dialog', { name: 'Authentication modal', exact: true });
+  await expect(auth).toBeVisible();
+  await expect(recovery).toHaveCount(0);
+  await page.keyboard.press('Tab');
+  expect(await auth.evaluate(node => node.contains(document.activeElement))).toBe(true);
+  await auth.getByRole('button', { name: 'Close authentication modal', exact: true }).click();
+  await expect(recovery).toBeVisible();
+  await expect(login).toBeFocused();
+  await expect(create).toHaveAttribute('href', href!);
+});

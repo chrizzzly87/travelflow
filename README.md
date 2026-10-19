@@ -6,6 +6,8 @@ Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for rou
 
 Latest measured preview: [homepage Lighthouse report](docs/performance/tanstack-start-2026-10-19/first-paint-lighthouse.md), mobile median 76 → 88 against current production, followed by a smaller mobile image payload (median 89). Exact runtime revisions, variation and limitations are recorded with the results.
 
+Trip follow-up: [ownership and benchmark report](docs/performance/tanstack-start-2026-10-19/trip-runtime.md), example-trip readiness 3.50 → 2.98 s with about 10% less fetched JavaScript (gzip estimate). Hosted preview #567 passes 72 browser checks; live account/provider acceptance remains separate.
+
 ## Working on the TanStack Start app
 
 Use the native route tree as the starting point for new work. This branch remains

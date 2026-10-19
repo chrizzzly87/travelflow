@@ -27,7 +27,7 @@ import {
     rememberAuthReturnPath,
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
-import { buildTripClaimConflictPath } from '../services/tripClaimConflictService';
+import { buildTripClaimConflictPath } from '../services/tripClaimNavigation';
 import {
     isRememberLoginEnabled,
     setRememberLoginEnabled,

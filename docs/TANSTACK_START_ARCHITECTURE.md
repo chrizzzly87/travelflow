@@ -233,3 +233,21 @@ that a static response knows a visitor's session. If private account rendering l
 moves to request-specific SSR, transport verified request-owned auth context through
 native route hooks and keep those responses out of shared caches. Never implement
 personalization by fabricating a session from a local presentation hint.
+
+
+## Optional trip generation and claim recovery
+
+Trip viewing imports synchronous retry policy and cancellation from lightweight
+modules. The generator and viewer share one controller registry; never create a
+second instance or load the entire prompt builder just to abort a running request.
+Retry execution loads within the permitted action and queue processing within the
+verified member claim flow. Their failures release local pending state and leave
+ordinary viewing available.
+
+Claim URL helpers are independent of destination normalization. The trip area's
+native `beforeLoad` prepares the optional recovery boundary only for the explicit
+conflict marker, with navigation cancellation checked before and after loading.
+The recovery dialog owns normalized creation prefills and renders complete native
+links on its first visible render. Keep common trip views free of precomputing
+creation links or importing recovery destination tables. Test both localized drafts
+and keyboard focus with the shared dialog primitives.
