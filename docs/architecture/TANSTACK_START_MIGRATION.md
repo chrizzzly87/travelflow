@@ -105,3 +105,25 @@ The integration branch is the rollback boundary. Each meaningful commit describe
 - https://docs.netlify.com/build/frameworks/framework-setup-guides/tanstack-start/
 
 Registry inspection on 2026-10-18: current Start requires Node >=22.12 and Vite >=8; do not copy older Vinxi/Nitro setup instructions into this migration. The exact installed graph and evidence will be recorded below as implementation progresses.
+
+
+## Optional trip runtime milestone — PR #567
+
+Branch `codex/tanstack-start-trip-runtime`; [issue #566](https://github.com/chrizzzly87/travelflow/issues/566),
+[PR #567](https://github.com/chrizzzly87/travelflow/pull/567), integration target only.
+[Verified preview](https://deploy-preview-567--travelflowapp.netlify.app/) runtime `d89a5a37`
+passes all 72 hosted Chromium/WebKit checks. Local gates: 502 files / 2,932 tests,
+one skipped, 72 browser checks and three offline/PWA checks. TypeScript remains at
+474 existing diagnostics with zero new errors; Doctor remains 61/100 with zero errors.
+
+[Clean five-run comparison and graph evidence](../performance/tanstack-start-2026-10-19/trip-runtime.md):
+example readiness **3.50 → 2.98 s (−14.9%)**, JavaScript gzip estimate **786,633 → 708,434 B (−9.94%)**.
+Public/creation readiness differs by less than 1%; their JS increases about 0.35%.
+The source guard and emitted graph prove ordinary viewing no longer statically
+reaches the targeted authoring/generation modules. Conflict recovery owns its
+complete normalized link and yields focus to login. Deferred actions are invalidated
+when the committed trip/session changes or unmounts.
+
+Next gate: final documentation CI, then integration-only merge of #567. Continue
+native prerender canonical-path handling and measured remaining route/viewer
+ownership under #561. Main/production and live account/provider acceptance remain unchanged.

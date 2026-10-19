@@ -31,3 +31,4 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Fixed] 🌐 Change the language from mobile navigation without keyboard focus getting stuck.
 - [x] [Improved] 📱 Avoid downloading hidden desktop artwork on phones.
 - [ ] [Internal] 🧩 Separate synchronous trip-generation policy and cancellation from optional authoring and claim-recovery execution.
+- [x] [Improved] 🧳 Open trips with fewer downloads while keeping planning tools available when needed.
