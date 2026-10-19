@@ -83,6 +83,16 @@ marketing sections behind a mount effect to mask a mismatch. Retain the early cl
 handoff only while production browser tests prove its role before hydration; Start
 routing does not make an unhydrated DOM handle React events automatically.
 
+### Appearance and browser preferences
+
+`src/document/theme-boot.js` sets the root theme before paint. CSS selects initial
+colours, theme icons and the resting window shade. `contexts/theme/themeStore.ts`
+then exposes one stable snapshot of both preference and resolved theme through
+`useSyncExternalStore`, sharing OS and cross-tab subscriptions. A system preference
+change must update React controls as well as the document class. Browser storage
+failure must not erase a choice already made in the current document. Only the
+optional WebGL enhancement needs a client effect; decorative static markup does not.
+
 ## Auth and feature lifecycle
 
 Account/admin route guards return native redirects with a safe, localized return URL.
@@ -90,9 +100,7 @@ Account/admin route guards return native redirects with a safe, localized return
 routing, and revokes disabled accounts. Account-specific capabilities load only when
 needed. Backend RLS, RPC permission checks and endpoint authorization remain authoritative.
 
-Apply the initial browser auth-hint update in a transition after mount. A synchronous
-provider update can interrupt an unfinished React 18 Suspense hydration boundary;
-keep production browser tests sensitive to recoverable hydration errors.
+Public navigation uses the same translated Account entry before and after hydration. Browser hints must never fabricate a Session, authenticated status, role or access capabilities. Verified auth updates use transitions where needed to preserve unfinished React 18 hydration; keep production browser tests sensitive to recoverable hydration errors. Static public HTML contains no personalized identity.
 
 Async account/profile responses are generation-checked across logout, account changes
 and unmount. Never let an old request restore an earlier account's access. Persist
@@ -140,3 +148,88 @@ separate production rollout.
 
 Use the installed versions and their types as implementation evidence; latest online
 examples can target APIs newer than the repository's pinned dependency graph.
+
+## Pending navigation and consent interactions
+
+Native navigation keeps the previous route until the pending threshold (500 ms);
+this threshold does not delay a route that is already ready. Marketing pending UI
+reuses the real header/footer with working links and a small progress line. Do not
+restore fabricated navigation skeletons or an auth spinner/disabled Login control.
+The public Account trigger is permanent. Its lightweight guest/member navigation is
+eager and uses the already delivered common namespace; opening a verified member
+menu must not replace a temporary fallback or wait for profile translations. Full
+account, planner and admin workspaces remain split by their native route boundaries.
+Guest and unresolved menus retain working actions, including a safe Login URL with
+the original path, search and fragment.
+
+The mobile navigation portals into the document body to escape header stacking
+contexts. Its account dropdown and language listbox portal into that navigation
+dialog so nested focus handling and Escape remain correct. Consent stays above
+ordinary page chrome and below modal navigation; it must not block account actions
+while its decision remains unanswered.
+
+Any navigation rendered in the SSR fallback must belong to the initial module graph. Do not put that chrome behind an additional manual React.lazy boundary:
+Start can activate a client-only route before the nested fallback finishes
+hydrating. Keep optional account tools and business workspaces split separately.
+
+Primary hero text and actions render immediately. Decorative entrance animations
+must not start essential content at zero opacity or move the intended first target.
+Inspect real Lighthouse LCP candidates before claiming an improvement. Desktop-only hero artwork uses native `<picture>` media selection with an inline transparent fallback for hidden mobile layouts. Keep the desktop source in SSR and test viewport changes with scripts held; CSS visibility alone does not prevent an image download.
+
+Undecided consent is part of the server document from its first visible frame. A small synchronous head script reads the existing consent key, and CSS hides an already answered banner before paint. Never defer this banner until interaction or a timer. Its buttons use the shared boot bridge, so a choice made before hydration is replayed once when handlers are ready. Exercise both initial visibility and returning visitors with application JavaScript delayed.
+
+Consent controls subscribe to same-page and cross-tab choices. Analytics checks
+consent both before downloading its script and after the asynchronous download,
+so withdrawing consent cancels a pending send. Storage keys/categories are unchanged.
+
+Session-sensitive route areas/loaders declare `staticData: { sessionBound: true }`.
+The native lifecycle follows parent metadata rather than duplicating URL lists.
+On a settled identity/role/status/anonymous-binding change, retire sensitive caches
+and preloads. Reload only if a current/pending route is session-bound. Loading flags
+or token refresh alone must not invalidate public page work. Preserve immediate
+logout/account clears; publish initial session/profile results in a transition so
+unfinished route hydration can complete.
+
+### Anonymous visitor session handoff
+
+A first anonymous browser session resolves its capabilities in the background.
+It must not re-enter account loading and unmount an already interactive planner
+or creation wizard. Access remains empty until bound capabilities resolve; no
+member/admin authority is inferred from the anonymous session. Replacement of
+an existing identity still clears its capabilities and blocks account loading.
+The regression covers preserved input DOM identity, edited draft text and an
+open dialog, plus the member-to-anonymous privacy case. Native protected-route
+guards and backend authorization remain independently enforced.
+
+### Document-owned translation hydration
+
+Native router dehydration snapshots only the request’s active/fallback language
+and loaded namespaces. Hydration restores them before React mounts. The browser
+singleton initializes synchronously with no eager namespace fetch, and the client
+entry delegates directly to `hydrateStart()`. Initial translations therefore do
+not require another dynamic module request outside the router’s error ownership.
+Subsequent route transitions still preload their own namespaces in `beforeLoad`;
+optional features own their extra resources. Test initial navigation with the
+wizard translation module permanently blocked, plus locale/RTL and offline entry.
+See `app/routing/localeHydration.ts` for the encapsulated snapshot boundary and
+[TanStack’s critical hydration hooks](https://tanstack.com/router/latest/docs/guide/external-data-loading).
+
+The delivered language remains stable for the first hydration render. An unprefixed
+workspace then restores its existing browser preference through the document’s
+external-state effect, after its required namespaces load. Persistence belongs to
+that document subscription, not module initialization; stale preference loads cannot
+overwrite a newer language choice or navigation. Blocked browser-storage getters
+are treated as unavailable rather than throwing through initialization.
+
+## Framework references and project choices
+
+- [TanStack Start authentication](https://tanstack.com/start/latest/docs/framework/react/guide/authentication): route guards improve navigation; each private data/API boundary must still authorize the request.
+- [React external-store contract](https://react.dev/reference/react/useSyncExternalStore): browser preference stores need cached snapshots and a deterministic server snapshot. The pre-paint theme/consent scripts handle browser-only presentation without changing initial React markup.
+- [Supabase server-side auth guidance](https://supabase.com/docs/guides/auth/server-side/advanced-guide): verified identity and correct cache boundaries matter. This migration retains the existing Supabase authentication provider and backend permission model; it does not introduce a parallel custom session system.
+
+Public prerenders are visitor-independent. A stable Account entry is deliberate:
+member identity and capabilities appear only after verification, without pretending
+that a static response knows a visitor's session. If private account rendering later
+moves to request-specific SSR, transport verified request-owned auth context through
+native route hooks and keep those responses out of shared caches. Never implement
+personalization by fabricating a session from a local presentation hint.

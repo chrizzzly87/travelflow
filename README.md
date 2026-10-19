@@ -4,6 +4,39 @@ TravelFlow generates and manages travel itineraries. This integration branch mig
 
 Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment.
 
+Latest measured preview: [homepage Lighthouse report](docs/performance/tanstack-start-2026-10-19/first-paint-lighthouse.md), mobile median 76 → 88 against current production, followed by a smaller mobile image payload (median 89). Exact runtime revisions, variation and limitations are recorded with the results.
+
+## Working on the TanStack Start app
+
+Use the native route tree as the starting point for new work. This branch remains
+in preview validation; successful local tests do not mean production acceptance.
+
+| Question | Read / change |
+| --- | --- |
+| How are document, routes and features composed? | [Architecture and contribution guide](docs/TANSTACK_START_ARCHITECTURE.md) |
+| Which routes/layouts exist? | `src/virtualRoutes.ts`, route definitions in `src/routes/`; do not edit generated `src/routeTree.gen.ts` |
+| Where do data/access/loading rules belong? | Native `beforeLoad`, `loader`, `head`, pending/error boundaries; domain logic in `features/` |
+| How are public, auth, creation, trip and admin areas isolated? | Architecture ownership table; `app/shell/` is for shared cross-cutting UI |
+| How do locale, SSR resources and language navigation work? | [I18n workflow](docs/I18N_PAGE_WORKFLOW.md); native router resource hydration and document preference synchronization |
+| How do I verify changes? | `pnpm ci:local`; behavioral regression tests in `tests/`; first-load browser and offline checks in `e2e/` |
+| How do previews, deployment and API parity work? | [Netlify guide](docs/NETLIFY_TANSTACK_START.md) |
+| What is complete, measured, or still open? | [Migration dashboard](docs/architecture/TANSTACK_START_MIGRATION.md), [#559](https://github.com/chrizzzly87/travelflow/issues/559), [current PR #563](https://github.com/chrizzzly87/travelflow/pull/563) |
+
+Keep route files small: delegate reusable behavior to feature modules and compose
+shared components. Do not add a second route registry, global speculative prefetch,
+or pre-hydration download gates. Server requests get separate data/i18n instances;
+never put user data into a shared prerender. Route guards supplement backend
+permissions. Presentation hints must never become authenticated session authority.
+
+Verify the first visible frame as well as the hydrated page: theme and consent must
+not appear through delayed user-interaction handlers. Keep public account navigation
+stable while session verification happens: use the shared Account entry, real links
+and verified session capabilities. Static public HTML must not invent an identity.
+Consent is server-rendered when undecided; its pre-paint script only resolves the
+visibility of existing stored choices. Use the shared early-click bridge for controls
+that can be pressed before hydration. The migration dashboard records verification
+of each candidate; this guidance is not a production acceptance claim.
+
 ## Requirements
 
 - Node.js 22 (see `.node-version`)

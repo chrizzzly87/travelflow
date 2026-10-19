@@ -147,27 +147,27 @@ export const HeroSection: React.FC = () => {
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
             <div className="relative flex items-center gap-8 lg:gap-12">
                 <div className="max-w-3xl flex-1">
-                    <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
+                    <div>
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             <Sparkle size={14} weight="duotone" />
                             {t('hero.badge')}
                         </span>
                     </div>
 
-                    <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
+                    <div>
                         <h1 className="mt-6 text-balance text-5xl font-semibold text-foreground dark:text-foreground md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                             {t('hero.titleBefore')} {' '}
                             <HeroTitleHighlight>{t('hero.titleHighlight')}</HeroTitleHighlight>
                         </h1>
                     </div>
 
-                    <div className="animate-hero-stagger" style={{ '--stagger': '160ms' } as React.CSSProperties}>
+                    <div>
                         <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground dark:text-muted-foreground md:text-xl">
                             {t('hero.description')}
                         </p>
                     </div>
 
-                    <div className="mt-10 flex flex-wrap items-center gap-4 animate-hero-stagger" style={{ '--stagger': '240ms' } as React.CSSProperties}>
+                    <div className="mt-10 flex flex-wrap items-center gap-4">
                         <Link
                             to={buildPath('createTrip')}
                             onClick={() => handleCtaClick('start_planning')}

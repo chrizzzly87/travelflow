@@ -1,8 +1,13 @@
 // Runs during document parsing; captures explicit controls until their owner hydrates.
 (() => {
-        const bridge = { interacted: false, intent: null, sealed: false, pendingControls: [], readyScopes: {} };
+        const bridge = { interacted: false, pointerActive: false, intent: null, sealed: false, pendingControls: [], readyScopes: {} };
         window.__TF_BOOT__ = bridge;
 
+        const activePointers = new Set();
+        const releasePointer = (event) => {
+          activePointers.delete(event.pointerId);
+          bridge.pointerActive = activePointers.size > 0;
+        };
         const noteInteraction = () => { bridge.interacted = true; };
 
         // Controls that opt in carry data-tf-boot-intent in the prerendered
@@ -13,6 +18,10 @@
         // on its first render instead, which cannot race.
         const rememberControl = (event) => {
           noteInteraction();
+          if (event.type === 'pointerdown' && !event.__tfBootReplay) {
+            activePointers.add(event.pointerId);
+            bridge.pointerActive = true;
+          }
           const target = event.target;
           if (!target || typeof target.closest !== 'function') return false;
           const control = target.closest('[data-tf-boot-replay]:not([disabled])');
@@ -50,11 +59,15 @@
         };
 
         document.addEventListener('pointerdown', rememberControl, { capture: true });
+        document.addEventListener('pointerup', releasePointer, { capture: true, passive: true });
+        document.addEventListener('pointercancel', releasePointer, { capture: true, passive: true });
         document.addEventListener('keyup', noteInteraction, { capture: true, passive: true });
         window.addEventListener('scroll', noteInteraction, { capture: true, passive: true });
         document.addEventListener('click', rememberIntent, { capture: true });
         bridge.dispose = () => {
           document.removeEventListener('pointerdown', rememberControl, true);
+          document.removeEventListener('pointerup', releasePointer, true);
+          document.removeEventListener('pointercancel', releasePointer, true);
           document.removeEventListener('keyup', noteInteraction, true);
           window.removeEventListener('scroll', noteInteraction, true);
           document.removeEventListener('click', rememberIntent, true);

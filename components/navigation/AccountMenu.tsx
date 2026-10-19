@@ -1,16 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AirplaneTakeoff, CaretDown, CaretRight, FolderSimple, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AirplaneTakeoff, CaretDown, CaretRight, FolderSimple, GearSix, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
 import { useNavigate } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
-import { DEFAULT_LOCALE } from '../../config/locales';
+import { DEFAULT_LOCALE, localeToDir, normalizeLocale } from '../../config/locales';
 import { getAllTrips } from '../../services/storageService';
 import type { ITrip } from '../../types';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 
-interface AccountMenuProps {
+export interface AccountMenuProps {
     email: string | null;
     userId?: string | null;
     isAdmin: boolean;
@@ -131,73 +132,30 @@ const labelFromPath = (pathname: string): string => {
     return 'Account';
 };
 
-export const AccountMenu: React.FC<AccountMenuProps> = ({
-    email,
-    userId = null,
-    isAdmin,
-    compact = false,
-    showLabel,
-    fullWidth = false,
-    menuPlacement = 'bottom-end',
-    labelMode = 'identity',
-    showRecentTripsSection = true,
-    showCurrentPageSummary = true,
-    className,
-    triggerClassName,
-    showCaret = true,
-    onOpenTripManager,
-    onPrewarmTripManager,
+/** Lightweight member actions share the header’s already loaded common namespace. */
+export const AccountMenuContent: React.FC<AccountMenuProps & { onAction?: () => void }> = ({
+    email, userId = null, isAdmin, showRecentTripsSection = true,
+    showCurrentPageSummary = true, onOpenTripManager, onPrewarmTripManager, onAction,
 }) => {
     const navigate = useNavigate();
     const routeLocation = useSafeRouteLocation();
     const { logout, profile } = useAuth();
     const { t } = useTranslation('common');
-    const [isOpen, setIsOpen] = useState(false);
     const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => (
         showRecentTripsSection
             ? sortByCreatedDesc(getAllTrips()).slice(0, 5)
             : []
     ));
-    const containerRef = useRef<HTMLDivElement | null>(null);
 
     const accountLabel = useMemo(() => labelFromPath(routeLocation.pathname), [routeLocation.pathname]);
     const accountDisplayName = useMemo(
         () => buildAccountDisplayName(profile, email, userId),
         [email, profile, userId]
     );
-    const accountTriggerName = useMemo(
-        () => buildAccountTriggerName(profile, email, userId),
-        [email, profile, userId]
-    );
-    const triggerLabel = labelMode === 'identity'
-        ? accountTriggerName
-        : labelMode === 'profile'
-            ? 'Profile'
-            : accountLabel;
-    const shouldShowLabel = showLabel ?? !compact;
     const activeLocale = useMemo(
         () => extractLocaleFromPath(routeLocation.pathname) || DEFAULT_LOCALE,
         [routeLocation.pathname],
     );
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const handlePointer = (event: PointerEvent) => {
-            if (!containerRef.current) return;
-            if (containerRef.current.contains(event.target as Node)) return;
-            setIsOpen(false);
-        };
-        const handleEscape = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape') return;
-            setIsOpen(false);
-        };
-        window.addEventListener('pointerdown', handlePointer);
-        window.addEventListener('keydown', handleEscape);
-        return () => {
-            window.removeEventListener('pointerdown', handlePointer);
-            window.removeEventListener('keydown', handleEscape);
-        };
-    }, [isOpen]);
 
     useEffect(() => {
         if (!showRecentTripsSection) {
@@ -220,26 +178,26 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
 
     const navigateTo = (path: string, eventName: AnalyticsEventName) => {
         trackEvent(eventName);
-        setIsOpen(false);
+        onAction?.();
         navigate(path);
     };
 
     const openTripManager = () => {
         if (!onOpenTripManager) return;
         trackEvent('navigation__account_menu--my_trips');
-        setIsOpen(false);
+        onAction?.();
         onOpenTripManager();
     };
 
     const navigateToRecentTrip = (trip: ITrip) => {
         trackEvent('navigation__account_menu--recent_trip', { trip_id: trip.id });
-        setIsOpen(false);
+        onAction?.();
         navigate(`/trip/${encodeURIComponent(trip.id)}`);
     };
 
     const handleLogout = async () => {
         trackEvent('navigation__account_menu--logout');
-        setIsOpen(false);
+        onAction?.();
         await logout();
         const locale = extractLocaleFromPath(routeLocation.pathname) || DEFAULT_LOCALE;
         navigate(buildLocalizedMarketingPath('home', locale));
@@ -253,45 +211,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         return null;
     }, [email, userId]);
 
-    return (
-        <div className={`relative ${className || ''}`.trim()} ref={containerRef}>
-            <button
-                type="button"
-                onClick={() => {
-                    const next = !isOpen;
-                    setIsOpen(next);
-                    trackEvent('navigation__account_menu--toggle', { open: next });
-                }}
-                className={[
-                    'inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors dark:border-border dark:bg-card dark:text-foreground dark:shadow-none',
-                    'hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:hover:border-border dark:hover:text-foreground',
-                    compact ? 'h-9 py-1.5' : 'h-10 py-2',
-                    fullWidth ? 'w-full justify-between' : '',
-                    triggerClassName || '',
-                ].join(' ')}
-                {...getAnalyticsDebugAttributes('navigation__account_menu--toggle')}
-                aria-haspopup="menu"
-                aria-expanded={isOpen}
-                aria-label={!shouldShowLabel ? triggerLabel : undefined}
-            >
-                <span className="flex size-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
-                    {computeInitial(profile, email, userId)}
-                </span>
-                {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
-                {showCaret && <CaretDown size={14} />}
-            </button>
-
-            {isOpen && (
-                <div
-                    role="menu"
-                    aria-label="Account menu"
-                    className={[
-                        'absolute z-[2100] w-[min(92vw,320px)] rounded-xl border border-border bg-card p-1.5 shadow-2xl dark:border-border dark:bg-card dark:shadow-none',
-                        menuPlacement === 'right-end'
-                            ? 'left-[calc(100%+10px)] bottom-0'
-                            : 'right-0 top-[calc(100%+8px)]',
-                    ].join(' ')}
-                >
+    return <>
                     <div className="rounded-lg border border-border bg-secondary px-3 py-2 dark:border-border dark:bg-secondary">
                         <div className="truncate text-sm font-semibold text-foreground dark:text-foreground">{accountDisplayName}</div>
                         {accountIdentityLabel && (
@@ -311,49 +231,57 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                                 <div className="px-3 py-2 text-xs text-muted-foreground dark:text-muted-foreground">No recent trips yet.</div>
                             ) : (
                                 recentTrips.map((trip) => (
-                                    <button
-                                        key={`account-recent-${trip.id}`}
+                                    <DropdownMenuItem asChild key={`account-recent-${trip.id}`}><button
                                         type="button"
                                         onClick={() => navigateToRecentTrip(trip)}
-                                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
+                                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-start text-sm text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                                         {...getAnalyticsDebugAttributes('navigation__account_menu--recent_trip', { trip_id: trip.id })}
                                     >
                                         <span className="truncate">{trip.title}</span>
                                         <span className="text-[11px] text-muted-foreground dark:text-muted-foreground">
                                             {formatRecentTripDate(trip.createdAt)}
                                         </span>
-                                    </button>
+                                    </button></DropdownMenuItem>
                                 ))
                             )}
-                            <button
+                            <DropdownMenuItem asChild><button
                                 type="button"
                                 onClick={() => navigateTo('/profile?tab=recent', 'navigation__account_menu--recent_view_all')}
-                                className="mt-0.5 w-full rounded-md border border-border px-3 py-2 text-left text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary dark:border-border dark:text-foreground dark:hover:border-border dark:hover:bg-secondary"
+                                className="mt-0.5 w-full rounded-md border border-border px-3 py-2 text-start text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary dark:border-border dark:text-foreground dark:hover:border-border dark:hover:bg-secondary"
                                 {...getAnalyticsDebugAttributes('navigation__account_menu--recent_view_all')}
                             >
                                 View all trips
-                            </button>
+                            </button></DropdownMenuItem>
                         </div>
                     )}
 
                     <div className="mt-1.5 space-y-0.5">
-                        <button
+                        <DropdownMenuItem asChild><button
                             type="button"
                             onClick={() => navigateTo('/profile', 'navigation__account_menu--profile')}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--profile')}
                         >
                             <User size={16} />
-                            Profile
-                        </button>
+                            {t('nav.profile')}
+                        </button></DropdownMenuItem>
+                        <DropdownMenuItem asChild><button
+                            type="button"
+                            onClick={() => navigateTo('/profile/settings', 'navigation__account_menu--settings')}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                            {...getAnalyticsDebugAttributes('navigation__account_menu--settings')}
+                        >
+                            <GearSix size={16} />
+                            {t('nav.settings')}
+                        </button></DropdownMenuItem>
                         {onOpenTripManager && (
-                            <button
+                            <DropdownMenuItem asChild><button
                                 type="button"
                                 onMouseEnter={onPrewarmTripManager}
                                 onFocus={onPrewarmTripManager}
                                 onTouchStart={onPrewarmTripManager}
                                 onClick={openTripManager}
-                                className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
+                                className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                                 {...getAnalyticsDebugAttributes('navigation__account_menu--my_trips')}
                             >
                                 <span className="flex items-center gap-2">
@@ -361,12 +289,12 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                                     <span>{t('nav.myTrips')}</span>
                                 </span>
                                 <CaretRight size={14} className="text-muted-foreground dark:text-muted-foreground" />
-                            </button>
+                            </button></DropdownMenuItem>
                         )}
                     </div>
 
                     <div className="mt-1.5 border-t border-border pt-1.5 dark:border-border">
-                        <button
+                        <DropdownMenuItem asChild><button
                             type="button"
                             onClick={() => navigateTo(buildLocalizedCreateTripPath(activeLocale), 'navigation__account_menu--create_trip')}
                             className="flex w-full items-center justify-center gap-2 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
@@ -374,38 +302,75 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                         >
                             <AirplaneTakeoff size={16} weight="fill" />
                             {t('nav.createTrip')}
-                        </button>
+                        </button></DropdownMenuItem>
                     </div>
 
                     {isAdmin && (
                         <div className="mt-1.5 space-y-0.5 border-t border-border pt-1.5 dark:border-border">
-                            <button
+                            <DropdownMenuItem asChild><button
                                 type="button"
                                 onClick={() => navigateTo('/admin/dashboard', 'navigation__account_menu--admin_workspace')}
-                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
+                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                                 {...getAnalyticsDebugAttributes('navigation__account_menu--admin_workspace')}
                             >
                                 <ShieldCheck size={15} />
                                 Admin workspace
-                            </button>
+                            </button></DropdownMenuItem>
                         </div>
                     )}
 
                     <div className="mt-1.5 border-t border-border pt-1.5 dark:border-border">
-                        <button
+                        <DropdownMenuItem asChild><button
                             type="button"
                             onClick={() => {
                                 void handleLogout();
                             }}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--logout')}
                         >
                             <SignOut size={16} />
                             Logout
-                        </button>
+                        </button></DropdownMenuItem>
                     </div>
-                </div>
-            )}
+    </>;
+};
+
+export const AccountMenu: React.FC<AccountMenuProps> = (props) => {
+    const { email, userId, compact = false, showLabel, fullWidth = false,
+        menuPlacement = 'bottom-end', labelMode = 'identity', className,
+        triggerClassName, showCaret = true } = props;
+    const { profile } = useAuth();
+    const { i18n } = useTranslation('common');
+    const location = useSafeRouteLocation();
+    const [isOpen, setIsOpen] = useState(false);
+    const triggerLabel = labelMode === 'identity'
+        ? buildAccountTriggerName(profile, email, userId)
+        : labelMode === 'profile' ? 'Profile' : labelFromPath(location.pathname);
+    const shouldShowLabel = showLabel ?? !compact;
+    return <DropdownMenu dir={localeToDir(normalizeLocale(i18n?.resolvedLanguage || i18n?.language || DEFAULT_LOCALE))} open={isOpen} onOpenChange={(open) => {
+        setIsOpen(open);
+        trackEvent('navigation__account_menu--toggle', { open });
+    }}>
+        <div className={`relative ${className || ''}`.trim()}>
+            <DropdownMenuTrigger asChild>
+                <button type="button" aria-label={!shouldShowLabel ? triggerLabel : undefined}
+                    className={[
+                        'inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none',
+                        compact ? 'h-9 py-1.5' : 'h-10 py-2',
+                        fullWidth ? 'w-full justify-between' : '', triggerClassName || '',
+                    ].join(' ')}
+                    {...getAnalyticsDebugAttributes('navigation__account_menu--toggle')}>
+                    <span className="flex size-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
+                        {computeInitial(profile, email, userId)}
+                    </span>
+                    {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
+                    {showCaret && <CaretDown size={14} />}
+                </button>
+            </DropdownMenuTrigger>
         </div>
-    );
+        <DropdownMenuContent align="end" side={menuPlacement === 'right-end' ? 'right' : 'bottom'}
+            aria-label="Account menu" className="z-[2100] w-[min(92vw,320px)] rounded-xl border-border bg-card p-1.5 text-foreground shadow-2xl">
+            <AccountMenuContent {...props} onAction={() => setIsOpen(false)} />
+        </DropdownMenuContent>
+    </DropdownMenu>;
 };

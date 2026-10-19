@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useNavigate } from '@/app/navigation';
-import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { NavLink } from '@/app/navigation';
+import { X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
@@ -11,11 +12,9 @@ import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocal
 import { AppLanguage } from '../../types';
 import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { useLocaleNavigation } from '../../hooks/useLocaleNavigation';
-import { useAuth } from '../../hooks/useAuth';
-import { useLoginModal } from '../../hooks/useLoginModal';
-import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { AppBrand } from './AppBrand';
+import { AccountEntry } from './AccountEntry';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 interface MobileMenuProps {
@@ -32,25 +31,18 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
             : 'text-foreground hover:bg-secondary dark:text-foreground dark:hover:bg-secondary'
     }`;
 
-const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.metaKey &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.shiftKey
-);
-
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTripsClick, onMyTripsIntent }) => {
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     const hasTrips = useHasSavedTrips();
     const { t, i18n } = useTranslation('common');
     const routeLocation = useSafeRouteLocation();
-    const navigate = useNavigate();
     const changeLocale = useLocaleNavigation();
-    const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
-    const { openLoginModal } = useLoginModal();
     const panelRef = useRef<HTMLDivElement | null>(null);
+    const [panelNode, setPanelNode] = useState<HTMLDivElement | null>(null);
+    const assignPanelRef = useCallback((node: HTMLDivElement | null) => {
+        panelRef.current = node;
+        setPanelNode(node);
+    }, []);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
     useFocusTrap({
@@ -93,7 +85,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     useEffect(() => {
         if (!isOpen) return;
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape' && !e.defaultPrevented) onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
@@ -102,39 +94,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const handleNavClick = (target: string) => {
         trackEvent(`mobile_nav__${target}`);
         onClose();
-    };
-
-    const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        trackEvent('mobile_nav__login');
-        if (isLoading) return;
-        if (!isPlainLeftClick(event)) {
-            onClose();
-            return;
-        }
-
-        event.preventDefault();
-        onClose();
-        openLoginModal({
-            source: 'navigation_mobile',
-            nextPath: buildPathFromLocationParts({
-                pathname: routeLocation.pathname,
-                search: routeLocation.search,
-                hash: routeLocation.hash,
-            }),
-            reloadOnSuccess: true,
-        });
-    };
-
-    const handleLogout = async () => {
-        trackEvent('mobile_nav__logout');
-        await logout();
-        onClose();
-        const target = buildLocalizedMarketingPath('home', activeLocale);
-        if (typeof window !== 'undefined') {
-            window.location.assign(target);
-            return;
-        }
-        navigate(target);
     };
 
     const handleLocaleChange = (nextLocaleRaw: string) => {
@@ -165,20 +124,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         [t]
     );
 
-    const visibleItems = isAuthenticated
-        ? NAV_ITEMS.filter((item) => item.id === 'inspirations' || item.id === 'blog')
-        : NAV_ITEMS;
+    if (typeof document === 'undefined') return null;
 
-    const accountItems = useMemo<Array<{ id: string; path: string; label: string }>>(() => {
-        if (!isAuthenticated) return [];
-        return [
-            { id: 'profile', path: '/profile', label: 'Profile' },
-            { id: 'profile_recent', path: '/profile?tab=recent', label: 'Recent trips' },
-            { id: 'settings', path: '/profile/settings', label: 'Settings' },
-        ];
-    }, [isAuthenticated]);
-
-    return (
+    return createPortal(
         <>
             <div
                 className={`fixed inset-0 z-[1700] bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
@@ -195,7 +143,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
             </div>
 
             <div
-                ref={panelRef}
+                ref={assignPanelRef}
                 className={`fixed inset-y-0 end-0 z-[1700] w-[85vw] max-w-sm bg-card shadow-2xl transition-transform duration-300 ease-out ${
                     isOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full'
                 }`}
@@ -223,6 +171,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         language switcher for that reason. */}
                     <div className="space-y-2 border-b border-border px-4 py-3 dark:border-border">
                         <LanguageSelect
+                            portalContainer={panelNode}
                             ariaLabel={t('language.label')}
                             value={selectedLocale}
                             onChange={handleLocaleChange}
@@ -259,18 +208,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         {t('nav.createTrip')}
                                     </NavLink>
                                 )}
-                                {accountItems.map((item) => (
-                                    <NavLink
-                                        key={item.id}
-                                        to={item.path}
-                                        onClick={() => handleNavClick(item.id)}
-                                        className="block w-full rounded-xl border border-border px-4 py-3 text-center text-base font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:text-muted-foreground"
-                                        {...mobileNavDebugAttributes(item.id)}
-                                    >
-                                        {item.label}
-                                    </NavLink>
-                                ))}
-                                {visibleItems.map((item) => {
+                                {NAV_ITEMS.map((item) => {
                                     const path = buildLocalizedMarketingPath(item.routeKey, activeLocale);
                                     return (
                                         <NavLink
@@ -286,48 +224,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                 })}
                             </div>
                             <div className="mt-auto space-y-3 border-t border-border pt-4 dark:border-border">
-                                {isAdmin && (
-                                    <NavLink
-                                        to="/admin"
-                                        onClick={() => handleNavClick('admin_dashboard')}
-                                        className="block w-full rounded-xl border border-border bg-secondary px-4 py-3 text-center text-base font-medium text-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:text-foreground dark:bg-secondary"
-                                        {...mobileNavDebugAttributes('admin_dashboard')}
-                                    >
-                                        Admin dashboard
-                                    </NavLink>
-                                )}
-                                {isAuthenticated ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            void handleLogout();
-                                        }}
-                                        className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
-                                        {...mobileNavDebugAttributes('logout')}
-                                    >
-                                        Logout
-                                    </button>
-                                ) : isLoading ? (
-                                    <button
-                                        type="button"
-                                        disabled
-                                        className="inline-flex w-full cursor-wait items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-center text-base font-medium text-muted-foreground opacity-80 dark:border-border dark:text-muted-foreground"
-                                        aria-disabled="true"
-                                        aria-live="polite"
-                                    >
-                                        <Loader2 size={16} className="animate-spin" />
-                                        {t('nav.login')}
-                                    </button>
-                                ) : (
-                                    <NavLink
-                                        to={buildLocalizedMarketingPath('login', activeLocale)}
-                                        onClick={handleLoginClick}
-                                        className="block w-full rounded-xl border border-border px-4 py-3 text-center text-base font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:text-muted-foreground"
-                                        {...mobileNavDebugAttributes('login')}
-                                    >
-                                        {t('nav.login')}
-                                    </NavLink>
-                                )}
+                                <AccountEntry
+                                    bootScope="account-entry:mobile"
+                                    loginSource="navigation_mobile"
+                                    portalContainer={panelNode}
+                                    onOpenTripManager={onMyTripsClick}
+                                    onPrewarmTripManager={onMyTripsIntent}
+                                    onAction={onClose}
+                                />
                                 <div className="grid grid-cols-2 gap-2">
                                     {legalNavItems.map((item) => (
                                         <NavLink
@@ -346,6 +250,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                     </nav>
                 </div>
             </div>
-        </>
+        </>,
+        document.body,
     );
 };

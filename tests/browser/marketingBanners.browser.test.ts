@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
@@ -61,7 +62,7 @@ vi.mock('../../services/analyticsService', () => ({
 
 import { CookieConsentBanner } from '../../components/marketing/CookieConsentBanner';
 import { LanguageSuggestionBanner } from '../../components/navigation/LanguageSuggestionBanner';
-import { CONSENT_STORAGE_KEY } from '../../services/consentService';
+import { CONSENT_STORAGE_KEY, saveConsent } from '../../services/consentService';
 
 describe('marketing banner crash guards', () => {
   beforeEach(() => {
@@ -81,6 +82,13 @@ describe('marketing banner crash guards', () => {
     });
   });
 
+  it('includes undecided consent controls in the server document before interaction', () => {
+    const html = renderToString(React.createElement(CookieConsentBanner));
+    expect(html).toContain('Essential only');
+    expect(html).toContain('Accept all');
+    expect(html).toContain('data-tf-consent-banner');
+  });
+
   it('accepts cookie consent when the router location is temporarily unavailable', async () => {
     const user = userEvent.setup();
     render(React.createElement(CookieConsentBanner));
@@ -93,6 +101,13 @@ describe('marketing banner crash guards', () => {
       expect(screen.queryByRole('button', { name: 'Accept all' })).not.toBeInTheDocument();
     });
     expect(window.localStorage.getItem(CONSENT_STORAGE_KEY)).toBe('all');
+  });
+
+  it('dismisses when consent is chosen from another control on the page', async () => {
+    render(React.createElement(CookieConsentBanner));
+    expect(screen.getByRole('button', { name: 'Accept all' })).toBeVisible();
+    act(() => saveConsent('essential'));
+    expect(screen.queryByRole('button', { name: 'Accept all' })).toBeNull();
   });
 
   it('dismisses the language suggestion when the router location is temporarily unavailable', async () => {

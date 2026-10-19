@@ -5,7 +5,6 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/theme/useTheme';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { cn } from '../../lib/utils';
-import { useHydrated } from '../../hooks/useHydrated';
 import { activateBootControls } from '../../services/bootInteractionBridge';
 
 interface ThemeToggleProps {
@@ -23,14 +22,12 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
         const { t } = useTranslation('common');
         const { resolvedTheme, toggle } = useTheme();
 
-        // Match the SSR label before reading browser theme preferences.
-        const hydrated = useHydrated();
         const bootScope = `theme:${analyticsSurface}`;
         useEffect(() => {
             return activateBootControls(bootScope);
         }, [bootScope]);
 
-        const isDark = hydrated && resolvedTheme === 'dark';
+        const isDark = resolvedTheme === 'dark';
 
         const label = isDark ? t('nav.themeToLight') : t('nav.themeToDark');
 
@@ -39,11 +36,13 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
             toggle();
         };
 
-        const icon = isDark ? (
-            <Sun className="size-4 shrink-0" aria-hidden="true" />
-        ) : (
-            <Moon className="size-4 shrink-0" aria-hidden="true" />
-        );
+        // CSS reads the boot-applied root class before hydration. Both icons
+        // have identical geometry, so the visible icon never flips from SSR's
+        // default light snapshot while React attaches the handlers.
+        const icon = <>
+            <Sun className="hidden size-4 shrink-0 dark:block" aria-hidden="true" />
+            <Moon className="size-4 shrink-0 dark:hidden" aria-hidden="true" />
+        </>;
 
         if (variant === 'row') {
             return (

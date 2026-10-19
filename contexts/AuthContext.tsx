@@ -1,6 +1,5 @@
 import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { getFreePlanEntitlements } from '../config/planCatalog';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
 import { markAuthBootstrapSettled } from '../services/authBootstrapSuspense';
@@ -16,10 +15,6 @@ import {
 } from '../services/e2eAuthSandboxService';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn } from '../services/simulatedLoginService';
 import type { UserProfileRecord } from '../services/profileService';
-import {
-    readPersistedSupabaseSessionHint,
-    type PersistedSupabaseSessionHint,
-} from '../services/authSessionPersistenceService';
 import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 
 type AuthServiceModule = typeof import('../services/authService');
@@ -70,8 +65,6 @@ const hasAuthCallbackPayload = (): boolean => {
 
 const DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY = 'tf_dev_admin_bypass_disabled';
 const DEV_ADMIN_BYPASS_USER_ID = 'dev-admin-id';
-const OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS = 300;
-const FREE_ENTITLEMENTS = getFreePlanEntitlements();
 
 export const shouldEnableDevAdminBypass = (
     isDevRuntime = import.meta.env.DEV,
@@ -100,64 +93,6 @@ export const shouldUseDevAdminBypassSession = (
     bypassEnabled
     && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID)
 );
-
-export const shouldUseOptimisticMarketingAuthHint = (pathname: string): boolean =>
-    !isAuthBootstrapCriticalPath(pathname);
-
-export const createOptimisticAccessFromSessionHint = (
-    hint: PersistedSupabaseSessionHint
-): UserAccessContext => ({
-    userId: hint.userId,
-    email: hint.email,
-    isAnonymous: false,
-    role: 'user',
-    tierKey: 'tier_free',
-    entitlements: FREE_ENTITLEMENTS,
-    onboardingCompleted: true,
-    accountStatus: 'active',
-    termsCurrentVersion: null,
-    termsRequiresReaccept: false,
-    termsAcceptedVersion: null,
-    termsAcceptedAt: null,
-    termsAcceptanceRequired: false,
-    termsNoticeRequired: false,
-    billing: {
-        providerSubscriptionId: null,
-        providerStatus: null,
-        subscriptionStatus: null,
-        currentPeriodEnd: null,
-        cancelAt: null,
-        canceledAt: null,
-        graceEndsAt: null,
-        accessUntil: null,
-        lifecycleState: 'none',
-    },
-});
-
-export const createOptimisticSessionFromSessionHint = (
-    hint: PersistedSupabaseSessionHint
-): Session => {
-    const now = Math.floor(Date.now() / 1000);
-    const expiresAt = hint.expiresAt && Number.isFinite(hint.expiresAt)
-        ? hint.expiresAt
-        : now + OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS;
-
-    return {
-        access_token: 'optimistic-auth-hint',
-        refresh_token: 'optimistic-auth-hint',
-        expires_in: Math.max(1, expiresAt - now),
-        expires_at: expiresAt,
-        token_type: 'bearer',
-        user: {
-            id: hint.userId,
-            email: hint.email ?? undefined,
-            app_metadata: { provider: 'email', providers: ['email'] },
-            user_metadata: {},
-            aud: 'authenticated',
-            created_at: new Date(0).toISOString(),
-        } as Session['user'],
-    };
-};
 
 interface AuthContextValue {
     session: Session | null;
@@ -224,8 +159,7 @@ export const resolveAuthContextValue = (context: AuthContextValue | null): AuthC
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [hydrated, setHydrated] = useState(false);
-    // Persisted browser hints cannot affect SSR. Defer their context update so
-    // React can finish hydrating native route boundaries before personalizing UI.
+    // Development bypass is client-only; real identity is resolved by the auth service.
     useEffect(() => { startTransition(() => setHydrated(true)); }, []);
     const routeLocation = useSafeRouteLocation();
     const [session, setSession] = useState<Session | null>(null);
@@ -246,11 +180,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isBootstrappingRef = useRef(false);
     const profileLoadRequestIdRef = useRef(0);
     const accessLoadRequestIdRef = useRef(0);
-    const optimisticAuthHintRef = useRef<PersistedSupabaseSessionHint | null>(
-        shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
-            ? readPersistedSupabaseSessionHint()
-            : null
-    );
+    const publishAuthResult = useCallback((publish: () => void) => {
+        // Initial data can arrive before a native route finishes hydrating.
+        // Explicit account clears/logout remain urgent at their call sites.
+        if (!hasBootstrappedRef.current) startTransition(publish);
+        else publish();
+    }, []);
 
     const resetProfileState = useCallback(() => {
         profileLoadRequestIdRef.current += 1;
@@ -317,22 +252,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const requestId = profileLoadRequestIdRef.current + 1;
         profileLoadRequestIdRef.current = requestId;
-        setIsProfileLoading(true);
+        publishAuthResult(() => setIsProfileLoading(true));
 
         try {
             const profileService = await loadProfileService();
             const nextProfile = await profileService.getCurrentUserProfile();
             if (profileLoadRequestIdRef.current !== requestId) return;
-            setProfile(nextProfile);
+            publishAuthResult(() => setProfile(nextProfile));
         } catch {
             if (profileLoadRequestIdRef.current !== requestId) return;
-            setProfile(null);
+            publishAuthResult(() => setProfile(null));
         } finally {
             if (profileLoadRequestIdRef.current === requestId) {
-                setIsProfileLoading(false);
+                publishAuthResult(() => setIsProfileLoading(false));
             }
         }
-    }, []);
+    }, [publishAuthResult, resetProfileState]);
 
     const refreshAccess = useCallback(async () => {
         const requestId = ++accessLoadRequestIdRef.current;
@@ -348,13 +283,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
         if (accessLoadRequestIdRef.current !== requestId) return;
-        setAccess(nextAccess);
+        publishAuthResult(() => setAccess(nextAccess));
         if (nextAccess?.userId && !nextAccess.isAnonymous) {
             await refreshProfile();
             return;
         }
         resetProfileState();
-    }, [refreshProfile, resetProfileState]);
+    }, [refreshProfile, resetProfileState, publishAuthResult]);
 
     useEffect(() => {
         let cancelled = false;
@@ -445,6 +380,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         const bootstrap = async () => {
+            let requestId = accessLoadRequestIdRef.current;
             try {
                 const [authService, supabase] = await Promise.all([
                     loadAuthService(),
@@ -457,7 +393,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         setSession(null);
                         setAccess(null);
                         resetProfileState();
-                        setIsLoading(false);
+                        startTransition(() => setIsLoading(false));
                     }
                     hasBootstrappedRef.current = true;
                     return;
@@ -521,12 +457,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     accessLoadRequestIdRef.current += 1;
                     const nextUserId = nextSession?.user?.id ?? null;
                     if (currentSessionUserId !== nextUserId) {
-                        setIsLoading(Boolean(nextSession));
+                        // A first anonymous visitor session grants no account access.
+                        // Resolve its capabilities in the background without replacing
+                        // an already interactive planner. Real identity changes still
+                        // hide the old account while its replacement is verified.
+                        const createsAnonymousVisitor = currentSessionUserId === null && isAnonymousSession(nextSession);
+                        if (nextSession && !createsAnonymousVisitor) setIsLoading(true);
+                        else publishAuthResult(() => setIsLoading(false));
                         setAccess(null);
                         resetProfileState();
                     }
                     currentSessionUserId = nextUserId;
-                    setSession(nextSession);
+                    if (nextSession) publishAuthResult(() => setSession(nextSession));
+                    else setSession(null);
                     if (nextSession) {
                         // Only strip auth hash once a real session exists, so the
                         // bootstrap fallback can still read the tokens if needed.
@@ -534,7 +477,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const refresh = refreshAccess();
                         const requestId = accessLoadRequestIdRef.current;
                         void refresh.catch(error => authDebug('stateChange:accessError', error)).finally(() => {
-                            if (!cancelled && accessLoadRequestIdRef.current === requestId) setIsLoading(false);
+                            if (!cancelled && accessLoadRequestIdRef.current === requestId) startTransition(() => setIsLoading(false));
                         });
                         return;
                     }
@@ -542,23 +485,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     resetProfileState();
                 });
 
-                setSession(activeSession);
+                publishAuthResult(() => setSession(activeSession));
                 logAuthStateEvent('INITIAL_SESSION', Boolean(activeSession));
                 if (activeSession) {
-                    await refreshAccess();
+                    const refresh = refreshAccess();
+                    requestId = accessLoadRequestIdRef.current;
+                    await refresh;
                 } else {
                     setAccess(null);
                     resetProfileState();
                 }
-                if (!cancelled) setIsLoading(false);
+                if (!cancelled && accessLoadRequestIdRef.current === requestId) startTransition(() => setIsLoading(false));
                 if (cancelled) return;
 
 
 
                 hasBootstrappedRef.current = true;
             } catch (error) {
-                if (!cancelled) {
-                    setIsLoading(false);
+                if (!cancelled && accessLoadRequestIdRef.current === requestId) {
+                    startTransition(() => setIsLoading(false));
                 }
                 authDebug('bootstrap:error', error);
             } finally {
@@ -617,7 +562,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             unsubscribe();
         };
-    }, [logAuthStateEvent, refreshAccess, resetProfileState]);
+    }, [logAuthStateEvent, refreshAccess, resetProfileState, publishAuthResult]);
 
     const loginWithPassword = useCallback(async (email: string, password: string) => {
         if (shouldEnableE2EAuthSandbox()) {
@@ -773,35 +718,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
         }
 
-        const optimisticAuthHint = hydrated && isLoading && shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
-            ? optimisticAuthHintRef.current
-            : null;
-        const effectiveSession = session ?? (
-            optimisticAuthHint
-                ? createOptimisticSessionFromSessionHint(optimisticAuthHint)
-                : null
-        );
-        const effectiveAccess = access ?? (
-            optimisticAuthHint
-                ? createOptimisticAccessFromSessionHint(optimisticAuthHint)
-                : null
-        );
         const hasValidBoundAccess = Boolean(
-            effectiveSession?.user
-            && effectiveAccess
-            && effectiveAccess.userId
-            && effectiveAccess.userId === effectiveSession.user.id
+            session?.user
+            && access
+            && access.userId
+            && access.userId === session.user.id
         );
         const isAuthenticated = Boolean(
             hasValidBoundAccess
-            && !effectiveAccess?.isAnonymous
-            && effectiveAccess?.accountStatus === 'active'
+            && !access?.isAnonymous
+            && access?.accountStatus === 'active'
         );
-        const isAnonymous = Boolean(effectiveSession?.user && effectiveAccess?.isAnonymous);
-        const isAdmin = effectiveAccess?.role === 'admin';
+        const isAnonymous = Boolean(session?.user && access?.isAnonymous);
+        const isAdmin = access?.role === 'admin';
         return {
-            session: effectiveSession,
-            access: effectiveAccess,
+            session,
+            access,
             profile,
             isLoading,
             isProfileLoading,

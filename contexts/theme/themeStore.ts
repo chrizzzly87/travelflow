@@ -2,10 +2,9 @@
  * Theme store.
  *
  * A module-level store rather than a context with an effect, because the thing
- * being tracked genuinely is external state: the document element's class list
- * and the OS colour-scheme media query. `useSyncExternalStore` is the right
- * primitive for that, and it keeps the applied theme correct during the first
- * render instead of one paint later.
+ * being tracked genuinely is external state: the browser preference and the OS
+ * colour-scheme media query. One cached snapshot drives React consumers and the
+ * document class together; subscriptions are shared across all consumers.
  *
  * The theme is also applied before this module ever loads, by the inline script
  * in src/document/theme-boot.js. Start emits it in server-rendered documents;
@@ -15,7 +14,6 @@
  * below, which is asserted against the script in the unit tests.
  */
 import {
-    readLocalStorageItem,
     removeLocalStorageItem,
     writeLocalStorageItem,
 } from '../../services/browserStorageService';
@@ -51,9 +49,16 @@ const isPreference = (value: unknown): value is ThemePreference =>
 
 const listeners = new Set<() => void>();
 
-const readStoredPreference = (): ThemePreference => {
-    const stored = readLocalStorageItem(THEME_STORAGE_KEY);
-    return isPreference(stored) ? stored : 'system';
+const readStoredPreference = (fallback: ThemePreference = 'system'): ThemePreference => {
+    if (typeof window === 'undefined') return fallback;
+    try {
+        // Keep a blocked read distinct from a missing choice. The key remains
+        // registered as essential; writes still use the shared storage policy.
+        const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+        return isPreference(stored) ? stored : 'system';
+    } catch {
+        return fallback;
+    }
 };
 
 const prefersDark = (): boolean => {
@@ -62,22 +67,30 @@ const prefersDark = (): boolean => {
 };
 
 let preference: ThemePreference = typeof window === 'undefined' ? 'system' : readStoredPreference();
+let hasUnpersistedPreference = false;
+let detachBrowserListeners: (() => void) | undefined;
 
 export const resolveTheme = (value: ThemePreference, systemPrefersDark: boolean): ResolvedTheme => {
     if (value === 'system') return systemPrefersDark ? 'dark' : 'light';
     return value;
 };
 
-/**
- * Snapshot is a primitive string, not an object, so useSyncExternalStore never
- * sees a new identity for unchanged state and cannot loop.
- */
-const getSnapshot = (): ThemePreference => preference;
-const getServerSnapshot = (): ThemePreference => 'system';
+export interface ThemeSnapshot {
+    preference: ThemePreference;
+    resolvedTheme: ResolvedTheme;
+}
+
+// React must observe both inputs together: an OS change leaves the preference
+// at "system", but must still update every consumer of the resolved theme.
+const SERVER_SNAPSHOT: ThemeSnapshot = { preference: 'system', resolvedTheme: 'light' };
+let snapshot: ThemeSnapshot = typeof window === 'undefined'
+    ? SERVER_SNAPSHOT
+    : { preference, resolvedTheme: resolveTheme(preference, prefersDark()) };
+const getSnapshot = (): ThemeSnapshot => snapshot;
+const getServerSnapshot = (): ThemeSnapshot => SERVER_SNAPSHOT;
 
 /**
- * Custom properties the boot script writes inline on <html> so the boot-shell CSS
- * is correct on the very first frame, before index.css has loaded.
+ * Custom properties an older cached boot script may still write on <html>.
  *
  * They MUST be removed again once a stylesheet is in charge. An inline style
  * outranks every rule, so leaving the dark values behind pins the page dark
@@ -93,7 +106,7 @@ const BOOT_SEEDED_PROPERTIES = ['--background', '--foreground', '--card', '--sec
  * These are `--card` in each theme, resolved to hex: the strip sits directly
  * above a `bg-card` header, and any other value reads as a gradient seam across
  * the top of the app. Duplicated verbatim in the inline boot script in
- * index.html so the very first frame is already right; the unit test asserts
+ * src/document/theme-boot.js so the very first frame is already right; the unit test asserts
  * the two still agree.
  */
 export const THEME_SURFACE_COLOR: Record<ResolvedTheme, string> = {
@@ -143,74 +156,78 @@ const notify = (): void => {
 };
 
 const syncDocument = (): void => {
-    applyTheme(resolveTheme(preference, prefersDark()));
+    const resolvedTheme = resolveTheme(preference, prefersDark());
+    const changed = snapshot.preference !== preference || snapshot.resolvedTheme !== resolvedTheme;
+    if (changed) snapshot = { preference, resolvedTheme };
+    applyTheme(resolvedTheme);
+    if (changed) notify();
 };
 
 export const setPreference = (next: ThemePreference): void => {
-    if (!isPreference(next) || next === preference) return;
-    preference = next;
-
-    // 'system' is the absence of a choice, so it is stored as the absence of a
-    // key. That keeps a user who never touched the toggle indistinguishable
-    // from one who explicitly chose to follow their device, which is what the
-    // boot script assumes when it finds nothing.
-    if (next === 'system') {
-        removeLocalStorageItem(THEME_STORAGE_KEY);
-    } else {
-        writeLocalStorageItem(THEME_STORAGE_KEY, next);
+    if (!isPreference(next)) return;
+    if (next === preference) {
+        syncDocument();
+        return;
     }
-
+    preference = next;
+    // A denied write must not erase the user's in-memory choice when another
+    // theme consumer subscribes later (for example a lazy profile menu).
+    hasUnpersistedPreference = !(next === 'system'
+        ? removeLocalStorageItem(THEME_STORAGE_KEY)
+        : writeLocalStorageItem(THEME_STORAGE_KEY, next));
     syncDocument();
-    notify();
 };
 
 export const getPreference = (): ThemePreference => preference;
-
 export const getResolvedTheme = (): ResolvedTheme => resolveTheme(preference, prefersDark());
+export const setResolvedTheme = (theme: ResolvedTheme): void => { setPreference(theme); };
 
-/**
- * Used by the window shade, which commits a resolved theme directly rather than
- * a preference — pulling the shade down means "dark now", not "follow my OS".
- */
-export const setResolvedTheme = (theme: ResolvedTheme): void => {
-    setPreference(theme);
+const attachBrowserListeners = (): (() => void) => {
+    const media = typeof window.matchMedia === 'function' ? window.matchMedia(DARK_QUERY) : undefined;
+    const onMediaChange = (): void => {
+        if (preference === 'system') syncDocument();
+    };
+    const onStorage = (event: StorageEvent): void => {
+        if (event.key !== null && event.key !== THEME_STORAGE_KEY) return;
+        try {
+            if (event.storageArea && event.storageArea !== window.localStorage) return;
+        } catch { return; }
+        if (event.newValue !== null && !isPreference(event.newValue)) return;
+        preference = event.newValue === null ? 'system' : event.newValue;
+        hasUnpersistedPreference = false;
+        syncDocument();
+    };
+    if (media?.addEventListener) media.addEventListener('change', onMediaChange);
+    else media?.addListener?.(onMediaChange);
+    window.addEventListener('storage', onStorage);
+    return () => {
+        if (media?.removeEventListener) media.removeEventListener('change', onMediaChange);
+        else media?.removeListener?.(onMediaChange);
+        window.removeEventListener('storage', onStorage);
+    };
 };
 
 export const subscribe = (listener: () => void): (() => void) => {
     listeners.add(listener);
-
-    // The OS preference only matters while the user is on 'system'; subscribing
-    // unconditionally is still simpler than attaching and detaching as the
-    // preference changes, and the handler is a no-op otherwise.
-    let detachMedia: (() => void) | undefined;
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const media = window.matchMedia(DARK_QUERY);
-        const onChange = (): void => {
-            if (preference !== 'system') return;
-            syncDocument();
-            notify();
-        };
-        if (typeof media.addEventListener === 'function') {
-            media.addEventListener('change', onChange);
-            detachMedia = () => media.removeEventListener('change', onChange);
-        } else if (typeof media.addListener === 'function') {
-            // Safari < 14.
-            media.addListener(onChange);
-            detachMedia = () => media.removeListener(onChange);
-        }
+    if (!detachBrowserListeners && typeof window !== 'undefined') {
+        detachBrowserListeners = attachBrowserListeners();
+        // The OS or another tab may have changed while the application bundle
+        // was downloading. Reconcile after attaching, so no change is missed.
+        if (!hasUnpersistedPreference) preference = readStoredPreference(preference);
+        syncDocument();
     }
-
     return () => {
         listeners.delete(listener);
-        detachMedia?.();
+        if (!listeners.size) {
+            detachBrowserListeners?.();
+            detachBrowserListeners = undefined;
+        }
     };
 };
 
-// A previously-cached index.html may still seed those properties inline. Clear
-// them as soon as this module loads so a stale shell cannot pin the theme.
-if (typeof document !== 'undefined') {
-    syncDocument();
-}
+// The boot script already applied this choice before first paint. Synchronizing
+// the same snapshot clears old cached inline tokens without a light-mode reset.
+if (typeof document !== 'undefined') syncDocument();
 
 export const themeStore = {
     subscribe,
@@ -220,6 +237,10 @@ export const themeStore = {
 
 /** Test seam: reset module state between cases. */
 export const __resetThemeStoreForTests = (): void => {
+    detachBrowserListeners?.();
+    detachBrowserListeners = undefined;
     listeners.clear();
+    hasUnpersistedPreference = false;
     preference = typeof window === 'undefined' ? 'system' : readStoredPreference();
+    snapshot = typeof window === 'undefined' ? SERVER_SNAPSHOT : { preference, resolvedTheme: resolveTheme(preference, prefersDark()) };
 };

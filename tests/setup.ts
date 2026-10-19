@@ -101,6 +101,7 @@ afterEach(() => {
   vi.useRealTimers();
   resetInitialRouteHandoffCompletedForTests();
   if (typeof window !== 'undefined') {
+    if (typeof document !== 'undefined') document.documentElement.removeAttribute('data-tf-consent');
     window.localStorage.clear();
     window.sessionStorage.clear();
   }

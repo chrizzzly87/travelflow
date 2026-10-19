@@ -1,0 +1,5 @@
+/* Returning visitors must not see the static undecided banner flash before hydration. */
+html[data-tf-consent='all'] [data-tf-consent-banner],
+html[data-tf-consent='essential'] [data-tf-consent-banner] {
+    display: none;
+}

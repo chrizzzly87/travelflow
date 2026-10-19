@@ -282,7 +282,8 @@
   --tf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --tf-font-heading: "Bricolage Grotesque", "Space Grotesk", "TravelFlow Global Fallback", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
   --tf-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "TravelFlow Global Fallback", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-  --tf-layer-cookie-consent: 12000;
+  /* Consent stays above page chrome and below modal navigation/dialogs. */
+  --tf-layer-cookie-consent: 1650;
   /* Global accent currently uses an indigo palette. */
   --tf-accent-50: #eef1ff;
   --tf-accent-100: #dfe3ff;
@@ -1119,6 +1120,17 @@ h6,
     clouds-scroll 19s linear infinite,
     clouds-scroll 31s linear infinite,
     clouds-scroll 47s linear infinite;
+}
+
+/* Resting decoration follows the pre-paint root class, even before React
+   hydrates. Keep these values aligned with SHADE_TRAVEL and FRAME_DIM. */
+.plane-window-wrapper {
+  --tf-window-shade-offset: -102%;
+  --tf-window-frame-brightness: 1;
+}
+.dark .plane-window-wrapper {
+  --tf-window-shade-offset: 0%;
+  --tf-window-frame-brightness: 0.72;
 }
 
 /* The drawn shade. There is no shutter artwork for this window, so it is a

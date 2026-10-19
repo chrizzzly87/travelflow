@@ -1,5 +1,5 @@
-import React, { lazy, Suspense, useEffect, useRef } from 'react';
-import { Navigate, useRouter } from '@tanstack/react-router';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { Navigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../app/navigation';
@@ -8,6 +8,7 @@ import { buildLocalizedMarketingPath, extractLocaleFromPath, isToolRoute, stripL
 import { normalizeLocale } from '../../config/locales';
 import { useAccountLanguageSync } from './useAccountLanguageSync';
 import { shouldRedirectToTermsAcceptance } from './termsPolicy';
+import { useSessionRouteLifecycle } from './useSessionRouteLifecycle';
 import { shouldRevokeInactiveAccount } from './sessionPolicy';
 
 const AccountTermsNotice = lazy(() => import('./AccountTermsNotice'));
@@ -15,17 +16,10 @@ const AccountTermsNotice = lazy(() => import('./AccountTermsNotice'));
 /** Session changes invalidate native route guards; no second browser router or stale role cache. */
 export function AuthRoutingBoundary({ children }: { children: React.ReactNode }) {
     const auth = useAuth();
-    const router = useRouter();
+    useSessionRouteLifecycle(auth);
     useAccountLanguageSync();
     const location = useLocation();
     const { i18n } = useTranslation('common');
-    const identity = `${auth.isLoading}:${auth.access?.userId ?? ''}:${auth.access?.role ?? ''}:${auth.access?.accountStatus ?? ''}`;
-    const previousIdentity = useRef(identity);
-    useEffect(() => {
-        if (identity === previousIdentity.current) return;
-        previousIdentity.current = identity;
-        if (!auth.isLoading) void router.invalidate();
-    }, [identity, auth.isLoading, router]);
     const hasInactiveAccount = shouldRevokeInactiveAccount(auth);
     useEffect(() => {
         if (hasInactiveAccount) void auth.logout().catch(() => { /* Local access is already revoked by logout. */ });

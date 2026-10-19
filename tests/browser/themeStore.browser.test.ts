@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { useTheme } from '../../contexts/theme/useTheme';
 
 import {
     DEFAULT_DARK_TONE,
@@ -10,6 +12,7 @@ import {
     resolveTheme,
     setPreference,
     __resetThemeStoreForTests,
+    themeStore,
 } from '../../contexts/theme/themeStore';
 
 const setSystemPrefersDark = (matches: boolean) => {
@@ -27,6 +30,7 @@ const setSystemPrefersDark = (matches: boolean) => {
 
 describe('contexts/theme/themeStore', () => {
     beforeEach(() => {
+        cleanup();
         window.localStorage.clear();
         document.documentElement.className = '';
         document.documentElement.removeAttribute(THEME_BOOT_KEYS.toneAttribute);
@@ -99,4 +103,77 @@ describe('contexts/theme/themeStore', () => {
         applyTheme('dark');
         expect(document.head.querySelector('style[data-tf-theme-flip]')).toBeNull();
     });
+
+    it('updates React consumers when the system theme changes without a preference change', () => {
+        let dark = false;
+        const listeners = new Set<() => void>();
+        vi.stubGlobal('matchMedia', () => ({
+            get matches() { return dark; },
+            addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+            removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+        }));
+        __resetThemeStoreForTests();
+        const { result } = renderHook(() => useTheme());
+        expect(result.current.resolvedTheme).toBe('light');
+        act(() => { dark = true; listeners.forEach(listener => listener()); });
+        expect(document.documentElement.classList.contains('dark')).toBe(true);
+        expect(result.current.resolvedTheme).toBe('dark');
+    });
+
+    it('synchronizes another tab choice and removal through the subscribed snapshot', () => {
+        const { result } = renderHook(() => useTheme());
+        act(() => {
+            window.localStorage.setItem(THEME_BOOT_KEYS.storageKey, 'dark');
+            window.dispatchEvent(new StorageEvent('storage', { key: THEME_BOOT_KEYS.storageKey, newValue: 'dark', storageArea: window.localStorage }));
+        });
+        expect(result.current.preference).toBe('dark');
+        expect(result.current.resolvedTheme).toBe('dark');
+        act(() => {
+            window.localStorage.removeItem(THEME_BOOT_KEYS.storageKey);
+            window.dispatchEvent(new StorageEvent('storage', { key: THEME_BOOT_KEYS.storageKey, newValue: null, storageArea: window.localStorage }));
+        });
+        expect(result.current.preference).toBe('system');
+        expect(result.current.resolvedTheme).toBe('light');
+    });
+
+
+    it('reconciles a choice made while the bundle was loading before the first subscription', () => {
+        window.localStorage.setItem(THEME_BOOT_KEYS.storageKey, 'dark');
+        const { result } = renderHook(() => useTheme());
+        expect(result.current.resolvedTheme).toBe('dark');
+        expect(document.documentElement.classList.contains('dark')).toBe(true);
+    });
+
+    it('keeps a memory-only early toggle when persistence is blocked and a lazy consumer mounts', () => {
+        const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+        setPreference('dark');
+        const { result } = renderHook(() => useTheme());
+        expect(result.current.preference).toBe('dark');
+        expect(result.current.resolvedTheme).toBe('dark');
+        write.mockRestore();
+    });
+
+    it('retains the previous choice when storage becomes unreadable between subscriptions', () => {
+        setPreference('dark');
+        const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+        const { result } = renderHook(() => useTheme());
+        expect(result.current.resolvedTheme).toBe('dark');
+        read.mockRestore();
+    });
+
+    it('shares one browser subscription and returns stable snapshots until the theme changes', () => {
+        const attach = vi.fn();
+        const detach = vi.fn();
+        vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: attach, removeEventListener: detach }));
+        const first = renderHook(() => useTheme());
+        const second = renderHook(() => useTheme());
+        expect(attach).toHaveBeenCalledTimes(1);
+        expect(themeStore.getSnapshot()).toBe(themeStore.getSnapshot());
+        expect(themeStore.getServerSnapshot()).toBe(themeStore.getServerSnapshot());
+        first.unmount();
+        expect(detach).not.toHaveBeenCalled();
+        second.unmount();
+        expect(detach).toHaveBeenCalledTimes(1);
+    });
+
 });
