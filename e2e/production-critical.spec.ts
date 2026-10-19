@@ -297,12 +297,12 @@ for (const account of [{ path: '/features', label: 'Account' }, { path: '/de/fea
 test('mobile account menu keeps keyboard focus within its navigation dialog', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/features');
-  await page.getByRole('button', { name: 'Essential only', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Essential only', exact: true })).toBeVisible();
   await page.locator('[data-tf-boot-intent="mobile-menu"]').click();
   const navigation = page.getByRole('dialog', { name: 'Navigation menu' });
   await expect(navigation).toBeVisible();
   const account = navigation.getByRole('button', { name: 'Account', exact: true });
-  await account.focus();
+  await account.click();
   await page.keyboard.press('ArrowDown');
   const menu = page.getByRole('menu', { name: 'Account', exact: true });
   await expect(menu).toBeVisible();
@@ -313,6 +313,8 @@ test('mobile account menu keeps keyboard focus within its navigation dialog', as
   await expect(account).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(navigation).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Essential only', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
 });
 
 

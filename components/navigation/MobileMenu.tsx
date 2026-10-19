@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink } from '@/app/navigation';
 import { X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -123,7 +124,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         [t]
     );
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
         <>
             <div
                 className={`fixed inset-0 z-[1700] bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
@@ -246,6 +249,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                     </nav>
                 </div>
             </div>
-        </>
+        </>,
+        document.body,
     );
 };

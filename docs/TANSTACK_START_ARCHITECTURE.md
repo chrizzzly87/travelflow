@@ -155,7 +155,7 @@ Native navigation keeps the previous route until the pending threshold (500 ms);
 this threshold does not delay a route that is already ready. Marketing pending UI
 reuses the real header/footer with working links and a small progress line. Do not
 restore fabricated navigation skeletons or an auth spinner/disabled Login control.
-The public Account trigger is permanent; only verified member tools are loaded on demand. Guest and unresolved menus retain working navigation actions, including a safe Login URL with the original path, search and fragment. Mobile dropdown content portals into its navigation dialog so nested focus handling and Escape remain correct. Any navigation rendered in the SSR fallback must belong to the initial module
+The public Account trigger is permanent; only verified member tools are loaded on demand. Guest and unresolved menus retain working navigation actions, including a safe Login URL with the original path, search and fragment. The mobile navigation itself portals into the document body to escape header stacking contexts. Its dropdown content portals into that navigation dialog so nested focus handling and Escape remain correct. Consent stays above ordinary page chrome and below modal navigation; it must not block account actions while its decision remains unanswered. Any navigation rendered in the SSR fallback must belong to the initial module
 graph. Do not put that chrome behind an additional manual React.lazy boundary:
 Start can activate a client-only route before the nested fallback finishes
 hydrating. Keep optional account tools and business workspaces split separately.

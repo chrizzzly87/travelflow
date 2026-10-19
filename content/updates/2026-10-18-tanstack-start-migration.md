@@ -20,7 +20,7 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Improved] 🧭 Keep navigation usable while pages and sign-in status load.
 - [x] [Fixed] 🍪 Keep cookie choices in sync and stop pending analytics when consent is withdrawn.
 - [x] [Improved] ⚡ Show essential landing-page content immediately for a faster first view.
-- [x] [Fixed] 🖱️ Prevent the cookie banner from interrupting a click while the page loads.
+- [x] [Fixed] 🖱️ Keep cookie choices from covering open navigation or interrupting clicks while pages load.
 - [ ] [Internal] 🔐 Scope session revalidation through native route metadata and preserve initial authenticated hydration and account-switch loading generations.
 - [x] [Fixed] 📝 Keep open trip details and unfinished planner inputs when a guest session starts in the background.
 - [x] [Fixed] 🌐 Open pages using the translations already delivered with the document, avoiding an extra download that could leave a page unresponsive.

@@ -27,7 +27,9 @@ describe('nested mobile account focus', () => {
         await renderWithRouter(<MemoryRouter><MobileMenu isOpen onClose={onClose} /></MemoryRouter>);
         await user.click(screen.getByRole('button', { name: 'Account' }));
         const menu = screen.getByRole('menu', { name: 'Account' });
-        expect(screen.getByRole('dialog', { name: 'Navigation menu' })).toContainElement(menu);
+        const panel = screen.getByRole('dialog', { name: 'Navigation menu' });
+        expect(panel.parentElement).toBe(document.body);
+        expect(panel).toContainElement(menu);
         await user.keyboard('{ArrowDown}');
         expect(menu).toContainElement(document.activeElement as HTMLElement);
         await user.keyboard('{Escape}');
