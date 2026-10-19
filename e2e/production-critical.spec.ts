@@ -37,6 +37,33 @@ const holdApplicationScripts = async (page: Page) => {
   return release;
 };
 
+test('desktop-only hero artwork follows the viewport before hydration', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const artworkRequests: string[] = [];
+  page.on('request', request => {
+    if (request.url().includes('plane-window')) artworkRequests.push(request.url());
+  });
+  const release = await holdApplicationScripts(page);
+  try {
+    await page.goto('/', { waitUntil: 'commit' });
+    const frame = page.locator('.plane-window-wrapper img');
+    await expect(page.locator('footer').first()).toBeVisible();
+    await expect.poll(() => frame.evaluate((image: HTMLImageElement) => image.currentSrc)).toMatch(/^data:image\//);
+    expect(artworkRequests).toEqual([]);
+
+    // Native picture selection must reveal the real desktop artwork even while
+    // application scripts are still held; no mounted/resize state is needed.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(frame).toBeVisible();
+    await expect.poll(() => frame.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 1)).toBe(true);
+    expect(await frame.evaluate((image: HTMLImageElement) => image.currentSrc)).toContain('plane-window');
+    expect(artworkRequests).toHaveLength(1);
+  } finally {
+    release();
+  }
+  await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+});
+
 for (const route of ['/', '/features', '/pricing', '/blog', '/inspirations', '/faq', '/updates']) {
   test(`${route} keeps prerendered content and becomes interactive`, async ({ page }) => {
     await page.goto(route);

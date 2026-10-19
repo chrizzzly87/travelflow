@@ -6,6 +6,10 @@ import { useWindowShade, SHADE_REST_TRANSFORM, FRAME_REST_FILTER } from './useWi
 import type { CloudSceneHandle } from './cloudScene';
 
 const PLANE_WINDOW_SRC = '/images/plane-window.png';
+// Match the lg breakpoint that reveals this desktop-only decoration. Native
+// picture selection avoids downloading its frame on hidden mobile layouts.
+const DESKTOP_MEDIA = '(min-width: 64rem)';
+const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 const PLANE_WINDOW_IMAGE_WIDTH = 640;
 const PLANE_WINDOW_IMAGE_HEIGHT = 938;
 
@@ -22,7 +26,7 @@ const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softwarepipe|basic render|generi
 const shouldRenderScene = (): boolean => {
     if (typeof window === 'undefined') return false;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-    if (!window.matchMedia('(min-width: 1024px)').matches) return false;
+    if (!window.matchMedia(DESKTOP_MEDIA).matches) return false;
 
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
     if (connection?.saveData) return false;
@@ -153,21 +157,24 @@ export const PlaneWindow: React.FC = () => {
             </div>
 
             {/* Frame on top, dimming as the cabin darkens. */}
-            <img
-                src={planeWindowSrc}
-                alt={t('hero.window.alt', 'Airplane window')}
-                width={PLANE_WINDOW_IMAGE_WIDTH}
-                height={PLANE_WINDOW_IMAGE_HEIGHT}
-                draggable={false}
-                ref={(node) => { frameElRef.current = node; }}
-                className="relative z-10 size-full object-contain drop-shadow-xl"
-                decoding="async"
-                fetchPriority="high"
-                style={{
-                    filter: FRAME_REST_FILTER,
-                    transition: dragging ? 'none' : 'filter 460ms cubic-bezier(.22,1,.36,1)',
-                }}
-            />
+            <picture className="contents">
+                <source media={DESKTOP_MEDIA} srcSet={planeWindowSrc} />
+                <img
+                    src={TRANSPARENT_PIXEL}
+                    alt={t('hero.window.alt', 'Airplane window')}
+                    width={PLANE_WINDOW_IMAGE_WIDTH}
+                    height={PLANE_WINDOW_IMAGE_HEIGHT}
+                    draggable={false}
+                    ref={(node) => { frameElRef.current = node; }}
+                    className="relative z-10 size-full object-contain drop-shadow-xl"
+                    decoding="async"
+                    fetchPriority="high"
+                    style={{
+                        filter: FRAME_REST_FILTER,
+                        transition: dragging ? 'none' : 'filter 460ms cubic-bezier(.22,1,.36,1)',
+                    }}
+                />
+            </picture>
 
             {/* The grab target, shaped to the glass. A button so it is reachable
                 and announceable; arrow keys move the shade for keyboard users. */}

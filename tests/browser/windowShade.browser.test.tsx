@@ -26,6 +26,17 @@ describe('window shade theme ownership', () => {
         expect(html).not.toContain('<canvas');
     });
 
+    it('delivers native desktop image selection without a mobile network fallback', () => {
+        const container = document.createElement('div');
+        container.innerHTML = renderToString(<PlaneWindow />);
+        const source = container.querySelector('picture source');
+        const image = container.querySelector('picture img');
+        expect(source?.getAttribute('media')).toBe('(min-width: 64rem)');
+        expect(source?.getAttribute('srcset')).toContain('plane-window');
+        expect(image?.getAttribute('src')).toMatch(/^data:image\//);
+        expect(image?.getAttribute('fetchPriority')).toBe('high');
+    });
+
     it('derives its state from the same store as the header instead of observing document mutations', () => {
         const { result } = renderHook(() => useWindowShade());
         expect(result.current.shade).toBe(0);
