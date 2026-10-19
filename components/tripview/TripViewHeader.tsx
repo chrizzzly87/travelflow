@@ -149,6 +149,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                 )}
                 <AccountEntry
                     bootScope="account-entry:trip-header"
+                    compact={isMobile}
                     onOpenTripManager={onOpenManager}
                     onLogin={onHeaderAuthAction}
                     isLoginSubmitting={isHeaderAuthSubmitting}

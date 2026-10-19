@@ -6,7 +6,6 @@ import type { Icon } from '@phosphor-icons/react';
 import { FeaturesAirportBand } from '../components/marketing/features/FeaturesAirportBand';
 import { FeaturesCapabilities, type FeatureCapabilityItem } from '../components/marketing/features/FeaturesCapabilities';
 import { FeaturesGlobe } from '../components/marketing/features/FeaturesGlobe';
-import { RevealWords } from '../components/marketing/features/RevealWords';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
@@ -46,7 +45,7 @@ export const FeaturesPage: React.FC = () => {
             <section className="relative overflow-visible pb-20 pt-10 md:pb-28 md:pt-16">
                 <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(460px,560px)] lg:items-center">
                     <div className="max-w-2xl">
-                        <p className={`${sectionEyebrowClasses} animate-hero-stagger`} style={{ '--stagger': '0ms' } as React.CSSProperties}>
+                        <p className={sectionEyebrowClasses}>
                             {t('hero.eyebrow')}
                         </p>
 
@@ -54,16 +53,11 @@ export const FeaturesPage: React.FC = () => {
                             className="mt-5 text-balance text-5xl font-semibold leading-[1.05] tracking-tight text-foreground md:text-7xl"
                             style={{ fontFamily: 'var(--tf-font-heading)' }}
                         >
-                            <RevealWords
-                                startDelayMs={120}
-                                segments={[
-                                    { text: t('hero.titleBefore') },
-                                    { text: t('hero.titleHighlight'), className: 'text-accent-700 dark:text-accent-200' },
-                                ]}
-                            />
+                            {t('hero.titleBefore')}{' '}
+                            <span className="text-accent-700 dark:text-accent-200">{t('hero.titleHighlight')}</span>
                         </h1>
 
-                        <div className="animate-hero-stagger" style={{ '--stagger': '520ms' } as React.CSSProperties}>
+                        <div>
                             <p className="mt-7 max-w-lg text-pretty text-lg leading-relaxed text-muted-foreground md:text-xl">
                                 {t('hero.description')}
                             </p>

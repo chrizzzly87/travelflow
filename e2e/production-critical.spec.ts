@@ -314,3 +314,22 @@ test('mobile account menu keeps keyboard focus within its navigation dialog', as
   await page.keyboard.press('Escape');
   await expect(navigation).toHaveCount(0);
 });
+
+
+test('features essential hero does not wait for an entrance animation or application scripts', async ({ page }) => {
+  const release = await holdApplicationScripts(page);
+  await page.goto('/features', { waitUntil: 'commit' });
+  const heading = page.locator('main h1');
+  await expect(heading).toBeVisible();
+  await page.addStyleTag({ content: '* { animation-play-state: paused !important; }' });
+  expect(await heading.locator('span').evaluateAll(elements => elements.every(el => getComputedStyle(el).opacity === '1'))).toBe(true);
+  const cta = page.locator('main section').first().getByRole('link', { name: 'Start planning', exact: true });
+  await expect(cta).toBeVisible();
+  expect(await cta.evaluate(element => {
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      if (getComputedStyle(node).opacity !== '1') return false;
+    }
+    return true;
+  })).toBe(true);
+  release();
+});

@@ -18,6 +18,7 @@ const MemberContent = lazy(() => loadLazyComponentWithRecovery('AccountMenu', ()
 
 interface AccountEntryProps {
     className?: string;
+    compact?: boolean;
     bootScope?: string;
     portalContainer?: HTMLElement | null;
     loginSource?: string;
@@ -29,7 +30,7 @@ interface AccountEntryProps {
 }
 
 /** A permanent public account entry: authentication changes its menu, never its trigger. */
-export const AccountEntry: React.FC<AccountEntryProps> = ({ className, bootScope = 'account-entry:header', portalContainer, loginSource = 'navigation_header', onLogin, isLoginSubmitting = false, onAction, onOpenTripManager, onPrewarmTripManager }) => {
+export const AccountEntry: React.FC<AccountEntryProps> = ({ className, compact = false, bootScope = 'account-entry:header', portalContainer, loginSource = 'navigation_header', onLogin, isLoginSubmitting = false, onAction, onOpenTripManager, onPrewarmTripManager }) => {
     const { t, i18n } = useTranslation('common');
     const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
@@ -79,11 +80,11 @@ export const AccountEntry: React.FC<AccountEntryProps> = ({ className, bootScope
         <div className={className}>
             <DropdownMenuTrigger asChild>
                 <button type="button" data-tf-boot-replay={bootScope} data-tf-boot-scope={bootScope}
-                    data-tf-boot-event="pointerdown" className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                    data-tf-boot-event="pointerdown" className={`inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 ${compact ? 'size-10 justify-center px-0' : 'px-3'}`}
                     {...getAnalyticsDebugAttributes('navigation__account_menu--toggle')}>
                     <UserCircle size={22} aria-hidden="true" />
-                    <span>{t('nav.account')}</span>
-                    <CaretDown size={14} aria-hidden="true" />
+                    <span className={compact ? 'sr-only' : undefined}>{t('nav.account')}</span>
+                    {!compact && <CaretDown size={14} aria-hidden="true" />}
                 </button>
             </DropdownMenuTrigger>
         </div>
