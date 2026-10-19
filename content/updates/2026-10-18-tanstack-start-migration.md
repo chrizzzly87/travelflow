@@ -30,3 +30,4 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Improved] 👤 Keep the account entry steady while sign-in status is checked and show its actions immediately when opened.
 - [x] [Fixed] 🌐 Change the language from mobile navigation without keyboard focus getting stuck.
 - [x] [Improved] 📱 Avoid downloading hidden desktop artwork on phones.
+- [ ] [Internal] 🧩 Separate synchronous trip-generation policy and cancellation from optional authoring and claim-recovery execution.

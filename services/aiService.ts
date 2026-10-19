@@ -1,3 +1,5 @@
+import { registerActiveGenerationAbortController } from './tripGenerationRuntime';
+export { abortActiveTripGenerationRequest } from './tripGenerationRuntime';
 import { buildModelActivityPlacementFields } from '../shared/aiTripActivityPlacement';
 import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripGenerationFlow, TripGenerationFailureKind } from "../types";
 import type { AiProviderId } from "../config/aiProviderCatalog";
@@ -138,62 +140,6 @@ export interface TripGenerationRequestContext {
     source?: string;
     retryOfAttemptId?: string;
 }
-
-type ActiveGenerationAbortControllerMap = Map<string, AbortController>;
-
-const ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID: ActiveGenerationAbortControllerMap = new Map();
-const ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID: ActiveGenerationAbortControllerMap = new Map();
-
-const registerActiveGenerationAbortController = (
-    context: TripGenerationRequestContext | undefined,
-    controller: AbortController | null,
-): (() => void) => {
-    if (!controller) return () => {};
-    const tripId = typeof context?.tripId === 'string' ? context.tripId.trim() : '';
-    const requestId = typeof context?.requestId === 'string' ? context.requestId.trim() : '';
-
-    if (!tripId && !requestId) return () => {};
-
-    if (tripId) {
-        const previous = ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.get(tripId);
-        if (previous && previous !== controller) {
-            previous.abort('superseded');
-        }
-        ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.set(tripId, controller);
-    }
-    if (requestId) {
-        const previous = ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.get(requestId);
-        if (previous && previous !== controller) {
-            previous.abort('superseded');
-        }
-        ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.set(requestId, controller);
-    }
-
-    return () => {
-        if (tripId && ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.get(tripId) === controller) {
-            ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.delete(tripId);
-        }
-        if (requestId && ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.get(requestId) === controller) {
-            ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.delete(requestId);
-        }
-    };
-};
-
-export const abortActiveTripGenerationRequest = (params: {
-    tripId?: string | null;
-    requestId?: string | null;
-    reason?: string;
-}): boolean => {
-    const requestId = typeof params.requestId === 'string' ? params.requestId.trim() : '';
-    const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
-    const reason = (typeof params.reason === 'string' && params.reason.trim()) ? params.reason.trim() : 'user_abort';
-    const byRequest = requestId ? ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.get(requestId) : null;
-    const byTrip = tripId ? ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.get(tripId) : null;
-    const controller = byRequest || byTrip || null;
-    if (!controller) return false;
-    controller.abort(reason);
-    return true;
-};
 
 export class TripGenerationError extends Error {
     code: string | null;

@@ -5,11 +5,6 @@ import { encodeTripPrefill } from '../utils';
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot, TripPrefillData } from '../types';
 import type { CreateTripPrefillDraft, CreateTripTravelerDetails } from '../shared/createTripPreferences';
 
-export const TRIP_CLAIM_CONFLICT_QUERY_KEY = 'claim_conflict';
-export const TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED = 'already_claimed';
-
-const LOCAL_BASE_URL = 'https://travelflow.local';
-
 const asRecord = (value: unknown): Record<string, unknown> | null => (
     value && typeof value === 'object' && !Array.isArray(value)
         ? value as Record<string, unknown>
@@ -35,10 +30,6 @@ const asStringArray = (value: unknown): string[] => (
         ? value.map((entry) => asString(entry)).filter((entry): entry is string => Boolean(entry))
         : []
 );
-
-const parseRelativePath = (path: string): URL => new URL(path || '/', LOCAL_BASE_URL);
-
-const buildRelativePath = (url: URL): string => `${url.pathname}${url.search}${url.hash}`;
 
 const dedupeStrings = (values: string[]): string[] => {
     const seen = new Set<string>();
@@ -165,32 +156,16 @@ const buildBaseCreateTripPath = (pathname: string, flow: TripGenerationFlow | nu
     return flow === 'wizard' ? `${basePath}/wizard` : basePath;
 };
 
-export const readTripClaimConflictQuery = (search: string): string | null => {
-    const value = new URLSearchParams(search).get(TRIP_CLAIM_CONFLICT_QUERY_KEY);
-    const normalized = typeof value === 'string' ? value.trim() : '';
-    return normalized || null;
-};
-
-export const buildTripClaimConflictPath = (path: string): string => {
-    const url = parseRelativePath(path);
-    url.searchParams.delete('claim');
-    url.searchParams.set(TRIP_CLAIM_CONFLICT_QUERY_KEY, TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED);
-    return buildRelativePath(url);
-};
-
-export const buildTripClaimLoginReturnPath = (path: string, claimId?: string | null): string => {
-    const url = parseRelativePath(path);
-    url.searchParams.delete(TRIP_CLAIM_CONFLICT_QUERY_KEY);
-    if (claimId) {
-        url.searchParams.set('claim', claimId);
-    } else {
-        url.searchParams.delete('claim');
-    }
-    return buildRelativePath(url);
-};
+export {
+    TRIP_CLAIM_CONFLICT_QUERY_KEY,
+    TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED,
+    readTripClaimConflictQuery,
+    buildTripClaimConflictPath,
+    buildTripClaimLoginReturnPath,
+} from './tripClaimNavigation';
 
 export const buildCreateSimilarTripPath = (params: {
-    trip: ITrip;
+    trip: Pick<ITrip, 'title' | 'aiMeta'>;
     pathname: string;
     source?: string;
 }): string => {

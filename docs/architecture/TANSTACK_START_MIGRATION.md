@@ -6,8 +6,8 @@ Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target unt
 
 ## Current stabilization round — 2026-10-19
 
-PR [#563](https://github.com/chrizzzly87/travelflow/pull/563) remains draft against
-`codex/tanstack-start-integration`; production is unchanged. Hosted failures are
+PR [#563](https://github.com/chrizzzly87/travelflow/pull/563) passed final remote CI and merged into
+`codex/tanstack-start-integration` as `12222d714` on 2026-10-19. Production is unchanged. Hosted failures are
 tracked in [#564](https://github.com/chrizzzly87/travelflow/issues/564). Their causes
 are now reproduced: first anonymous-session creation re-entered account loading
 and discarded the active workspace; a translation module rejection occurred before
@@ -48,7 +48,7 @@ All 38 production browser checks also pass on the actual Netlify preview. Produc
 | Production build | Passing locally | Latest build prerendered eight documents; service-worker generation succeeded. All 68 production browser checks pass locally and on Netlify; three offline/PWA checks pass locally, including iOS install metadata. |
 | Active docs and release note | Updated | Architecture, deployment, testing, locale, contributor, agent and Lighthouse guidance updated; dated guidance archived. Exactly one release entry remains draft. |
 | React/type diagnostics | Reviewed, limitations remain | React Doctor: 61/100, zero errors, eight warnings. Full-project TypeScript remains an existing tracked problem (#556); 474 full-project diagnostics remain, with zero in the new native/domain modules in the checked candidate. No clean full-project type check is claimed. |
-| PR, integration merge and preview | Foundation merged into integration | #560 passed remote CI and merged as `e95a241f`. Production is unchanged. Follow-up branch `codex/tanstack-start-performance` addresses [#562](https://github.com/chrizzzly87/travelflow/issues/562) and [#561](https://github.com/chrizzzly87/travelflow/issues/561). |
+| PR, integration merge and preview | Foundation and first-paint stabilization merged into integration | #560 merged as `e95a241f`; #563 passed final CI and merged as `12222d714`. Production is unchanged. Follow-up branch `codex/tanstack-start-performance` addresses [#562](https://github.com/chrizzzly87/travelflow/issues/562) and [#561](https://github.com/chrizzzly87/travelflow/issues/561). |
 | Before/after benchmark | Measured and documented | Clean `b127e152` candidate versus production baseline, same five-run method. Readiness: home −7.5%, wizard −27.8%, pricing +18.0%, example +9.6%. Mixed result; see raw evidence and limits. |
 
 ### Architecture direction
@@ -57,7 +57,7 @@ Use native TanStack route layouts for public pages, auth/account, creation, trip
 
 The initial approach of translating the legacy route registry into generated route copies has been discarded. A temporary navigation adapter supports existing callers during conversion; production route ownership and test history are native TanStack. Replace obsolete prefetch and prerender workarounds according to their purpose, preserving first-click handling, theme initialization and supported URLs where still needed.
 
-Next milestone: complete remote CI for the final documentation head, then merge validated PR #563 into integration only. Responsive-image measurements are recorded: median Lighthouse 89, LCP 3.26 s, zero mobile frame requests. This follow-up passes 2,894 core tests, all 68 production browser checks locally and on Netlify, and three offline/PWA checks locally. The preceding first-paint runtime `eaad9a0d` passes 66/66 hosted checks; its homepage Lighthouse median is 88 versus actual production 76. Keep real OAuth/login/reset, active member/admin actions and paid generation as explicit preview acceptance items. Continue cold-route and bundle investigation under #561. Production remains unchanged.
+Next milestone: separate optional trip generation/recovery under [#566](https://github.com/chrizzzly87/travelflow/issues/566), branch `codex/tanstack-start-trip-runtime`, and compare its emitted graph and cold-route measurements. PR #563 has passed final remote CI and merged into integration only. Responsive-image measurements are recorded: median Lighthouse 89, LCP 3.26 s, zero mobile frame requests. This follow-up passes 2,894 core tests, all 68 production browser checks locally and on Netlify, and three offline/PWA checks locally. The preceding first-paint runtime `eaad9a0d` passes 66/66 hosted checks; its homepage Lighthouse median is 88 versus actual production 76. Keep real OAuth/login/reset, active member/admin actions and paid generation as explicit preview acceptance items. Continue cold-route and bundle investigation under #561. Production remains unchanged.
 
 ### Manual preview review
 
