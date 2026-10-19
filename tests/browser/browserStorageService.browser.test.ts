@@ -61,3 +61,17 @@ describe('services/browserStorageService', () => {
     expect(readSessionStorageItem('tf_lazy_chunk_recovery:TripView')).toBe('1');
   });
 });
+
+it.each(['localStorage', 'sessionStorage'] as const)('treats a blocked %s getter as unavailable storage', medium => {
+  const getter = vi.spyOn(window, medium, 'get').mockImplementation(() => { throw new DOMException('Blocked', 'SecurityError'); });
+  try {
+    if (medium === 'localStorage') {
+      expect(readLocalStorageItem(CONSENT_STORAGE_KEY)).toBeNull();
+      expect(writeLocalStorageItem(CONSENT_STORAGE_KEY, 'essential')).toBe(false);
+      expect(removeLocalStorageItem(CONSENT_STORAGE_KEY)).toBe(false);
+    } else {
+      expect(readSessionStorageItem('tf_lazy_chunk_recovery:TripView')).toBeNull();
+      expect(writeSessionStorageItem('tf_lazy_chunk_recovery:TripView', '1')).toBe(false);
+    }
+  } finally { getter.mockRestore(); }
+});

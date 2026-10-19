@@ -183,3 +183,23 @@ an existing identity still clears its capabilities and blocks account loading.
 The regression covers preserved input DOM identity, edited draft text and an
 open dialog, plus the member-to-anonymous privacy case. Native protected-route
 guards and backend authorization remain independently enforced.
+
+### Document-owned translation hydration
+
+Native router dehydration snapshots only the request’s active/fallback language
+and loaded namespaces. Hydration restores them before React mounts. The browser
+singleton initializes synchronously with no eager namespace fetch, and the client
+entry delegates directly to `hydrateStart()`. Initial translations therefore do
+not require another dynamic module request outside the router’s error ownership.
+Subsequent route transitions still preload their own namespaces in `beforeLoad`;
+optional features own their extra resources. Test initial navigation with the
+wizard translation module permanently blocked, plus locale/RTL and offline entry.
+See `app/routing/localeHydration.ts` for the encapsulated snapshot boundary and
+[TanStack’s critical hydration hooks](https://tanstack.com/router/latest/docs/guide/external-data-loading).
+
+The delivered language remains stable for the first hydration render. An unprefixed
+workspace then restores its existing browser preference through the document’s
+external-state effect, after its required namespaces load. Persistence belongs to
+that document subscription, not module initialization; stale preference loads cannot
+overwrite a newer language choice or navigation. Blocked browser-storage getters
+are treated as unavailable rather than throwing through initialization.

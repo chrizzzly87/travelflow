@@ -209,3 +209,24 @@ test('cookie banner cannot cover a press that starts before hydration', async ({
   await expect(page).toHaveURL(/\/create-trip\/?$/);
   expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
 });
+
+test('the wizard hydrates from initial locale resources without a separate namespace download', async ({ page }) => {
+  let namespaceRequests = 0;
+  await page.route('**/assets/createTrip-*.js', async request => {
+    namespaceRequests += 1;
+    await request.abort('failed');
+  });
+  await page.goto('/create-trip/wizard');
+  await expect(page.getByRole('button', { name: /I know the destinations and exact dates/ })).toBeVisible({ timeout: 8000 });
+  await page.getByRole('button', { name: /I know the destinations and exact dates/ }).click();
+  await expect(page.getByPlaceholder('Search country or island')).toBeVisible();
+  expect(namespaceRequests).toBe(0);
+});
+
+test('an unprefixed wizard restores its saved language after document hydration', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('tf_app_language', 'de'));
+  await page.goto('/create-trip/wizard');
+  await expect(page.getByRole('button', { name: /Ich kenne Ziele und genaue Daten/ })).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  expect(await page.evaluate(() => localStorage.getItem('tf_app_language'))).toBe('de');
+});

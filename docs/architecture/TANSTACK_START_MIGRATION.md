@@ -4,6 +4,26 @@ Status: in progress, preview only. Decision date: 2026-10-18.
 Integration branch: `codex/tanstack-start-integration`.
 Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target until human preview acceptance.
 
+## Current stabilization round — 2026-10-19
+
+PR [#563](https://github.com/chrizzzly87/travelflow/pull/563) remains draft against
+`codex/tanstack-start-integration`; production is unchanged. Hosted failures are
+tracked in [#564](https://github.com/chrizzzly87/travelflow/issues/564). Their causes
+are now reproduced: first anonymous-session creation re-entered account loading
+and discarded the active workspace; a translation module rejection occurred before
+any router/React error boundary existed. The local fixes preserve the guest workspace
+and transport request-owned translation resources through native router hydration.
+Saved unprefixed-workspace language is restored after the delivered document hydrates.
+The candidate passes 487 core files / 2,864 tests (one skipped), 48 production browser
+checks and three offline/PWA checks locally. Actual hosted confirmation is pending.
+
+The new first-visible-frame requirements are tracked in
+[#565](https://github.com/chrizzzly87/travelflow/issues/565): immediately visible
+undecided consent, coherent theme state and stable account entry without optimistic
+auth authority. These are not claimed complete by the current preview or the older
+Lighthouse comparison. README now links the architecture, routing, feature ownership,
+testing and deployment entry points.
+
 ## Progress dashboard — 2026-10-18
 
 Tracking issue: [#559 — Migrate TravelFlow to TanStack Start on an isolated integration branch](https://github.com/chrizzzly87/travelflow/issues/559).

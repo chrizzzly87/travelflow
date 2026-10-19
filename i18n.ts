@@ -3,12 +3,12 @@ import { initReactI18next } from 'react-i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, isLocale } from './config/locales';
 import { APP_NAME } from './config/appGlobals';
-import { readLocalStorageItem, writeLocalStorageItem } from './services/browserStorageService';
+import { readLocalStorageItem } from './services/browserStorageService';
 
 const localeModules = import.meta.glob('./locales/*/*.json');
 
-// Namespaces the app shell (AppContent) requests on every route. Preloaded
-// before mount in index.tsx so the first render never suspends on them.
+// Shared capability namespaces. Native route requirements and optional feature
+// owners preload these; initial resources travel with the server document.
 export const APP_SHELL_NAMESPACES = ['common', 'pages', 'auth', 'wip', 'legal', 'profile'];
 const preloadCache = new Set<string>();
 const LOCALE_STORAGE_KEY = 'tf_app_language';
@@ -105,7 +105,10 @@ void i18n
         supportedLngs: SUPPORTED_LOCALES,
         nonExplicitSupportedLngs: false,
         defaultNS: 'common',
-        ns: ['common'],
+        // The native router restores the document's resource snapshot. Starting
+        // an independent namespace request here races that hydration handoff.
+        ns: [],
+        initImmediate: false,
         interpolation: {
             prefix: '{',
             suffix: '}',
@@ -118,18 +121,6 @@ void i18n
             useSuspense: true,
         },
     });
-
-if (typeof window !== 'undefined') {
-    i18n.on('languageChanged', (language) => {
-        const normalized = normalizeDetectedLocale(language);
-        if (!normalized) return;
-        try {
-            writeLocalStorageItem(LOCALE_STORAGE_KEY, normalized);
-        } catch {
-            // Ignore storage write failures (private mode/quota/security).
-        }
-    });
-}
 
 /** One resource store per server request; never mutate the browser singleton for SSR. */
 export const createRequestI18n = (): I18nInstance => {

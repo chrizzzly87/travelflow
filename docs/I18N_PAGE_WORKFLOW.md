@@ -14,6 +14,8 @@ This document defines how to add or change localized pages in TravelFlow.
 - Direction map is locale-based (`ltr` for most locales, `rtl` for `fa` and `ur`).
 - The native root document in `src/routes/__root.tsx` emits `lang` and `dir`. Check both direct SSR and client navigation; do not reintroduce an App-level route interpreter to update them.
 - `getRouter()` creates a request-local i18next instance on the server. Pass that instance to namespace preload helpers and `I18nextProvider`; never change the browser singleton from an SSR request.
+- The router `dehydrate`/`hydrate` hooks transport the request’s loaded active/fallback language resources before React hydration. Keep singleton initialization synchronous with no eager namespace request; native routes and optional feature owners load subsequent resources. Do not add a second locale-download gate before `hydrateStart()`.
+- The document owns browser-language persistence after hydration. An unprefixed tool can then restore its saved language after its namespaces load; it must not overwrite the preference with the server default, interrupt initial hydration, or supersede a newer selection/navigation.
 - Native route preloading may load namespaces, but must not change the visible locale on hover. The root `beforeLoad` distinguishes preload from navigation.
 - Optional locale parameters are validated by `app/routing/localePolicy.ts`. Default-language `/en` prefixes and unsupported prefixes are not canonical aliases.
 

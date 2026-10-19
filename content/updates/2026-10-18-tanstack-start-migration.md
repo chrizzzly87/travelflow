@@ -23,3 +23,5 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Fixed] 🖱️ Prevent the cookie banner from interrupting a click while the page loads.
 - [ ] [Internal] 🔐 Scope session revalidation through native route metadata and preserve initial authenticated hydration and account-switch loading generations.
 - [x] [Fixed] 📝 Keep open trip details and unfinished planner inputs when a guest session starts in the background.
+- [x] [Fixed] 🌐 Open pages using the translations already delivered with the document, avoiding an extra download that could leave a page unresponsive.
+- [x] [Fixed] 🔒 Keep pages usable when the browser blocks access to local preferences.
