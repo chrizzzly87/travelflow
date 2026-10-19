@@ -4,7 +4,7 @@ import {
   type CookieDefinition,
   doesRegistryNameMatch,
 } from '../lib/legal/cookies.config';
-import { isOptionalConsentGranted, readConsentChoiceFromStorage } from './consentState';
+import { isOptionalConsentGranted, readCurrentConsentChoice } from './consentState';
 
 export type BrowserStorageMedium = 'localStorage' | 'sessionStorage';
 
@@ -79,7 +79,7 @@ const resolveRegisteredEntry = (
 
 const isCategoryAllowed = (category: CookieCategory): boolean => {
   if (category === 'essential') return true;
-  return isOptionalConsentGranted(readConsentChoiceFromStorage());
+  return isOptionalConsentGranted(readCurrentConsentChoice());
 };
 
 const removeByRegistryPattern = (storage: Storage, registryName: string): number => {

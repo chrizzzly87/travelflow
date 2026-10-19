@@ -1,6 +1,5 @@
 import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { getFreePlanEntitlements } from '../config/planCatalog';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
 import { markAuthBootstrapSettled } from '../services/authBootstrapSuspense';
@@ -16,10 +15,6 @@ import {
 } from '../services/e2eAuthSandboxService';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn } from '../services/simulatedLoginService';
 import type { UserProfileRecord } from '../services/profileService';
-import {
-    readPersistedSupabaseSessionHint,
-    type PersistedSupabaseSessionHint,
-} from '../services/authSessionPersistenceService';
 import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 
 type AuthServiceModule = typeof import('../services/authService');
@@ -70,8 +65,6 @@ const hasAuthCallbackPayload = (): boolean => {
 
 const DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY = 'tf_dev_admin_bypass_disabled';
 const DEV_ADMIN_BYPASS_USER_ID = 'dev-admin-id';
-const OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS = 300;
-const FREE_ENTITLEMENTS = getFreePlanEntitlements();
 
 export const shouldEnableDevAdminBypass = (
     isDevRuntime = import.meta.env.DEV,
@@ -100,64 +93,6 @@ export const shouldUseDevAdminBypassSession = (
     bypassEnabled
     && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID)
 );
-
-export const shouldUseOptimisticMarketingAuthHint = (pathname: string): boolean =>
-    !isAuthBootstrapCriticalPath(pathname);
-
-export const createOptimisticAccessFromSessionHint = (
-    hint: PersistedSupabaseSessionHint
-): UserAccessContext => ({
-    userId: hint.userId,
-    email: hint.email,
-    isAnonymous: false,
-    role: 'user',
-    tierKey: 'tier_free',
-    entitlements: FREE_ENTITLEMENTS,
-    onboardingCompleted: true,
-    accountStatus: 'active',
-    termsCurrentVersion: null,
-    termsRequiresReaccept: false,
-    termsAcceptedVersion: null,
-    termsAcceptedAt: null,
-    termsAcceptanceRequired: false,
-    termsNoticeRequired: false,
-    billing: {
-        providerSubscriptionId: null,
-        providerStatus: null,
-        subscriptionStatus: null,
-        currentPeriodEnd: null,
-        cancelAt: null,
-        canceledAt: null,
-        graceEndsAt: null,
-        accessUntil: null,
-        lifecycleState: 'none',
-    },
-});
-
-export const createOptimisticSessionFromSessionHint = (
-    hint: PersistedSupabaseSessionHint
-): Session => {
-    const now = Math.floor(Date.now() / 1000);
-    const expiresAt = hint.expiresAt && Number.isFinite(hint.expiresAt)
-        ? hint.expiresAt
-        : now + OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS;
-
-    return {
-        access_token: 'optimistic-auth-hint',
-        refresh_token: 'optimistic-auth-hint',
-        expires_in: Math.max(1, expiresAt - now),
-        expires_at: expiresAt,
-        token_type: 'bearer',
-        user: {
-            id: hint.userId,
-            email: hint.email ?? undefined,
-            app_metadata: { provider: 'email', providers: ['email'] },
-            user_metadata: {},
-            aud: 'authenticated',
-            created_at: new Date(0).toISOString(),
-        } as Session['user'],
-    };
-};
 
 interface AuthContextValue {
     session: Session | null;
@@ -224,8 +159,7 @@ export const resolveAuthContextValue = (context: AuthContextValue | null): AuthC
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [hydrated, setHydrated] = useState(false);
-    // Persisted browser hints cannot affect SSR. Defer their context update so
-    // React can finish hydrating native route boundaries before personalizing UI.
+    // Development bypass is client-only; real identity is resolved by the auth service.
     useEffect(() => { startTransition(() => setHydrated(true)); }, []);
     const routeLocation = useSafeRouteLocation();
     const [session, setSession] = useState<Session | null>(null);
@@ -246,12 +180,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isBootstrappingRef = useRef(false);
     const profileLoadRequestIdRef = useRef(0);
     const accessLoadRequestIdRef = useRef(0);
-    const optimisticAuthHintRef = useRef<PersistedSupabaseSessionHint | null>(
-        shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
-            ? readPersistedSupabaseSessionHint()
-            : null
-    );
-
     const publishAuthResult = useCallback((publish: () => void) => {
         // Initial data can arrive before a native route finishes hydrating.
         // Explicit account clears/logout remain urgent at their call sites.
@@ -790,35 +718,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
         }
 
-        const optimisticAuthHint = hydrated && isLoading && shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
-            ? optimisticAuthHintRef.current
-            : null;
-        const effectiveSession = session ?? (
-            optimisticAuthHint
-                ? createOptimisticSessionFromSessionHint(optimisticAuthHint)
-                : null
-        );
-        const effectiveAccess = access ?? (
-            optimisticAuthHint
-                ? createOptimisticAccessFromSessionHint(optimisticAuthHint)
-                : null
-        );
         const hasValidBoundAccess = Boolean(
-            effectiveSession?.user
-            && effectiveAccess
-            && effectiveAccess.userId
-            && effectiveAccess.userId === effectiveSession.user.id
+            session?.user
+            && access
+            && access.userId
+            && access.userId === session.user.id
         );
         const isAuthenticated = Boolean(
             hasValidBoundAccess
-            && !effectiveAccess?.isAnonymous
-            && effectiveAccess?.accountStatus === 'active'
+            && !access?.isAnonymous
+            && access?.accountStatus === 'active'
         );
-        const isAnonymous = Boolean(effectiveSession?.user && effectiveAccess?.isAnonymous);
-        const isAdmin = effectiveAccess?.role === 'admin';
+        const isAnonymous = Boolean(session?.user && access?.isAnonymous);
+        const isAdmin = access?.role === 'admin';
         return {
-            session: effectiveSession,
-            access: effectiveAccess,
+            session,
+            access,
             profile,
             isLoading,
             isProfileLoading,

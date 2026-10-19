@@ -173,38 +173,42 @@ test('an encoded trip opens its details and mobile navigation', async ({ page })
 });
 
 for (const choice of [{ label: 'Essential only', stored: 'essential' }, { label: 'Accept all', stored: 'all' }]) {
-  test(`cookie banner accepts ${choice.stored} on the first click after an early interaction`, async ({ page }) => {
+  test(`cookie banner is immediately visible and replays the first ${choice.stored} click`, async ({ page }) => {
     const release = await holdApplicationScripts(page);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.mouse.wheel(0, 80);
-    release();
+    await page.goto('/', { waitUntil: 'commit' });
     const button = page.getByRole('button', { name: choice.label, exact: true });
     await expect(button).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
     await button.click();
+    release();
     await expect(button).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBe(choice.stored);
-    await page.reload();
-    await page.mouse.wheel(0, 80);
+    const releaseReload = await holdApplicationScripts(page);
+    await page.reload({ waitUntil: 'commit' });
+    await expect(page.locator('main h1').first()).toBeVisible();
+    await expect(page.locator('[data-tf-consent-banner]')).toBeHidden();
+    releaseReload();
     await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
-    await expect(page.getByRole('button', { name: choice.label, exact: true })).toHaveCount(0);
+    await expect(button).toHaveCount(0);
   });
 }
 
-test('cookie banner cannot cover a press that starts before hydration', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('the initial cookie banner stays in place during a navigation press', async ({ page }) => {
   const release = await holdApplicationScripts(page);
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  const cta = page.getByRole('link', { name: 'Start Planning', exact: true });
-  await cta.evaluate(element => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 730));
+  await page.goto('/', { waitUntil: 'commit' });
+  const banner = page.locator('[data-tf-consent-banner]');
+  await expect(banner).toBeVisible();
+  const initialBox = await banner.boundingBox();
+  const cta = page.locator('header').getByRole('link', { name: 'Create Trip', exact: true }).first();
+  await expect(cta).toBeVisible();
   const box = await cta.boundingBox();
   expect(box).not.toBeNull();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.down();
   release();
   await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
-  // Wait for the queued banner task while the original press is still held.
-  await page.waitForTimeout(250);
-  await expect(page.getByRole('button', { name: 'Accept all', exact: true })).toHaveCount(0);
+  await expect(banner).toBeVisible();
+  expect(await banner.boundingBox()).toEqual(initialBox);
   await page.mouse.up();
   await expect(page).toHaveURL(/\/create-trip\/?$/);
   expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
@@ -229,4 +233,84 @@ test('an unprefixed wizard restores its saved language after document hydration'
   await expect(page.getByRole('button', { name: /Ich kenne Ziele und genaue Daten/ })).toBeVisible({ timeout: 8000 });
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
   expect(await page.evaluate(() => localStorage.getItem('tf_app_language'))).toBe('de');
+});
+
+for (const scenario of [
+  { stored: 'dark', os: 'light', expected: 'dark' },
+  { stored: 'light', os: 'dark', expected: 'light' },
+  { stored: null, os: 'dark', expected: 'dark' },
+  { stored: null, os: 'light', expected: 'light' },
+] as const) {
+  test(`theme starts and stays ${scenario.expected} with stored ${scenario.stored} and OS ${scenario.os}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scenario.os });
+    await page.addInitScript(stored => {
+      if (stored) localStorage.setItem('tf_theme_preference_v1', stored);
+      else localStorage.removeItem('tf_theme_preference_v1');
+    }, scenario.stored);
+    const release = await holdApplicationScripts(page);
+    await page.goto('/features', { waitUntil: 'commit' });
+    await expect(page.locator('main h1')).toBeVisible();
+    const dark = scenario.expected === 'dark';
+    expect(await page.locator('html').evaluate(el => el.classList.contains('dark'))).toBe(dark);
+    await expect(page.locator('html')).toHaveCSS('color-scheme', scenario.expected);
+    const initialBackground = await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor);
+    await page.evaluate(() => {
+      (window as any).__themeChanges = [];
+      new MutationObserver(() => (window as any).__themeChanges.push(document.documentElement.classList.contains('dark')))
+        .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    });
+    release();
+    await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+    await expect(page.getByRole('button', { name: dark ? 'Switch to light mode' : 'Switch to dark mode' })).toBeVisible();
+    expect(await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor)).toBe(initialBackground);
+    expect(await page.evaluate(() => (window as any).__themeChanges.every((value: boolean) => value === document.documentElement.classList.contains('dark')))).toBe(true);
+    await page.locator('header').getByRole('link', { name: 'Pricing', exact: true }).first().click();
+    await expect(page).toHaveURL(/\/pricing\/?$/);
+    await expect(page.locator('html')).toHaveCSS('color-scheme', scenario.expected);
+    await expect(page.locator('meta[data-tf-theme-color]')).toHaveAttribute('content', dark ? '#242322' : '#ffffff');
+    if (!scenario.stored) {
+      await page.emulateMedia({ colorScheme: dark ? 'light' : 'dark' });
+      await expect(page.getByRole('button', { name: dark ? 'Switch to dark mode' : 'Switch to light mode' })).toBeVisible();
+      await expect(page.locator('html')).toHaveCSS('color-scheme', dark ? 'light' : 'dark');
+    }
+  });
+}
+
+for (const account of [{ path: '/features', label: 'Account' }, { path: '/de/features', label: 'Konto' }]) {
+  test(`${account.label} remains the same entry and opens on the first cold click`, async ({ page }) => {
+    const release = await holdApplicationScripts(page);
+    await page.goto(account.path, { waitUntil: 'commit' });
+    const trigger = page.locator('header [data-tf-boot-replay="account-entry:header"]');
+    await expect(trigger).toBeVisible();
+    const box = await trigger.boundingBox();
+    await trigger.click();
+    release();
+    await expect(page.getByRole('menu', { name: account.label, exact: true })).toBeVisible();
+    await expect(trigger).toHaveText(account.label);
+    expect(await trigger.boundingBox()).toEqual(box);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+}
+
+test('mobile account menu keeps keyboard focus within its navigation dialog', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/features');
+  await page.getByRole('button', { name: 'Essential only', exact: true }).click();
+  await page.locator('[data-tf-boot-intent="mobile-menu"]').click();
+  const navigation = page.getByRole('dialog', { name: 'Navigation menu' });
+  await expect(navigation).toBeVisible();
+  const account = navigation.getByRole('button', { name: 'Account', exact: true });
+  await account.focus();
+  await page.keyboard.press('ArrowDown');
+  const menu = page.getByRole('menu', { name: 'Account', exact: true });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(navigation).toBeVisible();
+  await expect(account).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(navigation).toHaveCount(0);
 });

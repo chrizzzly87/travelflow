@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { AppBrand } from '../navigation/AppBrand';
-import { AccountMenu } from '../navigation/AccountMenu';
+import { AccountEntry } from '../navigation/AccountEntry';
 // Deliberately not lazy, for the same reason SiteHeader keeps it eager: on a
 // phone this is the only way out of the planner and into the rest of the app,
 // and a chunk fetch meant the first tap opened nothing.
@@ -44,10 +44,6 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     canManageTripMetadata,
     onHeaderAuthAction,
     isHeaderAuthSubmitting,
-    canUseAuthenticatedSession,
-    accountEmail,
-    accountUserId,
-    isAdminSession,
     onOpenTripInfo,
     onPrewarmTripInfo,
     onOpenManager,
@@ -151,34 +147,12 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         <span className={isMobile ? 'sr-only' : 'hidden sm:inline'}>{t('tripView.header.share')}</span>
                     </Button>
                 )}
-                {canUseAuthenticatedSession ? (
-                    <AccountMenu
-                        email={accountEmail}
-                        userId={accountUserId}
-                        isAdmin={isAdminSession}
-                        compact={isMobile}
-                        showLabel={!isMobile}
-                        showCaret={!isMobile}
-                        labelMode="profile"
-                        showRecentTripsSection={false}
-                        showCurrentPageSummary={false}
-                        onOpenTripManager={onOpenManager}
-                        triggerClassName={isMobile
-                            ? 'size-10 justify-center px-0'
-                            : 'gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground shadow-sm hover:border-border hover:bg-secondary hover:text-foreground'}
-                    />
-                ) : (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onHeaderAuthAction}
-                        disabled={isHeaderAuthSubmitting}
-                        className={`${HEADER_BUTTON_CLASS_NAME} bg-card text-muted-foreground hover:bg-secondary dark:bg-card dark:text-foreground dark:hover:bg-secondary`}
-                        aria-label={t('nav.login')}
-                    >
-                        {t('nav.login')}
-                    </Button>
-                )}
+                <AccountEntry
+                    bootScope="account-entry:trip-header"
+                    onOpenTripManager={onOpenManager}
+                    onLogin={onHeaderAuthAction}
+                    isLoginSubmitting={isHeaderAuthSubmitting}
+                />
                 {/* Desktop only, like SiteHeader: below lg the burger's menu carries the toggle. */}
                 <ThemeToggle analyticsSurface="trip_view" className="hidden size-10 lg:inline-flex" />
                 {/*

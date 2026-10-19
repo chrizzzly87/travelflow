@@ -1,6 +1,6 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink } from '@/app/navigation';
-import { List, UserCircle } from '@phosphor-icons/react';
+import { List } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -8,10 +8,6 @@ import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocal
 import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
 import { useLocaleNavigation } from '../../hooks/useLocaleNavigation';
-import { useAuth } from '../../hooks/useAuth';
-import { useLoginModal } from '../../hooks/useLoginModal';
-import { buildPathFromLocationParts } from '../../services/authNavigationService';
-import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { AppBrand } from './AppBrand';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootInteractionBridge';
@@ -21,15 +17,7 @@ import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootI
 // header chunk, which is far cheaper than a network hop on a tap.
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from '../ui/ThemeToggle';
-
-const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
-    moduleKey: string,
-    importer: () => Promise<TModule>
-) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
-
-const AccountMenu = lazyWithRecovery('AccountMenu', () =>
-    import('./AccountMenu').then((module) => ({ default: module.AccountMenu }))
-);
+import { AccountEntry } from './AccountEntry';
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -49,15 +37,6 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) => {
     return baseClass;
 };
 
-const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.metaKey &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.shiftKey
-);
-
 export const SiteHeader: React.FC<SiteHeaderProps> = ({
     variant = 'solid',
     onMyTripsClick,
@@ -74,8 +53,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const routeLocation = useSafeRouteLocation();
     const changeLocale = useLocaleNavigation();
     const { t, i18n } = useTranslation('common');
-    const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
-    const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
         const routeLocale = extractLocaleFromPath(routeLocation.pathname);
@@ -113,23 +90,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         trackEvent(`navigation__${target}`);
     };
 
-    const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        handleNavClick('login');
-        if (isLoading) return;
-        if (!isPlainLeftClick(event)) return;
-
-        event.preventDefault();
-        openLoginModal({
-            source: 'navigation_header',
-            nextPath: buildPathFromLocationParts({
-                pathname: routeLocation.pathname,
-                search: routeLocation.search,
-                hash: routeLocation.hash,
-            }),
-            reloadOnSuccess: true,
-        });
-    };
-
     const navDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`navigation__${target}`);
 
@@ -139,10 +99,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const headerClass = isGlass
         ? 'sticky top-0 z-[1600] isolate border-b border-white/20 bg-card/80 backdrop-blur dark:border-white/10 dark:bg-background/80'
         : 'sticky top-0 z-[1600] isolate border-b border-border/70 bg-card/90 backdrop-blur dark:border-border dark:bg-background/90';
-
-    const loginClass = isGlass
-        ? 'hidden min-h-10 items-center rounded-lg border border-border/70 bg-card/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-[scale,border-color,color] duration-150 ease-out hover:border-border hover:text-foreground active:scale-[0.96] sm:inline-flex dark:border-border dark:bg-card/60 dark:text-muted-foreground dark:hover:border-border dark:hover:text-foreground'
-        : 'hidden min-h-10 items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-[scale,border-color,color] duration-150 ease-out hover:border-border hover:text-foreground active:scale-[0.96] sm:inline-flex dark:border-border dark:text-muted-foreground dark:hover:border-border dark:hover:text-foreground';
 
     const burgerClass = isGlass
         ? 'flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground lg:hidden dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground'
@@ -190,37 +146,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 triggerClassName="h-9 rounded-lg border-border bg-card py-2 pl-3 pr-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border dark:border-border dark:bg-card dark:text-foreground dark:shadow-none"
                             />
                         </div>
-                        {isAuthenticated ? (
-                            <Suspense
-                                fallback={(
-                                    <NavLink to="/profile" aria-label="Profile"
-                                        onClick={() => handleNavClick('profile')}
-                                        className="hidden size-10 items-center justify-center rounded-full border border-border bg-card text-foreground lg:inline-flex"
-                                        {...navDebugAttributes('profile')}>
-                                        <UserCircle size={22} />
-                                    </NavLink>
-                                )}
-                            >
-                                <AccountMenu
-                                    email={access?.email || null}
-                                    userId={access?.userId || null}
-                                    isAdmin={isAdmin}
-                                    labelMode="profile"
-                                    onOpenTripManager={onMyTripsClick}
-                                    onPrewarmTripManager={onMyTripsIntent}
-                                    className="hidden lg:block"
-                                />
-                            </Suspense>
-                        ) : (
-                            <NavLink
-                                to={buildLocalizedMarketingPath('login', activeLocale)}
-                                onClick={handleLoginClick}
-                                className={loginClass}
-                                {...navDebugAttributes('login')}
-                            >
-                                {t('nav.login')}
-                            </NavLink>
-                        )}
+                        <AccountEntry className="hidden lg:block"
+                            onOpenTripManager={onMyTripsClick} onPrewarmTripManager={onMyTripsIntent} />
                         {!hideCreateTrip && (
                             <NavLink
                                 to={buildLocalizedCreateTripPath(activeLocale)}

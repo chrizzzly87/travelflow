@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -79,6 +80,13 @@ describe('marketing banner crash guards', () => {
       configurable: true,
       value: 'de-DE',
     });
+  });
+
+  it('includes undecided consent controls in the server document before interaction', () => {
+    const html = renderToString(React.createElement(CookieConsentBanner));
+    expect(html).toContain('Essential only');
+    expect(html).toContain('Accept all');
+    expect(html).toContain('data-tf-consent-banner');
   });
 
   it('accepts cookie consent when the router location is temporarily unavailable', async () => {

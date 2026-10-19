@@ -56,6 +56,9 @@ vi.mock('react-i18next', async (importOriginal) => {
         if (key === 'footer.terms') return 'Terms';
         if (key === 'footer.cookies') return 'Cookies';
         if (key === 'nav.login') return 'Login';
+        if (key === 'nav.account') return 'Account';
+        if (key === 'settings.breadcrumb.profile') return 'Profile';
+        if (key === 'settings.breadcrumb.settings') return 'Settings';
         return key;
       },
       i18n: {
@@ -79,11 +82,12 @@ describe('components/navigation/MobileMenu legal links', () => {
     mocks.profile = null;
   });
 
-  it('keeps Login available as a normal link during auth bootstrap', async () => {
+  it('keeps the permanent account entry and a working Login link during auth bootstrap', async () => {
     mocks.isLoading = true;
     await render(React.createElement(MemoryRouter, null, React.createElement(MobileMenu, { isOpen: true, onClose: vi.fn() })));
-    expect(screen.getByRole('link', { name: 'Login', exact: true })).toHaveAttribute('href', '/login');
-    expect(screen.queryByRole('button', { name: 'Login', exact: true })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(screen.getByRole('menuitem', { name: 'Login' })).toHaveAttribute('href', '/login?next=%2F');
+    expect(screen.queryByRole('button', { name: 'Login' })).toBeNull();
   });
 
   it('shows legal links in the mobile menu for anonymous users', async () => {
@@ -104,7 +108,7 @@ describe('components/navigation/MobileMenu legal links', () => {
     expect(screen.getByRole('link', { name: 'Cookies' })).toHaveAttribute('href', '/cookies');
   });
 
-  it('shows only the admin dashboard shortcut on mobile for admins', async () => {
+  it('keeps the admin workspace inside the permanent mobile account menu', async () => {
     mocks.isAuthenticated = true;
     mocks.isAdmin = true;
     mocks.profile = { username: 'owner' };
@@ -120,7 +124,8 @@ describe('components/navigation/MobileMenu legal links', () => {
       )
     );
 
-    expect(screen.getByRole('link', { name: 'Admin dashboard' })).toHaveAttribute('href', '/admin');
+    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(await screen.findByRole('menuitem', { name: 'Admin workspace' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Users' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Trips' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'AI Telemetry' })).toBeNull();
@@ -165,10 +170,24 @@ describe('components/navigation/MobileMenu legal links', () => {
       )
     );
 
-    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
-    expect(screen.getByRole('link', { name: 'Recent trips' })).toHaveAttribute('href', '/profile?tab=recent');
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/profile/settings');
+    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(await screen.findByRole('menuitem', { name: 'Profile' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'View all trips' })).toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Stamps' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'View public profile' })).toBeNull();
   });
+
+  it('closes mobile navigation before opening login with its original source and return path', async () => {
+    const onClose = vi.fn();
+    await render(React.createElement(MemoryRouter, { initialEntries: ['/trip/example?view=map#day-2'] },
+      React.createElement(MobileMenu, { isOpen: true, onClose })));
+    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Login' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(mocks.openLoginModal).toHaveBeenCalledWith({
+      source: 'navigation_mobile', nextPath: '/trip/example?view=map#day-2', reloadOnSuccess: true,
+    });
+  });
+
 });

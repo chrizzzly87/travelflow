@@ -14,7 +14,7 @@ summary: "Framework migration under development and validation on an isolated pr
 ## Changes
 - [ ] [Internal] 🧭 Implement native TanStack Start routing with separate public, account, creation, trip and admin application boundaries.
 - [ ] [Internal] 🧪 Track critical-flow regression coverage and equivalent before/after performance measurements before preview acceptance.
-- [ ] [Internal] 🛠️ Repair deterministic image hydration and defer the initial auth hint without interrupting public-page hydration.
+- [ ] [Internal] 🛠️ Repair deterministic image hydration and publish verified auth state without interrupting public-page hydration.
 - [ ] [Internal] 🧩 Split route loaders and preserve the native offline module graph alongside the framework document.
 - [ ] [Internal] 🌐 Normalize hosted directory paths before locale and namespace resolution so language changes preserve the current page.
 - [x] [Improved] 🧭 Keep navigation usable while pages and sign-in status load.
@@ -25,3 +25,6 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Fixed] 📝 Keep open trip details and unfinished planner inputs when a guest session starts in the background.
 - [x] [Fixed] 🌐 Open pages using the translations already delivered with the document, avoiding an extra download that could leave a page unresponsive.
 - [x] [Fixed] 🔒 Keep pages usable when the browser blocks access to local preferences.
+- [x] [Fixed] 🌓 Keep the chosen appearance consistent from the first view and when device settings change.
+- [x] [Improved] 🍪 Show cookie choices immediately when a decision is still needed.
+- [x] [Improved] 👤 Keep the account entry steady while sign-in status is checked.

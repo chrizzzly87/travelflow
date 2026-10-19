@@ -24,16 +24,19 @@ const accountMenuMocks = vi.hoisted(() => ({
   props: [] as Array<Record<string, unknown>>,
 }));
 
-vi.mock('../../../components/navigation/AccountMenu', () => ({
-  AccountMenu: (props: Record<string, unknown>) => {
+vi.mock('../../../components/navigation/AccountEntry', () => ({
+  AccountEntry: (props: Record<string, unknown>) => {
     accountMenuMocks.props.push(props);
+    const [open, setOpen] = React.useState(false);
     return React.createElement(
       'div',
       { 'data-testid': 'account-menu' },
-      React.createElement('button', {
+      React.createElement('button', { type: 'button', onClick: () => setOpen(!open) }, 'Account'),
+      open && React.createElement('button', {
         type: 'button',
         onClick: () => (props.onOpenTripManager as (() => void) | undefined)?.(),
       }, 'Open My Trips'),
+      open && React.createElement('button', { type: 'button', onClick: props.onLogin as () => void, disabled: Boolean(props.isLoginSubmitting) }, 'Login'),
     );
   },
 }));
@@ -106,6 +109,7 @@ describe('components/tripview/TripViewHeader', () => {
     expect(titleButton).toHaveAttribute('data-no-press-scale', 'true');
     fireEvent.mouseEnter(titleButton);
     fireEvent.click(titleButton);
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     fireEvent.click(screen.getByRole('button', { name: 'Open My Trips' }));
 
     expect(props.onPrewarmTripInfo).toHaveBeenCalledTimes(1);
@@ -113,7 +117,7 @@ describe('components/tripview/TripViewHeader', () => {
     expect(props.onOpenManager).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('account-menu')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Trips' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Login' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument();
     expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__trip_info--open', { source: 'header_title' });
   });
 
@@ -156,7 +160,7 @@ describe('components/tripview/TripViewHeader', () => {
     expect(row?.lastElementChild).toBe(burger);
   });
 
-  it('hides the account label on mobile while keeping the profile menu available', async () => {
+  it('keeps the same permanent account entry on mobile', async () => {
     const props = buildProps();
     props.isMobile = true;
 
@@ -166,11 +170,11 @@ describe('components/tripview/TripViewHeader', () => {
       ),
     );
 
-    expect(accountMenuMocks.props.at(-1)?.showLabel).toBe(false);
-    expect(accountMenuMocks.props.at(-1)?.showCaret).toBe(false);
+    expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument();
+    expect(accountMenuMocks.props.at(-1)?.bootScope).toBe('account-entry:trip-header');
   });
 
-  it('falls back to the login button for guests', async () => {
+  it('preserves the trip-specific login action inside the permanent account menu for guests', async () => {
     const props = buildProps();
     props.canUseAuthenticatedSession = false;
     props.accountEmail = null;
@@ -182,10 +186,11 @@ describe('components/tripview/TripViewHeader', () => {
       ),
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     fireEvent.click(screen.getByRole('button', { name: 'Login' }));
 
     expect(props.onHeaderAuthAction).toHaveBeenCalledTimes(1);
-    expect(screen.queryByTestId('account-menu')).not.toBeInTheDocument();
+    expect(screen.getByTestId('account-menu')).toBeInTheDocument();
   });
 
   it('offers the dark-mode toggle on desktop, as the site header does', async () => {

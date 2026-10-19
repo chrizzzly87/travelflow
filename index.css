@@ -1121,6 +1121,17 @@ h6,
     clouds-scroll 47s linear infinite;
 }
 
+/* Resting decoration follows the pre-paint root class, even before React
+   hydrates. Keep these values aligned with SHADE_TRAVEL and FRAME_DIM. */
+.plane-window-wrapper {
+  --tf-window-shade-offset: -102%;
+  --tf-window-frame-brightness: 1;
+}
+.dark .plane-window-wrapper {
+  --tf-window-shade-offset: 0%;
+  --tf-window-frame-brightness: 0.72;
+}
+
 /* The drawn shade. There is no shutter artwork for this window, so it is a
    panel the colour of the cabin interior with a lit leading edge. */
 .plane-window-shade {

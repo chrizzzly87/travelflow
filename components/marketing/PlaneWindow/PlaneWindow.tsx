@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildImageCdnUrl } from '../../../utils/imageDelivery';
-import { useWindowShade, SHADE_TRAVEL, FRAME_DIM } from './useWindowShade';
+import { useWindowShade, SHADE_REST_TRANSFORM, FRAME_REST_FILTER } from './useWindowShade';
 import type { CloudSceneHandle } from './cloudScene';
 
 const PLANE_WINDOW_SRC = '/images/plane-window.png';
@@ -42,38 +42,13 @@ const shouldRenderScene = (): boolean => {
     }
 };
 
-/**
- * The window belongs to the homepage hero and nowhere else.
- *
- * This guard lives here, not only in HeroSection, because HeroSection itself has
- * been observed mounting on /features alongside FeaturesPage — the window's
- * ancestor chain there is HeroSection's own <section>, next to the features h1.
- * That is a routing bug worth fixing separately; until it is, the window must
- * not be able to render off the homepage, because the prerenderer snapshots the
- * live DOM and bakes it into that route's HTML, which is why a direct load of
- * /features showed it and a client-side navigation did not.
- *
- * Evaluated on every render rather than memoised: a value captured once at mount
- * stays "home" forever if the component mounted while the app was still on '/'.
- */
-const isHomePathname = (): boolean => {
-    if (typeof window === 'undefined') return true;
-    const segments = (window.location.pathname || '/').split('/').filter(Boolean);
-    return segments.length === 0 || (segments.length === 1 && /^[a-z]{2}$/.test(segments[0]));
-};
-
 export const PlaneWindow: React.FC = () => {
     const { t } = useTranslation('home');
     const { shade, dragging, isDark, handlers, shadeElRef, frameElRef } = useWindowShade();
-    // The host is held in STATE, not a ref: attaching it has to wake the effect
-    // that builds the scene. A ref does not re-render, and this component renders
-    // null until mounted, so with a ref the effect's first (and only) run happened
-    // while the host did not exist yet and the clouds never appeared at all.
+    // State wakes the external WebGL effect when its real host attaches.
     const [hostNode, setHostNode] = useState<HTMLDivElement | null>(null);
     const sceneRef = useRef<CloudSceneHandle | null>(null);
     const [sceneReady, setSceneReady] = useState(false);
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => { setMounted(true); }, []);
 
     const planeWindowSrc = buildImageCdnUrl(PLANE_WINDOW_SRC, {
         width: PLANE_WINDOW_IMAGE_WIDTH,
@@ -90,11 +65,6 @@ export const PlaneWindow: React.FC = () => {
     // restored in a background tab would sit on the static layer forever. The
     // render loop is paused on visibilitychange instead, which gives the same
     // saving without the way to get stuck.
-    // `mounted` is in the dependencies on purpose. This component renders null
-    // until it is mounted (so it can never be captured into prerendered HTML),
-    // which means on the very first pass there is no host element and this effect
-    // bails. With an empty dependency array it then never ran again and the cloud
-    // scene never mounted at all — the window kept its static fallback forever.
     useEffect(() => {
         if (!hostNode || !shouldRenderScene()) return;
 
@@ -145,19 +115,8 @@ export const PlaneWindow: React.FC = () => {
 
     const label = isDark ? t('hero.window.open', 'Open the window shade') : t('hero.window.close', 'Close the window shade');
 
-    // Client-only, deliberately.
-    //
-    // A pathname check alone was not enough: the window kept being prerendered
-    // into /features even though the guard reads '/features' there, because the
-    // hero subtree is evaluated while the router is still settling and is then
-    // captured by the prerenderer from the live DOM. Rendering nothing until
-    // after mount removes the whole class of problem — the window can no longer
-    // appear in ANY route's prerendered HTML, whatever the router is doing.
-    //
-    // It is pure decoration, so appearing a frame after hydration costs nothing,
-    // and the hero column reserves its space either way.
-    if (!mounted || !isHomePathname()) return null;
-
+    // Native route composition owns where this hero appears. The static frame
+    // can render on the server; only the optional WebGL scene needs a browser.
     return (
         <div
             className="plane-window-wrapper relative select-none"
@@ -184,7 +143,7 @@ export const PlaneWindow: React.FC = () => {
                     className="plane-window-shade absolute inset-0"
                     aria-hidden="true"
                     style={{
-                        transform: `translate3d(0, ${-(1 - shade) * SHADE_TRAVEL * 100}%, 0)`,
+                        transform: SHADE_REST_TRANSFORM,
                         // No transition while dragging: the shade must track the
                         // finger exactly, not chase it. On release the transition
                         // comes back and eases it home from wherever it was left.
@@ -205,7 +164,7 @@ export const PlaneWindow: React.FC = () => {
                 decoding="async"
                 fetchPriority="high"
                 style={{
-                    filter: `brightness(${1 - shade * FRAME_DIM})`,
+                    filter: FRAME_REST_FILTER,
                     transition: dragging ? 'none' : 'filter 460ms cubic-bezier(.22,1,.36,1)',
                 }}
             />

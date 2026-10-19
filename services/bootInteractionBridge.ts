@@ -4,9 +4,8 @@
  *
  * Prerendered pages paint a fully formed page long before the React tree that
  * owns it mounts, so every control on screen is inert for the first seconds of
- * a mobile load: taps on the burger were silently dropped, and UI that waits
- * for a first interaction (the cookie banner) never saw the interaction that
- * should have armed it.
+ * a mobile load: taps on navigation, theme and consent could otherwise be
+ * silently dropped before their component handlers become available.
  *
  * The inline script runs during HTML parse — before any module is fetched — and
  * records that window. A control opts in by carrying `data-tf-boot-intent` in

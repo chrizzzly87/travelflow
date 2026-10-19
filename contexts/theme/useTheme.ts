@@ -19,16 +19,11 @@ export interface UseThemeResult {
 }
 
 export const useTheme = (): UseThemeResult => {
-    const preference = useSyncExternalStore(
+    const { preference, resolvedTheme } = useSyncExternalStore(
         themeStore.subscribe,
         themeStore.getSnapshot,
         themeStore.getServerSnapshot,
     );
-
-    // Derived at render rather than stored: the store already re-renders us when
-    // either the preference or the OS query changes, so a second copy of this
-    // value could only ever be stale.
-    const resolvedTheme = getResolvedTheme();
 
     const toggle = useCallback(() => {
         setPreference(getResolvedTheme() === 'dark' ? 'light' : 'dark');

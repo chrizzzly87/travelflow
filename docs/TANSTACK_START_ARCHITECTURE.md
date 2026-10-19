@@ -83,6 +83,16 @@ marketing sections behind a mount effect to mask a mismatch. Retain the early cl
 handoff only while production browser tests prove its role before hydration; Start
 routing does not make an unhydrated DOM handle React events automatically.
 
+### Appearance and browser preferences
+
+`src/document/theme-boot.js` sets the root theme before paint. CSS selects initial
+colours, theme icons and the resting window shade. `contexts/theme/themeStore.ts`
+then exposes one stable snapshot of both preference and resolved theme through
+`useSyncExternalStore`, sharing OS and cross-tab subscriptions. A system preference
+change must update React controls as well as the document class. Browser storage
+failure must not erase a choice already made in the current document. Only the
+optional WebGL enhancement needs a client effect; decorative static markup does not.
+
 ## Auth and feature lifecycle
 
 Account/admin route guards return native redirects with a safe, localized return URL.
@@ -90,9 +100,7 @@ Account/admin route guards return native redirects with a safe, localized return
 routing, and revokes disabled accounts. Account-specific capabilities load only when
 needed. Backend RLS, RPC permission checks and endpoint authorization remain authoritative.
 
-Apply the initial browser auth-hint update in a transition after mount. A synchronous
-provider update can interrupt an unfinished React 18 Suspense hydration boundary;
-keep production browser tests sensitive to recoverable hydration errors.
+Public navigation uses the same translated Account entry before and after hydration. Browser hints must never fabricate a Session, authenticated status, role or access capabilities. Verified auth updates use transitions where needed to preserve unfinished React 18 hydration; keep production browser tests sensitive to recoverable hydration errors. Static public HTML contains no personalized identity.
 
 Async account/profile responses are generation-checked across logout, account changes
 and unmount. Never let an old request restore an earlier account's access. Persist
@@ -147,7 +155,7 @@ Native navigation keeps the previous route until the pending threshold (500 ms);
 this threshold does not delay a route that is already ready. Marketing pending UI
 reuses the real header/footer with working links and a small progress line. Do not
 restore fabricated navigation skeletons or an auth spinner/disabled Login control.
-The account-menu chunk fallback is a working profile link. Any navigation rendered in the SSR fallback must belong to the initial module
+The public Account trigger is permanent; only verified member tools are loaded on demand. Guest and unresolved menus retain working navigation actions, including a safe Login URL with the original path, search and fragment. Mobile dropdown content portals into its navigation dialog so nested focus handling and Escape remain correct. Any navigation rendered in the SSR fallback must belong to the initial module
 graph. Do not put that chrome behind an additional manual React.lazy boundary:
 Start can activate a client-only route before the nested fallback finishes
 hydrating. Keep optional account tools and business workspaces split separately.
@@ -156,10 +164,7 @@ Primary hero text and actions render immediately. Decorative entrance animations
 must not start essential content at zero opacity or move the intended first target.
 Inspect real Lighthouse LCP candidates before claiming an improvement.
 
-The boot bridge tracks physical pointers across hydration, independently of replayed
-control events. Consent UI waits until a held press ends; inserting a fixed overlay
-between pointerdown and pointerup can steal the original click. Exercise this with
-application JavaScript delayed, not only an already-hydrated component fixture.
+Undecided consent is part of the server document from its first visible frame. A small synchronous head script reads the existing consent key, and CSS hides an already answered banner before paint. Never defer this banner until interaction or a timer. Its buttons use the shared boot bridge, so a choice made before hydration is replayed once when handlers are ready. Exercise both initial visibility and returning visitors with application JavaScript delayed.
 
 Consent controls subscribe to same-page and cross-tab choices. Analytics checks
 consent both before downloading its script and after the asynchronous download,

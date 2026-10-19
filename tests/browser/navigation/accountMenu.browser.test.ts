@@ -48,6 +48,8 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       if (key === 'nav.createTrip') return 'Create Trip';
       if (key === 'nav.myTrips') return 'My Trips';
+      if (key === 'settings.breadcrumb.profile') return 'Profile';
+      if (key === 'settings.breadcrumb.settings') return 'Settings';
       return key;
     },
   }),
@@ -92,7 +94,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
     expect(screen.queryByText('Trip 1')).not.toBeInTheDocument();
     expect(screen.getByText('Trip 6')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Trip 6/i }));
+    await user.click(screen.getByRole('menuitem', { name: /Trip 6/i }));
 
     expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-6');
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--recent_trip', { trip_id: 'trip-6' });
@@ -107,7 +109,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
     }));
 
     await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
-    await user.click(screen.getByRole('button', { name: 'View all trips' }));
+    await user.click(screen.getByRole('menuitem', { name: 'View all trips' }));
 
     expect(mocks.navigate).toHaveBeenCalledWith('/profile?tab=recent');
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--recent_view_all');
@@ -126,10 +128,10 @@ describe('components/navigation/AccountMenu recent trips', () => {
     await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'My Trips' })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'My Trips' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'My Trips' }));
+    await user.click(screen.getByRole('menuitem', { name: 'My Trips' }));
 
     expect(onOpenTripManager).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menu', { name: 'Account menu' })).not.toBeInTheDocument();
@@ -138,7 +140,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
     expect(screen.queryByRole('button', { name: 'View public profile' })).not.toBeInTheDocument();
 
     await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
-    await user.click(screen.getByRole('button', { name: 'Create Trip' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Create Trip' }));
 
     expect(mocks.navigate).toHaveBeenCalledWith('/create-trip');
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--create_trip');
@@ -174,6 +176,15 @@ describe('components/navigation/AccountMenu recent trips', () => {
 
     expect(screen.getByRole('button', { name: /profile/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /traveler/i })).toBeNull();
+  });
+
+  it('preserves direct profile Settings navigation in the shared member menu', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(AccountMenu, { email: 'traveler@example.com', isAdmin: false }));
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Settings' }));
+    expect(mocks.navigate).toHaveBeenCalledWith('/profile/settings');
+    expect(screen.queryByRole('menu')).toBeNull();
   });
 
   it('uses profile first/last-name initials for avatar when available', () => {

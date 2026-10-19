@@ -28,8 +28,12 @@ permissions. Presentation hints must never become authenticated session authorit
 
 Verify the first visible frame as well as the hydrated page: theme and consent must
 not appear through delayed user-interaction handlers. Keep public account navigation
-stable while session verification happens, with real actions and no fake controls.
-The ongoing first-frame/auth follow-up is not claimed complete by this guidance.
+stable while session verification happens: use the shared Account entry, real links
+and verified session capabilities. Static public HTML must not invent an identity.
+Consent is server-rendered when undecided; its pre-paint script only resolves the
+visibility of existing stored choices. Use the shared early-click bridge for controls
+that can be pressed before hydration. The migration dashboard records verification
+of each candidate; this guidance is not a production acceptance claim.
 
 ## Requirements
 

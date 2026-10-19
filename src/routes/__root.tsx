@@ -11,6 +11,7 @@ import { bootScripts } from '../documentAssets';
 import { buildSiteOgMetadata } from '../../netlify/edge-lib/site-og-metadata';
 import { getTripDocumentMetadata } from '../server/tripMetadata';
 import '../../index.css';
+import '../document/consent.css';
 import { ContactFormRegistration } from '../document/ContactFormRegistration';
 import { getDocumentHints } from '../document/headAssets';
 import { useDocumentLocale } from '../document/useDocumentLocale';

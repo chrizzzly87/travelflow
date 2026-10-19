@@ -75,6 +75,20 @@ describe('services/consentService', () => {
     });
 
     expect(() => saveConsent('all')).not.toThrow();
+    expect(readStoredConsent()).toBe('all');
+    saveConsent('essential');
+    expect(readStoredConsent()).toBe('essential');
     setItemSpy.mockRestore();
   });
+  it('revokes a document choice when consent is removed in another tab', () => {
+    saveConsent('all');
+    const listener = vi.fn();
+    const unsubscribe = subscribeToConsentChanges(listener);
+    localStorage.removeItem(CONSENT_STORAGE_KEY);
+    window.dispatchEvent(new StorageEvent('storage', { key: CONSENT_STORAGE_KEY, newValue: null, storageArea: localStorage }));
+    expect(readStoredConsent()).toBeNull();
+    expect(listener).toHaveBeenCalledWith(null);
+    unsubscribe();
+  });
+
 });
