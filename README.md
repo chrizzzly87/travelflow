@@ -4,6 +4,8 @@ TravelFlow generates and manages travel itineraries. This integration branch mig
 
 Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment.
 
+Latest measured preview: [homepage Lighthouse report](docs/performance/tanstack-start-2026-10-19/first-paint-lighthouse.md), mobile median 76 → 88 against current production, followed by a smaller mobile image payload (median 89). Exact runtime revisions, variation and limitations are recorded with the results.
+
 ## Working on the TanStack Start app
 
 Use the native route tree as the starting point for new work. This branch remains

@@ -174,7 +174,7 @@ hydrating. Keep optional account tools and business workspaces split separately.
 
 Primary hero text and actions render immediately. Decorative entrance animations
 must not start essential content at zero opacity or move the intended first target.
-Inspect real Lighthouse LCP candidates before claiming an improvement.
+Inspect real Lighthouse LCP candidates before claiming an improvement. Desktop-only hero artwork uses native `<picture>` media selection with an inline transparent fallback for hidden mobile layouts. Keep the desktop source in SSR and test viewport changes with scripts held; CSS visibility alone does not prevent an image download.
 
 Undecided consent is part of the server document from its first visible frame. A small synchronous head script reads the existing consent key, and CSS hides an already answered banner before paint. Never defer this banner until interaction or a timer. Its buttons use the shared boot bridge, so a choice made before hydration is replayed once when handlers are ready. Exercise both initial visibility and returning visitors with application JavaScript delayed.
 
