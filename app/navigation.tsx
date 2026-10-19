@@ -51,10 +51,13 @@ export const Link = React.forwardRef<HTMLAnchorElement, any>(({ to, state, repla
 ));
 Link.displayName = 'MigrationLink';
 export const NavLink = React.forwardRef<HTMLAnchorElement, any>(({ to, end, className, style, children, ...props }, ref) => {
-    const { pathname } = useLocation();
+    const { pathname, pending } = useRouterState({ select: state => ({
+        pathname: state.location.pathname,
+        pending: state.status === 'pending',
+    }) });
     const target = hrefFor(to).split(/[?#]/)[0];
     const isActive = end ? pathname === target : pathname === target || (target !== '/' && pathname.startsWith(`${target}/`));
-    const status = { isActive, isPending: false, isTransitioning: false };
+    const status = { isActive, isPending: isActive && pending, isTransitioning: isActive && pending };
     return <Link {...props} ref={ref} to={to} aria-current={isActive ? 'page' : undefined} className={typeof className === 'function' ? className(status) : className} style={typeof style === 'function' ? style(status) : style}>{typeof children === 'function' ? children(status) : children}</Link>;
 });
 NavLink.displayName = 'MigrationNavLink';

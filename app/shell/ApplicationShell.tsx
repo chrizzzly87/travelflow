@@ -12,6 +12,7 @@ import { InstallAppBanner } from '../../components/InstallAppBanner';
 import { CookieConsentBanner } from '../../components/marketing/CookieConsentBanner';
 import { GlobalTooltipLayer } from '../../components/GlobalTooltipLayer';
 import { TripLibraryProvider } from './TripLibraryProvider';
+import { RouteNavigationFeedback } from '../routing/RouteNavigationFeedback';
 import { AuthRoutingBoundary } from '../../features/auth/AuthRoutingBoundary';
 
 const AccountCapabilities = lazy(() => import('./AccountCapabilities'));
@@ -24,6 +25,7 @@ function ApplicationRuntime() {
     const { isAuthenticated, isLoading, access } = useAuth();
     const showDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: import.meta.env.DEV });
     return <TripLibraryProvider>
+        <RouteNavigationFeedback />
         <InstallAppBanner />
         <AuthRoutingBoundary><Outlet /></AuthRoutingBoundary>
         <CookieConsentBanner />

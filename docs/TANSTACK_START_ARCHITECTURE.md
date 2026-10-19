@@ -251,3 +251,38 @@ The recovery dialog owns normalized creation prefills and renders complete nativ
 links on its first visible render. Keep common trip views free of precomputing
 creation links or importing recovery destination tables. Test both localized drafts
 and keyboard focus with the shared dialog primitives.
+
+## Foreground navigation and account home
+
+The native router retains the current route presentation while destination loaders
+and guards resolve (`defaultPendingMs: Infinity`). This is an explicit supported
+TanStack policy, not a timer with an arbitrary long delay. Selective-SSR first
+loads retain their existing document/pending fallback. The shared
+`RouteNavigationFeedback` shows an indeterminate top line from the router's
+foreground pending status; preloads do not activate it. Never simulate progress
+percentages or turn individual links into competing loading state machines.
+
+The URL adapter's NavLink derives active and pending styles from the requested
+native location, so feedback does not wait for loader completion. TanStack still
+owns anchor clicks, modified clicks, cancellation and redirects. The old content
+can stay visible while its destination is highlighted.
+
+`configurePageTransitions` enables native view transitions only for path changes,
+checks the current reduced-motion preference on each navigation, and excludes
+initial/query-only work. CSS supplies a 160ms crossfade with minimal movement and
+a reduced-motion fallback. Unsupported browsers use ordinary native navigation.
+Existing feature-specific transitions keep their own ownership.
+
+The verified home-to-account redirect retains its public content until the account
+route commits. A redirect component itself renders nothing; never replace a whole
+page with it while lazy route work is pending. Private route guards and account
+replacement blocking remain authoritative. The account trip library can render
+while profile metadata loads; only the personalized greeting waits for that data.
+`ProfileHomeActions` owns compact account actions. The retired private identity/
+statistics header is explicitly removed, independently of Tailwind ordering; public
+profile presentation remains a separate feature.
+
+Verification: blocked-loader navigation, superseding navigation, modified clicks,
+preload isolation, reduced-motion policy, delayed authenticated-home handoff and
+private/public profile regressions. See [TanStack navigation options](https://tanstack.com/router/latest/docs/guide/navigation)
+and [router foreground state](https://tanstack.com/router/latest/docs/api/router/RouterStateType).

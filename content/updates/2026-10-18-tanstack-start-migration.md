@@ -32,3 +32,6 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Improved] 📱 Avoid downloading hidden desktop artwork on phones.
 - [ ] [Internal] 🧩 Separate synchronous trip-generation policy and cancellation from optional authoring and claim-recovery execution.
 - [x] [Improved] 🧳 Open trips with fewer downloads while keeping planning tools available when needed.
+- [x] [Improved] 🧭 Highlight navigation immediately and show a slim progress line while the next page loads.
+- [x] [Improved] ✨ Use subtle page transitions that respect reduced-motion preferences.
+- [x] [Fixed] 👤 Keep the page visible while opening your trips and remove the retired profile header.

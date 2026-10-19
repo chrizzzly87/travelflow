@@ -1316,23 +1316,23 @@ h6,
 @keyframes vt-slide-out {
   to {
     opacity: 0;
-    transform: translateY(-8px) scale(0.98);
+    transform: translateY(-2px);
   }
 }
 
 @keyframes vt-slide-in {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.99);
+    transform: translateY(3px);
   }
 }
 
 ::view-transition-old(root) {
-  animation: vt-slide-out 0.15s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: vt-slide-out 160ms ease-out both;
 }
 
 ::view-transition-new(root) {
-  animation: vt-slide-in 0.2s cubic-bezier(0, 0, 0.2, 1) 0.08s both;
+  animation: vt-slide-in 160ms ease-out both;
 }
 
 /* Keep the header static during transitions */
@@ -2243,3 +2243,42 @@ html [data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-descrip
     animation: none;
   }
 }
+
+/* Persistent navigation feedback, outside route content and focus boundaries. */
+.tf-navigation-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 3px;
+  z-index: 1800;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  view-transition-name: navigation-progress;
+}
+.tf-navigation-progress[data-pending] { opacity: 1; }
+.tf-navigation-progress[data-pending] span { animation-play-state: running; }
+.tf-navigation-progress span {
+  display: block;
+  block-size: 100%;
+  inline-size: 35%;
+  background: var(--color-accent-500);
+  animation: tf-navigation-progress 1100ms ease-in-out infinite;
+  animation-play-state: paused;
+  --tf-progress-direction: 1;
+}
+:dir(rtl) .tf-navigation-progress span { --tf-progress-direction: -1; }
+@keyframes tf-navigation-progress {
+  from { transform: translateX(calc(-100% * var(--tf-progress-direction))); }
+  to { transform: translateX(calc(286% * var(--tf-progress-direction))); }
+}
+::view-transition-group(navigation-progress),
+::view-transition-old(navigation-progress),
+::view-transition-new(navigation-progress) { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .tf-navigation-progress { transition: none; }
+  .tf-navigation-progress span { animation: none; inline-size: 100%; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}
+/* Snapshot layers must never delay another navigation or keyboard action. */
+::view-transition { pointer-events: none; }

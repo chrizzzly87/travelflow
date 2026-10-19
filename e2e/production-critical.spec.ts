@@ -424,3 +424,50 @@ test('claim recovery has a complete native creation link and hands focus to logi
   await expect(login).toBeFocused();
   await expect(create).toHaveAttribute('href', href!);
 });
+
+test('navigation highlights its destination and retains content behind the top progress line', async ({ page }) => {
+  await page.goto('/pricing');
+  await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+  const previousHeading = await page.locator('main h1').first().textContent();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/assets/features-*.js', async route => { await gate; await route.continue(); });
+  try {
+    const link = page.locator('header').getByRole('link', { name: 'Features', exact: true });
+    await link.click();
+    await expect(link).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('route-navigation-progress')).toHaveAttribute('data-pending', 'true');
+    // Hold beyond the retired 500ms pending fallback to catch content replacement.
+    await page.waitForTimeout(650);
+    await expect(page.locator('main h1').first()).toHaveText(previousHeading!);
+    await expect(page.getByTestId('route-loading-shell')).toHaveCount(0);
+  } finally {
+    release();
+  }
+  await expect(page).toHaveURL(/\/features\/?$/);
+  await expect(page.getByTestId('route-navigation-progress')).not.toHaveAttribute('data-pending');
+  await expect(page.locator('main h1').first()).not.toHaveText(previousHeading!);
+});
+
+for (const reduced of [false, true]) {
+  test(`page transitions respect ${reduced ? 'reduced' : 'normal'} motion`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: reduced ? 'reduce' : 'no-preference' });
+    await page.addInitScript(() => {
+      const doc = document as Document & { startViewTransition?: (...args: any[]) => any };
+      const start = doc.startViewTransition?.bind(document);
+      (window as any).__tfTransitionProbe = { supported: Boolean(start), calls: 0 };
+      if (start) doc.startViewTransition = (...args: any[]) => {
+        (window as any).__tfTransitionProbe.calls += 1;
+        return start(...args);
+      };
+    });
+    await page.goto('/pricing');
+    await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+    const initial = await page.evaluate(() => (window as any).__tfTransitionProbe.calls);
+    await page.locator('header').getByRole('link', { name: 'Features', exact: true }).click();
+    await expect(page).toHaveURL(/\/features\/?$/);
+    await expect(page.getByTestId('route-navigation-progress')).not.toHaveAttribute('data-pending');
+    const probe = await page.evaluate(() => (window as any).__tfTransitionProbe);
+    expect(probe.calls - initial).toBe(!reduced && probe.supported ? 1 : 0);
+  });
+}

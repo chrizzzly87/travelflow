@@ -124,6 +124,21 @@ reaches the targeted authoring/generation modules. Conflict recovery owns its
 complete normalized link and yields focus to login. Deferred actions are invalidated
 when the committed trip/session changes or unmounts.
 
-Next gate: final documentation CI, then integration-only merge of #567. Continue
-native prerender canonical-path handling and measured remaining route/viewer
-ownership under #561. Main/production and live account/provider acceptance remain unchanged.
+PR #567 is now merged into integration; see the navigation milestone below for
+the next work. Main/production and live account/provider acceptance remain unchanged.
+
+## Navigation and account-home milestone — issue #568
+
+PR #567 merged into integration as `91d7bf7af` on 2026-10-19; its last documentation
+CI is complete. The current follow-up is `codex/tanstack-start-navigation`, tracked
+in [issue #568](https://github.com/chrizzzly87/travelflow/issues/568): native requested
+navigation state, persistent foreground progress, reduced-motion-aware transitions,
+retained home presentation during the verified account handoff, and removal of the
+retired private profile identity block. Compact account actions now own their UI
+separately from the trip library and public profile.
+
+Local acceptance passes: 505 test files / 2,937 tests, one existing skip; all 78
+Chromium/WebKit production checks and three offline/PWA checks. React Doctor stays
+at 61/100 with zero errors; TypeScript has no new normalized diagnostics (473
+existing versus 474 baseline). Hosted acceptance remains pending on the PR. Canonical prerender paths and further measured
+trip-view decomposition remain subsequent #561 work. No main or production merge.
