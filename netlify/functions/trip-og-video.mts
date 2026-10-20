@@ -40,7 +40,7 @@ export default async (request: Request) => {
       if (!trip.items?.some(item => item.type === 'city' && item.coordinates)) return json({ error: 'Trip needs mapped cities before rendering.' }, 422);
       const result = await claimVideo(store, trip.id, videoRevision(trip, style), style, options.force === true);
       state = result.state || null;
-      if (!result.claimed) return json({ ...state, limited: result.limited || false }, result.limited ? 429 : 200);
+      if (!result.claimed) return json({ ...state, limited: result.limited || false, ...(result.limited ? { error: 'A video can be generated once per trip per hour. Try again after the cooldown.' } : {}) }, result.limited ? 429 : 200);
       if (!await claimRenderBudget(store)) {
         state = { ...state!, status: 'failed', error: 'Hourly render budget reached. Try again next hour.' };
         await store.setJSON(`${trip.id}/state`, state);

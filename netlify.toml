@@ -976,4 +976,4 @@ exit 1
 [functions."trip-og-video-background"]
   node_bundler = "esbuild"
   external_node_modules = ["sharp", "@ffmpeg-installer/linux-x64"]
-  included_files = ["node_modules/@ffmpeg-installer/linux-x64/ffmpeg"]
+  included_files = ["node_modules/@ffmpeg-installer/linux-x64/ffmpeg", "netlify/assets/trip-video-fonts.conf", "public/fonts/**/*"]
