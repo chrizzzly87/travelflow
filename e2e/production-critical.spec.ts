@@ -66,7 +66,11 @@ test('desktop-only hero artwork follows the viewport before hydration', async ({
 
 for (const route of ['/', '/features', '/pricing', '/blog', '/inspirations', '/faq', '/updates']) {
   test(`${route} keeps prerendered content and becomes interactive`, async ({ page }) => {
-    await page.goto(route);
+    const response = await page.goto(route);
+    expect(response?.status()).toBe(200);
+    expect(response?.request().redirectedFrom()).toBeNull();
+    expect(new URL(page.url()).pathname).toBe(route);
+    expect(new URL(await page.locator('link[rel=canonical]').getAttribute('href') || page.url()).pathname).toBe(route);
     await expect(page.locator('#root[data-tf-prerendered-root="true"]')).toBeVisible();
     await expect(page.locator('main h1').first()).toBeVisible();
     const initialHeading = await page.locator('main h1').first().textContent();
@@ -436,6 +440,23 @@ test('navigation highlights its destination and retains content behind the top p
   let release!: () => void;
   const gate = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/assets/features-*.js', async route => { await gate; await route.continue(); });
+  // Observe the real DOM commit before releasing the chunk. Polling a transient
+  // 300ms completion phase can skip it on a remote WebKit run.
+  await page.evaluate(() => {
+    const progress = document.querySelector('[data-testid="route-navigation-progress"]')!;
+    const observed = window as Window & { __testNavigationCompleted?: boolean };
+    observed.__testNavigationCompleted = false;
+    let started = false;
+    const observer = new MutationObserver(() => {
+      if (progress.getAttribute('data-pending') === 'true') started = true;
+      if (started && progress.getAttribute('data-phase') === 'complete'
+        && progress.querySelector('span')?.getAttribute('data-progress') === '100') {
+        observed.__testNavigationCompleted = true;
+        observer.disconnect();
+      }
+    });
+    observer.observe(progress, { attributes: true, subtree: true, attributeFilter: ['data-pending', 'data-phase', 'data-progress'] });
+  });
   try {
     const link = page.locator('header').getByRole('link', { name: 'Features', exact: true });
     await link.click();
@@ -448,7 +469,7 @@ test('navigation highlights its destination and retains content behind the top p
   } finally {
     release();
   }
-  await expect(page.getByTestId('route-navigation-progress')).toHaveAttribute('data-phase', 'complete');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __testNavigationCompleted?: boolean }).__testNavigationCompleted))).toBe(true);
   await expect(page.getByTestId('route-navigation-progress').locator('span')).toHaveAttribute('data-progress', '100');
   await expect(page).toHaveURL(/\/features\/?$/);
   await expect(page.getByTestId('route-navigation-progress')).not.toHaveAttribute('data-pending');
@@ -534,3 +555,25 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
     }
   });
 }
+
+
+test.describe('public dates across server and browser defaults', () => {
+  test.use({ locale: 'de-DE', timezoneId: 'Pacific/Kiritimati' });
+  for (const path of ['/fr/updates', '/fr/blog', '/fr/blog/how-to-plan-multi-city-trip']) {
+    test(`${path} hydrates its dates without replacing the server document`, async ({ page }) => {
+      const release = await holdApplicationScripts(page);
+      let heading: string | null = null;
+      try {
+        await page.goto(path, { waitUntil: 'commit' });
+        await expect(page.locator('main h1').first()).toBeVisible();
+        heading = await page.locator('main h1').first().textContent();
+      } finally {
+        release();
+      }
+      await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+      await expect(page.locator('main h1').first()).toHaveText(heading!);
+      // The shared afterEach rejects hydration errors from every date text node.
+      expect(pageErrors).toEqual([]);
+    });
+  }
+});

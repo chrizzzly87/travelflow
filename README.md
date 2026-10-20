@@ -2,6 +2,8 @@
 
 TravelFlow generates and manages travel itineraries. This integration branch migrates the app to TanStack Start with React, TypeScript and native TanStack routing. Production rollout and performance acceptance are tracked separately in [the migration plan](docs/architecture/TANSTACK_START_MIGRATION.md) and [issue #559](https://github.com/chrizzzly87/travelflow/issues/559).
 
+For the remaining first-release gates, see [the release checklist](docs/TANSTACK_START_RELEASE_CHECKLIST.md).
+
 Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment.
 
 Latest measured preview: [homepage Lighthouse report](docs/performance/tanstack-start-2026-10-19/first-paint-lighthouse.md), mobile median 76 → 88 against current production, followed by a smaller mobile image payload (median 89). Exact runtime revisions, variation and limitations are recorded with the results.
@@ -163,6 +165,8 @@ For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, u
 ```bash
 pnpm build
 ```
+
+`pnpm prerender:validate` checks the seven public entry pages in every active locale after the native build, including canonical URLs and language/direction. The allowlist lives in `app/routing/publicPrerender.ts`; private routes must never enter it.
 
 The build emits public assets/prerendered pages in `dist/client` and server output in `dist/server`. The Netlify adapter owns server deployment and document routing; uploading only static files is insufficient. See [the deployment guide](docs/NETLIFY_TANSTACK_START.md).
 

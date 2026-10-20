@@ -4,6 +4,23 @@ Status: in progress, preview only. Decision date: 2026-10-18.
 Integration branch: `codex/tanstack-start-integration`.
 Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target until human preview acceptance.
 
+## Current milestone — 2026-10-20
+
+Navigation corrections merged into the integration branch as `b624e521` through [PR #569](https://github.com/chrizzzly87/travelflow/pull/569),
+linked to [#568](https://github.com/chrizzzly87/travelflow/issues/568). Runtime `52152903`
+passes 510 core files / 2,967 tests (one skipped), 84 local and 84 hosted Chromium/WebKit checks,
+and three PWA checks. [Verified preview](https://deploy-preview-569--travelflowapp.netlify.app/).
+The preview remains on the verified runtime. The homepage stays public for members, general login defaults to profile, guests
+open login directly, and native progress fills completely. Safari overlay scroll
+and focus ownership and failed image recovery have explicit regressions.
+
+Next: [#570](https://github.com/chrizzzly87/travelflow/issues/570), branch
+`codex/tanstack-start-prerender`, based on that exact verified runtime. Native flat
+public documents remove canonical redirect hops; all active locales receive the
+same seven prerendered entry points. Artifact checks and local regressions are in
+place; hosted normalization and equivalent document timings remain unverified until
+the candidate preview exists. Main remains unchanged.
+
 ## Current stabilization round — 2026-10-19
 
 PR [#563](https://github.com/chrizzzly87/travelflow/pull/563) passed final remote CI and merged into
@@ -158,8 +175,29 @@ Required trip-view code is owned by the native route component preload. Shared
 images also recover once from an optimization failure. No persistent broken
 homepage asset was reproduced; the user confirmed the preview currently works.
 
-The localized prerender follow-up is tracked in issue #570 on
-`codex/tanstack-start-prerender`; its uncommitted work is safely stashed while these
-review corrections are finished. It addresses canonical redirect hops and public
-localized entry documents, with emitted-output validation and before/after HTTP
-evidence. Resume it after the navigation preview is deployed and reviewed.
+The localized prerender follow-up is implemented in PR #571 / issue #570 on
+`codex/tanstack-start-prerender`. Native flat output covers 77 public documents,
+with emitted-artifact checks, direct hosted HTTP acceptance and an isolated
+[before/after document comparison](../performance/tanstack-start-2026-10-20/public-documents.md).
+The live PR records the final integration check/merge state.
+
+## First-release stabilization — localized notices and dates
+
+User review reported language notices covering the updates heading (#572).
+Their fixed overlay bypassed layout flow. MarketingNotice now owns intrinsic
+responsive rows before main content, with no measured offsets. New French/RTL
+browser geometry checks reproduce the old overlap and cover resize/dismissal.
+Those tests additionally exposed host-default publication-date hydration errors
+(#573); release dates now use request-local language and fixed CET, while blog
+instants retain UTC editorial dates. The new browser cases intentionally differ
+from the server's language/timezone. Runtime `61bff8a7` is deployed as
+`6ad70f862dd4fd8e39c054a0`: all 94 hosted Chromium/WebKit checks and all 77 direct
+HTTP locale/page probes pass. Local quality gates pass 2,979 tests (one skip),
+94 browser checks and three PWA checks. Exact-head GitHub checks remain mandatory
+before integration; production promotion is a separate release decision.
+
+[First-release checklist](../TANSTACK_START_RELEASE_CHECKLIST.md) distinguishes
+required stabilization from optional performance follow-ups. Real Google SSO,
+profile landing, member homepage CTA, owned-trip details/refresh, creation prefill
+refresh and the authorized admin dashboard have now been checked on the hosted
+navigation/prerender runtimes without data mutations or paid generation.

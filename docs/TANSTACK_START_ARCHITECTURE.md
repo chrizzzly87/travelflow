@@ -25,10 +25,15 @@ native route matching.
 
 ## Rendering policy
 
-- Public marketing/legal pages render through Start SSR. Selected English entry
-  pages are also prerendered through the `pages` configuration in `vite.config.ts`.
+- Public marketing/legal pages render through Start SSR. Seven public entry pages
+  in all active locales are prerendered from `app/routing/publicPrerender.ts` through
+  the native `pages` configuration. Flat output (`autoSubfolderIndex: false`) emits
+  `features.html` and `de/features.html`, preserving slashless canonical URLs.
   Other valid public routes can render on demand; absence of a static file does
-  not mean absence of server-rendered content.
+  not mean absence of server-rendered content. Never expand the public allowlist by
+  crawling account links. `pnpm prerender:validate` checks every emitted locale,
+  direction, canonical URL and heading, rejects competing directory indexes, and
+  verifies the separate offline shell.
 - Auth, account, admin, creation, library and trip workspace areas currently declare
   `ssr: false`. Their browser session and local trip storage are not serialized into
   a public server response. The root still supplies the document and safe metadata.
@@ -311,3 +316,17 @@ preload isolation, reduced-motion policy, public home for verified members and p
 private/public profile regressions, cold direct guest modal interaction, presented-route
 auth isolation, required trip-view chunk delays and image-CDN failure recovery. See [TanStack navigation options](https://tanstack.com/router/latest/docs/guide/navigation)
 and [router foreground state](https://tanstack.com/router/latest/docs/api/router/RouterStateType).
+
+### Marketing notices
+
+The header owns its sticky position. Language suggestions and translation notices
+occupy normal document flow between the header and main content. MarketingNotice
+owns intrinsic row/column reflow; dismissal removes its actual space. Do not add
+fixed banner offsets, per-page top padding or JavaScript height measurements.
+Keep long translated actions wrappable and check both LTR and RTL at narrow widths.
+
+Public SSR date text must specify both locale and time zone. Release notes use
+request-local language and the fixed-CET publication policy through the pure
+releaseNotesFormat helper. Blog publication timestamps use UTC editorial dates.
+Do not apply instant formatting blindly to nominal local-calendar festival dates.
+Tests include a browser language differing from the route and a UTC+14 timezone.

@@ -4,7 +4,7 @@ const deployedURL = process.env.PRODUCTION_BASE_URL;
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'production-critical.spec.ts',
+  testMatch: ['production-critical.spec.ts', 'marketing-notices.spec.ts'],
   fullyParallel: true,
   timeout: 45_000,
   workers: 2,

@@ -15,7 +15,7 @@ feature branch directly to production.
 
 - Node 22 comes from `.node-version` and `netlify.toml`; pnpm is pinned in `package.json`.
 - `pnpm build:netlify` prepares assets, runs repository validators, invokes the Start
-  Vite build, then generates the service worker. `pnpm build` also runs core tests.
+  Vite build, validates emitted public documents, then generates the service worker. `pnpm build` also runs core tests.
 - `@netlify/vite-plugin-tanstack-start` adapts server rendering to Netlify. Keep the
   plugin alongside the Start and React plugins in `vite.config.ts`.
 - Publish `dist/client`. Client assets and prerendered public documents live there;
@@ -29,6 +29,25 @@ feature branch directly to production.
 The Start SPA-shell configuration uses a separate mask path and emits the offline
 shell consumed by `scripts/build-service-worker.mjs`. Check that the shell actually
 exists before generating a worker. See [offline operations](PWA_OFFLINE.md).
+
+## Public document output
+
+Use the native Start prerender allowlist in `app/routing/publicPrerender.ts`: seven
+public entry points across all active locales. Keep canonical slugs English and
+locale support prefix-only. Native flat output emits `index.html`, `features.html`,
+`de.html` and `de/features.html`; do not add competing `features/index.html` files.
+Directory indexes make Netlify normalize a slashless link through an extra redirect.
+
+`pnpm prerender:validate` runs after Vite in both build commands. It checks actual
+artifacts for language, direction, canonical path and server-rendered heading, and
+rejects stale directory indexes. Session-bound documents are never prerender targets.
+Other public pages retain on-demand SSR. The separate `spa.html` remains the PWA
+fallback; increasing public prerenders must not expand service-worker precaching.
+
+Verify canonical public URLs on the actual preview: successful status with no
+redirect, including localized roots and RTL pages. Local flat-file serving alone
+cannot prove Netlify URL normalization. Compare document TTFB and redirect count
+separately from browser JavaScript/image loading, against an immutable prior deploy.
 
 ## Local development and preview
 
