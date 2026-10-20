@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect } from 'react';
-import { Navigate } from '@tanstack/react-router';
+import { Navigate, useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../app/navigation';
@@ -19,6 +19,9 @@ export function AuthRoutingBoundary({ children }: { children: React.ReactNode })
     useSessionRouteLifecycle(auth);
     useAccountLanguageSync();
     const location = useLocation();
+    // Privacy/loading follows the presented workspace, not the requested URL.
+    // A still-loading example click must not replace the current public page.
+    const presentedPathname = useRouterState({ select: state => state.matches.at(-1)?.pathname ?? state.location.pathname });
     const { i18n } = useTranslation('common');
     const hasInactiveAccount = shouldRevokeInactiveAccount(auth);
     useEffect(() => {
@@ -43,7 +46,7 @@ export function AuthRoutingBoundary({ children }: { children: React.ReactNode })
         const next = `${location.pathname}${location.search}${location.hash}`;
         return <Navigate to="/{-$locale}/terms" params={{ locale: locale === 'en' ? undefined : locale }} search={previous => ({ ...previous, accept: 'required', next })} replace />;
     }
-    if (isToolRoute(location.pathname) && auth.isLoading) return <MarketingRouteLoadingShell />;
+    if (isToolRoute(presentedPathname) && auth.isLoading) return <MarketingRouteLoadingShell />;
     const hasTermsNotice = auth.isAuthenticated && !auth.access?.isAnonymous && (auth.access?.termsAcceptanceRequired || auth.access?.termsNoticeRequired);
     return <>{hasTermsNotice && <Suspense fallback={null}><AccountTermsNotice /></Suspense>}{children}</>;
 }

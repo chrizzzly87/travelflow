@@ -24,6 +24,7 @@ import {
     subscribeLastUsedOAuthProvider,
 } from '../../services/authUiPreferencesService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useDocumentScrollLock } from '../../hooks/useDocumentScrollLock';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getAuthRequestTimeoutMs, getAuthRestoreTimeoutMs } from '../../services/networkStatus';
 import { normalizeAppLanguage } from '../../utils';
@@ -225,6 +226,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         return result;
     }, []);
 
+    useDocumentScrollLock(isOpen);
+
     useEffect(() => {
         if (!isOpen) return;
         trackEvent('auth__modal--open', { source });
@@ -239,12 +242,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             return;
         }
 
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-
-        return () => {
-            document.body.style.overflow = previousOverflow;
-        };
     }, [isOpen]);
 
     useEffect(() => {

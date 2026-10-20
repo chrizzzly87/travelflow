@@ -42,7 +42,7 @@ export const buildLoginPathWithNext = (parts: {
         search: parts.search,
         hash: parts.hash,
     });
-    const nextPath = isSafeAuthReturnPath(nextPathCandidate) ? nextPathCandidate : '/create-trip';
+    const nextPath = isSafeAuthReturnPath(nextPathCandidate) ? nextPathCandidate : '/profile';
     const routeLocale = extractLocaleFromPath(pathname);
     const preferredLocale = normalizeLocale(parts.resolvedLanguage ?? parts.language ?? null);
     const locale = routeLocale ?? preferredLocale;
@@ -54,6 +54,14 @@ export const buildLoginPathWithNext = (parts: {
         loginPath,
         loginTarget: `${loginPath}?${query.toString()}`,
     };
+};
+
+/** General sign-in lands on the profile; in-progress trip work keeps its exact URL. */
+export const resolveAccountLoginNextPath = (parts: { pathname: string; search?: string; hash?: string }): string => {
+    const pathname = normalizePathOnly(parts.pathname);
+    const isWorkspace = /^\/(?:trip|create-trip)(?:\/|$)/.test(stripLocalePrefix(pathname));
+    const candidate = buildPathFromLocationParts(parts);
+    return isWorkspace && isSafeAuthReturnPath(candidate) ? candidate : '/profile';
 };
 
 export const isLoginPathname = (pathname: string): boolean => {
@@ -141,7 +149,7 @@ export const resolvePreferredNextPath = (
     for (const candidate of candidates) {
         if (isSafeAuthReturnPath(candidate)) return candidate;
     }
-    return '/create-trip';
+    return '/profile';
 };
 
 export const buildPasswordResetRedirectUrl = (nextPath?: string | null): string | undefined => {

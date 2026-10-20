@@ -8,7 +8,7 @@ import { MemoryRouter } from '../../helpers/routerHarness';
 import { MobileMenu } from '../../../components/navigation/MobileMenu';
 
 vi.mock('../../../hooks/useHasSavedTrips', () => ({ useHasSavedTrips: () => false }));
-vi.mock('../../../hooks/useAuth', () => ({ useAuth: () => ({ isAuthenticated: false, isLoading: false }) }));
+vi.mock('../../../hooks/useAuth', () => ({ useAuth: () => ({ isAuthenticated: true, isLoading: false, isAdmin: false, profile: null, access: { userId: 'member', email: 'member@example.test' }, logout: vi.fn() }) }));
 vi.mock('../../../hooks/useLoginModal', () => ({ useLoginModal: () => ({ openLoginModal: vi.fn() }) }));
 const localeMocks = vi.hoisted(() => ({ changeLocale: vi.fn() }));
 vi.mock('../../../hooks/useLocaleNavigation', () => ({ useLocaleNavigation: () => localeMocks.changeLocale }));
@@ -25,7 +25,7 @@ beforeAll(() => {
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('nested mobile account focus', () => {
-    it('keeps keyboard focus inside the mobile panel and Escape closes only the innermost menu', async () => {
+    it('keeps verified-member keyboard focus inside the mobile panel and Escape closes only the innermost menu', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();
         await renderWithRouter(<MemoryRouter><MobileMenu isOpen onClose={onClose} /></MemoryRouter>);

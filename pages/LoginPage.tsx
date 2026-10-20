@@ -25,6 +25,7 @@ import {
     clearRememberedAuthReturnPath,
     getRememberedAuthReturnPath,
     rememberAuthReturnPath,
+    resolveAccountLoginNextPath,
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
 import { buildTripClaimConflictPath } from '../services/tripClaimNavigation';
@@ -121,8 +122,8 @@ export const LoginPage: React.FC = () => {
     const nextPath = resolvePreferredNextPath(
         searchParams.get('next'),
         stateFrom,
-        rememberedNextPath,
-        '/create-trip'
+        rememberedNextPath ? resolveAccountLoginNextPath({ pathname: rememberedNextPath }) : null,
+        '/profile'
     );
 
     const oauthRedirectTo = useMemo(

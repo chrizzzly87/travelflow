@@ -7,8 +7,8 @@ import type { IViewSettings } from '../types';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
 import type { TripRouteData } from '../features/trips/routeData';
 import { useRouteViewSettings } from '../features/trips/useRouteViewSettings';
-import { LazyTripView } from '../components/tripview/LazyTripView';
-import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+// The native route component chunk owns the complete required view.
+import { TripView } from '../components/TripView';
 import { resolveTripInitialMapFocusQuery } from '../shared/tripMapCityResolution';
 
 /** Presentation and view interactions only; the native route owns resolution and cancellation. */
@@ -26,11 +26,11 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps & { data: TripRouteD
     }, [onViewSettingsChange, tripAccess?.source, tripId, updateViewSettings]);
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
     const isPublicReadView = tripAccess?.source === 'public_read';
-    return <React.Suspense fallback={<TripRouteLoadingShell variant="preparingPlanner" />}>
-        <LazyTripView key={`${activeTrip.id}:${tripAccess?.source ?? 'local'}`} trip={activeTrip}
+    return (
+        <TripView key={`${activeTrip.id}:${tripAccess?.source ?? 'local'}`} trip={activeTrip}
             initialMapFocusQuery={resolveTripInitialMapFocusQuery(activeTrip)} initialViewSettings={viewSettings ?? activeTrip.defaultView}
             onUpdateTrip={onUpdateTrip} onCommitState={onCommitState} onAdoptAgentTripVersion={onAdoptAgentTripVersion}
             onViewSettingsChange={handleRouteViewSettingsChange} onOpenManager={onOpenManager} onOpenSettings={onOpenSettings} appLanguage={appLanguage}
             readOnly={isPublicReadView} canShare={!adminFallbackAccess && !isPublicReadView} adminAccess={adminFallbackAccess} tripAccess={tripAccess ?? undefined} />
-    </React.Suspense>;
+    );
 };

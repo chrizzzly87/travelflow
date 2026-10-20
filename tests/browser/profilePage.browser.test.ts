@@ -192,14 +192,13 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     });
   });
 
-  it('prefers the real profile creation timestamp for member since', async () => {
-    mocks.getAllTrips.mockReturnValue([]);
-
+  it('keeps the retired private identity/statistics header out of the trip workspace', async () => {
     await renderProfilePage('/profile');
-
-    await waitFor(() => {
-      expect(screen.getByText('May 2024')).toBeInTheDocument();
-    });
+    expect(screen.queryByText('summary.memberSinceLabel')).toBeNull();
+    expect(screen.queryByText('stats.followers')).toBeNull();
+    expect(screen.queryByText('Bio')).toBeNull();
+    expect(screen.getByRole('link', { name: /summary.editProfile/i })).toHaveAttribute('href', '/profile/settings');
+    expect(screen.getByText('Trip A')).toBeInTheDocument();
   });
 
   it('filters private trips out when show-only-public preview is enabled', async () => {
@@ -309,6 +308,8 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
     expect(screen.queryByText('fallback.displayName')).not.toBeInTheDocument();
     expect(mocks.auth.refreshProfile).not.toHaveBeenCalled();
+    expect(screen.getByText('Trip A')).toBeInTheDocument();
+    expect(screen.getByTestId('profile-page-container')).toHaveAttribute('aria-busy', 'true');
   });
 
   it('renders trip cards in lazy chunks before loading additional pages', async () => {
@@ -563,7 +564,8 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     await renderProfilePage('/profile');
 
     await waitFor(() => {
-      expect(screen.getByText(/Chris Wisniewski/i)).toBeInTheDocument();
+      // Greetings choose first- or family-name-first ordering by culture.
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Chris|Wisniewski/);
     });
 
     expect(screen.queryByText('Old Alias')).toBeNull();

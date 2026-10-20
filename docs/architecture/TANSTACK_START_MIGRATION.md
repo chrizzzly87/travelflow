@@ -124,6 +124,42 @@ reaches the targeted authoring/generation modules. Conflict recovery owns its
 complete normalized link and yields focus to login. Deferred actions are invalidated
 when the committed trip/session changes or unmounts.
 
-Next gate: final documentation CI, then integration-only merge of #567. Continue
-native prerender canonical-path handling and measured remaining route/viewer
-ownership under #561. Main/production and live account/provider acceptance remain unchanged.
+PR #567 is now merged into integration; see the navigation milestone below for
+the next work. Main/production and live account/provider acceptance remain unchanged.
+
+## Navigation and account-home milestone — issue #568
+
+PR #567 merged into integration as `91d7bf7af` on 2026-10-19; its last documentation
+CI is complete. The current follow-up is `codex/tanstack-start-navigation`, tracked
+in [issue #568](https://github.com/chrizzzly87/travelflow/issues/568): native requested
+navigation state, persistent foreground progress, reduced-motion-aware transitions,
+retained home presentation during the verified account handoff, and removal of the
+retired private profile identity block. Compact account actions now own their UI
+separately from the trip library and public profile.
+
+Local acceptance passes: 505 test files / 2,937 tests, one existing skip; all 78
+Chromium/WebKit production checks and three offline/PWA checks. React Doctor stays
+at 61/100 with zero errors; TypeScript has no new normalized diagnostics (473
+existing versus 474 baseline). Runtime commit: `faf632f6`.
+[PR #569](https://github.com/chrizzzly87/travelflow/pull/569), linked to issue #568,
+records hosted acceptance and current CI/deploy status.
+[Navigation preview](https://deploy-preview-569--travelflowapp.netlify.app/). Canonical prerender paths and further measured
+trip-view decomposition remain subsequent #561 work. No main or production merge.
+
+
+### Navigation feedback corrections in PR #569
+
+User review requested a completing full-width top bar, direct guest sign-in, a
+public homepage for members with My trips, and no second content loader when
+opening an example. These changes are implemented on the same navigation branch;
+preview acceptance for the new revision is recorded on PR #569. General login now
+defaults to profile while explicit trip/admin return intents remain intact.
+Required trip-view code is owned by the native route component preload. Shared
+images also recover once from an optimization failure. No persistent broken
+homepage asset was reproduced; the user confirmed the preview currently works.
+
+The localized prerender follow-up is tracked in issue #570 on
+`codex/tanstack-start-prerender`; its uncommitted work is safely stashed while these
+review corrections are finished. It addresses canonical redirect hops and public
+localized entry documents, with emitted-output validation and before/after HTTP
+evidence. Resume it after the navigation preview is deployed and reviewed.

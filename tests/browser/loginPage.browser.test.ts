@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     loginWithOAuth: vi.fn().mockResolvedValue({ error: null }),
     sendPasswordResetEmail: vi.fn().mockResolvedValue({ error: null }),
   },
+  rememberedNextPath: null as string | null,
   rememberLoginEnabled: true,
   setRememberLoginEnabled: vi.fn(),
   runOpportunisticTripQueueCleanup: vi.fn().mockResolvedValue(undefined),
@@ -112,11 +113,12 @@ vi.mock('../../services/anonymousAssetClaimService', () => ({
 vi.mock('../../services/authNavigationService', () => ({
   buildPasswordResetRedirectUrl: () => 'https://example.com/auth/reset-password',
   clearRememberedAuthReturnPath: vi.fn(),
-  getRememberedAuthReturnPath: () => null,
+  getRememberedAuthReturnPath: () => mocks.rememberedNextPath,
+  resolveAccountLoginNextPath: (parts: { pathname: string }) => /^\/(trip|create-trip)(\/|$)/.test(parts.pathname) ? parts.pathname : '/profile',
   rememberAuthReturnPath: vi.fn(),
   resolvePreferredNextPath: (...args: unknown[]) => {
     const candidate = args.find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined;
-    return candidate || '/create-trip';
+    return candidate || '/profile';
   },
 }));
 
@@ -165,6 +167,7 @@ describe('pages/LoginPage auth flows', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.searchParams = new URLSearchParams();
+    mocks.rememberedNextPath = null;
     mocks.location.state = null;
     mocks.auth.isLoading = false;
     mocks.auth.isAuthenticated = false;
@@ -174,6 +177,26 @@ describe('pages/LoginPage auth flows', () => {
       data: { termsVersion: '2026-03-03', acceptedAt: '2026-03-03T10:00:00Z' },
       error: null,
     });
+  });
+
+  it('lands on the profile after successful login without an explicit return intent', async () => {
+    mocks.auth.isAuthenticated = true;
+    await render(React.createElement(LoginPage));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/profile', { replace: true }));
+  });
+
+  it('does not resume a stale marketing return URL after general sign-in', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.rememberedNextPath = '/de/features?old=1';
+    await render(React.createElement(LoginPage));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/profile', { replace: true }));
+  });
+
+  it('preserves an explicit creation return intent after successful login', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.searchParams = new URLSearchParams({ next: '/create-trip/wizard?prefill=draft' });
+    await render(React.createElement(LoginPage));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/create-trip/wizard?prefill=draft', { replace: true }));
   });
 
   it('submits credentials when Enter is pressed in the password field', async () => {

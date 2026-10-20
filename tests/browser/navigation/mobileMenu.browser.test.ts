@@ -82,12 +82,15 @@ describe('components/navigation/MobileMenu legal links', () => {
     mocks.profile = null;
   });
 
-  it('keeps the permanent account entry and a working Login link during auth bootstrap', async () => {
+  it('keeps the permanent account entry and opens Login directly during auth bootstrap', async () => {
     mocks.isLoading = true;
-    await render(React.createElement(MemoryRouter, null, React.createElement(MobileMenu, { isOpen: true, onClose: vi.fn() })));
-    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
-    expect(screen.getByRole('menuitem', { name: 'Login' })).toHaveAttribute('href', '/login?next=%2F');
-    expect(screen.queryByRole('button', { name: 'Login' })).toBeNull();
+    await render(React.createElement(MemoryRouter, { initialEntries: ['/trip/example'] },
+      React.createElement(MobileMenu, { isOpen: true, onClose: vi.fn() })));
+    const account = screen.getByRole('button', { name: 'Account' });
+    await userEvent.click(account);
+    expect(mocks.openLoginModal).toHaveBeenCalledWith({ source: 'navigation_mobile', nextPath: '/trip/example', reloadOnSuccess: false });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'My trips' })).toBeNull();
   });
 
   it('shows legal links in the mobile menu for anonymous users', async () => {
@@ -183,10 +186,9 @@ describe('components/navigation/MobileMenu legal links', () => {
     await render(React.createElement(MemoryRouter, { initialEntries: ['/trip/example?view=map#day-2'] },
       React.createElement(MobileMenu, { isOpen: true, onClose })));
     await userEvent.click(screen.getByRole('button', { name: 'Account' }));
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Login' }));
     expect(onClose).toHaveBeenCalled();
     expect(mocks.openLoginModal).toHaveBeenCalledWith({
-      source: 'navigation_mobile', nextPath: '/trip/example?view=map#day-2', reloadOnSuccess: true,
+      source: 'navigation_mobile', nextPath: '/trip/example?view=map#day-2', reloadOnSuccess: false,
     });
   });
 

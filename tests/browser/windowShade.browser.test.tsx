@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlaneWindow } from '../../components/marketing/PlaneWindow/PlaneWindow';
@@ -35,6 +35,39 @@ describe('window shade theme ownership', () => {
         expect(source?.getAttribute('srcset')).toContain('plane-window');
         expect(image?.getAttribute('src')).toMatch(/^data:image\//);
         expect(image?.getAttribute('fetchPriority')).toBe('high');
+    });
+
+    it('retries a failed desktop CDN frame with the original inside the same media gate', () => {
+        vi.stubEnv('PROD', true);
+        const { container } = render(<PlaneWindow />);
+        const source = container.querySelector('picture source')!;
+        const image = container.querySelector('picture img')!;
+        expect(source.getAttribute('srcset')).toContain('/.netlify/images?');
+        fireEvent.error(image);
+        expect(source).toHaveAttribute('srcset', '/images/plane-window.png');
+        expect(source).toHaveAttribute('media', '(min-width: 64rem)');
+        const originalAttempt = container.querySelector('picture img')!;
+        expect(originalAttempt.getAttribute('src')).toMatch(/^data:image\//);
+        expect(originalAttempt).toHaveAttribute('width', '640');
+        expect(originalAttempt).toHaveAttribute('height', '938');
+        fireEvent.error(originalAttempt);
+        expect(container.querySelector('picture img')).toBe(originalAttempt);
+        expect(source).toHaveAttribute('srcset', '/images/plane-window.png');
+        act(() => setPreference('dark'));
+        expect(originalAttempt).toHaveStyle({ filter: FRAME_REST_FILTER });
+    });
+
+    it('recovers a desktop frame that failed before hydration attached its event handler', () => {
+        vi.stubEnv('PROD', true);
+        vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+        vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(0);
+        vi.spyOn(HTMLImageElement.prototype, 'currentSrc', 'get').mockReturnValue('https://preview.invalid/.netlify/images?url=%2Fimages%2Fplane-window.png');
+        const { container, rerender } = render(<PlaneWindow />);
+        expect(container.querySelector('picture source')).toHaveAttribute('srcset', '/images/plane-window.png');
+        const originalAttempt = container.querySelector('picture img');
+        rerender(<PlaneWindow />);
+        expect(container.querySelector('picture img')).toBe(originalAttempt);
+        expect(originalAttempt?.getAttribute('src')).toMatch(/^data:image\//);
     });
 
     it('derives its state from the same store as the header instead of observing document mutations', () => {

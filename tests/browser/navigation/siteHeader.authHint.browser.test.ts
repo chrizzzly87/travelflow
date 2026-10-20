@@ -2,7 +2,7 @@
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
@@ -166,4 +166,14 @@ describe('components/navigation/SiteHeader auth bootstrap hint', () => {
     expect(screen.queryByRole('link', { name: 'Login' })).toBeNull();
     expect(await screen.findByRole('link', { name: 'Create Trip' })).toHaveAttribute('href', '/create-trip');
   });
+  it('focuses the menu opener before mounting its dialog on a pointer-only activation', async () => {
+    render(React.createElement(MemoryRouter, { initialEntries: ['/blog'] },
+      React.createElement(AuthProvider, null, React.createElement(SiteHeader))));
+    await screen.findByRole('button', { name: 'Account' });
+    const trigger = document.querySelector<HTMLButtonElement>('[data-tf-boot-intent="mobile-menu"]')!;
+    expect(document.activeElement).not.toBe(trigger);
+    fireEvent.click(trigger);
+    expect(document.activeElement).toBe(trigger);
+  });
+
 });

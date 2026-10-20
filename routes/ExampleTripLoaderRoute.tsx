@@ -12,8 +12,8 @@ import type { ExampleTripLoaderRouteProps } from './tripRouteTypes';
 import type { ExampleTripRouteData } from '../features/trips/routeData';
 import { useRouteViewSettings } from '../features/trips/useRouteViewSettings';
 import { useTripCopyLimit } from '../features/trips/useTripCopyLimit';
-import { LazyTripView } from '../components/tripview/LazyTripView';
-import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+// The native route component chunk owns the complete required view.
+import { TripView } from '../components/TripView';
 
 export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps & { data: ExampleTripRouteData }> = ({ data, trip, onTripLoaded, onOpenManager, onOpenSettings, appLanguage, onViewSettingsChange }) => {
     const navigate = useNavigate();
@@ -106,8 +106,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps & { da
         if (updateViewSettings(settings)) onViewSettingsChange(settings);
     }, [onViewSettingsChange, updateViewSettings]);
     return (
-        <React.Suspense fallback={<TripRouteLoadingShell variant="preparingExamplePlanner" />}>
-            <LazyTripView
+            <TripView
                 trip={activeTrip}
                 initialViewSettings={viewSettings ?? activeTrip.defaultView}
                 onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
@@ -126,6 +125,5 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps & { da
                     onCreateSimilarTrip: handleCreateSimilarTrip,
                 }}
             />
-        </React.Suspense>
     );
 };
