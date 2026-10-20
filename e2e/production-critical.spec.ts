@@ -66,7 +66,11 @@ test('desktop-only hero artwork follows the viewport before hydration', async ({
 
 for (const route of ['/', '/features', '/pricing', '/blog', '/inspirations', '/faq', '/updates']) {
   test(`${route} keeps prerendered content and becomes interactive`, async ({ page }) => {
-    await page.goto(route);
+    const response = await page.goto(route);
+    expect(response?.status()).toBe(200);
+    expect(response?.request().redirectedFrom()).toBeNull();
+    expect(new URL(page.url()).pathname).toBe(route);
+    expect(new URL(await page.locator('link[rel=canonical]').getAttribute('href') || page.url()).pathname).toBe(route);
     await expect(page.locator('#root[data-tf-prerendered-root="true"]')).toBeVisible();
     await expect(page.locator('main h1').first()).toBeVisible();
     const initialHeading = await page.locator('main h1').first().textContent();

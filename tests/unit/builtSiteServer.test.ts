@@ -22,6 +22,16 @@ describe('production preview routing', () => {
     expect(await resolveBuiltPath('/create-trip/wizard', root)).toBe(path.join(root, 'spa.html'));
   });
 
+  it('serves flat native prerenders for either incoming slash spelling before considering the offline shell', async () => {
+    await rm(path.join(root, 'features'), { recursive: true });
+    await writeFile(path.join(root, 'features.html'), 'Flat native document');
+    expect(await resolveBuiltPath('/features', root)).toBe(path.join(root, 'features.html'));
+    expect(await resolveBuiltPath('/features/', root)).toBe(path.join(root, 'features.html'));
+    expect(await resolveBuiltPath('/spa.html', root)).toBe(path.join(root, 'spa.html'));
+    expect(await resolveBuiltPath('/assets/missing.js/', root)).toBeNull();
+    expect(await resolveBuiltPath('/api/runtime/location/', root)).toBeNull();
+  });
+
   it('returns missing assets and APIs as 404s instead of successful HTML', async () => {
     expect(await resolveBuiltPath('/assets/missing.js', root)).toBeNull();
     expect(await resolveBuiltPath('/api/runtime/location', root)).toBeNull();

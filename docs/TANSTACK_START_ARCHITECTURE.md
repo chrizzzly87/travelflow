@@ -25,10 +25,15 @@ native route matching.
 
 ## Rendering policy
 
-- Public marketing/legal pages render through Start SSR. Selected English entry
-  pages are also prerendered through the `pages` configuration in `vite.config.ts`.
+- Public marketing/legal pages render through Start SSR. Seven public entry pages
+  in all active locales are prerendered from `app/routing/publicPrerender.ts` through
+  the native `pages` configuration. Flat output (`autoSubfolderIndex: false`) emits
+  `features.html` and `de/features.html`, preserving slashless canonical URLs.
   Other valid public routes can render on demand; absence of a static file does
-  not mean absence of server-rendered content.
+  not mean absence of server-rendered content. Never expand the public allowlist by
+  crawling account links. `pnpm prerender:validate` checks every emitted locale,
+  direction, canonical URL and heading, rejects competing directory indexes, and
+  verifies the separate offline shell.
 - Auth, account, admin, creation, library and trip workspace areas currently declare
   `ssr: false`. Their browser session and local trip storage are not serialized into
   a public server response. The root still supplies the document and safe metadata.

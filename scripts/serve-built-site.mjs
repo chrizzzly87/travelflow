@@ -28,9 +28,10 @@ export const resolveBuiltPath = async (pathname, distRoot = root) => {
   try { decoded = decodeURIComponent(pathname); } catch { return null; }
   if (decoded.startsWith('/api/')) return null;
   const relative = decoded.replace(/^\/+/, '');
+  const documentPath = relative.replace(/\/+$/, '');
   const fallback = path.extname(relative) ? [] : ['spa.html'];
   const candidates = relative
-    ? [relative, `${relative}.html`, path.join(relative, 'index.html'), ...fallback]
+    ? [relative, `${documentPath}.html`, path.join(relative, 'index.html'), ...fallback]
     : ['index.html'];
 
   for (const candidate of candidates) {

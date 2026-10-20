@@ -4,6 +4,23 @@ Status: in progress, preview only. Decision date: 2026-10-18.
 Integration branch: `codex/tanstack-start-integration`.
 Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target until human preview acceptance.
 
+## Current milestone — 2026-10-20
+
+Navigation corrections merged into the integration branch as `b624e521` through [PR #569](https://github.com/chrizzzly87/travelflow/pull/569),
+linked to [#568](https://github.com/chrizzzly87/travelflow/issues/568). Runtime `52152903`
+passes 510 core files / 2,967 tests (one skipped), 84 local and 84 hosted Chromium/WebKit checks,
+and three PWA checks. [Verified preview](https://deploy-preview-569--travelflowapp.netlify.app/).
+The preview remains on the verified runtime. The homepage stays public for members, general login defaults to profile, guests
+open login directly, and native progress fills completely. Safari overlay scroll
+and focus ownership and failed image recovery have explicit regressions.
+
+Next: [#570](https://github.com/chrizzzly87/travelflow/issues/570), branch
+`codex/tanstack-start-prerender`, based on that exact verified runtime. Native flat
+public documents remove canonical redirect hops; all active locales receive the
+same seven prerendered entry points. Artifact checks and local regressions are in
+place; hosted normalization and equivalent document timings remain unverified until
+the candidate preview exists. Main remains unchanged.
+
 ## Current stabilization round — 2026-10-19
 
 PR [#563](https://github.com/chrizzzly87/travelflow/pull/563) passed final remote CI and merged into

@@ -164,6 +164,8 @@ For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, u
 pnpm build
 ```
 
+`pnpm prerender:validate` checks the seven public entry pages in every active locale after the native build, including canonical URLs and language/direction. The allowlist lives in `app/routing/publicPrerender.ts`; private routes must never enter it.
+
 The build emits public assets/prerendered pages in `dist/client` and server output in `dist/server`. The Netlify adapter owns server deployment and document routing; uploading only static files is insufficient. See [the deployment guide](docs/NETLIFY_TANSTACK_START.md).
 
 `pnpm build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.

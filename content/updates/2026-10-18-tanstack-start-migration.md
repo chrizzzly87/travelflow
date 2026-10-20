@@ -41,3 +41,4 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Fixed] 🖼️ Retry original images when an optimized image fails to load.
 - [ ] [Internal] 🧭 Let native trip route components load their required view before committing instead of introducing a second lazy-view waterfall.
 - [ ] [Internal] ♿ Share overlay scroll-lock ownership and preserve navigation focus when opening sign-in on Safari.
+- [ ] [Internal] 🌐 Prerender public entry pages for every active locale with native flat output and verify emitted canonical documents during the build.
