@@ -11,6 +11,8 @@ import { buildTripOgSummary, buildTripVideoMap, escapeHtml, type TripPayload } f
 import { TRIP_VIDEO, type TripVideoStyle } from '../../shared/tripOgVideo.ts';
 
 const require = createRequire(import.meta.url);
+export const getVideoEncoderPath = (platform: string = process.platform): string =>
+  platform === 'linux' ? require.resolve('@ffmpeg-installer/linux-x64/ffmpeg') : (process.env.FFMPEG_PATH || 'ffmpeg');
 const escape = (value: string) => escapeHtml(value);
 const clamp = (n: number) => Math.max(0, Math.min(1, n));
 const smooth = (n: number) => { const t = clamp(n); return t * t * (3 - 2 * t); };
@@ -63,7 +65,7 @@ export const renderTripVideo = async (trip: TripPayload, style: TripVideoStyle) 
   const frameData = { title: summary.title, description: summary.monthsLabel, badge: summary.weeksLabel, mapDataUri: `data:image/png;base64,${mapBytes.toString('base64')}`, style, points: map.points, color: map.color };
   const directory = await mkdtemp(join(tmpdir(), 'trip-video-'));
   const output = join(directory, 'preview.mp4');
-  const binary = process.platform === 'linux' ? require('@ffmpeg-installer/linux-x64').path : (process.env.FFMPEG_PATH || 'ffmpeg');
+  const binary = getVideoEncoderPath();
   const child = spawn(binary, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-framerate', String(TRIP_VIDEO.fps), '-i', 'pipe:0', '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '29', '-maxrate', '1100k', '-bufsize', '2200k', '-pix_fmt', 'yuv420p', '-threads', '1', '-movflags', '+faststart', output], { stdio: ['pipe', 'ignore', 'pipe'] });
   let stderr = '';
   child.stderr.on('data', data => { stderr = (stderr + data).slice(-1000); });

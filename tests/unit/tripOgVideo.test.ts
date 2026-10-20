@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseVideoRange, TRIP_VIDEO, normalizeTripVideoStyle, tripVideoLeaseExpired } from '../../shared/tripOgVideo';
 import { buildTripVideoMetaTags, resolveReadyTripVideoMedia } from '../../netlify/edge-lib/trip-og-video-meta';
 import { claimRenderBudget, claimVideo, videoRevision, tripVideoStoreName } from '../../netlify/lib/trip-video-store';
-import { buildVideoFrameSvg } from '../../netlify/lib/trip-video-renderer';
+import { buildVideoFrameSvg, getVideoEncoderPath } from '../../netlify/lib/trip-video-renderer';
 import { parseOgHeadMetadata } from '../../services/adminOgToolsService';
 
 // In-memory CAS store exercises real claim decisions, including competing writers.
@@ -115,6 +115,9 @@ describe('ready-only OG video metadata', () => {
 });
 
 describe('animated frame safety', () => {
+  it('resolves the actual Linux executable rather than a nonexistent package entry point', () => {
+    expect(getVideoEncoderPath('linux')).toMatch(/@ffmpeg-installer\/linux-x64\/ffmpeg$/);
+  });
   it('escapes trip labels and progressively reveals map routes', () => {
     const data = { title: '<script>alert(1)</script>', description: 'October', badge: '2 weeks', style: 'clean' as const, mapDataUri: 'data:image/png;base64,AA==', color: '#4f46e5', points: [{ x: 0.2, y: 0.2, label: '<Taipei>' }, { x: 0.8, y: 0.8, label: 'Tainan' }] };
     const first = buildVideoFrameSvg(data, 0);
