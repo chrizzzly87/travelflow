@@ -258,9 +258,9 @@ The native router retains the current route presentation while destination loade
 and guards resolve (`defaultPendingMs: Infinity`). This is an explicit supported
 TanStack policy, not a timer with an arbitrary long delay. Selective-SSR first
 loads retain their existing document/pending fallback. The shared
-`RouteNavigationFeedback` shows an indeterminate top line from the router's
-foreground pending status; preloads do not activate it. Never simulate progress
-percentages or turn individual links into competing loading state machines.
+`RouteNavigationFeedback` shows a visual progress fill from the router's
+foreground pending status; preloads do not activate it. Do not announce fabricated numeric percentages or turn individual links into
+competing loading state machines.
 
 The URL adapter's NavLink derives active and pending styles from the requested
 native location, so feedback does not wait for loader completion. TanStack still
@@ -273,16 +273,41 @@ initial/query-only work. CSS supplies a 160ms crossfade with minimal movement an
 a reduced-motion fallback. Unsupported browsers use ordinary native navigation.
 Existing feature-specific transitions keep their own ownership.
 
-The verified home-to-account redirect retains its public content until the account
-route commits. A redirect component itself renders nothing; never replace a whole
-page with it while lazy route work is pending. Private route guards and account
-replacement blocking remain authoritative. The account trip library can render
-while profile metadata loads; only the personalized greeting waits for that data.
-`ProfileHomeActions` owns compact account actions. The retired private identity/
-statistics header is explicitly removed, independently of Tailwind ordering; public
-profile presentation remains a separate feature.
+The homepage is always public and never redirects a signed-in visitor. Its verified
+member CTA points to the profile. General sign-in opens the shared modal directly
+from Account/Konto and defaults to the profile through native navigation, without a
+full document reload. Explicit guarded destinations and in-progress trip/creation
+return URLs retain their complete query/hash semantics. The login page ignores
+stale remembered marketing paths. Verified members keep the account dropdown; the
+same button DOM survives hydration and session verification.
+
+The top bar is one monotonic visual fill per foreground navigation, not a sliding
+segment. Intermediate values are estimates and are not announced as percentages.
+Actual completion fills 100%, holds briefly, then hides; repeated navigation and
+unmount cancel the previous timers. Reduced motion removes interpolation. There
+are no additional progress bars inside the initial marketing fallback. Auth
+loading follows the presented native match, preserving a current public page when
+an example is requested while still hiding private content on account replacement.
+
+Trip presenters import their required TripView synchronously inside the native
+route component chunk. Native component preloading therefore resolves the view
+before the router commits. Do not wrap that required route view in another
+React.lazy/Suspense waterfall. Optional embedded previews in creation keep their
+separate lazy recovery. The account trip library can render while profile metadata
+loads; only the personalized greeting waits for that data. ProfileHomeActions owns
+compact actions; the retired private identity/statistics header stays removed.
+
+ProgressiveImage retries the original source once if image optimization fails,
+removing picture sources and srcSet for that attempt. The keyed resource lifecycle
+handles events that finished before hydration and resets on a new source. Only an
+original-source failure reaches the caller; there is no retry loop. The airplane
+frame has the same one-retry policy while preserving its desktop-only picture source.
+Navigation and authentication share an ownership-counted browser scroll lock;
+opening the next overlay must not unlock a still-active overlay. Menu openers are
+focused explicitly before mounting dialogs so Safari can restore keyboard focus.
 
 Verification: blocked-loader navigation, superseding navigation, modified clicks,
-preload isolation, reduced-motion policy, delayed authenticated-home handoff and
-private/public profile regressions. See [TanStack navigation options](https://tanstack.com/router/latest/docs/guide/navigation)
+preload isolation, reduced-motion policy, public home for verified members and profile-default sign-in and
+private/public profile regressions, cold direct guest modal interaction, presented-route
+auth isolation, required trip-view chunk delays and image-CDN failure recovery. See [TanStack navigation options](https://tanstack.com/router/latest/docs/guide/navigation)
 and [router foreground state](https://tanstack.com/router/latest/docs/api/router/RouterStateType).

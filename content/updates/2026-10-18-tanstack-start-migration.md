@@ -35,3 +35,9 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Improved] 🧭 Highlight navigation immediately and show a slim progress line while the next page loads.
 - [x] [Improved] ✨ Use subtle page transitions that respect reduced-motion preferences.
 - [x] [Fixed] 👤 Keep the page visible while opening your trips and remove the retired profile header.
+- [x] [Fixed] 📶 Fill the page-loading bar completely before it disappears and keep extra loading bars out of page content.
+- [x] [Improved] 🔑 Open sign-in directly for guests and show your trips after signing in.
+- [x] [Improved] 🏠 Keep the homepage accessible when signed in, with a direct link to your trips.
+- [x] [Fixed] 🖼️ Retry original images when an optimized image fails to load.
+- [ ] [Internal] 🧭 Let native trip route components load their required view before committing instead of introducing a second lazy-view waterfall.
+- [ ] [Internal] ♿ Share overlay scroll-lock ownership and preserve navigation focus when opening sign-in on Safari.

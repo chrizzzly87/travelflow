@@ -7,6 +7,7 @@ import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindow } from './PlaneWindow/PlaneWindow';
 import { buildPath } from '../../config/routes';
+import { useAuth } from '../../hooks/useAuth';
 
 const heroTitleGradient: GradientStop[] = [
     { color: '#0f766e', position: 0 },
@@ -100,6 +101,7 @@ const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => 
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
+    const { isAuthenticated } = useAuth();
     const [showPlaneWindow, setShowPlaneWindow] = useState(true);
 
     // Homepage only, and re-evaluated on every route change.
@@ -179,14 +181,18 @@ export const HeroSection: React.FC = () => {
                         >
                             {t('common:buttons.startPlanning')}
                         </Link>
-                        <a
+                        {isAuthenticated ? <Link to="/profile"
+                            onClick={() => handleCtaClick('my_trips')}
+                            className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:shadow-sm active:scale-[0.96]"
+                            {...heroCtaDebugAttributes('my_trips')}
+                        >{t('common:nav.myTrips')}</Link> : <a
                             href="#examples"
                             onClick={() => handleCtaClick('see_examples')}
                             className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:text-foreground hover:shadow-sm active:scale-[0.96] dark:border-border dark:bg-card dark:text-foreground dark:hover:border-border dark:hover:text-foreground dark:shadow-none"
                             {...heroCtaDebugAttributes('see_examples')}
                         >
                             {t('common:buttons.seeExampleTrips')}
-                        </a>
+                        </a>}
                     </div>
 
                     <div className="mt-8 flex flex-wrap gap-2.5 animate-hero-stagger" style={{ '--stagger': '360ms' } as React.CSSProperties}>

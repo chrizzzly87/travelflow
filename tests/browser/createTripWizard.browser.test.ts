@@ -2,11 +2,12 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from '@/tests/helpers/routerHarness';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
   startClientAsyncTripGeneration: vi.fn().mockResolvedValue({}),
+  loadPublicAiRuntimeSettings: vi.fn().mockResolvedValue(undefined),
   createTripGenerationRequest: vi.fn(),
   ensureDbSession: vi.fn().mockResolvedValue('session-1'),
   confirm: vi.fn().mockResolvedValue(false),
@@ -110,6 +111,13 @@ vi.mock('../../components/ui/select', async () => {
 
 vi.mock('../../services/geminiService', () => ({
   buildWizardItineraryPrompt: vi.fn().mockReturnValue('wizard prompt'),
+}));
+
+// This suite exercises wizard orchestration, not the live Supabase runtime-settings RPC.
+// Leaving this dependency real lets a slow request outlive a test and resume its
+// submission after the next test has cleared the shared generation mock.
+vi.mock('../../services/aiRuntimeSettingsService', () => ({
+  loadPublicAiRuntimeSettings: (...args: unknown[]) => mocks.loadPublicAiRuntimeSettings(...args),
 }));
 
 vi.mock('../../services/tripGenerationClientAsyncService', () => ({
@@ -253,10 +261,20 @@ const waitForPrefill = async (assertion: (payload: Record<string, unknown>) => v
   });
 };
 
+const waitForGenerationToFinish = async () => {
+  await waitFor(() => {
+    expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
+    expect(getPrimaryAction(/wizard\.actions\.generate/i)).toBeEnabled();
+    expect(screen.queryByTestId('trip-generation-skeleton')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('trip-view')).not.toBeInTheDocument();
+  });
+};
+
 describe('pages/CreateTripV3Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.ensureDbSession.mockResolvedValue('session-1');
+    mocks.loadPublicAiRuntimeSettings.mockResolvedValue(undefined);
     mocks.startClientAsyncTripGeneration.mockResolvedValue({});
     mocks.confirm.mockResolvedValue(false);
     mocks.getTripReadyNotificationPermission.mockReturnValue('default');
@@ -330,9 +348,7 @@ describe('pages/CreateTripV3Page', () => {
 
     await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
 
-    await waitFor(() => {
-      expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
-    });
+    await waitForGenerationToFinish();
 
     const firstCall = mocks.startClientAsyncTripGeneration.mock.calls[0]?.[0];
     expect(firstCall).toEqual(expect.objectContaining({
@@ -349,6 +365,33 @@ describe('pages/CreateTripV3Page', () => {
       transportPreferences: ['train'],
       hasTransportOverride: true,
     }));
+  });
+
+  it('waits for runtime settings before starting one generation and settles the submission', async () => {
+    const user = userEvent.setup();
+    let resolveSettings!: () => void;
+    let resolveGeneration!: () => void;
+    const settings = new Promise<void>((resolve) => { resolveSettings = resolve; });
+    const generation = new Promise<object>((resolve) => { resolveGeneration = () => resolve({}); });
+    mocks.loadPublicAiRuntimeSettings.mockReturnValueOnce(settings);
+    mocks.startClientAsyncTripGeneration.mockReturnValueOnce(generation);
+    renderPage({ initialEntries: [buildPrefilledWizardEntry({
+      countries: ['Japan'], mode: 'wizard',
+      meta: { draft: { version: 2, wizardBranch: 'known_destinations_flexible_dates', dateInputMode: 'flex', flexWeeks: 1, flexWindow: 'any' } },
+    })] });
+    await user.click(await screen.findByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
+    for (const step of ['wizard.destination.title', 'wizard.dates.title', 'wizard.preferences.title', 'wizard.details.title']) {
+      await waitForWizardText(step);
+      await continueWizard(user);
+    }
+    await waitForWizardText('wizard.review.title');
+    await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
+    await waitFor(() => expect(mocks.loadPublicAiRuntimeSettings).toHaveBeenCalledTimes(1));
+    expect(mocks.startClientAsyncTripGeneration).not.toHaveBeenCalled();
+    await act(async () => { resolveSettings(); await settings; });
+    await waitFor(() => expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1));
+    await act(async () => { resolveGeneration(); await generation; });
+    await waitForGenerationToFinish();
   });
 
   it('starts generation for a newly created anonymous session before auth context catches up', async () => {
@@ -385,9 +428,7 @@ describe('pages/CreateTripV3Page', () => {
     await waitForWizardText('wizard.review.title');
     await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
 
-    await waitFor(() => {
-      expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
-    });
+    await waitForGenerationToFinish();
     expect(mocks.createTripGenerationRequest).not.toHaveBeenCalled();
   });
 
@@ -443,9 +484,7 @@ describe('pages/CreateTripV3Page', () => {
     await waitForWizardText('wizard.review.title');
     await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
 
-    await waitFor(() => {
-      expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
-    });
+    await waitForGenerationToFinish();
 
     const firstCall = mocks.startClientAsyncTripGeneration.mock.calls[0]?.[0];
     expect(firstCall.inputSnapshot.payload.options).toEqual(expect.objectContaining({
@@ -505,7 +544,7 @@ describe('pages/CreateTripV3Page', () => {
       expect(mocks.confirm).toHaveBeenCalledTimes(1);
     });
     expect(mocks.requestTripReadyNotificationPermission).toHaveBeenCalledTimes(1);
-    expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
+    await waitForGenerationToFinish();
   });
 
 });

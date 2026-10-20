@@ -1,4 +1,8 @@
 /* Document defaults shared by native SSR documents. */
+html {
+  /* Dialog scroll locking must not move the persistent navigation. */
+  scrollbar-gutter: stable;
+}
 /* Custom scrollbar for the timeline */
       .timeline-scroll::-webkit-scrollbar {
         height: 8px;

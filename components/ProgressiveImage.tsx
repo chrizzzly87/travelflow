@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { createBlurhashPlaceholder } from './images/blurhashPlaceholder';
 import { useHydrated } from '../hooks/useHydrated';
 import { IMAGE_PLACEHOLDERS } from '../data/imagePlaceholders.generated';
@@ -46,6 +46,9 @@ const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
     const hydrated = useHydrated();
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [useOriginal, setUseOriginal] = useState(false);
+    const handledErrors = useRef(new Set<string>());
+    const deliverOriginal = disableCdn || useOriginal;
 
     const normalizedKey = useMemo(
         () => normalizePlaceholderPath(placeholderKey || src),
@@ -58,20 +61,41 @@ const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
     const placeholderDataUrl = useMemo(() => createBlurhashPlaceholder(blurhashValue), [blurhashValue]);
 
     const avifSrcSet = useMemo(
-        () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
-        [disableCdn, src, srcSetWidths]
+        () => (isImageCdnEnabled() && !deliverOriginal ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
+        [deliverOriginal, src, srcSetWidths]
     );
     const webpSrcSet = useMemo(
-        () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'webp', quality: 60 }) : ''),
-        [disableCdn, src, srcSetWidths]
+        () => (isImageCdnEnabled() && !deliverOriginal ? buildImageSrcSet(src, srcSetWidths, { format: 'webp', quality: 60 }) : ''),
+        [deliverOriginal, src, srcSetWidths]
     );
     const imgSrcSet = useMemo(
-        () => (disableCdn ? '' : buildImageSrcSet(src, srcSetWidths, { quality: 66 })),
-        [disableCdn, src, srcSetWidths]
+        () => (deliverOriginal ? '' : buildImageSrcSet(src, srcSetWidths, { quality: 66 })),
+        [deliverOriginal, src, srcSetWidths]
     );
 
     const fallbackWidth = srcSetWidths[srcSetWidths.length - 1] || width;
-    const resolvedSrc = disableCdn ? src : buildImageCdnUrl(src, { width: fallbackWidth, quality: 66 });
+    const resolvedSrc = deliverOriginal ? src : buildImageCdnUrl(src, { width: fallbackWidth, quality: 66 });
+    const attempt = deliverOriginal ? 'original' : 'cdn';
+    const canRetryOriginal = !deliverOriginal && resolvedSrc !== src;
+    const handleImageError = useCallback(() => {
+        // Cache reconciliation and the error event can describe the same failed
+        // request. Each attempt may advance the lifecycle only once.
+        if (handledErrors.current.has(attempt)) return;
+        handledErrors.current.add(attempt);
+        setIsLoaded(false);
+        if (canRetryOriginal) {
+            setUseOriginal(true);
+            return;
+        }
+        setHasError(true);
+        onError?.();
+    }, [attempt, canRetryOriginal, onError]);
+    const reconcileImage = useCallback((node: HTMLImageElement | null) => {
+        // Hydration may attach after the native load/error event already fired.
+        if (!node?.complete) return;
+        if (node.naturalWidth > 0) setIsLoaded(true);
+        else handleImageError();
+    }, [handleImageError]);
     const fetchPriorityAttr = fetchPriority
         ? ({ fetchpriority: fetchPriority } as { fetchpriority: 'high' | 'low' | 'auto' })
         : undefined;
@@ -90,19 +114,8 @@ const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
                 {avifSrcSet && <source type="image/avif" srcSet={avifSrcSet} sizes={sizes} />}
                 {webpSrcSet && <source type="image/webp" srcSet={webpSrcSet} sizes={sizes} />}
                 <img
-                    ref={(node) => {
-                        // The image can finish loading before hydration attaches
-                        // the onLoad handler (warm CDN cache), so the event never
-                        // fires and the image stays at opacity-0 with only the
-                        // blurhash showing. Reconcile from the DOM on mount: if
-                        // it is already complete, reveal it; if it already failed,
-                        // fall back.
-                        if (!node) return;
-                        if (node.complete) {
-                            if (node.naturalWidth > 0) setIsLoaded(true);
-                            else { setHasError(true); onError?.(); }
-                        }
-                    }}
+                    key={attempt}
+                    ref={reconcileImage}
                     src={resolvedSrc}
                     srcSet={imgSrcSet || undefined}
                     sizes={sizes}
@@ -118,10 +131,7 @@ const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
                         !hydrated || isLoaded || skipFade ? 'opacity-100' : 'opacity-0',
                     )}
                     onLoad={() => setIsLoaded(true)}
-                    onError={() => {
-                        setHasError(true);
-                        onError?.();
-                    }}
+                    onError={handleImageError}
                 />
             </picture>
         </div>

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { renderToString } from 'react-dom/server';
 import { hydrateRoot } from 'react-dom/client';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,7 +43,7 @@ describe('permanent public Account entry', () => {
         mocks.auth = { isAuthenticated: true, isLoading: false, isAdmin: false, access: { userId: 'member' } };
         rerender(<AccountEntry />);
         expect(screen.getByRole('button', { name: 'Account' })).toBe(trigger);
-        expect(trigger.outerHTML).toBe(markup);
+        expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
         expect(screen.queryByText('Login')).toBeNull();
     });
 
@@ -77,52 +77,45 @@ describe('permanent public Account entry', () => {
         expect((window as any).__TF_BOOT__.pendingControls).toHaveLength(1);
         let root: ReturnType<typeof hydrateRoot>;
         await act(async () => { root = hydrateRoot(container, <React.StrictMode><AccountEntry /></React.StrictMode>); });
-        expect(await screen.findByRole('menuitem', { name: 'Login' })).toHaveAttribute('href', '/de/login?next=%2Fde%2Ffeatures%3Ffrom%3Dhome%23benefits');
-        expect(trigger).toHaveAttribute('aria-expanded', 'true');
-        expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--toggle', { open: true });
-        expect(mocks.trackEvent.mock.calls.filter(([name]) => name === 'navigation__account_menu--toggle')).toHaveLength(1);
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(trigger).not.toHaveAttribute('aria-expanded');
+        expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+        expect(mocks.openLoginModal).toHaveBeenCalledOnce();
+        expect(mocks.openLoginModal).toHaveBeenCalledWith({ source: 'navigation_header', nextPath: '/profile', reloadOnSuccess: false });
         expect((window as any).__TF_BOOT__.pendingControls).toHaveLength(0);
         await act(async () => root.unmount());
         container.remove();
     });
 
-    it('offers safe real links while unresolved and closes using native keyboard menu behavior', async () => {
+    it('opens Login directly for an unresolved guest without exposing empty account options', async () => {
         const user = userEvent.setup();
         render(<AccountEntry />);
-        const trigger = screen.getByRole('button', { name: 'Account' });
-        trigger.focus();
-        await user.keyboard('{ArrowDown}');
-        expect(screen.getByRole('menuitem', { name: 'Login' })).toHaveAttribute('href', '/de/login?next=%2Fde%2Ffeatures%3Ffrom%3Dhome%23benefits');
-        expect(screen.getByRole('menuitem', { name: 'My Trips' })).toHaveAttribute('href', '/trips');
-        expect(screen.queryByText('Verified member')).toBeNull();
-        expect(screen.queryByRole('progressbar')).toBeNull();
-        await user.keyboard('{Escape}');
-        expect(screen.queryByRole('menu')).toBeNull();
-        expect(trigger).toHaveFocus();
-    });
-
-    it('preserves the complete return URL in the unresolved Login link without opening a modal', async () => {
-        const user = userEvent.setup();
-        const onAction = vi.fn();
-        render(<AccountEntry onAction={onAction} />);
         await user.click(screen.getByRole('button', { name: 'Account' }));
-        const login = screen.getByRole('menuitem', { name: 'Login' });
-        expect(login).toHaveAttribute('href', '/de/login?next=%2Fde%2Ffeatures%3Ffrom%3Dhome%23benefits');
-        await user.click(login);
-        expect(mocks.openLoginModal).not.toHaveBeenCalled();
-        expect(onAction).toHaveBeenCalledOnce();
+        expect(mocks.openLoginModal).toHaveBeenCalledWith({ source: 'navigation_header', nextPath: '/profile', reloadOnSuccess: false });
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(screen.queryByText('My Trips')).toBeNull();
+        expect(screen.queryByText('Verified member')).toBeNull();
     });
 
-    it('keeps the established guest Login modal return path after verification', async () => {
+    it('opens guest login with the keyboard and lands on the profile', async () => {
         const user = userEvent.setup();
         mocks.auth.isLoading = false;
         render(<AccountEntry />);
-        await user.click(screen.getByRole('button', { name: 'Account' }));
-        await user.click(screen.getByRole('menuitem', { name: 'Login' }));
-        expect(mocks.openLoginModal).toHaveBeenCalledWith({
-            source: 'navigation_header', nextPath: '/de/features?from=home#benefits', reloadOnSuccess: true,
-        });
+        screen.getByRole('button', { name: 'Account' }).focus();
+        await user.keyboard('{Enter}');
+        expect(mocks.openLoginModal).toHaveBeenCalledOnce();
+        expect(mocks.openLoginModal).toHaveBeenCalledWith({ source: 'navigation_header', nextPath: '/profile', reloadOnSuccess: false });
         expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('focuses the permanent guest trigger before opening its dialog, including replayed clicks', () => {
+        render(<AccountEntry />);
+        const trigger = screen.getByRole('button', { name: 'Account' });
+        mocks.openLoginModal.mockImplementationOnce(() => expect(document.activeElement).toBe(trigger));
+        fireEvent.click(trigger);
+        expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+        expect(trigger).not.toHaveAttribute('aria-expanded');
+        expect(trigger).not.toHaveAttribute('aria-controls');
     });
 
     it('preserves a planner-owned login action and notifies the containing navigation', async () => {
@@ -131,20 +124,20 @@ describe('permanent public Account entry', () => {
         const onAction = vi.fn();
         render(<AccountEntry onLogin={onLogin} onAction={onAction} />);
         await user.click(screen.getByRole('button', { name: 'Account' }));
-        await user.click(screen.getByRole('menuitem', { name: 'Login' }));
         expect(onLogin).toHaveBeenCalledOnce();
         expect(onAction).toHaveBeenCalledOnce();
         expect(mocks.openLoginModal).not.toHaveBeenCalled();
         expect(screen.queryByRole('menu')).toBeNull();
     });
 
-    it('keeps the Account entry usable while the owner prevents duplicate login submissions', async () => {
+    it('prevents duplicate login submissions without offering a guest dropdown', async () => {
         const user = userEvent.setup();
         const onLogin = vi.fn();
         render(<AccountEntry onLogin={onLogin} isLoginSubmitting />);
-        await user.click(screen.getByRole('button', { name: 'Account' }));
-        expect(screen.getByRole('menuitem', { name: 'Login' })).toHaveAttribute('aria-disabled', 'true');
-        expect(screen.getByRole('menuitem', { name: 'My Trips' })).toHaveAttribute('href', '/trips');
+        const trigger = screen.getByRole('button', { name: 'Account' });
+        expect(trigger).toHaveAttribute('aria-disabled', 'true');
+        await user.click(trigger);
+        expect(screen.queryByRole('menu')).toBeNull();
         expect(onLogin).not.toHaveBeenCalled();
     });
 

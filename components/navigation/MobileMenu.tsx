@@ -13,6 +13,7 @@ import { AppLanguage } from '../../types';
 import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { useLocaleNavigation } from '../../hooks/useLocaleNavigation';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useDocumentScrollLock } from '../../hooks/useDocumentScrollLock';
 import { AppBrand } from './AppBrand';
 import { AccountEntry } from './AccountEntry';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
@@ -70,16 +71,10 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         return () => window.clearTimeout(timeoutId);
     }, [activeLocale, pendingLocale]);
 
+    useDocumentScrollLock(isOpen);
+
     useEffect(() => {
-        if (isOpen) {
-            trackEvent('mobile_nav__menu--open');
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => {
-            document.body.style.overflow = '';
-        };
+        if (isOpen) trackEvent('mobile_nav__menu--open');
     }, [isOpen]);
 
     useEffect(() => {

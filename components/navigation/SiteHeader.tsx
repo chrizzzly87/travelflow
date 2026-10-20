@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink } from '@/app/navigation';
 import { List } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -44,10 +44,14 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     hideCreateTrip = false,
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
     // Replay an intent captured before the bundle once the menu can mount.
     useEffect(() => {
-        if (consumeBootIntent(BOOT_INTENT_MOBILE_MENU)) setIsMobileMenuOpen(true);
+        if (consumeBootIntent(BOOT_INTENT_MOBILE_MENU)) {
+            menuTriggerRef.current?.focus({ preventScroll: true });
+            setIsMobileMenuOpen(true);
+        }
     }, []);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     const routeLocation = useSafeRouteLocation();
@@ -163,7 +167,13 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         )}
                         <ThemeToggle analyticsSurface="nav" className="hidden lg:inline-flex" />
                         <button type="button"
-                            onClick={() => setIsMobileMenuOpen(true)}
+                            ref={menuTriggerRef}
+                            onClick={(event) => {
+                                // Safari pointer clicks do not focus buttons by default.
+                                // The dialog must capture a connected return-focus target.
+                                event.currentTarget.focus({ preventScroll: true });
+                                setIsMobileMenuOpen(true);
+                            }}
                             data-tf-boot-intent={BOOT_INTENT_MOBILE_MENU}
                             className={burgerClass}
                             aria-label={t('nav.openMenu')}

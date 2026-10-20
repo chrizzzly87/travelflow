@@ -145,3 +145,21 @@ existing versus 474 baseline). Runtime commit: `faf632f6`.
 records hosted acceptance and current CI/deploy status.
 [Navigation preview](https://deploy-preview-569--travelflowapp.netlify.app/). Canonical prerender paths and further measured
 trip-view decomposition remain subsequent #561 work. No main or production merge.
+
+
+### Navigation feedback corrections in PR #569
+
+User review requested a completing full-width top bar, direct guest sign-in, a
+public homepage for members with My trips, and no second content loader when
+opening an example. These changes are implemented on the same navigation branch;
+preview acceptance for the new revision is recorded on PR #569. General login now
+defaults to profile while explicit trip/admin return intents remain intact.
+Required trip-view code is owned by the native route component preload. Shared
+images also recover once from an optimization failure. No persistent broken
+homepage asset was reproduced; the user confirmed the preview currently works.
+
+The localized prerender follow-up is tracked in issue #570 on
+`codex/tanstack-start-prerender`; its uncommitted work is safely stashed while these
+review corrections are finished. It addresses canonical redirect hops and public
+localized entry documents, with emitted-output validation and before/after HTTP
+evidence. Resume it after the navigation preview is deployed and reviewed.

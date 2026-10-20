@@ -25,7 +25,7 @@ function ApplicationRuntime() {
     const { isAuthenticated, isLoading, access } = useAuth();
     const showDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: import.meta.env.DEV });
     return <TripLibraryProvider>
-        <RouteNavigationFeedback />
+        <RouteNavigationFeedback authPending={isLoading} />
         <InstallAppBanner />
         <AuthRoutingBoundary><Outlet /></AuthRoutingBoundary>
         <CookieConsentBanner />

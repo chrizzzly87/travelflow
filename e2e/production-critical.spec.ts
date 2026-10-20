@@ -312,38 +312,42 @@ for (const account of [{ path: '/features', label: 'Account' }, { path: '/de/fea
     const box = await trigger.boundingBox();
     await trigger.click();
     release();
-    await expect(page.getByRole('menu', { name: account.label, exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Authentication modal', exact: true })).toBeVisible();
+    await expect(page.getByRole('menu')).toHaveCount(0);
     await expect(trigger).toHaveText(account.label);
     expect(await trigger.boundingBox()).toEqual(box);
+    await page.mouse.move(20, 400);
+    await page.mouse.wheel(0, 500);
+    // Let asynchronous WebKit wheel scrolling settle before checking the lock.
+    await page.waitForTimeout(150);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    expect(await trigger.boundingBox()).toEqual(box);
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Authentication modal', exact: true })).toHaveCount(0);
     await expect(trigger).toBeFocused();
   });
 }
 
-test('mobile account menu keeps keyboard focus within its navigation dialog', async ({ page }) => {
+test('mobile guest account opens sign-in directly and closes navigation without answering consent', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/features');
   await expect(page.getByRole('button', { name: 'Essential only', exact: true })).toBeVisible();
-  await page.locator('[data-tf-boot-intent="mobile-menu"]').click();
+  const toggle = page.locator('[data-tf-boot-intent="mobile-menu"]');
+  await toggle.click();
   const navigation = page.getByRole('dialog', { name: 'Navigation menu' });
-  await expect(navigation).toBeVisible();
-  const account = navigation.getByRole('button', { name: 'Account', exact: true });
-  await account.click();
-  await page.keyboard.press('ArrowDown');
-  const menu = page.getByRole('menu', { name: 'Account', exact: true });
-  await expect(menu).toBeVisible();
-  await expect(menu.getByRole('menuitem').first()).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
-  await expect(navigation).toBeVisible();
-  await expect(account).toBeFocused();
-  await page.keyboard.press('Escape');
+  await navigation.getByRole('button', { name: 'Account', exact: true }).click();
+  const auth = page.getByRole('dialog', { name: 'Authentication modal', exact: true });
+  await expect(auth).toBeVisible();
   await expect(navigation).toHaveCount(0);
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await page.keyboard.press('Tab');
+  expect(await auth.evaluate(node => node.contains(document.activeElement))).toBe(true);
+  await auth.getByRole('button', { name: 'Close authentication modal', exact: true }).click();
+  await expect(auth).toHaveCount(0);
+  await expect(toggle).toBeFocused();
   await expect(page.getByRole('button', { name: 'Essential only', exact: true })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('tf_cookie_consent_choice_v1'))).toBeNull();
 });
-
 
 test('features essential hero does not wait for an entrance animation or application scripts', async ({ page }) => {
   const release = await holdApplicationScripts(page);
@@ -444,6 +448,8 @@ test('navigation highlights its destination and retains content behind the top p
   } finally {
     release();
   }
+  await expect(page.getByTestId('route-navigation-progress')).toHaveAttribute('data-phase', 'complete');
+  await expect(page.getByTestId('route-navigation-progress').locator('span')).toHaveAttribute('data-progress', '100');
   await expect(page).toHaveURL(/\/features\/?$/);
   await expect(page.getByTestId('route-navigation-progress')).not.toHaveAttribute('data-pending');
   await expect(page.locator('main h1').first()).not.toHaveText(previousHeading!);
@@ -469,5 +475,62 @@ for (const reduced of [false, true]) {
     await expect(page.getByTestId('route-navigation-progress')).not.toHaveAttribute('data-pending');
     const probe = await page.evaluate(() => (window as any).__tfTransitionProbe);
     expect(probe.calls - initial).toBe(!reduced && probe.supported ? 1 : 0);
+  });
+}
+
+test('example navigation waits for the real trip view without showing another content loader', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/assets/TripView-*.js', async route => { await gate; await route.continue(); });
+  const heading = await page.locator('main h1').first().textContent();
+  try {
+    await page.locator('#examples').scrollIntoViewIfNeeded();
+    const cards = page.locator('#examples button[data-prefetch-href]');
+    const index = await cards.evaluateAll(nodes => nodes.findIndex(node => {
+      const r = node.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && r.left + r.width / 2 > 16 && r.left + r.width / 2 < innerWidth - 16;
+    }));
+    expect(index).toBeGreaterThanOrEqual(0);
+    await cards.nth(index).click();
+    await expect(page.getByTestId('route-navigation-progress')).toHaveAttribute('data-pending', 'true');
+    await page.waitForTimeout(650);
+    await expect(page.locator('main h1').first()).toHaveText(heading!);
+    await expect(page.getByTestId('route-loading-shell')).toHaveCount(0);
+    await expect(page.getByTestId('trip-route-loading-shell')).toHaveCount(0);
+  } finally { release(); }
+  await expect(page.locator('header').getByRole('button', { name: 'Open trip details', exact: true })).toBeVisible();
+  await expect(page.getByTestId('route-navigation-progress')).not.toHaveAttribute('data-pending');
+  await expect(page.getByTestId('trip-route-loading-shell')).toHaveCount(0);
+});
+
+for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+  test(`homepage route maps recover from failed optimized images at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    let failedOptimizedRequests = 0;
+    await page.route('**/.netlify/images?*', async route => {
+      failedOptimizedRequests += 1;
+      await route.fulfill({ status: 503, contentType: 'text/plain', body: 'Controlled image-service outage' });
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => (window as Window & { __TF_BOOT__?: { sealed: boolean } }).__TF_BOOT__?.sealed);
+    await page.locator('#examples').scrollIntoViewIfNeeded();
+    const maps = page.locator('#examples img[alt^="Route map for"]');
+    await expect.poll(() => maps.evaluateAll(images => {
+      const visible = images.filter(image => {
+        const r = image.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight;
+      }) as HTMLImageElement[];
+      return visible.length > 0 && visible.every(image => image.complete && image.naturalWidth > 0
+        && !image.currentSrc.includes('/.netlify/images') && !image.srcset
+        && image.closest('picture')?.querySelectorAll('source').length === 0);
+    })).toBe(true);
+    expect(failedOptimizedRequests).toBeGreaterThan(0);
+    if (viewport.width > 768) {
+      await expect.poll(() => page.locator('.plane-window-wrapper img').evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 1)).toBe(true);
+    }
   });
 }

@@ -2256,28 +2256,23 @@ html [data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-descrip
   transition: opacity 120ms ease;
   view-transition-name: navigation-progress;
 }
-.tf-navigation-progress[data-pending] { opacity: 1; }
-.tf-navigation-progress[data-pending] span { animation-play-state: running; }
+.tf-navigation-progress[data-visible] { opacity: 1; }
 .tf-navigation-progress span {
   display: block;
   block-size: 100%;
-  inline-size: 35%;
+  inline-size: 100%;
   background: var(--color-accent-500);
-  animation: tf-navigation-progress 1100ms ease-in-out infinite;
-  animation-play-state: paused;
-  --tf-progress-direction: 1;
+  transform-origin: 0 50%;
+  transition: transform 180ms ease-out;
 }
-:dir(rtl) .tf-navigation-progress span { --tf-progress-direction: -1; }
-@keyframes tf-navigation-progress {
-  from { transform: translateX(calc(-100% * var(--tf-progress-direction))); }
-  to { transform: translateX(calc(286% * var(--tf-progress-direction))); }
-}
+:dir(rtl) .tf-navigation-progress span { transform-origin: 100% 50%; }
+.tf-navigation-progress:not([data-visible]) span { transition: none; }
 ::view-transition-group(navigation-progress),
 ::view-transition-old(navigation-progress),
 ::view-transition-new(navigation-progress) { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .tf-navigation-progress { transition: none; }
-  .tf-navigation-progress span { animation: none; inline-size: 100%; }
+  .tf-navigation-progress span { transition: none; }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
 }
 /* Snapshot layers must never delay another navigation or keyboard action. */

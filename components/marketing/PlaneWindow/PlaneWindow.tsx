@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildImageCdnUrl } from '../../../utils/imageDelivery';
@@ -53,12 +53,23 @@ export const PlaneWindow: React.FC = () => {
     const [hostNode, setHostNode] = useState<HTMLDivElement | null>(null);
     const sceneRef = useRef<CloudSceneHandle | null>(null);
     const [sceneReady, setSceneReady] = useState(false);
+    const [useOriginalFrame, setUseOriginalFrame] = useState(false);
 
     const planeWindowSrc = buildImageCdnUrl(PLANE_WINDOW_SRC, {
         width: PLANE_WINDOW_IMAGE_WIDTH,
         format: 'webp',
         quality: 68,
     });
+
+    const retryFrame = useCallback(() => {
+        if (planeWindowSrc !== PLANE_WINDOW_SRC) setUseOriginalFrame(true);
+    }, [planeWindowSrc]);
+    const attachFrame = useCallback((node: HTMLImageElement | null) => {
+        frameElRef.current = node;
+        // A prerendered picture may fail before React attaches onError. Retry
+        // through the media-gated source, keeping the transparent mobile src.
+        if (!useOriginalFrame && node?.currentSrc && node.complete && node.naturalWidth === 0) retryFrame();
+    }, [frameElRef, retryFrame, useOriginalFrame]);
 
     // Mount the cloud scene. This owns a WebGL context and a rAF loop, which is
     // exactly the kind of external resource an effect is for.
@@ -158,14 +169,16 @@ export const PlaneWindow: React.FC = () => {
 
             {/* Frame on top, dimming as the cabin darkens. */}
             <picture className="contents">
-                <source media={DESKTOP_MEDIA} srcSet={planeWindowSrc} />
+                <source media={DESKTOP_MEDIA} srcSet={useOriginalFrame ? PLANE_WINDOW_SRC : planeWindowSrc} />
                 <img
+                    key={useOriginalFrame ? 'original' : 'cdn'}
                     src={TRANSPARENT_PIXEL}
                     alt={t('hero.window.alt', 'Airplane window')}
                     width={PLANE_WINDOW_IMAGE_WIDTH}
                     height={PLANE_WINDOW_IMAGE_HEIGHT}
                     draggable={false}
-                    ref={(node) => { frameElRef.current = node; }}
+                    ref={attachFrame}
+                    onError={useOriginalFrame ? undefined : retryFrame}
                     className="relative z-10 size-full object-contain drop-shadow-xl"
                     decoding="async"
                     fetchPriority="high"

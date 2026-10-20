@@ -13,8 +13,8 @@ import type { SharedTripRouteData } from '../features/trips/routeData';
 import { useRouteViewSettings } from '../features/trips/useRouteViewSettings';
 import { useTripCopyLimit } from '../features/trips/useTripCopyLimit';
 import { createLocalHistoryEntry } from '../features/trips/tripSessionModel';
-import { LazyTripView } from '../components/tripview/LazyTripView';
-import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+// The native route component chunk owns the complete required view.
+import { TripView } from '../components/TripView';
 
 export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps & { data: SharedTripRouteData }> = ({ data, trip, onTripLoaded, onOpenManager, onOpenSettings, appLanguage, onViewSettingsChange, onLanguageLoaded }) => {
     const { token } = useParams();
@@ -97,8 +97,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps & { data
         if (updateViewSettings(settings)) onViewSettingsChange(settings);
     }, [onViewSettingsChange, updateViewSettings]);
     return (
-        <React.Suspense fallback={<TripRouteLoadingShell variant="preparingSharedPlanner" />}>
-            <LazyTripView
+            <TripView
                 trip={activeTrip}
                 initialViewSettings={viewSettings ?? activeTrip.defaultView}
                 onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
@@ -113,6 +112,5 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps & { data
                 shareSnapshotMeta={snapshotState ?? undefined}
                 onCopyTrip={allowCopy ? handleCopyTrip : undefined}
             />
-        </React.Suspense>
     );
 };
