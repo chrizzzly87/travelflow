@@ -1,10 +1,22 @@
 import { getStore } from '@netlify/blobs';
+import { getContext } from '@netlify/functions';
 import { createHash, randomUUID } from 'node:crypto';
 import { TRIP_VIDEO, type TripVideoState, type TripVideoStyle } from '../../shared/tripOgVideo.ts';
 import type { TripPayload } from '../edge-lib/trip-og-data.ts';
 
 // Deploy previews and branches must never overwrite production's media or quotas.
-export const videoStore = () => getStore({ name: `trip-og-video-${process.env.CONTEXT === 'production' ? 'production' : `preview-${process.env.BRANCH || process.env.DEPLOY_ID || 'local'}`.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 100)}`, consistency: 'strong' });
+export const tripVideoStoreName = (deploy: { context: string; id: string }) =>
+  deploy.context === 'production' ? 'trip-og-video-production' : `trip-og-video-preview-${deploy.id.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 100)}`;
+export const videoStore = () => {
+  let deploy: { context: string; id: string };
+  try { deploy = getContext().deploy; }
+  catch {
+    if (process.env.SITE_ID) throw new Error('Missing Netlify deploy context.');
+    deploy = { context: 'dev', id: 'local' };
+  }
+  // Runtime context is authoritative: CONTEXT/BRANCH are build-only variables.
+  return getStore({ name: tripVideoStoreName(deploy), consistency: 'strong' });
+};
 export const videoRevision = (trip: TripPayload, style: TripVideoStyle) => createHash('sha256')
   .update(JSON.stringify([TRIP_VIDEO.rendererVersion, style, trip.title, trip.startDate,
     trip.items?.filter(item => item.type === 'city').map(item => [item.title, item.location, item.coordinates, item.color, item.startDateOffset, item.duration])]))
@@ -14,7 +26,7 @@ export const claimVideo = async (store: ReturnType<typeof videoStore>, tripId: s
   const previous = await store.getWithMetadata(`${tripId}/state`, { type: 'json' });
   const state = previous?.data;
   if (state) {
-    const busy = ['queued', 'rendering'].includes(state.status) && now - state.requestedAt < 5 * 60_000;
+    const busy = ['queued', 'rendering'].includes(state.status) && now - state.requestedAt < TRIP_VIDEO.leaseMs;
     if (busy || (!force && state.revision === revision && state.status === 'ready')) return { claimed: false, state };
     if (now - state.requestedAt < TRIP_VIDEO.cooldownMs) return { claimed: false, state, limited: true };
   }

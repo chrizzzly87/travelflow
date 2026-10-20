@@ -1,7 +1,7 @@
 import type { Config } from '@netlify/functions';
 import { claimRenderBudget, claimVideo, videoRevision, videoStore } from '../lib/trip-video-store.ts';
 import { canManageTripVideo, loadTripForVideo, resolvePublicVideoTrip } from '../lib/trip-video-access.ts';
-import { isTripVideoId, normalizeTripVideoStyle, parseVideoRange, TRIP_VIDEO, type TripVideoState } from '../../shared/tripOgVideo.ts';
+import { isTripVideoId, normalizeTripVideoStyle, parseVideoRange, tripVideoLeaseExpired, TRIP_VIDEO, type TripVideoState } from '../../shared/tripOgVideo.ts';
 
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'cache-control': 'no-store' } });
 
@@ -59,7 +59,7 @@ export default async (request: Request) => {
       return json(state, 202);
     }
     const stale = Boolean(state && state.revision !== videoRevision(trip, state.style));
-    if (url.searchParams.get('status') === '1') return json({ ...state, status: state?.status || 'missing', stale, spec: TRIP_VIDEO });
+    if (url.searchParams.get('status') === '1') return json({ ...state, status: state && tripVideoLeaseExpired(state) ? 'failed' : state?.status || 'missing', ...(state && tripVideoLeaseExpired(state) ? { error: 'The video worker did not finish. Retry after the one-hour cooldown.' } : {}), stale, spec: TRIP_VIDEO });
     if (state?.status !== 'ready' || (!manager && stale) || (url.searchParams.has('r') && url.searchParams.get('r') !== state.revision)) return json({ error: 'Video preview is not ready.' }, 404);
     const poster = url.searchParams.get('asset') === 'poster';
     const entry = await store.getWithMetadata(`${trip.id}/${poster ? 'poster' : 'video'}`, { type: 'arrayBuffer' });

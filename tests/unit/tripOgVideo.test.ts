@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseVideoRange, TRIP_VIDEO, normalizeTripVideoStyle } from '../../shared/tripOgVideo';
+import { parseVideoRange, TRIP_VIDEO, normalizeTripVideoStyle, tripVideoLeaseExpired } from '../../shared/tripOgVideo';
 import { buildTripVideoMetaTags, resolveReadyTripVideoMedia } from '../../netlify/edge-lib/trip-og-video-meta';
-import { claimRenderBudget, claimVideo, videoRevision } from '../../netlify/lib/trip-video-store';
+import { claimRenderBudget, claimVideo, videoRevision, tripVideoStoreName } from '../../netlify/lib/trip-video-store';
 import { buildVideoFrameSvg } from '../../netlify/lib/trip-video-renderer';
 import { parseOgHeadMetadata } from '../../services/adminOgToolsService';
 
@@ -22,6 +22,17 @@ const makeStore = () => {
 };
 
 describe('trip video bounds and byte ranges', () => {
+  it('isolates preview deploys from each other and production without build env vars', () => {
+    expect(tripVideoStoreName({ context: 'production', id: 'p1' })).toBe('trip-og-video-production');
+    expect(tripVideoStoreName({ context: 'production', id: 'p2' })).toBe('trip-og-video-production');
+    expect(tripVideoStoreName({ context: 'branch-deploy', id: 'b1' })).not.toBe(tripVideoStoreName({ context: 'deploy-preview', id: 'b2' }));
+    expect(tripVideoStoreName({ context: 'branch-deploy', id: 'b1' })).not.toBe('trip-og-video-production');
+  });
+  it('lets stalled jobs become retryable without rendering during status reads', () => {
+    expect(tripVideoLeaseExpired({ status: 'queued', requestedAt: 0 }, TRIP_VIDEO.leaseMs)).toBe(true);
+    expect(tripVideoLeaseExpired({ status: 'rendering', requestedAt: 0 }, 1)).toBe(false);
+    expect(tripVideoLeaseExpired({ status: 'ready', requestedAt: 0 }, TRIP_VIDEO.leaseMs)).toBe(false);
+  });
   it('sets a small, even-dimension, browser-compatible budget', () => {
     expect(TRIP_VIDEO).toMatchObject({ width: 1200, height: 630, seconds: 6, fps: 12, maxBytes: 2097152 });
     expect(normalizeTripVideoStyle('satellite')).toBe('clean');

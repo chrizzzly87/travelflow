@@ -18,7 +18,7 @@ Trip OG images still use the existing edge renderer. Video adds a small, silent 
 
 The background function requires the internal key plus a matching atomic queued job claim. It reads the persisted trip on the server. Public video/poster requests recheck existing share access on every request; revocation, expiry, missing access, and stale revisions fail closed. Media responses are private/no-store and support HEAD and single byte ranges. Private-trip admins/owners load videos with authenticated requests and revocable in-memory object URLs. Stored-version links remain image-only.
 
-Netlify Blobs stores are named `trip-og-video-production` or `trip-og-video-preview-<branch>` (deploy ID fallback). Feature deploys cannot overwrite production media or quotas. State/media persist across redeploys on the same branch. They are cache-like objects, not the source of truth for trip data. Deleting a trip makes its media inaccessible immediately; cached bytes are retained for possible later administrative cleanup. No browser persistence keys or database migrations are added.
+Netlify Blobs stores are named `trip-og-video-production` or `trip-og-video-preview-<deploy-id>`, using Netlify’s runtime deploy context. Feature deploys cannot overwrite production media or quotas. Production media persist across redeploys. Preview media belong to one deploy; regenerate after deploying new code. Build-only environment variables are never used to choose the runtime store. They are cache-like objects, not the source of truth for trip data. Deleting a trip makes its media inaccessible immediately; cached bytes are retained for possible later administrative cleanup. No browser persistence keys or database migrations are added.
 
 ## Deployment
 

@@ -1,7 +1,7 @@
 export const TRIP_VIDEO = {
   width: 1200, height: 630, fps: 12, seconds: 6, maxBytes: 2 * 1024 * 1024,
   maxStops: 30, cooldownMs: 60 * 60 * 1000, renderTimeoutMs: 90_000,
-  hourlyRenderLimit: 20, rendererVersion: 1,
+  leaseMs: 5 * 60_000, hourlyRenderLimit: 20, rendererVersion: 1,
 } as const;
 
 export type TripVideoStyle = 'clean' | 'dark';
@@ -30,3 +30,6 @@ export const parseVideoRange = (header: string | null, size: number): { start: n
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= size || start > end || start < 0) return 'invalid';
   return { start, end };
 };
+
+export const tripVideoLeaseExpired = (state: Pick<TripVideoState, 'status' | 'requestedAt'>, now = Date.now()): boolean =>
+  ['queued', 'rendering'].includes(state.status) && now - state.requestedAt >= TRIP_VIDEO.leaseMs;
