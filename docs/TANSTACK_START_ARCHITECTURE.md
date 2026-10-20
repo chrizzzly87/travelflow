@@ -316,3 +316,17 @@ preload isolation, reduced-motion policy, public home for verified members and p
 private/public profile regressions, cold direct guest modal interaction, presented-route
 auth isolation, required trip-view chunk delays and image-CDN failure recovery. See [TanStack navigation options](https://tanstack.com/router/latest/docs/guide/navigation)
 and [router foreground state](https://tanstack.com/router/latest/docs/api/router/RouterStateType).
+
+### Marketing notices
+
+The header owns its sticky position. Language suggestions and translation notices
+occupy normal document flow between the header and main content. MarketingNotice
+owns intrinsic row/column reflow; dismissal removes its actual space. Do not add
+fixed banner offsets, per-page top padding or JavaScript height measurements.
+Keep long translated actions wrappable and check both LTR and RTL at narrow widths.
+
+Public SSR date text must specify both locale and time zone. Release notes use
+request-local language and the fixed-CET publication policy through the pure
+releaseNotesFormat helper. Blog publication timestamps use UTC editorial dates.
+Do not apply instant formatting blindly to nominal local-calendar festival dates.
+Tests include a browser language differing from the route and a UTC+14 timezone.

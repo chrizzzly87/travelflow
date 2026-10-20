@@ -42,3 +42,5 @@ summary: "Framework migration under development and validation on an isolated pr
 - [ ] [Internal] 🧭 Let native trip route components load their required view before committing instead of introducing a second lazy-view waterfall.
 - [ ] [Internal] ♿ Share overlay scroll-lock ownership and preserve navigation focus when opening sign-in on Safari.
 - [ ] [Internal] 🌐 Prerender public entry pages for every active locale with native flat output and verify emitted canonical documents during the build.
+- [x] [Fixed] 🌐 Keep language notices above page content, including long translations and smaller screens.
+- [x] [Fixed] 📅 Keep publication dates consistent as pages load in different languages and time zones.

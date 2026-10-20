@@ -60,6 +60,11 @@ vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
+vi.mock('../../components/navigation/SiteHeader', () => ({ SiteHeader: () => React.createElement('header', null, 'Navigation') }));
+vi.mock('../../components/marketing/SiteFooter', () => ({ SiteFooter: () => React.createElement('footer') }));
+vi.mock('../../contexts/TripManagerContext', () => ({ useTripManager: () => ({ openTripManager: vi.fn(), prewarmTripManager: vi.fn() }) }));
+
+import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { CookieConsentBanner } from '../../components/marketing/CookieConsentBanner';
 import { LanguageSuggestionBanner } from '../../components/navigation/LanguageSuggestionBanner';
 import { CONSENT_STORAGE_KEY, saveConsent } from '../../services/consentService';
@@ -80,6 +85,30 @@ describe('marketing banner crash guards', () => {
       configurable: true,
       value: 'de-DE',
     });
+  });
+
+  it('keeps both notice heights in the marketing content flow and preserves content when dismissed', async () => {
+    mocks.location = { pathname: '/fr/updates', search: '', hash: '' };
+    const user = userEvent.setup();
+    render(React.createElement(MarketingLayout, null, React.createElement('h1', null, 'Nouveautés')));
+    const heading = screen.getByRole('heading', { name: 'Nouveautés' });
+    const main = screen.getByRole('main');
+    const suggestion = (await screen.findByText('Diese Seite ist auch auf Deutsch verfügbar.')).closest('p')!.parentElement!.parentElement!;
+    const translation = screen.getByText('translationNotice.message').closest('p')!.parentElement!.parentElement!;
+    // Both intrinsic rows are siblings of main: a fixed overlay wrapper would
+    // break this ownership and allow arbitrary notice heights to cover content.
+    expect(suggestion.parentElement).toBe(main.parentElement);
+    expect(translation.parentElement).toBe(main.parentElement);
+    expect(suggestion.compareDocumentPosition(translation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(translation.compareDocumentPosition(main) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Sprachhinweis schließen' }));
+    expect(screen.queryByText('Diese Seite ist auch auf Deutsch verfügbar.')).not.toBeInTheDocument();
+    expect(screen.getByText('translationNotice.message')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'translationNotice.dismiss' }));
+    expect(screen.queryByText('translationNotice.message')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Nouveautés' })).toBe(heading);
+    expect(window.sessionStorage.getItem('tf_locale_suggestion_dismissed_session')).toBe('1');
+    expect(window.sessionStorage.getItem('tf_translation_notice_dismissed_session')).toBe('1');
   });
 
   it('includes undecided consent controls in the server document before interaction', () => {

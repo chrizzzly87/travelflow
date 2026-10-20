@@ -130,6 +130,7 @@ const BlogCard: React.FC<{
         });
     }, [navigate, post.images.header.sources.large, post.language, post.slug, postPath, viewTransitionsEnabled]);
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
+        timeZone: 'UTC',
         month: 'short',
         day: 'numeric',
         year: 'numeric',

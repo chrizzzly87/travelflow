@@ -990,6 +990,7 @@ export const BlogPostPage: React.FC = () => {
     }
 
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
+        timeZone: 'UTC',
         month: 'long',
         day: 'numeric',
         year: 'numeric',

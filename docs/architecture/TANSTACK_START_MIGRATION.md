@@ -180,3 +180,20 @@ The localized prerender follow-up is tracked in issue #570 on
 review corrections are finished. It addresses canonical redirect hops and public
 localized entry documents, with emitted-output validation and before/after HTTP
 evidence. Resume it after the navigation preview is deployed and reviewed.
+
+## First-release stabilization — localized notices and dates
+
+User review reported language notices covering the updates heading (#572).
+Their fixed overlay bypassed layout flow. MarketingNotice now owns intrinsic
+responsive rows before main content, with no measured offsets. New French/RTL
+browser geometry checks reproduce the old overlap and cover resize/dismissal.
+Those tests additionally exposed host-default publication-date hydration errors
+(#573); release dates now use request-local language and fixed CET, while blog
+instants retain UTC editorial dates. The new browser cases intentionally differ
+from the server's language/timezone. Final combined gates/deployment are pending.
+
+[First-release checklist](../TANSTACK_START_RELEASE_CHECKLIST.md) distinguishes
+required stabilization from optional performance follow-ups. Real Google SSO,
+profile landing, member homepage CTA, owned-trip details/refresh, creation prefill
+refresh and the authorized admin dashboard have now been checked on the hosted
+navigation/prerender runtimes without data mutations or paid generation.

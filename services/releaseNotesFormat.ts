@@ -6,6 +6,28 @@
  * `content/updates/*.md` — 204 files, a 444 KB chunk. The in-app notice on the
  * trip view was paying that to decide whether to show one notice.
  */
+import { localeToIntlLocale } from '../config/locales';
+import type { AppLanguage } from '../types';
+
+// Release metadata uses fixed CET (UTC+1), including its 23:00 UTC date cutoff.
+// This is intentionally not Europe/Berlin, whose summer offset is UTC+2.
+const RELEASE_DATE_TIME_ZONE = 'Etc/GMT-1';
+const releaseDateFormatters = new Map<AppLanguage, Intl.DateTimeFormat>();
+
+export const formatReleaseDate = (dateLike: string, locale: AppLanguage): string => {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) return dateLike;
+    let formatter = releaseDateFormatters.get(locale);
+    if (!formatter) {
+        formatter = new Intl.DateTimeFormat(localeToIntlLocale(locale), {
+            year: 'numeric', month: 'short', day: 'numeric',
+            timeZone: RELEASE_DATE_TIME_ZONE, calendar: 'gregory',
+        });
+        releaseDateFormatters.set(locale, formatter);
+    }
+    return formatter.format(date);
+};
+
 export type ReleaseStatus = 'published' | 'draft';
 
 export interface ReleaseNoteItem {
