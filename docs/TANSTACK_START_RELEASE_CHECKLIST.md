@@ -1,6 +1,7 @@
 # First TanStack Start release
 
-Status: candidate stabilization; no production promotion authorized. Main remains
+Status: hosted candidate acceptance passed; final GitHub integration checks and
+production promotion remain separate. Main remains
 unchanged. Tracking: [#559](https://github.com/chrizzzly87/travelflow/issues/559).
 Current candidate: [PR #571](https://github.com/chrizzzly87/travelflow/pull/571),
 including [banner regression #572](https://github.com/chrizzzly87/travelflow/issues/572)
@@ -8,15 +9,24 @@ and [public date hydration #573](https://github.com/chrizzzly87/travelflow/issue
 
 ## Required before the first release
 
-- [ ] Deploy the localized-banner fix and verify actual heading/action geometry in
+- [x] Deploy the localized-banner fix and verify actual heading/action geometry in
   Chromium/WebKit, French and RTL, narrow widths, resize and dismissal.
-- [ ] Verify localized publication dates hydrate without text replacement under
+- [x] Verify localized publication dates hydrate without text replacement under
   different browser language/timezone defaults (#573).
-- [ ] Pass final core/build/production-browser/offline gates and GitHub checks on
-  the committed release candidate; verify the deployed commit, not just a URL.
+- [x] Pass local core/build/production-browser/offline gates: 513 files, 2,979
+  passing tests, one skip; 94 Chromium/WebKit checks and three offline/PWA checks.
+- [x] Verify all 94 browser checks on the actual hosted runtime `61bff8a7`, deploy
+  `6ad70f862dd4fd8e39c054a0`, including French/RTL notice geometry, narrow/resized
+  layouts, dismissal and mismatched browser language/timezone hydration.
+- [x] GitHub PR Quality passes for runtime `61bff8a7` ([run 39382880993](https://github.com/chrizzzly87/travelflow/actions/runs/39382880993)).
+  Every final PR head still requires successful GitHub checks before integration
+  merge. PR #571 records the live check/merge state; documentation-only descendants
+  reuse runtime acceptance only when their diff proves it contains no application,
+  test, dependency or deployment changes.
 - [x] Native flat documents: all 77 public locale/page combinations return HTTP 200
   with correct language, direction, canonical path and heading on hosted runtime
-  `22a203af`, deploy `6ad6f4566bdac6dd07b3ca87`.
+  `61bff8a7`, deploy `6ad70f862dd4fd8e39c054a0`; see
+  [all 77 hosted results](performance/tanstack-start-2026-10-20/release-documents-hosted.json).
 - [x] Publish the isolated native-document comparison with exact revisions and
   [raw samples/limitations](performance/tanstack-start-2026-10-20/public-documents.md).
   No minimum synthetic score or promised percentage is a release gate.

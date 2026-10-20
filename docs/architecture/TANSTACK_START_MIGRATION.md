@@ -175,11 +175,11 @@ Required trip-view code is owned by the native route component preload. Shared
 images also recover once from an optimization failure. No persistent broken
 homepage asset was reproduced; the user confirmed the preview currently works.
 
-The localized prerender follow-up is tracked in issue #570 on
-`codex/tanstack-start-prerender`; its uncommitted work is safely stashed while these
-review corrections are finished. It addresses canonical redirect hops and public
-localized entry documents, with emitted-output validation and before/after HTTP
-evidence. Resume it after the navigation preview is deployed and reviewed.
+The localized prerender follow-up is implemented in PR #571 / issue #570 on
+`codex/tanstack-start-prerender`. Native flat output covers 77 public documents,
+with emitted-artifact checks, direct hosted HTTP acceptance and an isolated
+[before/after document comparison](../performance/tanstack-start-2026-10-20/public-documents.md).
+The live PR records the final integration check/merge state.
 
 ## First-release stabilization — localized notices and dates
 
@@ -190,7 +190,11 @@ browser geometry checks reproduce the old overlap and cover resize/dismissal.
 Those tests additionally exposed host-default publication-date hydration errors
 (#573); release dates now use request-local language and fixed CET, while blog
 instants retain UTC editorial dates. The new browser cases intentionally differ
-from the server's language/timezone. Final combined gates/deployment are pending.
+from the server's language/timezone. Runtime `61bff8a7` is deployed as
+`6ad70f862dd4fd8e39c054a0`: all 94 hosted Chromium/WebKit checks and all 77 direct
+HTTP locale/page probes pass. Local quality gates pass 2,979 tests (one skip),
+94 browser checks and three PWA checks. Exact-head GitHub checks remain mandatory
+before integration; production promotion is a separate release decision.
 
 [First-release checklist](../TANSTACK_START_RELEASE_CHECKLIST.md) distinguishes
 required stabilization from optional performance follow-ups. Real Google SSO,
