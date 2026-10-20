@@ -56,6 +56,8 @@
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
+    "@netlify/blobs": "10.7.6",
+    "@netlify/functions": "6.0.2",
     "@number-flow/react": "^0.6.0",
     "@phosphor-icons/react": "^2.1.10",
     "@pierre/diffs": "^1.2.2",
@@ -120,5 +122,20 @@
     "typescript": "~5.8.3",
     "vite": "^6.4.1",
     "vitest": "^4.0.18"
+  },
+  "optionalDependencies": {
+    "@ffmpeg-installer/linux-x64": "4.1.0"
+  },
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": [
+        "current",
+        "linux"
+      ],
+      "cpu": [
+        "current",
+        "x64"
+      ]
+    }
   }
 }

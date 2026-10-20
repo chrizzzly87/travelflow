@@ -118,7 +118,7 @@ interface TimelineItem {
   routeDistanceKm?: number;
 }
 
-interface TripPayload {
+export interface TripPayload {
   id?: string;
   title?: string;
   startDate?: string;
@@ -921,6 +921,7 @@ const buildMapboxRealisticPathOverlays = async (
 };
 
 export interface MapPreviewPreferences {
+  hideRoutes?: boolean;
   mapStyle?: OgMapStyle;
   routeMode?: OgRouteMode;
   mapColorMode?: MapColorMode;
@@ -1004,7 +1005,7 @@ const buildMapPreviewUrl = async (
 
   let pathParams: string[] = [];
   let mapboxPathOverlays: string[] = [];
-  if (routeMode === "realistic") {
+  if (!preferences?.hideRoutes && routeMode === "realistic") {
     if (mapsApiKey) {
       pathParams = await buildRealisticPathParams(trip, mapsApiKey, routeColor);
       mapboxPathOverlays = await buildMapboxRealisticPathOverlays(trip, mapsApiKey, routeColor);
@@ -1018,6 +1019,11 @@ const buildMapPreviewUrl = async (
   if (mapboxPathOverlays.length === 0) {
     const simpleOverlay = buildMapboxSimplePathOverlay(routeCoordinates, routeColor);
     if (simpleOverlay) mapboxPathOverlays = [simpleOverlay];
+  }
+
+  if (preferences?.hideRoutes) {
+    pathParams = [];
+    mapboxPathOverlays = [];
   }
 
   const mapUrl = staticMapImplementation === "mapbox"
@@ -1104,7 +1110,8 @@ export const parseRouteTarget = (url: URL): RouteTarget | null => {
 
 const readEnv = (name: string): string => {
   try {
-    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) || "";
+    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) ||
+      (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[name] || "";
   } catch {
     return "";
   }
@@ -1425,3 +1432,26 @@ export const fallbackSummary = (): TripOgSummary => ({
   mapImageUrl: null,
   mapLabels: [],
 });
+
+// The video shares the image viewport and basemap, but draws routes locally: one
+// static-map request per render, with no Routes API requests or per-frame API calls.
+export const buildTripVideoMap = async (trip: TripPayload, mapStyle: OgMapStyle = "clean") => {
+  const cities = getRouteCities(trip).filter(city =>
+    Math.abs(city.coordinates!.lat) <= 85 && Math.abs(city.coordinates!.lng) <= 180);
+  const viewport = computeMapViewport(cities.map(city => city.coordinates!));
+  const center = getWorldPixel(viewport.center, viewport.zoom);
+  const worldWidth = 256 * 2 ** viewport.zoom;
+  const points = cities.map(city => {
+    const pixel = getWorldPixel(city.coordinates!, viewport.zoom);
+    let dx = pixel.x - center.x;
+    if (dx > worldWidth / 2) dx -= worldWidth;
+    if (dx < -worldWidth / 2) dx += worldWidth;
+    return { x: (OG_MAP_WIDTH / 2 + dx) / OG_MAP_WIDTH,
+      y: (OG_MAP_HEIGHT / 2 + pixel.y - center.y) / OG_MAP_HEIGHT,
+      label: (city.title || city.location || "").split(",")[0].slice(0, 32) };
+  });
+  const { mapUrl } = await buildMapPreviewUrl({ ...trip, items: cities },
+    getMapsApiKeyFromEnv(), undefined, "en",
+    { mapStyle, routeMode: "simple", hideRoutes: true, showStops: false, showCities: false });
+  return { points, mapUrl, color: `#${getTripPrimaryCityColorHex(trip)}` };
+};

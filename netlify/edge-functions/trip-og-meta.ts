@@ -1,3 +1,4 @@
+import { buildTripVideoMetaTags, resolveReadyTripVideoMedia } from "../edge-lib/trip-og-video-meta.ts";
 import {
   buildCanonicalUrl,
   buildOgImageUrl,
@@ -29,6 +30,7 @@ interface Metadata {
   description: string;
   canonicalUrl: string;
   ogImageUrl: string;
+  ogVideoUrl?: string;
   robots: string;
 }
 
@@ -85,6 +87,7 @@ const buildMetaTags = (meta: Metadata): string => {
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
     `<meta property="og:image:alt" content="${title}" />`,
+    ...buildTripVideoMetaTags(meta.ogVideoUrl),
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${description}" />`,
@@ -199,11 +202,13 @@ const buildShareBackedMetadata = async (
       null,
   });
 
+  const videoMedia = sharedTrip ? await resolveReadyTripVideoMedia(origin, routeTarget) : undefined;
   return {
     pageTitle: title,
+    ogVideoUrl: videoMedia?.videoUrl,
     description: summary.description,
     canonicalUrl,
-    ogImageUrl,
+    ogImageUrl: videoMedia?.posterUrl || ogImageUrl,
     robots: "noindex,nofollow,max-image-preview:large",
   };
 };

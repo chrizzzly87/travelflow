@@ -1,3 +1,4 @@
+import { TripOgPreviewPanel } from '../components/admin/TripOgPreviewPanel';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
@@ -2388,6 +2389,8 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                         </div>
                                     </section>
+
+                                    <TripOgPreviewPanel key={selectedTripForDrawer.trip_id} tripId={selectedTripForDrawer.trip_id} />
 
                                     <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
                                         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Lifecycle Controls</h3>

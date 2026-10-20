@@ -8,6 +8,8 @@ export interface OgHeadMetadata {
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
+  ogVideo: string;
+  ogVideoType: string;
   ogType: string;
   twitterCard: string;
   twitterImage: string;
@@ -105,6 +107,8 @@ export const parseOgHeadMetadata = (html: string): OgHeadMetadata => ({
   ogTitle: readMetaValue(html, (attrs) => (attrs.property || "") === "og:title"),
   ogDescription: readMetaValue(html, (attrs) => (attrs.property || "") === "og:description"),
   ogImage: readMetaValue(html, (attrs) => (attrs.property || "") === "og:image"),
+  ogVideo: readMetaValue(html, (attrs) => (attrs.property || "") === "og:video"),
+  ogVideoType: readMetaValue(html, (attrs) => (attrs.property || "") === "og:video:type"),
   ogType: readMetaValue(html, (attrs) => (attrs.property || "") === "og:type"),
   twitterCard: readMetaValue(html, (attrs) => (attrs.name || "") === "twitter:card"),
   twitterImage: readMetaValue(html, (attrs) => (attrs.name || "") === "twitter:image"),
