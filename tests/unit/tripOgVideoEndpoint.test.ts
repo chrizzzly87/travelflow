@@ -24,6 +24,18 @@ describe('trip video API regression coverage', () => {
     expect((await handler(req('', { method: 'POST', body: '{}' }))).status).toBe(403);
     expect(mocks.claim).not.toHaveBeenCalled();
   });
+  it('redirects copied HTML-escaped queries instead of accidentally serving MP4', async () => {
+    const result = await handler(req('&amp;r=' + ready.revision + '&amp;asset=poster'));
+    expect(result.status).toBe(308);
+    expect(result.headers.get('location')).toBe(`https://example.com/api/og/trip-video?trip=${id}&r=${ready.revision}&asset=poster`);
+    expect(mocks.getWithMetadata).not.toHaveBeenCalled();
+  });
+  it('always serves JPEG bytes from the dedicated poster URL, even with a misleading asset selector', async () => {
+    const result = await handler(new Request(`https://example.com/api/og/trip-poster.jpg?trip=${id}&asset=video`));
+    expect(result.headers.get('content-type')).toBe('image/jpeg');
+    expect(mocks.getWithMetadata).toHaveBeenCalledWith(`${id}/poster`, { type: 'arrayBuffer' });
+    expect((await handler(req('&asset=unknown'))).status).toBe(400);
+  });
   it('public metadata reads never enqueue jobs', async () => {
     expect(await (await handler(req('&status=1'))).json()).toMatchObject({ status: 'ready', stale: false });
     expect(mocks.claim).not.toHaveBeenCalled();

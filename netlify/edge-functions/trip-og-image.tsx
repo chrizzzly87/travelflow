@@ -1,6 +1,6 @@
 /* eslint-disable react-doctor/only-export-components */
 import React from "https://esm.sh/react@18.3.1";
-import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
+import { renderOgImage } from "../edge-lib/og-image-response.ts";
 import { buildLocalHeadingFontUrls, type BaseHeadingFontWeight } from "../edge-lib/og-font-utils.ts";
 import {
   buildDisplayPath,
@@ -278,15 +278,14 @@ const getTitleSpec = (title: string): { lines: string[]; fontSize: number } => {
     maxCharsPerLine = 33;
   }
 
-  return {
-    lines: wrapTitle(normalized, maxCharsPerLine, 3),
-    fontSize,
-  };
+  const lines = wrapTitle(normalized, maxCharsPerLine, 3);
+  return { lines, fontSize: Math.min(fontSize, lines.length === 3 ? 44 : 56) };
 };
 
 const iconCircleStyle: React.CSSProperties = {
   width: 36,
   height: 36,
+  flexShrink: 0,
   borderRadius: 9999,
   background: "rgba(79, 70, 229, 0.16)",
   color: "#312e81",
@@ -334,10 +333,15 @@ const metricRow = (icon: React.ReactNode, value: string) => (
     <div style={iconCircleStyle}>{icon}</div>
     <div
       style={{
-        fontSize: 29,
+        fontSize: 24,
         color: "#1f2937",
         display: "flex",
         lineHeight: 1.2,
+        flex: 1,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
       }}
     >
       {value}
@@ -552,7 +556,7 @@ export default async (request: Request): Promise<Response> => {
     );
     const displayUrl = truncateText(`${url.host}${routePath}`, 56);
 
-    return new ImageResponse(
+    return await renderOgImage(
       (
         <div
           style={{
@@ -573,7 +577,7 @@ export default async (request: Request): Promise<Response> => {
               display: "flex",
               flexDirection: "column",
               borderRadius: 28,
-              padding: "36px 42px 34px",
+              padding: "28px 36px",
               background: "rgba(255, 255, 255, 0.82)",
               border: "1px solid rgba(148, 163, 184, 0.28)",
             }}
@@ -582,11 +586,12 @@ export default async (request: Request): Promise<Response> => {
               style={{
                 display: "flex",
                 alignSelf: "flex-start",
-                padding: "10px 18px",
+                flexShrink: 0,
+                padding: "8px 14px",
                 borderRadius: 9999,
                 background: "#4f46e5",
                 color: "#ffffff",
-                fontSize: 21,
+                fontSize: 18,
                 fontWeight: 700,
                 lineHeight: 1.2,
                 fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
@@ -606,12 +611,12 @@ export default async (request: Request): Promise<Response> => {
                 lineHeight: 1.08,
                 letterSpacing: -1.4,
                 color: "#0f172a",
-                textWrap: "pretty",
+                flexShrink: 0,
                 fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
               }}
             >
               {titleLines.map((line, index) => (
-                <div key={`title-line-${line}-${index}`} style={{ display: "flex" }}>
+                <div key={`title-line-${line}-${index}`} style={{ display: "flex", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {line}
                 </div>
               ))}
@@ -623,7 +628,8 @@ export default async (request: Request): Promise<Response> => {
                 flexDirection: "column",
                 // A third row still has to fit under a three-line title.
                 gap: summary.dayTripsLabel ? 10 : 14,
-                marginTop: 26,
+                marginTop: 18,
+                flexShrink: 0,
               }}
             >
               {metricRow(iconImage(METRIC_CALENDAR_ICON_URI, "Calendar"), durationAndMonths)}
@@ -640,7 +646,8 @@ export default async (request: Request): Promise<Response> => {
                 alignItems: "center",
                 justifyContent: "space-between",
                 borderTop: "1px solid rgba(148, 163, 184, 0.36)",
-                paddingTop: 20,
+                paddingTop: 16,
+                flexShrink: 0,
                 gap: 20,
               }}
             >
@@ -671,7 +678,7 @@ export default async (request: Request): Promise<Response> => {
                 </div>
                 <div
                   style={{
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: 700,
                     color: "#111827",
                     display: "flex",
@@ -684,7 +691,8 @@ export default async (request: Request): Promise<Response> => {
 
               <div
                 style={{
-                  fontSize: 20,
+                  fontSize: 14,
+                  maxWidth: 260,
                   color: "#475569",
                   display: "flex",
                   minWidth: 0,

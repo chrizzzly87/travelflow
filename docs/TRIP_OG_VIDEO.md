@@ -44,3 +44,9 @@ Wide (1200 × 630) remains the default. Admin can select Classic (960 × 720, 4:
 The map card occupies 39% of the width, leaving more title space. Its static basemap uses the exact pane dimensions, with a fractional Mercator fit and modest marker padding rather than stretching. Open Graph dimensions match the attached video and, when selected, its poster. Existing attachments without a format remain Wide.
 
 Apple controls the final Messages preview shape; there is no published ratio-negotiation contract for multiple MP4 variants. We serve one consistent attachment for all clients. Test Classic using a fresh shared link; the app may retain earlier previews. No particular crop is guaranteed. Apple guidance: https://developer.apple.com/documentation/technotes/tn3156-create-rich-previews-for-messages
+
+## Image delivery
+
+Poster attachments use `/api/og/trip-poster.jpg`, a GET/HEAD-only image route that always serves JPEG. The legacy `asset=poster` URL remains supported. Copied HTML-escaped query separators are redirected to their canonical URL before selecting media; malformed selectors never silently return MP4. HTML metadata still uses proper attribute escaping, and inspector parsing decodes those entities once.
+
+Dynamic trip/site PNGs initialize the pinned Edge runtime inside the request and buffer its complete output before returning a successful response. A 15-second delivery deadline, 4 MiB limit, PNG signature check and explicit normalized cache headers prevent hanging success responses and inherited immutable cache policies. Playground image URLs use the selected settings as cache identity without timestamp cache-busting. No video regeneration is needed for these fixes.
