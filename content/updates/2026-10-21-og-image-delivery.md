@@ -1,10 +1,10 @@
 ---
 id: rel-2026-10-21-og-image-delivery
-version: v0.0.0
+version: v0.208.0
 title: "Reliable sharing images"
 date: 2026-10-21
-published_at: 2026-10-21T15:00:00Z
-status: draft
+published_at: 2026-10-21T15:29:43Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Sharing images load reliably and stay separate from animated videos."
