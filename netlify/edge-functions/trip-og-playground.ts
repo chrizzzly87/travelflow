@@ -186,10 +186,11 @@ export default async (request: Request): Promise<Response> => {
         border-color: #cbd5e1;
       }
       .preview {
-        display: grid;
-        grid-template-rows: auto auto 1fr;
+        display: flex;
+        flex-direction: column;
         gap: 10px;
       }
+      #image-status:empty { display: none; }
       .preview .bar {
         display: flex;
         gap: 8px;
