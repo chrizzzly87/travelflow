@@ -1038,3 +1038,9 @@ exit 1
   for = "/fonts/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# The encoder runs only in the background Node function, never in the edge bundle.
+[functions."trip-og-video-background"]
+  node_bundler = "esbuild"
+  external_node_modules = ["sharp", "@ffmpeg-installer/linux-x64"]
+  included_files = ["node_modules/@ffmpeg-installer/linux-x64/ffmpeg", "public/fonts/**/*"]

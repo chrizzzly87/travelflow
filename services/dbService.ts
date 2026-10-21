@@ -1,3 +1,4 @@
+import { enqueueTripVideoBestEffort } from './tripOgVideoService';
 import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, ITimelineItem, IViewSettings, IUserSettings, ShareMode } from '../types';
 import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
@@ -1321,6 +1322,10 @@ export const dbUpsertTripWithStatus = async (
         after: afterSnapshot ?? toTripEventSnapshotFromTrip(normalizedTrip),
         correlationId,
     });
+    if ((row?.trip_id ?? row?.id) && normalizedTrip.items?.some(item => item.type === 'city' && item.coordinates)
+        && !['queued', 'running'].includes(resolveExplicitGenerationState(normalizedTrip) || '')) {
+        enqueueTripVideoBestEffort(normalizedTrip.id);
+    }
     return {
         tripId: (row?.trip_id ?? row?.id) ?? null,
         error: null,

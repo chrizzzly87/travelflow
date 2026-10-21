@@ -19,7 +19,7 @@ const TRIP_VERSION_REGEX =
 const DEFAULT_SUMMARY_TITLE = "Shared Trip";
 const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const DEFAULT_MAP_LANGUAGE = "en";
-const DEFAULT_OG_MAP_STYLE: OgMapStyle = "clean";
+const DEFAULT_OG_MAP_STYLE: OgMapStyle = "standard";
 const DEFAULT_OG_ROUTE_MODE: OgRouteMode = "simple";
 const DEFAULT_OG_MAP_COLOR_MODE: MapColorMode = "trip";
 const DEFAULT_OG_SHOW_STOPS = true;
@@ -129,7 +129,7 @@ interface TimelineItem {
   dayTripReturnCityId?: string;
 }
 
-interface TripPayload {
+export interface TripPayload {
   id?: string;
   title?: string;
   startDate?: string;
@@ -884,12 +884,13 @@ const buildRealisticPathParams = async (
     if (!fromCoord || !toCoord) continue;
 
     const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+    const legColor = trip.mapColorMode === "brand" ? color : resolveColorHex(fromCity.color) || color;
 
     // Directions have no route for a flight, so the leg used to degrade to a
     // straight line. Draw the same arc the planner map draws.
     if (normalizeTransportMode(travelItem?.transportMode) === "plane") {
       const curve = encodePolyline(buildFlightPreviewCurvePath(fromCoord, toCoord));
-      pathParams.push(`path=${encodeURIComponent(`color:0x${color}|weight:${weight}|enc:${curve}`)}`);
+      pathParams.push(`path=${encodeURIComponent(`color:0x${legColor}|weight:${weight}|enc:${curve}`)}`);
       continue;
     }
 
@@ -905,11 +906,11 @@ const buildRealisticPathParams = async (
     }
 
     if (encodedPolyline) {
-      pathParams.push(`path=${encodeURIComponent(`color:0x${color}|weight:${weight}|enc:${encodedPolyline}`)}`);
+      pathParams.push(`path=${encodeURIComponent(`color:0x${legColor}|weight:${weight}|enc:${encodedPolyline}`)}`);
       continue;
     }
 
-    const fallbackDirectPath = buildSimplePathParam([fromCoord, toCoord], color, weight);
+    const fallbackDirectPath = buildSimplePathParam([fromCoord, toCoord], legColor, weight);
     if (fallbackDirectPath) pathParams.push(fallbackDirectPath);
   }
 
@@ -937,10 +938,11 @@ const buildMapboxRealisticPathOverlays = async (
     if (!fromCoord || !toCoord) continue;
 
     const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+    const legColor = trip.mapColorMode === "brand" ? color : resolveColorHex(fromCity.color) || color;
 
     if (normalizeTransportMode(travelItem?.transportMode) === "plane") {
       overlays.push(
-        buildMapboxPathOverlay(encodePolyline(buildFlightPreviewCurvePath(fromCoord, toCoord)), color, weight),
+        buildMapboxPathOverlay(encodePolyline(buildFlightPreviewCurvePath(fromCoord, toCoord)), legColor, weight),
       );
       continue;
     }
@@ -957,7 +959,7 @@ const buildMapboxRealisticPathOverlays = async (
     }
 
     overlays.push(
-      buildMapboxPathOverlay(encodedPolyline || encodePolyline([fromCoord, toCoord]), color, weight),
+      buildMapboxPathOverlay(encodedPolyline || encodePolyline([fromCoord, toCoord]), legColor, weight),
     );
   }
 
@@ -965,6 +967,7 @@ const buildMapboxRealisticPathOverlays = async (
 };
 
 export interface MapPreviewPreferences {
+  hideRoutes?: boolean;
   mapStyle?: OgMapStyle;
   routeMode?: OgRouteMode;
   mapColorMode?: MapColorMode;
@@ -1062,25 +1065,27 @@ const buildMapPreviewUrl = async (
 
   let pathParams: string[] = [];
   let mapboxPathOverlays: string[] = [];
-  if (routeMode === "realistic") {
-    if (mapsApiKey) {
-      pathParams = await buildRealisticPathParams(trip, mapsApiKey, routeColor);
-      mapboxPathOverlays = await buildMapboxRealisticPathOverlays(trip, mapsApiKey, routeColor);
-    }
+  const routeTrip = { ...trip, mapColorMode };
+  const legColor = (index: number) => mapColorMode === "brand" ? routeColor : resolveColorHex(routeCities[index]?.color) || routeColor;
+  if (!preferences?.hideRoutes && routeMode === "realistic" && mapsApiKey) {
+    if (staticMapImplementation === "google") pathParams = await buildRealisticPathParams(routeTrip, mapsApiKey, routeColor);
+    else mapboxPathOverlays = await buildMapboxRealisticPathOverlays(routeTrip, mapsApiKey, routeColor);
   }
-
   if (pathParams.length === 0) {
-    const simplePath = buildSimplePathParam(routeCoordinates, routeColor);
-    if (simplePath) pathParams = [simplePath];
+    pathParams = routeCoordinates.slice(1).map((coord, index) => buildSimplePathParam([routeCoordinates[index], coord], legColor(index))).filter((value): value is string => Boolean(value));
   }
   if (mapboxPathOverlays.length === 0) {
-    const simpleOverlay = buildMapboxSimplePathOverlay(routeCoordinates, routeColor);
-    if (simpleOverlay) mapboxPathOverlays = [simpleOverlay];
+    mapboxPathOverlays = routeCoordinates.slice(1).map((coord, index) => buildMapboxSimplePathOverlay([routeCoordinates[index], coord], legColor(index))).filter((value): value is string => Boolean(value));
   }
   googleDayTrips.paths.forEach((path) => {
     pathParams.push(`path=${encodeURIComponent(path)}`);
   });
   mapboxPathOverlays = [...mapboxPathOverlays, ...mapboxDayTrips.paths];
+
+  if (preferences?.hideRoutes) {
+    pathParams = [];
+    mapboxPathOverlays = [];
+  }
 
   const mapUrl = staticMapImplementation === "mapbox"
     ? (() => {
@@ -1167,7 +1172,8 @@ export const parseRouteTarget = (url: URL): RouteTarget | null => {
 
 const readEnv = (name: string): string => {
   try {
-    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) || "";
+    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) ||
+      (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[name] || "";
   } catch {
     return "";
   }
@@ -1493,3 +1499,7 @@ export const fallbackSummary = (): TripOgSummary => ({
   mapImageUrl: null,
   mapLabels: [],
 });
+
+// Reused by the bounded video renderer; coordinates stay geographic, not direction-aware UI.
+export { computeMapViewport, getWorldPixel, getTripPrimaryCityColorHex, findTravelBetweenCities, resolveColorHex };
+export { buildTripVideoMap } from '../lib/trip-video-map.ts';

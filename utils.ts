@@ -1336,10 +1336,7 @@ export const getHexFromColorClass = (colorValue: string): string => {
     return '#4f46e5';
 };
 
-export const buildRouteCacheKey = (start: ICoordinates, end: ICoordinates, mode: string): string => {
-    const round = (value: number) => value.toFixed(5);
-    return `${round(start.lat)},${round(start.lng)}|${round(end.lat)},${round(end.lng)}|${mode}`;
-};
+export { buildRouteCacheKey } from './shared/routeCacheKey';
 
 // Comprehensive Countries Data
 export const COUNTRIES = [

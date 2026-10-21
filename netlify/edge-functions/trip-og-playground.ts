@@ -427,6 +427,12 @@ export default async (request: Request): Promise<Response> => {
           <a class="link-btn" id="open-link" href="#" target="_blank" rel="noopener">Open Image</a>
           <button class="secondary" id="reload-btn" type="button">Reload</button>
         </div>
+        <div id="video-preview" hidden style="padding:16px">
+          <p>OG video · 6 seconds · MP4 · maximum 2 MB</p>
+          <video id="og-video" controls muted loop playsinline preload="none" style="width:100%;border-radius:12px" hidden></video>
+          <p id="video-status"></p>
+          <a id="video-admin" href="/admin/og-tools" target="_blank" rel="noopener">Generate or change video in admin</a>
+        </div>
         <code id="query-url"></code>
         <div class="img-wrap">
           <img id="og-image" src="" alt="Open Graph preview" />
@@ -546,6 +552,7 @@ export default async (request: Request): Promise<Response> => {
           }
         }
 
+        if (mode === 'trip') params.set('mr', 'mmmm');
         return params;
       }
 
@@ -582,6 +589,43 @@ export default async (request: Request): Promise<Response> => {
         }
       }
 
+      let videoRequestId = 0;
+      async function syncVideo(mode, params) {
+        const requestId = ++videoRequestId;
+        const panel = document.getElementById('video-preview');
+        const video = document.getElementById('og-video');
+        const status = document.getElementById('video-status');
+        const admin = document.getElementById('video-admin');
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        video.hidden = true;
+        panel.hidden = mode !== 'trip' || (!params.has('trip') && !params.has('s'));
+        if (panel.hidden) return;
+        const adminQuery = new URLSearchParams();
+        for (const key of ['trip', 'mapStyle', 'routeMode', 'format']) if (params.has(key)) adminQuery.set(key, params.get(key));
+        admin.href = '/admin/og-tools?' + adminQuery;
+        status.textContent = 'Checking attached video…';
+        const query = new URLSearchParams();
+        for (const key of ['trip', 's', 'v', 'mapStyle', 'routeMode', 'format']) if (params.has(key)) query.set(key, params.get(key));
+        query.set('status', '1');
+        try {
+          const response = await fetch('/api/og/trip-video?' + query, { signal: AbortSignal.timeout(15000) });
+          if (!response.ok) throw new Error('unavailable');
+          const result = await response.json();
+          const state = result.status === 'ready' ? result : result.attached ? { ...result.attached, status: 'ready', settingsMatch: result.settingsMatch, replacing: result.status } : result;
+          if (requestId !== videoRequestId) return;
+          status.textContent = state.settingsMatch === false ? 'Selected settings differ from the cached video. Open admin to apply them; no render starts automatically.' : state.stale ? 'The trip changed. Regenerate its video in admin.' : state.status === 'ready' ? 'Attached video · ' + (state.format === 'classic' ? '960 × 720 · ' : '1200 × 630 · ') + Math.round(state.bytes / 1024) + ' KB' + (state.replacing ? ' · Replacement: ' + state.replacing : '') : 'Video: ' + state.status + '. Generate and manage previews in admin.';
+          if (state.status === 'ready' && !state.stale && state.settingsMatch !== false) {
+            query.delete('status');
+            query.set('r', state.mediaRevision || state.revision);
+            video.src = '/api/og/trip-video?' + query;
+            video.hidden = false;
+          }
+        } catch {
+          if (requestId === videoRequestId) status.textContent = 'No public video available. Private previews and generation are available in admin.';
+        }
+      }
       function sync() {
         applySiteTintDefaultIfNeeded();
         applyModeVisibility();
@@ -591,9 +635,14 @@ export default async (request: Request): Promise<Response> => {
         ogImage.src = busted;
         openLink.href = imageUrl;
         queryUrl.textContent = imageUrl;
+        const videoParams = new URLSearchParams(params);
+        const format = new URLSearchParams(window.location.search).get('format');
+        if (format === 'wide' || format === 'classic') videoParams.set('format', format);
+        void syncVideo(mode, videoParams);
 
         const full = new URL(window.location.href);
         const playgroundSearch = new URLSearchParams(params);
+        if (format === 'wide' || format === 'classic') playgroundSearch.set('format', format);
         playgroundSearch.delete('blog_tint');
         playgroundSearch.delete('blog_tint_intensity');
         playgroundSearch.set('mode', mode);
