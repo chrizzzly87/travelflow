@@ -282,6 +282,9 @@ export default async (request: Request, context: { next: () => Promise<Response>
       "cache-control",
       routeTarget.token ? SHARE_CACHE_CONTROL : TRIP_CACHE_CONTROL,
     );
+    // The underlying prerendered shell may carry a one-year CDN policy. Dynamic
+    // sharing metadata must use its own short lifetime, including on purge failure.
+    headers.set("Netlify-CDN-Cache-Control", routeTarget.token ? SHARE_CACHE_CONTROL : TRIP_CACHE_CONTROL);
     if (metadata.tripCacheId) headers.set("Netlify-Cache-Tag", `trip-og-${metadata.tripCacheId}`);
     headers.delete("content-length");
     headers.delete("etag");

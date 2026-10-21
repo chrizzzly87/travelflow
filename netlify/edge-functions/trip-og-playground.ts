@@ -610,7 +610,7 @@ export default async (request: Request): Promise<Response> => {
         for (const key of ['trip', 's', 'v', 'mapStyle', 'routeMode']) if (params.has(key)) query.set(key, params.get(key));
         query.set('status', '1');
         try {
-          const response = await fetch('/api/og/trip-video?' + query, { signal: AbortSignal.timeout(8000) });
+          const response = await fetch('/api/og/trip-video?' + query, { signal: AbortSignal.timeout(15000) });
           if (!response.ok) throw new Error('unavailable');
           const state = await response.json();
           if (requestId !== videoRequestId) return;

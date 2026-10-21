@@ -16,7 +16,7 @@ export const resolveReadyTripVideoMedia = async (origin: string, target: { token
     else if (target.tripId) url.searchParams.set('trip', target.tripId);
     else return undefined;
     url.searchParams.set('status', '1');
-    const response = await fetch(url, { signal: AbortSignal.timeout(2500) });
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) return undefined;
     const state = await response.json();
     if (state.status !== 'ready' || state.stale || !/^[a-f0-9]{24}$/.test(state.revision)) return undefined;

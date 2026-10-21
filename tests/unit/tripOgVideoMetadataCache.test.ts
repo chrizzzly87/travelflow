@@ -12,9 +12,11 @@ describe('trip preview cache tagging and playground settings', () => {
   it.each([`/trip/${id}`, '/s/share-token'])('tags %s with the underlying trip for targeted refresh', async path => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })));
     const result = await handler(new Request('https://feature.example.com' + path), {
-      next: async () => new Response('<html><head></head><body></body></html>', { headers: { 'content-type': 'text/html' } }),
+      next: async () => new Response('<html><head></head><body></body></html>', { headers: { 'content-type': 'text/html', 'netlify-cdn-cache-control': 'public,max-age=31536000' } }),
     } as any);
     expect(result.headers.get('netlify-cache-tag')).toBe(`trip-og-${id}`);
+    expect(result.headers.get('netlify-cdn-cache-control')).toBe(result.headers.get('cache-control'));
+    expect(result.headers.get('netlify-cdn-cache-control')).not.toContain('31536000');
   });
   it('keeps preview settings on admin links, defaults image maps to Mapbox, and avoids playing a mismatched cached video', async () => {
     const html = await (await playground(new Request(`https://feature.example.com/api/og/playground?trip=${id}`))).text();
