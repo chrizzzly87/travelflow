@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildTripVideoMap, buildTripVideoStops, tripVideoStopLabel } from '../../netlify/lib/trip-video-map';
+import { buildTripVideoMap, buildTripVideoStops, tripVideoStopLabel, tripVideoViewport } from '../../netlify/lib/trip-video-map';
 import { videoRevision, claimVideo } from '../../netlify/lib/trip-video-store';
 import { buildTripOgSummary } from '../../netlify/edge-lib/trip-og-data';
-import { TRIP_VIDEO } from '../../shared/tripOgVideo';
+import { TRIP_VIDEO, tripVideoLayout } from '../../shared/tripOgVideo';
 
 const trip = { title: 'Taiwan', items: [
   { type: 'city', title: 'Tainan', startDateOffset: 3, duration: 4, coordinates: { lat: 22.9999, lng: 120.2269 } },
@@ -25,11 +25,20 @@ describe('video rendering preferences and excursions', () => {
     vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'test-token'); const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
     const map = await buildTripVideoMap(trip, 'satellite', 'simple');
     expect(map.mapUrl).toContain('api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/');
-    expect(map.mapUrl).toContain('/426x574@2x'); expect(fetcher).not.toHaveBeenCalled();
+    expect(map.mapUrl).toContain('/448x554@2x'); expect(fetcher).not.toHaveBeenCalled();
     expect(map.points[1]).toMatchObject({ label: 'Alishan day trip', excursion: true });
     expect(map.points[2]).toMatchObject({ label: '', hidden: true });
     expect(map.legs).toHaveLength(3);
     expect(map.points.every(point => point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1)).toBe(true);
+  });
+  it.each(['wide', 'classic'] as const)('fits every city and day trip inside the native %s pane without stretching', async format => {
+    vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'test-token');
+    const map = await buildTripVideoMap(trip, 'standard', 'simple', [], format);
+    const { imageWidth, imageHeight } = tripVideoLayout(format);
+    expect(map.mapUrl).toContain(`/${imageWidth}x${imageHeight}@2x`);
+    expect(map.points.every(p => p.x > .04 && p.x < .96 && p.y > .04 && p.y < .96)).toBe(true);
+    const viewport = tripVideoViewport(buildTripVideoStops(trip).map(s => s.coordinates), imageWidth, imageHeight);
+    expect(viewport.zoom % 1).not.toBe(0);
   });
   it('uses returned road geometry, bounds lookups, and falls back when unavailable', async () => {
     vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'test-token');
@@ -80,6 +89,7 @@ describe('video rendering preferences and excursions', () => {
     const first = await buildTripVideoMap({ items }, 'standard', 'realistic', cache);
     expect(fetcher).toHaveBeenCalledTimes(1); expect(first.legStyles[0].color).toBe('#ff0000');
     await buildTripVideoMap({ items }, 'dark', 'realistic', cache);
+    await buildTripVideoMap({ items }, 'standard', 'realistic', cache, 'classic');
     expect(fetcher).toHaveBeenCalledTimes(1);
     await buildTripVideoMap({ items: items.map(item => item.type === 'travel' ? { ...item, transportMode: 'walk' } : item) }, 'standard', 'realistic', cache);
     expect(fetcher).toHaveBeenCalledTimes(2);

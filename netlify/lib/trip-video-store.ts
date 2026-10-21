@@ -1,6 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import { createHash, randomUUID } from 'node:crypto';
-import { TRIP_VIDEO, tripVideoAttachment, type TripVideoState, type TripVideoStyle, type TripVideoRouteMode } from '../../shared/tripOgVideo.ts';
+import { TRIP_VIDEO, tripVideoAttachment, type TripVideoState, type TripVideoStyle, type TripVideoRouteMode, type TripVideoFormat, normalizeTripVideoFormat } from '../../shared/tripOgVideo.ts';
 import type { TripPayload } from '../edge-lib/trip-og-data.ts';
 
 // Deploy previews and branches must never overwrite production's media or quotas.
@@ -13,12 +13,12 @@ export const videoStore = (deploy?: { context: string; id: string }) => {
   return getStore({ name: tripVideoStoreName(deploy || { context: 'dev', id: 'local' }), consistency: 'strong' });
 };
 
-export const videoRevision = (trip: TripPayload, style: TripVideoStyle, routeMode: TripVideoRouteMode = 'simple') => createHash('sha256')
-  .update(JSON.stringify([TRIP_VIDEO.rendererVersion, style, routeMode, trip.mapColorMode, trip.title, trip.startDate,
+export const videoRevision = (trip: TripPayload, style: TripVideoStyle, routeMode: TripVideoRouteMode = 'simple', format: TripVideoFormat = 'wide') => createHash('sha256')
+  .update(JSON.stringify([TRIP_VIDEO.rendererVersion, style, routeMode, normalizeTripVideoFormat(format), trip.mapColorMode, trip.title, trip.startDate,
     trip.items?.filter(item => ['city', 'activity', 'travel', 'travel-empty'].includes(item.type || '')).map(item => [item.title, item.location, item.coordinates, item.color, item.startDateOffset, item.duration, item.transportMode, item.activityKind, item.stayCityId, item.dayTripReturnCityId])]))
   .digest('hex').slice(0, 24);
 
-export const claimVideo = async (store: ReturnType<typeof videoStore>, tripId: string, revision: string, style: TripVideoStyle, force: boolean, now = Date.now(), routeMode: TripVideoRouteMode = 'simple') => {
+export const claimVideo = async (store: ReturnType<typeof videoStore>, tripId: string, revision: string, style: TripVideoStyle, force: boolean, now = Date.now(), routeMode: TripVideoRouteMode = 'simple', format: TripVideoFormat = 'wide') => {
   const previous = await store.getWithMetadata(`${tripId}/state`, { type: 'json' });
   const state = previous?.data;
   if (state) {
@@ -26,7 +26,7 @@ export const claimVideo = async (store: ReturnType<typeof videoStore>, tripId: s
     if (busy || (!force && state.revision === revision && state.status === 'ready')) return { claimed: false, state };
     if (now - state.requestedAt < (force ? TRIP_VIDEO.refreshCooldownMs : TRIP_VIDEO.cooldownMs)) return { claimed: false, state, limited: true };
   }
-  const next: TripVideoState = { status: 'queued', jobId: randomUUID(), revision, style, routeMode, requestedAt: now, posterAsImage: state?.posterAsImage || false, previousReady: tripVideoAttachment(state) || undefined };
+  const next: TripVideoState = { status: 'queued', jobId: randomUUID(), revision, style, routeMode, format, requestedAt: now, posterAsImage: state?.posterAsImage || false, previousReady: tripVideoAttachment(state) || undefined };
   const result = await store.setJSON(`${tripId}/state`, next, previous ? { onlyIfMatch: previous.etag } : { onlyIfNew: true });
   return { claimed: result.modified, state: result.modified ? next : state };
 };

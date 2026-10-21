@@ -19,27 +19,35 @@ describe('trip details OG previews', () => {
     expect(await screen.findByAltText('Attached trip sharing preview')).toHaveAttribute('src', '/api/og/trip?trip=taiwan');
     expect(mocks.generate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Generate video' }));
-    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'standard', routeMode: 'simple', force: false }));
+    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'standard', routeMode: 'simple', format: 'wide', force: false }));
   });
   it('uses authenticated media blobs and releases them when the drawer closes', async () => {
     mocks.state.mockResolvedValue({ status: 'ready', style: 'dark', bytes: 29000 });
     const { unmount } = render(<TripOgPreviewPanel tripId="taiwan" />);
     const video = await screen.findByLabelText('Animated trip route preview');
     expect(video).toHaveAttribute('src', 'blob:preview'); expect(video).not.toHaveAttribute('autoplay');
+    expect(video.style.aspectRatio).toBe('1200 / 630');
     unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
   it('forwards playground map and route settings only after applying, and explicitly refreshes a ready video', async () => {
-    window.history.replaceState(null, '', '/admin/og-tools?mapStyle=satellite&routeMode=realistic');
+    window.history.replaceState(null, '', '/admin/og-tools?mapStyle=satellite&routeMode=realistic&format=classic');
     mocks.state.mockResolvedValue({ status: 'ready', style: 'clean', routeMode: 'simple', bytes: 29000 });
     render(<TripOgPreviewPanel tripId="taiwan" />);
     await screen.findByLabelText('Animated trip route preview');
     expect(mocks.generate).not.toHaveBeenCalled();
     expect(screen.getByText(/These settings differ/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Apply settings' }));
-    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'satellite', routeMode: 'realistic', force: true }));
+    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'satellite', routeMode: 'realistic', format: 'classic', force: true }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Re-render & refresh cache' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Re-render & refresh cache' }));
     await waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(2));
+  });
+  it('keeps the attached ratio while a different format renders', async () => {
+    mocks.state.mockResolvedValue({ status: 'rendering', format: 'classic', attached: { style: 'standard', posterAsImage: true, revision: 'old' } });
+    render(<TripOgPreviewPanel tripId="taiwan" />);
+    const video = await screen.findByLabelText('Animated trip route preview');
+    expect(video.style.aspectRatio).toBe('1200 / 630');
+    expect(mocks.generate).not.toHaveBeenCalled();
   });
   it('explains failed generation and lets the admin retry', async () => {
     mocks.state.mockResolvedValue({ status: 'failed', error: 'Map unavailable.' });

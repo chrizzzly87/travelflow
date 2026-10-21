@@ -428,7 +428,7 @@ export default async (request: Request): Promise<Response> => {
           <button class="secondary" id="reload-btn" type="button">Reload</button>
         </div>
         <div id="video-preview" hidden style="padding:16px">
-          <p>OG video · 1200 × 630 · 6 seconds · MP4 · maximum 2 MB</p>
+          <p>OG video · 6 seconds · MP4 · maximum 2 MB</p>
           <video id="og-video" controls muted loop playsinline preload="none" style="width:100%;border-radius:12px" hidden></video>
           <p id="video-status"></p>
           <a id="video-admin" href="/admin/og-tools" target="_blank" rel="noopener">Generate or change video in admin</a>
@@ -603,11 +603,11 @@ export default async (request: Request): Promise<Response> => {
         panel.hidden = mode !== 'trip' || (!params.has('trip') && !params.has('s'));
         if (panel.hidden) return;
         const adminQuery = new URLSearchParams();
-        for (const key of ['trip', 'mapStyle', 'routeMode']) if (params.has(key)) adminQuery.set(key, params.get(key));
+        for (const key of ['trip', 'mapStyle', 'routeMode', 'format']) if (params.has(key)) adminQuery.set(key, params.get(key));
         admin.href = '/admin/og-tools?' + adminQuery;
         status.textContent = 'Checking attached video…';
         const query = new URLSearchParams();
-        for (const key of ['trip', 's', 'v', 'mapStyle', 'routeMode']) if (params.has(key)) query.set(key, params.get(key));
+        for (const key of ['trip', 's', 'v', 'mapStyle', 'routeMode', 'format']) if (params.has(key)) query.set(key, params.get(key));
         query.set('status', '1');
         try {
           const response = await fetch('/api/og/trip-video?' + query, { signal: AbortSignal.timeout(15000) });
@@ -615,7 +615,7 @@ export default async (request: Request): Promise<Response> => {
           const result = await response.json();
           const state = result.status === 'ready' ? result : result.attached ? { ...result.attached, status: 'ready', settingsMatch: result.settingsMatch, replacing: result.status } : result;
           if (requestId !== videoRequestId) return;
-          status.textContent = state.settingsMatch === false ? 'Selected settings differ from the cached video. Open admin to apply them; no render starts automatically.' : state.stale ? 'The trip changed. Regenerate its video in admin.' : state.status === 'ready' ? 'Attached video · ' + Math.round(state.bytes / 1024) + ' KB' + (state.replacing ? ' · Replacement: ' + state.replacing : '') : 'Video: ' + state.status + '. Generate and manage previews in admin.';
+          status.textContent = state.settingsMatch === false ? 'Selected settings differ from the cached video. Open admin to apply them; no render starts automatically.' : state.stale ? 'The trip changed. Regenerate its video in admin.' : state.status === 'ready' ? 'Attached video · ' + (state.format === 'classic' ? '960 × 720 · ' : '1200 × 630 · ') + Math.round(state.bytes / 1024) + ' KB' + (state.replacing ? ' · Replacement: ' + state.replacing : '') : 'Video: ' + state.status + '. Generate and manage previews in admin.';
           if (state.status === 'ready' && !state.stale && state.settingsMatch !== false) {
             query.delete('status');
             query.set('r', state.mediaRevision || state.revision);
@@ -635,10 +635,14 @@ export default async (request: Request): Promise<Response> => {
         ogImage.src = busted;
         openLink.href = imageUrl;
         queryUrl.textContent = imageUrl;
-        void syncVideo(mode, params);
+        const videoParams = new URLSearchParams(params);
+        const format = new URLSearchParams(window.location.search).get('format');
+        if (format === 'wide' || format === 'classic') videoParams.set('format', format);
+        void syncVideo(mode, videoParams);
 
         const full = new URL(window.location.href);
         const playgroundSearch = new URLSearchParams(params);
+        if (format === 'wide' || format === 'classic') playgroundSearch.set('format', format);
         playgroundSearch.delete('blog_tint');
         playgroundSearch.delete('blog_tint_intensity');
         playgroundSearch.set('mode', mode);

@@ -70,14 +70,22 @@ describe('trip video API regression coverage', () => {
   });
   it('passes selected map and route settings to the atomic render claim', async () => {
     mocks.manage.mockResolvedValue(true); mocks.claim.mockResolvedValue({ claimed: false, state: { status: 'queued' } });
-    await handler(req('', { method: 'POST', body: '{"style":"satellite","routeMode":"realistic","force":true}' }));
-    expect(mocks.claim).toHaveBeenCalledWith(expect.anything(), id, expect.any(String), 'satellite', true, expect.any(Number), 'realistic');
+    await handler(req('', { method: 'POST', body: '{"style":"satellite","routeMode":"realistic","format":"classic","force":true}' }));
+    expect(mocks.claim).toHaveBeenCalledWith(expect.anything(), id, expect.any(String), 'satellite', true, expect.any(Number), 'realistic', 'classic');
   });
   it('detects playground settings mismatch without generating and versions refreshed media independently of content', async () => {
     mocks.get.mockResolvedValue({ ...ready, mediaRevision: 'b'.repeat(24), routeMode: 'realistic' });
-    expect(await (await handler(req('&status=1&mapStyle=dark&routeMode=simple'))).json()).toMatchObject({ settingsMatch: false });
+    expect(await (await handler(req('&status=1&mapStyle=dark&routeMode=simple&format=classic'))).json()).toMatchObject({ settingsMatch: false });
     expect((await handler(req('&r=' + 'b'.repeat(24)))).status).toBe(200);
     expect((await handler(req('&r=' + ready.revision))).status).toBe(404);
+    expect(mocks.claim).not.toHaveBeenCalled();
+  });
+  it('reports the attached ratio and treats a format-only change as a cache mismatch without rendering', async () => {
+    mocks.get.mockResolvedValue({ ...ready, format: 'classic' });
+    expect(await (await handler(req('&status=1&format=classic'))).json()).toMatchObject({ settingsMatch: true, spec: { width: 960, height: 720 } });
+    expect(await (await handler(req('&status=1&format=wide'))).json()).toMatchObject({ settingsMatch: false });
+    mocks.get.mockResolvedValue(ready);
+    expect(await (await handler(req('&status=1&format=wide'))).json()).toMatchObject({ settingsMatch: true, spec: { width: 1200, height: 630 } });
     expect(mocks.claim).not.toHaveBeenCalled();
   });
   it('changes poster attachment atomically without claiming a render', async () => {

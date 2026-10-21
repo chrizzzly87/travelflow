@@ -4,14 +4,14 @@ Trip OG images still use the existing edge renderer. Video adds a small, silent 
 
 ## Format and cost bounds
 
-- MP4 / H.264 / yuv420p, 1200 × 630, 12 fps, six seconds, faststart, no audio.
+- MP4 / H.264 / yuv420p, Wide 1200 × 630 or Classic 960 × 720, 12 fps, six seconds, faststart, no audio.
 - Hard output cap: 2 MiB. Oversized outputs fail closed and are never advertised.
-- One Mapbox static basemap fetch per render using the existing OG viewport. Mapbox’s 512px zoom convention is accounted for so markers align. Route lines use each departing stay’s color, with matching city markers, and animate locally; no per-frame map requests, browser sessions, or AI generation. Mapbox provides the basemap (including satellite); its logo and attribution remain visible. Simple routes need no directions requests. Realistic road geometry is cached independently of style in one bounded per-trip record (16 legs, at most 256 points each, success expiry 30 days, fallback expiry 15 minutes), keyed with the shared coordinate/mode route cache identity. Realistic routes use at most eight new Mapbox directions requests with a three-second timeout each, once per render; train, boat, air, and unavailable routes retain straight lines.
+- One Mapbox static basemap fetch per render using the selected video pane’s native proportions. Mapbox’s 512px zoom convention is accounted for so markers align. Route lines use each departing stay’s color, with matching city markers, and animate locally; no per-frame map requests, browser sessions, or AI generation. Mapbox provides the basemap (including satellite); its logo and attribution remain visible. Simple routes need no directions requests. Realistic road geometry is cached independently of style in one bounded per-trip record (16 legs, at most 256 points each, success expiry 30 days, fallback expiry 15 minutes), keyed with the shared coordinate/mode route cache identity. Realistic routes use at most eight new Mapbox directions requests with a three-second timeout each, once per render; train, boat, air, and unavailable routes retain straight lines.
 - Text is shaped from the existing bundled fonts into reusable SVG outlines; server fonts and Fontconfig are not required.
 - Encoder uses one thread and a 90-second deadline. Frame buffers are streamed sequentially, temporary files are removed, and one ready video/poster pair and a state file are kept per trip. During a replacement, the old pair stays accessible; immutable job paths are published via one atomic manifest swap and the old pair is removed only afterward. Failed replacements retain the last valid attachment.
 - Atomic claims deduplicate simultaneous requests and background retries. Automatic generation attempts are limited to one per trip per hour. Authenticated explicit refreshes (including failures and settings changes) have a five-minute cooldown; at most 20 attempts per hour per context across all callers. Fixed quota slots avoid accumulating hourly records.
 - Failed/stalled jobs require a later authenticated request after cooldown. There is no polling cron and no automatic paid retry loop.
-- Public GET/HEAD/status and metadata reads never trigger rendering. Server trip generation and successful client saves enqueue best effort when mapped cities exist. Videos include map style, route style, color mode, transport, and activity coordinates in their content revision; they are content-revision keyed so unchanged autosaves do not rerender. Changes during cooldown may temporarily leave a trip image-only.
+- Public GET/HEAD/status and metadata reads never trigger rendering. Server trip generation and successful client saves enqueue best effort when mapped cities exist. Videos include format, map style, route style, color mode, transport, and activity coordinates in their content revision; they are content-revision keyed so unchanged autosaves do not rerender. Changes during cooldown may temporarily leave a trip image-only.
 
 ## Access and storage
 
@@ -36,3 +36,11 @@ Verify remote `https://github.com/chrizzzly87/travelflow` and Netlify project `t
 5. Check the trip HTML for `og:video`, `og:video:secure_url`, `video/mp4`, width/height and the existing image fallback. Validate a byte-range request and confirm unauthenticated POST is rejected.
 
 References: [Open Graph structured video properties](https://ogp.me/#structured), [Netlify background functions](https://docs.netlify.com/build/functions/background-functions/), [Netlify Blobs conditional writes](https://docs.netlify.com/build/data-and-storage/netlify-blobs/).
+
+## Video framing and ratios
+
+Wide (1200 × 630) remains the default. Admin can select Classic (960 × 720, 4:3) to test less panoramic link previews. Only the selected format is generated and attached; selecting a control does not render. Applying a different format uses the existing explicit refresh cooldown and atomically replaces the prior media once ready. Both formats contain at most 756,000 pixels and retain the same six-second, 2 MiB limits. Geometry is reused across formats.
+
+The map card occupies 39% of the width, leaving more title space. Its static basemap uses the exact pane dimensions, with a fractional Mercator fit and modest marker padding rather than stretching. Open Graph dimensions match the attached video and, when selected, its poster. Existing attachments without a format remain Wide.
+
+Apple controls the final Messages preview shape; there is no published ratio-negotiation contract for multiple MP4 variants. We serve one consistent attachment for all clients. Test Classic using a fresh shared link; the app may retain earlier previews. No particular crop is guaranteed. Apple guidance: https://developer.apple.com/documentation/technotes/tn3156-create-rich-previews-for-messages

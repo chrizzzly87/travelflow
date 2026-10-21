@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { TripVideoState, TripVideoAttachment, TripVideoStyle, TripVideoRouteMode } from '../shared/tripOgVideo';
+import type { TripVideoState, TripVideoAttachment, TripVideoStyle, TripVideoRouteMode, TripVideoFormat } from '../shared/tripOgVideo';
 
 export interface TripVideoPreviewState extends Omit<TripVideoState, 'status'> {
   status: TripVideoState['status'] | 'missing';
@@ -22,7 +22,7 @@ const videoRequest = async (tripId: string, query: string, init?: RequestInit) =
   return response;
 };
 export const getTripVideoState = async (tripId: string): Promise<TripVideoPreviewState> => (await videoRequest(tripId, '&status=1')).json();
-export const requestTripVideo = async (tripId: string, options: { style?: TripVideoStyle; routeMode?: TripVideoRouteMode; force?: boolean } = {}): Promise<TripVideoPreviewState> =>
+export const requestTripVideo = async (tripId: string, options: { style?: TripVideoStyle; routeMode?: TripVideoRouteMode; format?: TripVideoFormat; force?: boolean } = {}): Promise<TripVideoPreviewState> =>
   (await videoRequest(tripId, '', { method: 'POST', body: JSON.stringify(options) })).json();
 export const getTripVideoAsset = async (tripId: string, asset: 'poster' | 'video'): Promise<Blob> =>
   (await videoRequest(tripId, asset === 'poster' ? '&asset=poster' : '')).blob();

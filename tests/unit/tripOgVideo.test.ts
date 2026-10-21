@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseVideoRange, TRIP_VIDEO, normalizeTripVideoStyle, tripVideoLeaseExpired } from '../../shared/tripOgVideo';
+import { parseVideoRange, TRIP_VIDEO, normalizeTripVideoStyle, tripVideoLeaseExpired, tripVideoLayout, tripVideoDimensions } from '../../shared/tripOgVideo';
 import { buildTripVideoMetaTags, resolveReadyTripVideoMedia } from '../../netlify/edge-lib/trip-og-video-meta';
 import { claimRenderBudget, claimVideo, videoRevision, tripVideoStoreName } from '../../netlify/lib/trip-video-store';
 import { buildVideoFrameSvg, getVideoEncoderPath } from '../../netlify/lib/trip-video-renderer';
@@ -154,5 +154,40 @@ describe('animated frame safety', () => {
     expect(first).toContain('stroke-dasharray="0.00');
     expect(last).not.toContain('stroke-dasharray="0.00');
     expect(last).toContain('width="1200" height="630"');
+  });
+});
+
+
+describe('video ratio and framing regressions', () => {
+  it('widens text space and narrows the map card, with even native output sizes', () => {
+    const wide = tripVideoLayout('wide');
+    expect(wide.textWidth).toBeGreaterThan(510);
+    expect(wide.mapWidth).toBeLessThan(534);
+    for (const format of ['wide', 'classic']) {
+      const layout = tripVideoLayout(format);
+      expect(layout.width % 2).toBe(0); expect(layout.height % 2).toBe(0);
+      expect(layout.width * layout.height).toBeLessThanOrEqual(1200 * 630);
+      const svg = buildVideoFrameSvg({ format: format as 'wide' | 'classic', title: 'Taiwan autumn journey', description: 'October', badge: '2 weeks', style: 'standard', mapDataUri: '', points: [], color: '#f43f5e' }, 1);
+      expect(svg).toContain(`width="${layout.width}" height="${layout.height}"`);
+      expect(svg).toContain('preserveAspectRatio="xMidYMid meet"');
+      expect(svg).not.toContain('preserveAspectRatio="none"');
+    }
+  });
+  it('caches a single selected format and keeps legacy preferences wide', async () => {
+    const trip = { title: 'Taiwan', items: [] };
+    expect(videoRevision(trip, 'standard')).toBe(videoRevision(trip, 'standard', 'simple', 'wide'));
+    expect(videoRevision(trip, 'standard')).not.toBe(videoRevision(trip, 'standard', 'simple', 'classic'));
+    const store = makeStore();
+    const revision = videoRevision(trip, 'standard', 'simple', 'classic');
+    const result = await claimVideo(store as any, 'trip', revision, 'standard', false, 10000000, 'simple', 'classic');
+    expect(result.state).toMatchObject({ format: 'classic', revision });
+    expect(store.setJSON).toHaveBeenCalledTimes(1);
+    expect(tripVideoDimensions()).toEqual({ width: 1200, height: 630 });
+  });
+  it('advertises the actual selected video dimensions to Messages', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ status: 'ready', revision: 'a'.repeat(24), format: 'classic', posterAsImage: true })));
+    const media = await resolveReadyTripVideoMedia('https://example.com', { tripId: 'trip', versionId: null });
+    expect(media?.dimensions).toEqual({ width: 960, height: 720 });
+    expect(buildTripVideoMetaTags(media?.videoUrl, media?.dimensions).join('')).toContain('og:video:height" content="720"');
   });
 });

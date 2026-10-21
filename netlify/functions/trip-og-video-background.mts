@@ -24,8 +24,8 @@ export default async (request: Request, context?: Context) => {
     const savedRoutes = await store.get(`${tripId}/routes`, { type: 'json' });
     if (Array.isArray(savedRoutes)) routeCache = savedRoutes;
     const trip = await loadTripForVideo(tripId);
-    if (!trip || videoRevision(trip, state.style, state.routeMode) !== state.revision) throw new Error('Trip changed before rendering.');
-    const { video, poster } = await renderTripVideo(trip, state.style, state.routeMode, routeCache);
+    if (!trip || videoRevision(trip, state.style, state.routeMode, state.format) !== state.revision) throw new Error('Trip changed before rendering.');
+    const { video, poster } = await renderTripVideo(trip, state.style, state.routeMode, routeCache, state.format);
     const current = await store.getWithMetadata(`${tripId}/state`, { type: 'json' });
     if (current?.data.jobId !== jobId) return;
     // Immutable job paths keep the previous ready pair intact during uploads.

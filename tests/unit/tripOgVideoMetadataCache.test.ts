@@ -18,10 +18,21 @@ describe('trip preview cache tagging and playground settings', () => {
     expect(result.headers.get('netlify-cdn-cache-control')).toBe(result.headers.get('cache-control'));
     expect(result.headers.get('netlify-cdn-cache-control')).not.toContain('31536000');
   });
+  it('uses classic dimensions for both video and its attached poster', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ status: 'ready', revision: 'a'.repeat(24), format: 'classic', posterAsImage: true })));
+    const response = await handler(new Request(`https://feature.example.com/trip/${id}`), { next: async () => new Response('<html><head></head><body></body></html>', { headers: { 'content-type': 'text/html' } }) } as any);
+    const html = await response.text();
+    for (const kind of ['image', 'video']) {
+      expect(html).toContain(`og:${kind}:width" content="960"`);
+      expect(html).toContain(`og:${kind}:height" content="720"`);
+    }
+  });
   it('keeps preview settings on admin links, defaults image maps to Mapbox, and avoids playing a mismatched cached video', async () => {
     const html = await (await playground(new Request(`https://feature.example.com/api/og/playground?trip=${id}`))).text();
     expect(html).toContain("params.set('mr', 'mmmm')");
-    expect(html).toContain("['trip', 'mapStyle', 'routeMode']");
+    expect(html).toContain("['trip', 'mapStyle', 'routeMode', 'format']");
     expect(html).toContain('state.settingsMatch !== false');
+    expect(html).toContain("videoParams.set('format', format)");
+    expect(html).not.toContain("params.set('format', format)");
   });
 });

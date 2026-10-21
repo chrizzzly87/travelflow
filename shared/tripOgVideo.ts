@@ -1,8 +1,19 @@
 export const TRIP_VIDEO = {
   width: 1200, height: 630, fps: 12, seconds: 6, maxBytes: 2 * 1024 * 1024,
   maxStops: 30, cooldownMs: 60 * 60 * 1000, refreshCooldownMs: 5 * 60_000, renderTimeoutMs: 90_000,
-  leaseMs: 5 * 60_000, hourlyRenderLimit: 20, rendererVersion: 3,
+  leaseMs: 5 * 60_000, hourlyRenderLimit: 20, rendererVersion: 4,
 } as const;
+
+export type TripVideoFormat = 'wide' | 'classic';
+export const normalizeTripVideoFormat = (value: unknown): TripVideoFormat => value === 'classic' ? 'classic' : 'wide';
+export const tripVideoDimensions = (format?: unknown) => normalizeTripVideoFormat(format) === 'classic' ? { width: 960, height: 720 } : { width: 1200, height: 630 };
+// Geographic coordinates and SVG artwork have a fixed orientation; UI controls use normal logical flow.
+export const tripVideoLayout = (format?: unknown) => {
+  const { width, height } = tripVideoDimensions(format);
+  const mapWidth = Math.round(width * 0.39 / 2) * 2;
+  const mapX = width - 28 - mapWidth;
+  return { width, height, mapX, mapWidth, mapHeight: height - 56, imageX: mapX + 10, imageY: 38, imageWidth: mapWidth - 20, imageHeight: height - 76, titleWidth: mapX - 48, textWidth: mapX - 128 };
+};
 
 export type TripVideoStyle = 'clean' | 'minimal' | 'standard' | 'dark' | 'satellite';
 export type TripVideoRouteMode = 'simple' | 'realistic';
@@ -17,6 +28,7 @@ export interface TripVideoState {
   revision: string;
   style: TripVideoStyle;
   routeMode?: TripVideoRouteMode;
+  format?: TripVideoFormat;
   mediaRevision?: string;
   requestedAt: number;
   bytes?: number;
@@ -26,12 +38,12 @@ export interface TripVideoState {
   previousReady?: TripVideoAttachment;
 }
 
-export type TripVideoAttachment = Pick<TripVideoState, 'revision' | 'style' | 'routeMode' | 'requestedAt' | 'bytes' | 'posterAsImage' | 'mediaRevision' | 'assetKey'>;
+export type TripVideoAttachment = Pick<TripVideoState, 'revision' | 'style' | 'routeMode' | 'format' | 'requestedAt' | 'bytes' | 'posterAsImage' | 'mediaRevision' | 'assetKey'>;
 export const tripVideoAttachment = (state: TripVideoState | null | undefined): TripVideoAttachment | null => {
   if (!state) return null;
   if (state.status !== 'ready') return state.previousReady || null;
-  const { revision, style, routeMode, requestedAt, bytes, posterAsImage, mediaRevision, assetKey } = state;
-  return { revision, style, routeMode, requestedAt, bytes, posterAsImage, mediaRevision, assetKey };
+  const { revision, style, routeMode, format, requestedAt, bytes, posterAsImage, mediaRevision, assetKey } = state;
+  return { revision, style, routeMode, format, requestedAt, bytes, posterAsImage, mediaRevision, assetKey };
 };
 export const tripVideoAssetPath = (tripId: string, media: TripVideoAttachment, asset: 'video' | 'poster') =>
   media.assetKey ? `${tripId}/media/${media.assetKey}/${asset}` : `${tripId}/${asset}`;
