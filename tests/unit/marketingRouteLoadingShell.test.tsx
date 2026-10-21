@@ -5,7 +5,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, within } from '@testing-library/react';
 import { renderWithRouter as render } from '../helpers/renderWithRouter';
 import { TripManagerProvider } from '../../contexts/TripManagerContext';
-import { MemoryRouter } from '../helpers/routerHarness';
+import { createRootRouteWithContext, createRouter, createMemoryHistory, RouterProvider } from '@tanstack/react-router';
 import i18n, { preloadLocaleNamespaces } from '../../i18n';
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ isAuthenticated: false, isAdmin: false, isLoading: true }) }));
 const openLoginModal = vi.hoisted(() => vi.fn());
@@ -15,7 +15,9 @@ afterEach(cleanup);
 beforeAll(async () => { await preloadLocaleNamespaces('en', ['common', 'pages']); await i18n.changeLanguage('en'); });
 describe('native marketing pending boundary', () => {
     it('keeps real navigation links available without fabricated controls or auth spinners', async () => {
-        const view = await render(<MemoryRouter><TripManagerProvider openTripManager={() => {}} prewarmTripManager={() => {}}><MarketingRouteLoadingShell /></TripManagerProvider></MemoryRouter>);
+        const root = createRootRouteWithContext<{ i18n: typeof i18n }>()({ component: () => <TripManagerProvider openTripManager={() => {}} prewarmTripManager={() => {}}><MarketingRouteLoadingShell /></TripManagerProvider> });
+        const router = createRouter({ routeTree: root, context: { i18n }, history: createMemoryHistory({ initialEntries: ['/'] }) });
+        const view = await render(<RouterProvider router={router} />);
         const header = await screen.findByRole('banner');
         expect(within(header).getByRole('link', { name: 'Features' })).toHaveAttribute('href', '/features');
         await userEvent.click(within(header).getByRole('button', { name: 'Account' }));

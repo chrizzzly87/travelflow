@@ -1,14 +1,15 @@
-import React, { startTransition } from 'react';
+import React, { startTransition, useEffect } from 'react';
 import { createRootRouteWithContext, HeadContent, lazyRouteComponent, Scripts, useRouter } from '@tanstack/react-router';
 import { I18nextProvider } from 'react-i18next';
 import { preloadLocaleNamespaces } from '../../i18n';
 import i18n from '../../i18n';
-import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from '../../config/routes';
-import { DEFAULT_LOCALE, localeToDir, normalizeLocale } from '../../config/locales';
-import { getRouteLocale, getRouteNamespaces } from '../../app/routing/routeLocale';
+import { localeToDir, normalizeLocale } from '../../config/locales';
+import { offlineShellMaskPath } from '../../app/routing/publicPrerender';
+import { getRouteNamespaces } from '../../app/routing/routeLocale';
 import ApplicationShell from '../../app/shell/ApplicationShell';
 import { bootScripts } from '../documentAssets';
-import { buildSiteOgMetadata } from '../../netlify/edge-lib/site-og-metadata';
+import { buildRouteDocument, resolveRouteDocument } from '../document/routeDocument';
+import { readLocalStorageItem } from '../../services/browserStorageService';
 import { getTripDocumentMetadata } from '../server/tripMetadata';
 import '../../index.css';
 import '../document/consent.css';
@@ -16,11 +17,13 @@ import { ContactFormRegistration } from '../document/ContactFormRegistration';
 import { getDocumentHints } from '../document/headAssets';
 import { useDocumentLocale } from '../document/useDocumentLocale';
 
-export const Route = createRootRouteWithContext<{ i18n: typeof i18n }>()({
+export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI18n?: typeof i18n }>()({
+    // Native context is reconstructed on hydration but cached when the root is
+    // reused. Its URL snapshot is only for the server's neutral SPA mask.
+    context: ({ location }) => ({ hydrationDocument: buildRouteDocument(location.href, readLocalStorageItem('tf_app_language')) }),
     beforeLoad: async ({ context, location, preload, abortController }) => {
-        let storedLocale = DEFAULT_LOCALE;
-        try { if (typeof window !== 'undefined') storedLocale = normalizeLocale(window.localStorage.getItem('tf_app_language')); } catch { /* Storage may be unavailable. */ }
-        const locale = getRouteLocale(location.pathname, storedLocale);
+        const routeDocument = buildRouteDocument(location.href, readLocalStorageItem('tf_app_language'));
+        const { locale } = routeDocument;
         await preloadLocaleNamespaces(locale, getRouteNamespaces(location.pathname), context.i18n);
         abortController.signal.throwIfAborted();
         if (!preload && context.i18n.resolvedLanguage !== locale) {
@@ -30,19 +33,25 @@ export const Route = createRootRouteWithContext<{ i18n: typeof i18n }>()({
             startTransition(() => { languageChange = context.i18n.changeLanguage(locale); });
             await languageChange;
         }
-        const metadata = buildSiteOgMetadata(new URL(location.href, 'https://travelflowapp.netlify.app'));
         if (/^\/(?:trip|s)\//.test(location.pathname)) {
             try {
                 const trip = await getTripDocumentMetadata({ data: `${location.pathname}${location.searchStr}` });
-                if (trip) return { locale, metadata: { ...metadata, ...trip, ogTitle: trip.pageTitle, ogDescription: trip.description } };
+                if (trip) return { routeDocument, tripMetadata: trip };
             } catch { /* Metadata must not block offline trip access. */ }
         }
-        return { locale, metadata };
+        return { routeDocument, tripMetadata: null };
     },
     head: ({ match }) => {
-        const meta = match.context.metadata;
+        // The first hydration head must match its transported document. React 18
+        // does not patch suppressed attribute mismatches; native invalidation
+        // below resolves the actual URL after the neutral shell has hydrated.
+        const { metadata, locale } = match.context.routeDocument ?? match.context.hydrationDocument;
+        const { tripMetadata } = match.context;
+        const meta = tripMetadata
+            ? { ...metadata, ...tripMetadata, ogTitle: tripMetadata.pageTitle, ogDescription: tripMetadata.description }
+            : metadata;
         return {
-            meta: [{ charSet: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }, { title: meta.pageTitle }, { name: 'content-language', content: match.context.locale }, { name: 'description', content: meta.description }, { name: 'robots', content: meta.robots }, { property: 'og:title', content: meta.ogTitle }, { property: 'og:description', content: meta.ogDescription }, { property: 'og:image', content: meta.ogImageUrl }, { property: 'og:url', content: meta.canonicalUrl }, { name: 'twitter:card', content: 'summary_large_image' }, { name: 'apple-mobile-web-app-capable', content: 'yes' }, { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }, { name: 'apple-mobile-web-app-title', content: 'TravelFlow' }, { name: 'theme-color', content: '#ffffff', 'data-tf-theme-color': '' }],
+            meta: [{ title: meta.pageTitle }, { name: 'content-language', content: locale }, { name: 'description', content: meta.description }, { name: 'robots', content: meta.robots }, { property: 'og:title', content: meta.ogTitle }, { property: 'og:description', content: meta.ogDescription }, { property: 'og:image', content: meta.ogImageUrl }, { property: 'og:url', content: meta.canonicalUrl }, { name: 'twitter:card', content: 'summary_large_image' }, { name: 'apple-mobile-web-app-capable', content: 'yes' }, { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }, { name: 'apple-mobile-web-app-title', content: 'TravelFlow' }],
             links: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }, { rel: 'manifest', href: '/manifest.webmanifest' }, { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }, { rel: 'canonical', href: meta.canonicalUrl }, ...meta.alternateLinks.map(link => ({ rel: 'alternate', hrefLang: link.hreflang, href: link.href })), ...getDocumentHints(match.pathname)],
         };
     },
@@ -52,11 +61,22 @@ export const Route = createRootRouteWithContext<{ i18n: typeof i18n }>()({
 });
 function RootDocument() {
     const router = useRouter();
-    const { locale } = Route.useRouteContext();
-    useDocumentLocale(router.options.context.i18n);
+    const context = Route.useRouteContext();
+    const { locale } = resolveRouteDocument(context);
+    useDocumentLocale(router.options.context.i18n, locale);
+    const masked = context.routeDocument?.pathname === offlineShellMaskPath;
+    useEffect(() => {
+        if (masked) void router.invalidate({ filter: match => match.routeId === '__root__' }).catch(() => {
+            // A later navigation can cancel recovery; its own beforeLoad owns metadata.
+        });
+    }, [router, masked]);
     return <html lang={locale} dir={localeToDir(normalizeLocale(locale))} suppressHydrationWarning>
-        <head><HeadContent />
+        <head>
+            <meta charSet="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <meta name="theme-color" content="#ffffff" data-tf-theme-color="" />
             {bootScripts.map(({ id, code, attributes }) => <script {...attributes} key={id} dangerouslySetInnerHTML={{ __html: code }} />)}
+            <HeadContent />
         </head>
         <body><ContactFormRegistration /><I18nextProvider i18n={router.options.context.i18n}><div id="root" data-tf-prerendered-root="true"><ApplicationShell /></div></I18nextProvider><Scripts /></body>
     </html>;

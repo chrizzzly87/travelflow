@@ -34,8 +34,10 @@ describe('native document theme boot script', () => {
         // seam across the top of the app; a value set only from the bundle
         // arrived a paint late. The literals are duplicated from the store, and
         // nothing else stops the two drifting apart.
-        expect(html).toContain("name: 'theme-color'");
-        expect(html).toContain("'data-tf-theme-color'");
+        expect(html).toContain('name="theme-color"');
+        expect(html).toContain('data-tf-theme-color=""');
+        expect(html.indexOf('name="theme-color"')).toBeLessThan(html.indexOf('{bootScripts.map'));
+        expect(html.indexOf('{bootScripts.map')).toBeLessThan(html.indexOf('<HeadContent />'));
         expect(bootScript).toContain('meta[data-tf-theme-color]');
         expect(bootScript).toContain(THEME_SURFACE_COLOR.dark);
         expect(bootScript).toContain(THEME_SURFACE_COLOR.light);

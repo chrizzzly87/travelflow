@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import netlify from '@netlify/vite-plugin-tanstack-start';
 import tailwindcss from '@tailwindcss/vite';
-import { publicPrerenderPaths } from './app/routing/publicPrerender';
+import { publicPrerenderPaths, offlineShellMaskPath } from './app/routing/publicPrerender';
 
 export default defineConfig(({ mode }) => {
     return {
@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => {
                     virtualRouteConfig: './src/virtualRoutes.ts',
                     codeSplittingOptions: { defaultBehavior: [['loader'], ['component'], ['pendingComponent'], ['errorComponent'], ['notFoundComponent']] },
                 },
-                spa: { enabled: true, maskPath: '/__offline-shell', prerender: { outputPath: '/spa' } },
+                spa: { enabled: true, maskPath: offlineShellMaskPath, prerender: { outputPath: '/spa' } },
                 // Flat documents preserve the router's slashless canonical URLs on Netlify.
                 // Root index.html and the explicitly masked offline shell stay native.
                 prerender: { enabled: true, autoSubfolderIndex: false, autoStaticPathsDiscovery: false, crawlLinks: false, concurrency: 4 },

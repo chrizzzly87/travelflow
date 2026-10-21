@@ -4,9 +4,16 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 const route = vi.hoisted(() => ({ pending: false }));
 vi.mock('@tanstack/react-router', () => ({ useRouterState: () => route.pending }));
+import { renderToString } from 'react-dom/server';
 import { RouteNavigationFeedback } from '../../app/routing/RouteNavigationFeedback';
 afterEach(() => { cleanup(); vi.useRealTimers(); route.pending = false; });
 describe('one-pass navigation progress', () => {
+    it('keeps the neutral server shell idle even when the browser route is pending', () => {
+        route.pending = true;
+        const html = renderToString(<RouteNavigationFeedback />);
+        expect(html).toContain('data-phase="idle"');
+        expect(html).not.toContain('data-pending');
+    });
     it('grows without sliding, completes to full width, then hides and resets', () => {
         vi.useFakeTimers();
         const view = render(<RouteNavigationFeedback />);

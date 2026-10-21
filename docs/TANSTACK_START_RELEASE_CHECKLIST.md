@@ -1,13 +1,29 @@
 # First TanStack Start release
 
-Status: hosted candidate acceptance passed; final GitHub integration checks and
-production promotion remain separate. Main remains
+Status: hosted acceptance of PR #571 passed; subsequent live checks found two
+focused hardening issues (#575 / #576). Their final acceptance and production
+promotion remain separate. Main remains
 unchanged. Tracking: [#559](https://github.com/chrizzzly87/travelflow/issues/559).
-Current candidate: [PR #571](https://github.com/chrizzzly87/travelflow/pull/571),
-including [banner regression #572](https://github.com/chrizzzly87/travelflow/issues/572)
+Complete release draft: [PR #574](https://github.com/chrizzzly87/travelflow/pull/574).
+Previously accepted [PR #571](https://github.com/chrizzzly87/travelflow/pull/571)
+includes [banner regression #572](https://github.com/chrizzzly87/travelflow/issues/572)
 and [public date hydration #573](https://github.com/chrizzzly87/travelflow/issues/573).
+Its exact runtime evidence below is historical; #575/#576 track the next candidate.
+
+Current feature preview candidate (2026-10-21): 517 core files / 3,055 passing
+assertions, one skip; production build and 77 public documents pass. Last full
+browser run: 93/94, with an intermittent WebKit hydration error in the already-claimed
+draft recovery flow. Do not promote this candidate to main until that regression
+and current hosted/offline acceptance pass. The feature preview is for parallel
+product testing, not a production-release approval. Type diagnostics remain 473
+with no new file/error-code diagnostics against the recorded baseline. React
+Doctor reports zero errors and the same eight warnings; its score service was
+unavailable in this scan.
 
 ## Required before the first release
+
+- [ ] Fix neutral offline-shell contamination ([#575](https://github.com/chrizzzly87/travelflow/issues/575)) and validate cross-route offline metadata on the new deploy.
+- [ ] Preserve zero-night return stops through generation mapping ([#576](https://github.com/chrizzzly87/travelflow/issues/576)); verify the actual requested period after a real round-trip generation on the fixed deploy.
 
 - [x] Deploy the localized-banner fix and verify actual heading/action geometry in
   Chromium/WebKit, French and RTL, narrow widths, resize and dismissal.
@@ -39,12 +55,24 @@ and [public date hydration #573](https://github.com/chrizzzly87/travelflow/issue
   copying and no persistent login selected). The member logo returns to the public
   homepage with My Trips. Shared modal cancellation has hosted regression coverage.
   This does not establish end-to-end acceptance of every other OAuth provider.
+- [x] Facebook sign-in uses the existing provider grant (no expanded permissions),
+  returns directly to the profile on preview #574/runtime `94ad1530`, and can see
+  the same newly saved test trip. No credentials copied and persistent login off.
+- [x] Record the remaining Kakao coverage explicitly: its Korean surface reaches
+  the official provider login, but the final sign-in/callback is not live certified.
+  On 2026-10-20 the owner chose to keep this open and documented; no credentials
+  were entered and the handoff tab was closed. This is an accepted coverage gap,
+  not a passing-provider claim.
 - [x] Owned trip opens through the real account; details load and title editing
   becomes available without changing the title. A full document reload restores
   trip access. Create Trip accepts a destination and retains its URL-prefilled
   selection across refresh; return navigation works (runtime `22a203af`, 2026-10-20).
-  No real generation was submitted and no trip/admin data was changed. Deterministic
-  generation/persistence contracts retain their separate regression coverage.
+  This initial check submitted no generation and changed no existing trip/admin data.
+- [x] A subsequent real classic-generation smoke test on hosted runtime `61bff8a7`
+  completed, saved a synthetic Japan trip, persisted a test title, reopened it from
+  the profile and retained title/activities across a full document reload. Only
+  this new test trip was edited. It exposed an extra return night (#576); this
+  proves the live create/persist/reopen transport, not correct duration before the fix.
 - [ ] Prepare final release metadata and production rollout/rollback record when a
   production promotion is actually approved. Keep the single migration release
   note draft until then; never invent a production publication timestamp.

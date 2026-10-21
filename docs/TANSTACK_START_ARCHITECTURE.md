@@ -44,6 +44,24 @@ native route matching.
   Never read browser storage during SSR or put request-specific data in a module
   singleton.
 
+The native root component owns the HTML document, shared providers and application
+shell. Stable charset, viewport, theme colour and pre-paint scripts precede
+`HeadContent`; native route metadata remains in `head`. Keep the first hydration
+head identical to the transported document. A masked offline entry invalidates
+only the native root after hydration to resolve the actual URL through `beforeLoad`.
+React 18 suppresses attribute mismatches without patching them, so substituting
+actual metadata before the first hydration can leave stale canonical links.
+Authentication may clear an already presented private workspace during session
+replacement, but must not replace pending native route boundaries during hydration.
+Use the match's presentation status and an established auth result rather than
+the requested URL alone. Initial session discovery must retain the native boundary.
+Pending marketing chrome uses `HydrationLocaleBoundary`: a request-scoped,
+immutable delivered i18n instance for that initial pending presentation. The
+actual route uses the live instance. A later browser-only pending presentation
+starts with the live instance. react-i18next's external-store hydration snapshot reads the current
+language, so `startTransition(changeLanguage)` alone cannot prevent a still
+pending English document from reading a newly restored German preference.
+
 A future feature can adopt server loaders when its data/access contract supports it.
 Do not enable private SSR simply to eliminate a client loading state: first define
 server session validation, authorization, cache policy and hydration data boundaries.
@@ -124,7 +142,15 @@ that instance; browser navigation uses the browser instance. A hover preload mus
 change the visible page language. Validate optional locale prefixes and keep canonical
 slugs English-only. See [the locale workflow](I18N_PAGE_WORKFLOW.md).
 
-Native `head` metadata is emitted with the document. Site metadata uses the shared
+Native `head` metadata is emitted with the document. Generic metadata and locale
+come from a fresh native `beforeLoad` document snapshot on ordinary loads and warm
+navigation. Root `context` supplies a separate initial URL snapshot only for
+masked SPA hydration, where transported `beforeLoad` data still describes the
+neutral offline mask. A shared selector owns both native head and document locale;
+never rely on cached root route context to refresh on warm navigation. Async
+`beforeLoad` also resolves optional public trip metadata and clears it on other
+routes. Document locale synchronization restores the selected route language when
+the delivered offline shell contains English resources. Site metadata uses the shared
 resolver; trip/share summaries cross a validated server-function boundary. Credentials
 stay on the server, metadata reads expose only public share-backed summaries, and a
 metadata failure must not prevent offline trip access. Do not postprocess the rendered

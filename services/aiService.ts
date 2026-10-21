@@ -5,6 +5,7 @@ import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripG
 import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
+import { isZeroNightReturnStop } from '../shared/aiTripStayDuration';
 import { parseAiTripCityLocation } from "../shared/aiTripCityLocation";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
 import {
@@ -699,10 +700,13 @@ const buildTripFromModelData = (
     const cityOffsets: number[] = [];
     const cityDurations: number[] = [];
 
-    const parsedCities: ParsedCityStop[] = (Array.isArray(data.cities) ? data.cities : []).map((city: any, index: number) => {
+    const rawCities = Array.isArray(data.cities) ? data.cities : [];
+    const parsedCities: ParsedCityStop[] = rawCities.map((city: any, index: number) => {
         const location = parseAiTripCityLocation(city, `Stop ${index + 1}`);
         const parsedCityDays = Number(city?.days);
-        const cityDays = Number.isFinite(parsedCityDays) && parsedCityDays > 0 ? parsedCityDays : 1;
+        const cityDays = isZeroNightReturnStop(rawCities, index, options?.roundTrip === true)
+            ? 0
+            : (Number.isFinite(parsedCityDays) && parsedCityDays > 0 ? parsedCityDays : 1);
 
         return {
             name: location.name,
@@ -721,7 +725,7 @@ const buildTripFromModelData = (
         if (getNormalizedCityName(firstCity.name) !== getNormalizedCityName(lastCity.name)) {
             parsedCities.push({
                 ...firstCity,
-                days: 1,
+                days: 0,
                 sourceIndex: -1,
             });
         }
