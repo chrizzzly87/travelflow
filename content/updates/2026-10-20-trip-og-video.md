@@ -1,10 +1,10 @@
 ---
 id: rel-2026-10-20-trip-og-video
-version: v0.0.0
+version: v0.207.0
 title: "Animated trip sharing previews"
-date: 2026-10-20
-published_at: 2026-10-20T12:00:00Z
-status: draft
+date: 2026-10-21
+published_at: 2026-10-21T13:29:58Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Trip sharing previews can trace your route with animated city stops."
