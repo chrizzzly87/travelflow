@@ -9,6 +9,21 @@ const json = (data: unknown, status = 200) => Response.json(data, { status, head
 export default async (request: Request, context?: Context) => {
   try {
     const url = new URL(request.url);
+    // Copied HTML attributes can contain literal entity separators. Never let
+    // an escaped poster selector silently fall through to the MP4 response.
+    const escaped = [...url.searchParams.keys()].filter(key => key.startsWith('amp;'));
+    if (escaped.length) {
+      if (!['GET', 'HEAD'].includes(request.method)) return json({ error: 'Invalid query separators.' }, 400);
+      for (const key of escaped) {
+        const plain = key.replace(/^(amp;)+/, '');
+        if (!['trip', 's', 'r', 'asset', 'status', 'mapStyle', 'routeMode', 'format'].includes(plain) || url.searchParams.has(plain)) return json({ error: 'Invalid query separators.' }, 400);
+        url.searchParams.set(plain, url.searchParams.get(key)!); url.searchParams.delete(key);
+      }
+      return new Response(null, { status: 308, headers: { location: url.toString(), 'cache-control': 'no-store' } });
+    }
+    const posterPath = url.pathname === '/api/og/trip-poster.jpg';
+    if (posterPath && !['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD' } });
+    if (url.searchParams.has('asset') && !['poster', 'video'].includes(url.searchParams.get('asset')!)) return json({ error: 'Invalid media asset.' }, 400);
     const tripId = url.searchParams.get('trip');
     if (tripId && !isTripVideoId(tripId)) return json({ error: 'Invalid trip ID.' }, 400);
     if (!['GET', 'HEAD', 'POST', 'PATCH'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD, POST, PATCH' } });
@@ -67,7 +82,7 @@ export default async (request: Request, context?: Context) => {
     const attachmentStale = Boolean(attached && attached.revision !== videoRevision(trip, attached.style, attached.routeMode, attached.format));
     if (url.searchParams.get('status') === '1') return json({ ...state, status: state && tripVideoLeaseExpired(state) ? 'failed' : state?.status || 'missing', ...(state && tripVideoLeaseExpired(state) ? { error: 'The video worker did not finish. Retry after the cooldown.' } : {}), stale, attached: attached ? { ...attached, stale: attachmentStale } : null, settingsMatch: (!url.searchParams.has('format') || normalizeTripVideoFormat(url.searchParams.get('format')) === normalizeTripVideoFormat((attached || state)?.format)) && (!url.searchParams.has('mapStyle') || normalizeTripVideoStyle(url.searchParams.get('mapStyle')) === (attached || state)?.style) && (!url.searchParams.has('routeMode') || normalizeTripVideoRouteMode(url.searchParams.get('routeMode')) === ((attached || state)?.routeMode || 'simple')), spec: { ...TRIP_VIDEO, ...tripVideoDimensions((attached || state)?.format) } });
     if (!attached || (!manager && attachmentStale) || (url.searchParams.has('r') && url.searchParams.get('r') !== (attached.mediaRevision || attached.revision))) return json({ error: 'Video preview is not ready.' }, 404);
-    const poster = url.searchParams.get('asset') === 'poster';
+    const poster = posterPath || url.searchParams.get('asset') === 'poster';
     const entry = await store.getWithMetadata(tripVideoAssetPath(trip.id, attached, poster ? 'poster' : 'video'), { type: 'arrayBuffer' });
     if (!entry) return json({ error: 'Video preview unavailable.' }, 404);
     const bytes = new Uint8Array(entry.data);
@@ -86,4 +101,4 @@ export default async (request: Request, context?: Context) => {
   }
 };
 
-export const config: Config = { path: '/api/og/trip-video', rateLimit: { action: 'rate_limit', aggregateBy: 'ip', windowSize: 60, windowLimit: 120 } };
+export const config: Config = { path: ['/api/og/trip-video', '/api/og/trip-poster.jpg'], rateLimit: { action: 'rate_limit', aggregateBy: 'ip', windowSize: 60, windowLimit: 120 } };

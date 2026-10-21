@@ -42,6 +42,7 @@ describe('adminOgToolsService image source classification', () => {
     expect(classifyOgImageKind('/images/og/site/generated/root-a1.png', ORIGIN)).toBe('static-generated');
     expect(classifyOgImageKind(`${ORIGIN}/api/og/site?title=Blog`, ORIGIN)).toBe('dynamic-site');
     expect(classifyOgImageKind(`${ORIGIN}/api/og/trip?s=abc123`, ORIGIN)).toBe('dynamic-trip');
+    expect(classifyOgImageKind(`${ORIGIN}/api/og/trip-poster.jpg?trip=123&r=revision`, ORIGIN)).toBe('dynamic-trip');
     expect(classifyOgImageKind('', ORIGIN)).toBe('missing');
     expect(classifyOgImageKind(`${ORIGIN}/images/blog/cover.jpg`, ORIGIN)).toBe('unknown');
   });

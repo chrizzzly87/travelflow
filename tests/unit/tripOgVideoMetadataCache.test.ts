@@ -30,6 +30,9 @@ describe('trip preview cache tagging and playground settings', () => {
   it('keeps preview settings on admin links, defaults image maps to Mapbox, and avoids playing a mismatched cached video', async () => {
     const html = await (await playground(new Request(`https://feature.example.com/api/og/playground?trip=${id}`))).text();
     expect(html).toContain("params.set('mr', 'mmmm')");
+    expect(html).not.toContain("'__t='");
+    expect(html).not.toContain('Date.now()');
+    expect(html).toContain('Image preview could not load.');
     expect(html).toContain("['trip', 'mapStyle', 'routeMode', 'format']");
     expect(html).toContain('state.settingsMatch !== false');
     expect(html).toContain("videoParams.set('format', format)");

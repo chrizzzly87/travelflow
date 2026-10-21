@@ -97,7 +97,7 @@ describe('ready-only OG video metadata', () => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ status: 'ready', revision, posterAsImage: true })));
     const media = await resolveReadyTripVideoMedia('https://example.com', { token: 'share', versionId: null });
     expect(media?.videoUrl).toContain('s=share&r=');
-    expect(media?.posterUrl).toContain('asset=poster');
+    expect(media?.posterUrl).toContain('/api/og/trip-poster.jpg?');
     const html = buildTripVideoMetaTags(media?.videoUrl).join('');
     expect(parseOgHeadMetadata(html)).toMatchObject({ ogVideo: media?.videoUrl, ogVideoType: 'video/mp4' });
     expect(html).toContain('og:video:width');
@@ -114,7 +114,7 @@ describe('ready-only OG video metadata', () => {
       vi.stubGlobal('fetch', vi.fn(async () => Response.json({ status, attached: { revision: 'a'.repeat(24), mediaRevision: 'b'.repeat(24), posterAsImage: true, stale: false } })));
       const media = await resolveReadyTripVideoMedia('https://example.com', { tripId: 'trip', versionId: null });
       expect(media?.videoUrl).toContain('r=' + 'b'.repeat(24));
-      expect(media?.posterUrl).toContain('asset=poster');
+      expect(media?.posterUrl).toContain('/api/og/trip-poster.jpg?');
     }
   });
   it('leaves version links image-only and does not request current video', async () => {

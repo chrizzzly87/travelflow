@@ -27,7 +27,7 @@ export const resolveReadyTripVideoMedia = async (origin: string, target: { token
     if (!/^[a-f0-9]{24}$/.test(mediaRevision)) return undefined;
     url.searchParams.set('r', mediaRevision);
     const videoUrl = url.toString();
-    url.searchParams.set('asset', 'poster');
+    url.pathname = '/api/og/trip-poster.jpg';
     return { videoUrl, dimensions: tripVideoDimensions(state.format), posterUrl: state.posterAsImage ? url.toString() : undefined };
   } catch { return undefined; }
 };

@@ -434,6 +434,7 @@ export default async (request: Request): Promise<Response> => {
           <a id="video-admin" href="/admin/og-tools" target="_blank" rel="noopener">Generate or change video in admin</a>
         </div>
         <code id="query-url"></code>
+        <p id="image-status" role="status" style="padding:0 16px"></p>
         <div class="img-wrap">
           <img id="og-image" src="" alt="Open Graph preview" />
         </div>
@@ -443,6 +444,9 @@ export default async (request: Request): Promise<Response> => {
     <script>
       const form = document.getElementById('og-form');
       const ogImage = document.getElementById('og-image');
+      const imageStatus = document.getElementById('image-status');
+      ogImage.addEventListener('load', () => { imageStatus.textContent = ''; });
+      ogImage.addEventListener('error', () => { imageStatus.textContent = 'Image preview could not load. Open Image to inspect the response.'; });
       const openLink = document.getElementById('open-link');
       const queryUrl = document.getElementById('query-url');
       const reloadBtn = document.getElementById('reload-btn');
@@ -631,8 +635,8 @@ export default async (request: Request): Promise<Response> => {
         applyModeVisibility();
         updateTintControls();
         const { imageUrl, mode, params } = buildImageUrl();
-        const busted = imageUrl + (imageUrl.includes('?') ? '&' : '?') + '__t=' + Date.now();
-        ogImage.src = busted;
+        imageStatus.textContent = 'Loading image preview…';
+        ogImage.src = imageUrl;
         openLink.href = imageUrl;
         queryUrl.textContent = imageUrl;
         const videoParams = new URLSearchParams(params);

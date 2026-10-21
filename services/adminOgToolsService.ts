@@ -123,7 +123,7 @@ export const classifyOgImageKind = (ogImage: string, origin: string): OgImageKin
       return "static-generated";
     }
     if (imageUrl.pathname === "/api/og/site") return "dynamic-site";
-    if (imageUrl.pathname === "/api/og/trip") return "dynamic-trip";
+    if (imageUrl.pathname === "/api/og/trip" || imageUrl.pathname === "/api/og/trip-poster.jpg") return "dynamic-trip";
   } catch {
     return "unknown";
   }
