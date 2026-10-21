@@ -108,7 +108,7 @@ const parseBlogFile = (sourcePath: string, raw: string): BlogPost | null => {
     const author = meta.author || 'TravelFlow Team';
     const tags = parseTags(meta.tags);
     const summary = meta.summary || '';
-    const coverColor = meta.cover_color || 'bg-slate-100';
+    const coverColor = meta.cover_color || 'bg-secondary';
     const readingTimeMin = Number(meta.reading_time_min) || 5;
 
     const statusValue = (meta.status || 'draft').trim().toLowerCase();

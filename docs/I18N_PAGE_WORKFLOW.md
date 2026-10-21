@@ -15,15 +15,16 @@ This document defines how to add or change localized pages in TravelFlow.
 - Keep `document.documentElement.lang` and `document.documentElement.dir` in sync via runtime locale updates in `App.tsx`.
 
 ## Translation Files
-- Runtime i18n bootstrap: `i18n.ts` (`i18next + react-i18next + i18next-icu`).
+- Runtime i18n bootstrap: `i18n.ts` (`i18next + react-i18next`, no ICU MessageFormat plugin).
 - Store strings per namespace at `locales/<locale>/<namespace>.json`.
-- Interpolation uses ICU-style placeholders: `{name}` (not `{{name}}`).
+- Interpolation uses single-brace placeholders: `{name}` (not `{{name}}`).
 - App name is provided through default interpolation variable `appName`.
 - For tone and copy quality, apply `docs/UX_COPY_GUIDELINES.md` before writing localized strings.
 
-## ICU Placeholder Rules (Mandatory)
+## Placeholder Rules (Mandatory)
 
-Because this project uses `i18next-icu`, interpolation must follow ICU syntax.
+`i18n.ts` overrides i18next interpolation to single braces
+(`interpolation: { prefix: '{', suffix: '}' }`), so placeholders use one brace, not two.
 
 - Correct: `{name}`, `{count}`, `{maxActiveTripsLabel}`
 - Wrong: `{{name}}`, `{{count}}`, `{{maxActiveTripsLabel}}`
@@ -35,10 +36,50 @@ Examples:
 - Wrong: `"days": "{{count}} days"`
 - Wrong: `"Trip retention: {{tripExpirationLabel}}"`
 
+### ICU MessageFormat is NOT available
+
+The single-brace syntax above is *only* an interpolation prefix/suffix change. No ICU
+plugin is registered with i18next, so ICU MessageFormat constructs are never parsed and
+render literally to the user:
+
+- Wrong: `"{count, plural, one {1 trip} other {# trips}}"` — the user sees that raw text.
+- Wrong: `{count, number}`, `{date, date, short}`, `{gender, select, ...}`.
+
+`i18next-icu` appears in `package.json` but is never wired into `i18n.ts` — it was
+dropped from the runtime deliberately for bundle cost (see
+`docs/PERFORMANCE_EXECUTION_TODO.md`). Do not infer ICU support from the dependency list.
+
+### Pluralization
+
+Use i18next native plural suffix keys, and pass `count` from the call site:
+
+```json
+"tripsPrunedDescription_one": "Your oldest saved trip was removed from this device to free up space.",
+"tripsPrunedDescription_other": "Your {count} oldest saved trips were removed from this device to free up space."
+```
+
+```ts
+t('storageNotice.tripsPrunedDescription', { count: prunedCount });
+```
+
+i18next selects the form via `Intl.PluralRules`, so each locale needs every CLDR category
+it can resolve — not just `_one`/`_other`:
+
+| Categories | Locales |
+| --- | --- |
+| `one`, `other` | `en`, `de`, `fa`, `ur` |
+| `one`, `many`, `other` | `es`, `fr`, `pt`, `it` |
+| `one`, `few`, `many`, `other` | `ru`, `pl` |
+| `other` | `ko` |
+
+Confirm a locale's categories with
+`new Intl.PluralRules(locale).resolvedOptions().pluralCategories`.
+
 Validation:
 
 - Run `pnpm i18n:validate` (also executed in `pnpm build`).
 - The validator fails if any locale string still contains legacy `{{...}}` placeholders.
+- `tests/unit/storageNoticePlurals.test.ts` guards the plural keys against ICU regressions.
 
 ## Namespace Placement Strategy
 

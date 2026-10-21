@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ArrowsInSimple, ArrowsOutSimple, DeviceRotate } from '@phosphor-icons/react';
 
+import { Button } from '../ui/button';
 import { trackEvent } from '../../services/analyticsService';
 import {
     type FloatingMapOrientation,
@@ -17,6 +19,8 @@ interface TripFloatingMapPreviewProps {
     dockedMapAnchorRef: React.RefObject<HTMLDivElement | null>;
     dockedGeometryKey: string;
     reservedRightInset?: number;
+    /** Space to keep clear on the physical left, used by RTL layouts. */
+    reservedLeftInset?: number;
     tripId: string;
     children: React.ReactNode;
 }
@@ -31,6 +35,11 @@ const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 0.015;
 const FLOATING_MAP_SETTLE_DURATION_MS = 380;
 const FLOATING_MAP_RESIZE_SETTLE_MS = 140;
 const FLOATING_MAP_BORDER_RADIUS = '1rem';
+const FLOATING_MAP_FRAME_WIDTH = '4px';
+// The map sits inside the frame, so its corners are concentric with the outer
+// radius minus the frame, not equal to it. Inheriting 1rem left a light seam in
+// each corner where the map's curve pulled away from the frame's.
+const FLOATING_MAP_INNER_BORDER_RADIUS = `calc(${FLOATING_MAP_BORDER_RADIUS} - ${FLOATING_MAP_FRAME_WIDTH})`;
 const FLOATING_MAP_NAV_TOP_OFFSET = 92;
 const DOCKED_MAP_EDGE_GUARD_PX = 4;
 const FLOATING_MAP_ASPECT_RATIO: Record<FloatingMapOrientation, number> = {
@@ -87,8 +96,24 @@ const resolveFloatingMapWidth = (): number => {
     );
 };
 
-const resolveFloatingMapBounds = (panelWidth: number, panelHeight: number, reservedRightInset = 0) => {
-    const minX = FLOATING_MAP_MARGIN;
+// The panel is dragged in viewport pixels, so an overlay docked on the logical
+// end reserves space on the right in LTR and on the left in RTL. The inset is
+// therefore a value that can name either side.
+export type FloatingMapInset = number | { right?: number; left?: number };
+
+const normalizeInset = (inset: FloatingMapInset = 0): { right: number; left: number } => (
+    typeof inset === 'number'
+        ? { right: inset, left: 0 }
+        : { right: inset.right || 0, left: inset.left || 0 }
+);
+
+const resolveFloatingMapBounds = (
+    panelWidth: number,
+    panelHeight: number,
+    reservedInset: FloatingMapInset = 0,
+) => {
+    const { right: reservedRightInset, left: reservedLeftInset } = normalizeInset(reservedInset);
+    const minX = FLOATING_MAP_MARGIN + reservedLeftInset;
     const minY = Math.max(FLOATING_MAP_MARGIN, resolveFloatingMapTopBoundary());
     if (typeof window === 'undefined') {
         return {
@@ -110,7 +135,7 @@ const clampFloatingMapPosition = (
     nextPosition: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): { x: number; y: number } => {
     const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     return {
@@ -128,7 +153,7 @@ const resolveFloatingMapSideAnchor = (
     position: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): FloatingMapSideAnchor => {
     const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = minX + ((maxX - minX) / 2);
@@ -153,7 +178,7 @@ const resolveFloatingMapPositionForAnchor = (
     anchor: FloatingMapSideAnchor,
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): { x: number; y: number } => {
     const bounds = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = bounds.minX + ((bounds.maxX - bounds.minX) / 2);
@@ -176,7 +201,7 @@ type FloatingMapSnapTarget = {
 const resolveFloatingMapSnapTargets = (
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): FloatingMapSnapTarget[] => {
     const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = minX + ((maxX - minX) / 2);
@@ -193,7 +218,7 @@ const resolveNearestFloatingMapSnapTarget = (
     position: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): FloatingMapSnapTarget => {
     const points = resolveFloatingMapSnapTargets(panelWidth, panelHeight, reservedRightInset);
     if (points.length === 0) {
@@ -213,14 +238,18 @@ const resolveNearestFloatingMapSnapTarget = (
 const resolveDefaultFloatingMapPosition = (
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): { x: number; y: number } => {
     if (typeof window === 'undefined') {
         return { x: FLOATING_MAP_MARGIN, y: FLOATING_MAP_MARGIN };
     }
+    const { right, left } = normalizeInset(reservedRightInset);
     return clampFloatingMapPosition(
         {
-            x: window.innerWidth - reservedRightInset - panelWidth - FLOATING_MAP_MARGIN,
+            // Park on the free side: the reserved edge is where the panel sits.
+            x: left > 0 && right === 0
+                ? FLOATING_MAP_MARGIN + left
+                : window.innerWidth - right - panelWidth - FLOATING_MAP_MARGIN,
             y: window.innerHeight - panelHeight - FLOATING_MAP_MARGIN,
         },
         panelWidth,
@@ -246,10 +275,18 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     mapViewportRef,
     dockedMapAnchorRef,
     dockedGeometryKey,
-    reservedRightInset = 0,
+    reservedRightInset: reservedRightInsetProp = 0,
+    reservedLeftInset: reservedLeftInsetProp = 0,
     tripId,
     children,
 }) => {
+    const { t } = useTranslation('common');
+    // One value carrying both sides, so every position helper below keeps its
+    // signature while RTL reserves space on the left instead of the right.
+    const reservedRightInset = useMemo<FloatingMapInset>(
+        () => ({ right: reservedRightInsetProp, left: reservedLeftInsetProp }),
+        [reservedLeftInsetProp, reservedRightInsetProp],
+    );
     const initialPersistedStateRef = useRef(readFloatingMapPreviewState());
     const [floatingMapBaseWidth, setFloatingMapBaseWidth] = useState(() => resolveFloatingMapWidth());
     const [floatingMapSizePreset, setFloatingMapSizePreset] = useState<FloatingMapSizePreset>(() => (
@@ -896,7 +933,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 }}
                 className={`fixed overflow-hidden bg-transparent transition-[border-radius,box-shadow,border-width] duration-300 ease-out ${
                     mapDockMode === 'floating'
-                        ? `${shouldPromoteMapLayer ? 'z-[84]' : 'z-[80]'} border-[4px] border-white ${
+                        ? `${shouldPromoteMapLayer ? 'z-[84]' : 'z-[80]'} border-[4px] border-card bg-card ${
                             isFloatingMapDragging
                                 ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
                                 : 'shadow-[0_20px_50px_-22px_rgba(15,23,42,0.58),0_10px_24px_-12px_rgba(15,23,42,0.38)]'
@@ -923,46 +960,50 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-drag-handle"
                             data-floating-map-control="true"
                             onPointerDown={beginFloatingMapDrag}
-                            className={`group pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-t-none rounded-b-full border-[4px] border-t-0 border-white bg-white shadow-sm touch-none transition-transform ${
+                            className={`group pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-t-none rounded-b-full border-[4px] border-t-0 border-card bg-card shadow-sm touch-none dark:shadow-none transition-transform ${
                                 isHandlePressed || isFloatingMapDragging ? 'cursor-grabbing scale-[1.03]' : 'cursor-grab'
                             }`}
-                            aria-label="Move floating map preview"
+                            aria-label={t('tripView.floatingMap.move')}
                         >
-                            <span className="inline-block h-1.5 w-14 rounded-full bg-slate-400/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] transition-colors group-hover:bg-accent-500" />
-                            <span className="sr-only">Move floating map preview</span>
+                            <span className="inline-block h-1.5 w-14 rounded-full bg-transfer-line transition-colors group-hover:bg-accent-500" />
+                            <span className="sr-only">{t('tripView.floatingMap.move')}</span>
                         </button>
                     </div>
                 )}
                 {mapDockMode === 'floating' && (
                     <div className="pointer-events-none absolute top-0 start-0 z-[92] flex items-start gap-1 ps-1 pt-1">
-                        <button
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-sm"
                             data-testid="floating-map-resize-handle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapSize}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
+                            className="group pointer-events-auto relative rounded-lg border-[4px] border-card shadow-none"
                             aria-label={floatingMapSizePreset === 'lg'
-                                ? 'Use compact floating map size'
-                                : 'Use expanded floating map size'}
+                                ? t('tripView.floatingMap.useCompactSize')
+                                : t('tripView.floatingMap.useExpandedSize')}
                         >
                             {floatingMapSizePreset === 'lg'
                                 ? <ArrowsInSimple size={18} weight="regular" className="-scale-x-100" />
                                 : <ArrowsOutSimple size={18} weight="regular" className="-scale-x-100" />}
                             <span className="sr-only">
                                 {floatingMapSizePreset === 'lg'
-                                    ? 'Use compact floating map size'
-                                    : 'Use expanded floating map size'}
+                                    ? t('tripView.floatingMap.useCompactSize')
+                                    : t('tripView.floatingMap.useExpandedSize')}
                             </span>
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-sm"
                             data-testid="floating-map-orientation-toggle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapOrientation}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
+                            className="group pointer-events-auto relative rounded-lg border-[4px] border-card shadow-none"
                             aria-label={floatingMapOrientation === 'portrait'
-                                ? 'Switch floating map preview to landscape'
-                                : 'Switch floating map preview to portrait'}
+                                ? t('tripView.floatingMap.switchToLandscape')
+                                : t('tripView.floatingMap.switchToPortrait')}
                         >
                             <m.span
                                 animate={{ rotate: floatingMapOrientation === 'landscape' ? 90 : 0 }}
@@ -973,16 +1014,19 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             </m.span>
                             <span className="sr-only">
                                 {floatingMapOrientation === 'portrait'
-                                    ? 'Switch floating map preview to landscape'
-                                    : 'Switch floating map preview to portrait'}
+                                    ? t('tripView.floatingMap.switchToLandscape')
+                                    : t('tripView.floatingMap.switchToPortrait')}
                             </span>
-                        </button>
+                        </Button>
                     </div>
                 )}
-                <div className="h-full w-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
+                <div
+                    className="h-full w-full overflow-hidden"
+                    style={{ borderRadius: mapDockMode === 'floating' ? FLOATING_MAP_INNER_BORDER_RADIUS : '0px' }}
+                >
                     {children}
                 </div>
-                {isFloatingMapSettling && <span className="sr-only">Settling floating map preview</span>}
+                {isFloatingMapSettling && <span className="sr-only">{t('tripView.floatingMap.settling')}</span>}
             </m.div>
         </LazyMotion>
     );

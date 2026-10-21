@@ -446,8 +446,10 @@ describe('pages/PublicProfilePage', () => {
     expect(screen.getByText('Public trips unavailable')).toBeInTheDocument();
   });
 
-  it('opens passport dialog using URL search state', async () => {
-    const user = userEvent.setup();
+  // Mirrors the owner-profile case: the passport stays hidden on public
+  // profiles while PASSPORT_FEATURE_ENABLED is off. Restore the click-through
+  // assertions from git history when the feature comes back.
+  it('does not offer the passport while PASSPORT_FEATURE_ENABLED is off', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'found',
       canonicalUsername: 'traveler',
@@ -476,13 +478,10 @@ describe('pages/PublicProfilePage', () => {
 
     renderPublicProfilePage('/u/traveler');
 
-    const openPassportButton = await screen.findByRole('button', { name: /summary\.stampsOpen/i });
-    await user.click(openPassportButton);
+    await screen.findByTestId('location-probe');
 
-    await waitFor(() => {
-      expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
-    });
-    expect(screen.getByText('stamps.title')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /summary\.stampsOpen/i })).toBeNull();
+    expect(screen.queryByText('stamps.title')).toBeNull();
   });
 
   it('renders centered masked private profile card without public trips', async () => {

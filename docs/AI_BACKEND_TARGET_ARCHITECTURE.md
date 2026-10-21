@@ -211,6 +211,7 @@ export interface TripValidationResult {
     cityIndexValid: boolean;
     markdownSectionsValid: boolean;
     travelSegmentIndicesValid: boolean;
+    dayTripsPlaceable: boolean; // non-blocking; see docs/ACTIVITIES_AND_DAY_TRIPS.md
   };
   errors: string[];
 }

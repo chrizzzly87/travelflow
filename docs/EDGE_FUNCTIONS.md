@@ -3,6 +3,30 @@
 All Netlify Edge Functions live in `netlify/edge-functions/`.
 Shared helpers live in `netlify/edge-lib/`.
 
+## Relative imports must carry explicit file extensions
+
+Deno's edge bundler does **not** resolve extensionless specifiers. Vite and `tsc` do (this repo sets `moduleResolution: "bundler"` and `allowImportingTsExtensions`), so an extensionless import compiles and tests fine locally and only fails on Netlify:
+
+```
+error: Module not found "file:///opt/build/repo/shared/aiReasoning".
+```
+
+When that happens the whole edge bundle fails, so **no edge functions deploy at all** and every `/api/*` route falls through to the SPA shell — which looks like unrelated application breakage rather than a build error.
+
+Rules for any module reachable from `netlify/edge-functions/`, including files in `shared/`, `services/`, `config/`, `lib/` and `data/`:
+
+- **Value imports must include the extension**: `import { thing } from "../shared/thing.ts";`
+- **`import type` is exempt** — type-only statements are erased before bundling, which is why many extensionless `import type { X } from "../types"` specifiers in this repo are harmless.
+- Converting an `import type` to a value import on an edge-reachable path is a breaking change unless you add the extension at the same time.
+
+`pnpm edge:validate` enforces this: it walks every relative import transitively from each edge function entry and fails on an extensionless value import or a specifier that does not exist on disk.
+
+### History
+
+The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.ts`, which pulled in `services/openRouterModelCatalogService.ts`, which imported `"../shared/aiReasoning"` with no extension. Every Netlify build failed from then on, and because the edge bundle never built, the destination API silently returned the SPA shell.
+
+2026-09-17: `shared/recommendationRows.ts` was written for the browser first and imported `"./recommendations"` for a value (`COST_BAND_VALUES`). The moment two edge functions started using it, the Netlify build failed — `pnpm test:core` and `vite build` had both been green locally. `pnpm edge:validate` caught it in one run; it is worth running by hand after wiring any existing `shared/` module into an edge function.
+
 ## Inventory
 
 | Function file | Route(s) | Purpose | Type |
@@ -21,9 +45,12 @@ Shared helpers live in `netlify/edge-lib/`.
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
 | `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip/site OG image endpoints directly | Dev tool |
-| `trip-map-preview.ts` | `/api/trip-map-preview` | Proxies Google Static Maps API; returns 302 redirect to styled map | API proxy |
+| `trip-map-preview.ts` | `/api/trip-map-preview` | Renders a trip's static map and returns the image bytes under our own origin, cached durably at the CDN so one render serves every viewer until the trip changes. Falls back to an uncacheable redirect when the provider render cannot be fetched. See `docs/TRIP_MAP_PREVIEW_CACHING.md`. | API proxy |
 | `trip-share-resolve.ts` | `/api/trip-share-resolve` | Resolves active share token by trip id for non-owner route handoff | API |
 | `runtime-location.ts` | `/api/runtime/location` | Returns the current request’s normalized Netlify GeoIP snapshot for client bootstrap and debugger diagnostics | API |
+| `place-photo.ts` | `/api/place-photo` | Resolves a Google Places photo resource name to its hosted image with a 302, keeping the Maps key server-side. The `ref` allowlist pattern is what prevents an open redirect into any Google path — photo ids are opaque and long, so the pattern bounds the character set, not a guessed length. | API proxy |
+| `recommendations.ts` | `/api/recommendations` | Public read of the place-recommendation library for one country. Uses the **anon** key so row-level security decides visibility rather than a query filter; only `status = 'published'` rows can leave. | API |
+| `admin-recommendations.ts` | `/api/internal/admin/recommendations` | Admin CRUD for the recommendation library — list (drafts included), save, change status, delete, bulk import. Proves the caller's admin role with their own token via `get_current_user_access`, then writes on the service role. | API |
 
 **Shared helper:** `netlify/edge-lib/trip-og-data.ts` — Supabase RPC calls, HTML escaping, URL builders, map API key access.
 
@@ -47,14 +74,15 @@ Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA ind
                          ▼ (OG image URL points to)
                     trip-og-image.tsx
 
-/api/trip-map-preview ──▶ trip-map-preview.ts ──302──▶ Google Static Maps
+/api/trip-map-preview ──▶ trip-map-preview.ts ──fetch──▶ Mapbox / Google Static Maps
+                                    └──image bytes + durable CDN cache──▶ browser
 /api/trip-share-resolve ──▶ trip-share-resolve.ts ──JSON──▶ share token + canonical /s path
 /api/runtime/location ──▶ runtime-location.ts ──JSON──▶ normalized Netlify geo snapshot
 ```
 
 - **Middleware functions** (`*-meta.ts`) call `context.next()` to get the SPA HTML, then rewrite `<head>` tags before returning the response.
 - **Image generators** (`*-image.tsx`) return standalone `ImageResponse` objects (server-rendered React → PNG).
-- **API proxies** (`trip-map-preview.ts`) return redirects or direct responses; no middleware chaining.
+- **API proxies** (`trip-map-preview.ts`, `place-photo.ts`) return direct responses or redirects; no middleware chaining. Where we are allowed to hold the bytes, prefer returning them: a redirect moves the request to the provider's origin, where our CDN cannot cache it and every visitor is billed again.
 
 ## Configuration rules
 

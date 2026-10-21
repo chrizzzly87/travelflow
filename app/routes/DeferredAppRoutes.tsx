@@ -30,6 +30,7 @@ const CountriesPage = lazyWithRecovery('CountriesPage', () => import('../../page
 const FestivalsPage = lazyWithRecovery('FestivalsPage', () => import('../../pages/inspirations/FestivalsPage').then((module) => ({ default: module.FestivalsPage })));
 const WeekendGetawaysPage = lazyWithRecovery('WeekendGetawaysPage', () => import('../../pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
 const CountryDetailPage = lazyWithRecovery('CountryDetailPage', () => import('../../pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
+const DestinationDetailPage = lazyWithRecovery('DestinationDetailPage', () => import('../../pages/inspirations/DestinationDetailPage').then((module) => ({ default: module.DestinationDetailPage })));
 const LoginPage = lazyWithRecovery('LoginPage', () => import('../../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 const ResetPasswordPage = lazyWithRecovery('ResetPasswordPage', () => import('../../pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
 const ContactPage = lazyWithRecovery('ContactPage', () => import('../../pages/ContactPage').then((module) => ({ default: module.ContactPage })));
@@ -118,6 +119,7 @@ const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement
     { path: '/inspirations/events-and-festivals', element: <FestivalsPage /> },
     { path: '/inspirations/weekend-getaways', element: <WeekendGetawaysPage /> },
     { path: '/inspirations/country/:countryName', element: <CountryDetailPage /> },
+    { path: '/inspirations/country/:countrySlug/:destinationSlug', element: <DestinationDetailPage /> },
     { path: '/updates', element: <UpdatesPage /> },
     { path: '/blog', element: <BlogPage /> },
     { path: '/blog/:slug', element: <BlogPostPage /> },

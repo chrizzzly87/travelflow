@@ -5,6 +5,8 @@ import { APP_SHELL_NAMESPACES } from './i18n';
 import { Scales } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
+import { InstallAppBanner } from './components/InstallAppBanner';
+import { shouldOpenTripsAsRoute } from './services/installPromptService';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
 import { createTripHistorySnapshotEntry } from './services/historyService';
@@ -16,6 +18,7 @@ import { resolveTripExpiryFromEntitlements } from './config/productLimits';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import {
     buildLocalizedMarketingPath,
+    buildLocalizedTripsPath,
     extractLocaleFromPath,
     getBlogSlugFromPath,
     isToolRoute,
@@ -53,6 +56,7 @@ import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
 import { normalizeTransportMode } from './shared/transportModes';
 import { showAppToast } from './components/ui/appToast';
+import { loadPublicAiRuntimeSettings } from './services/aiRuntimeSettingsService';
 import { getTripGenerationState } from './services/tripGenerationDiagnosticsService';
 import {
     buildTripCommitFingerprint,
@@ -170,29 +174,29 @@ const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => voi
             aria-label="Close My Plans panel"
         />
         <div
-            className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-card shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
             style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
         >
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-800">My Plans</h2>
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground">My Plans</h2>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="size-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    className="size-8 rounded-full text-muted-foreground hover:text-muted-foreground hover:bg-secondary"
                     aria-label="Close"
                 >
                     x
                 </button>
             </div>
-            <div className="px-3 py-2 border-b border-gray-100">
-                <div className="h-9 w-full rounded-md border border-gray-200 bg-gray-50 animate-pulse" />
+            <div className="px-3 py-2 border-b border-border">
+                <div className="h-9 w-full rounded-md border border-border bg-secondary animate-pulse" />
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {TRIP_MANAGER_FALLBACK_ROWS.map((row) => (
-                    <div key={row} className="rounded-lg border border-gray-100 bg-white p-2">
+                    <div key={row} className="rounded-lg border border-border bg-card p-2">
                         <div className="animate-pulse">
                             <div className="h-3.5 w-32 rounded bg-gray-200" />
-                            <div className="mt-2 h-2.5 w-44 rounded bg-gray-100" />
+                            <div className="mt-2 h-2.5 w-44 rounded bg-secondary" />
                         </div>
                     </div>
                 ))}
@@ -281,7 +285,9 @@ const createLocalHistoryEntry = (
     label: string,
     options?: { replace?: boolean },
     ts?: number,
-    baseUrlOverride?: string
+    baseUrlOverride?: string,
+    versionId?: string,
+    changeSetId?: string
 ) => {
     const { url } = createTripHistorySnapshotEntry({
         tripId: updatedTrip.id,
@@ -290,6 +296,8 @@ const createLocalHistoryEntry = (
         label,
         ts,
         baseUrlOverride,
+        versionId,
+        changeSetId,
     });
     navigate(url, { replace: options?.replace ?? false });
     return url;
@@ -372,6 +380,10 @@ const AppContent: React.FC = () => {
     useRuntimeLocationBootstrap();
     useAnalyticsBootstrap();
     useTripsPrunedNoticeBootstrap();
+
+    useEffect(() => {
+        void loadPublicAiRuntimeSettings();
+    }, []);
 
     useEffect(() => {
         if (isAuthLoading) return;
@@ -619,6 +631,7 @@ const AppContent: React.FC = () => {
         shareUnavailable: t('shareUnavailable.title', { ns: 'pages' }),
         createTrip: t('nav.createTrip', { ns: 'common' }),
         createTripLab: `${t('nav.createTrip', { ns: 'common' })} Labs`,
+        trips: t('trips.pageTitle', { ns: 'common' }),
         profile: 'Profile',
         profileSettings: 'Profile settings',
         profileOnboarding: 'Complete profile',
@@ -722,6 +735,27 @@ const AppContent: React.FC = () => {
         if (options?.persist === false) return;
         saveTrip(updatedTrip, { preserveUpdatedAt: options?.preserveUpdatedAt === true });
     }, []);
+
+    const handleAdoptAgentTripVersion = useCallback((input: {
+        trip: ITrip;
+        versionId: string;
+        label: string;
+        changeSetId?: string;
+    }) => {
+        setTrip(input.trip);
+        saveTrip(input.trip, { preserveUpdatedAt: true });
+        createLocalHistoryEntry(
+            navigate,
+            input.trip,
+            input.trip.defaultView,
+            input.label,
+            undefined,
+            Date.now(),
+            undefined,
+            input.versionId || undefined,
+            input.changeSetId
+        );
+    }, [navigate]);
 
     const handleTripManagerUpdate = useCallback((updatedTrip: ITrip) => {
         setTrip((currentTrip) => {
@@ -922,14 +956,24 @@ const AppContent: React.FC = () => {
         void loadTripManagerModule().catch(() => undefined);
     }, []);
 
+    // On a phone the 380px slide-in drawer is a cramped way to read a list, and
+    // /trips shows exactly the same component full width. Desktop keeps the
+    // overlay, where peeking at the list without leaving the planner is the
+    // point. This is the single place every "My Trips" entry point routes
+    // through, so both behaviours stay consistent wherever it is triggered.
     const openTripManager = useCallback(() => {
+        if (shouldOpenTripsAsRoute()) {
+            navigate(buildLocalizedTripsPath(resolvedRouteLocale));
+            return;
+        }
         prewarmTripManager();
         setIsManagerOpen(true);
-    }, [prewarmTripManager]);
+    }, [navigate, prewarmTripManager, resolvedRouteLocale]);
 
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
             <GlobalConnectivityBadge />
+            <InstallAppBanner />
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             {isWarmupEnabled && (
                 <Suspense fallback={null}>
@@ -939,22 +983,22 @@ const AppContent: React.FC = () => {
             )}
             {shouldRenderTermsNotice && (
                 <section
-                    className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${shouldShowForceTermsNotice ? 'text-rose-950' : 'text-accent-950'} sm:px-6 lg:px-8`}
+                    className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${shouldShowForceTermsNotice ? 'text-rose-950 dark:text-rose-200' : 'text-accent-950 dark:text-accent-200'} sm:px-6 lg:px-8`}
                     aria-live={shouldShowForceTermsNotice ? 'assertive' : 'polite'}
                 >
                     <div
                         className={`rounded-2xl border px-4 py-3 shadow-sm sm:flex sm:items-start sm:justify-between sm:gap-4 ${
                             shouldShowForceTermsNotice
-                                ? 'border-rose-200 bg-rose-50'
-                                : 'border-accent-200 bg-accent-50'
+                                ? 'border-rose-200 bg-rose-50 dark:bg-rose-400/12 dark:border-rose-400/30'
+                                : 'border-accent-200 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30'
                         }`}
                     >
                         <div className="flex min-w-0 items-start gap-3">
                             <span
                                 className={`mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-xl border ${
                                     shouldShowForceTermsNotice
-                                        ? 'border-rose-200 bg-rose-100 text-rose-700'
-                                        : 'border-accent-200 bg-accent-100 text-accent-700'
+                                        ? 'border-rose-200 bg-rose-100 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
+                                        : 'border-accent-200 bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                                 }`}
                                 aria-hidden="true"
                             >
@@ -990,7 +1034,7 @@ const AppContent: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setDismissedTermsNoticeVersion(termsNoticeVersion)}
-                                    className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 hover:bg-slate-50"
+                                    className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                                 >
                                     {t('termsPage.globalDismissAction', { ns: 'legal' })}
                                 </button>
@@ -1012,6 +1056,7 @@ const AppContent: React.FC = () => {
                     onTripLoaded={handleRouteTripLoaded}
                     onUpdateTrip={handleUpdateTrip}
                     onCommitState={handleCommitState}
+                    onAdoptAgentTripVersion={handleAdoptAgentTripVersion}
                     onViewSettingsChange={handleViewSettingsChange}
                     onOpenManager={openTripManager}
                     onOpenSettings={() => setIsSettingsOpen(true)}

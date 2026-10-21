@@ -1,5 +1,6 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
+import { buildModelActivityPlacementFields } from "../../shared/aiTripActivityPlacement.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import {
   BENCHMARK_ACTIVITY_TYPES as ACTIVITY_TYPES,
@@ -15,7 +16,11 @@ import {
   validateModelData,
   type BenchmarkRunCommentTelemetryGroup,
 } from "../../shared/aiBenchmarkValidation.ts";
-import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
+import {
+  TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA,
+  TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+} from "../../shared/aiTripItinerarySchema.ts";
+import { isAiReasoningEffort, type AiReasoningEffort } from "../../shared/aiReasoning.ts";
 import {
   buildAiTelemetrySeries,
   summarizeAiTelemetry,
@@ -27,7 +32,8 @@ import {
   type AiTelemetryRow,
 } from "../edge-lib/ai-telemetry-aggregation.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
-import { generateProviderItinerary, resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
+import { resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
+import { generatePreparedTripItinerary } from "../edge-lib/ai-trip-generation.ts";
 import {
   BENCHMARK_DEFAULT_MODEL_IDS,
   createSystemBenchmarkPresets,
@@ -35,11 +41,16 @@ import {
   type BenchmarkPreferencesPayload,
 } from "../../services/aiBenchmarkPreferencesService.ts";
 import { AI_MODEL_CATALOG } from "../../config/aiModelCatalog.ts";
+import {
+  fetchOpenRouterCatalog,
+  type OpenRouterCatalogModel,
+} from "../../services/openRouterModelCatalogService.ts";
 
 interface BenchmarkTarget {
   provider: string;
   model: string;
   label?: string;
+  reasoningEffort?: AiReasoningEffort;
 }
 
 interface BenchmarkScenario {
@@ -132,6 +143,14 @@ interface BenchmarkPreferencesRow {
   updated_at: string;
 }
 
+interface AiRuntimeSettingsPayload {
+  defaultModelId: string;
+  approvedOpenRouterModels: string[];
+  modelMaxAgeMonths: number;
+  showOlderModels: boolean;
+  updatedAt: string | null;
+}
+
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
@@ -202,6 +221,14 @@ const ACTIVE_BENCHMARK_MODEL_ID_SET = new Set(
     .filter((model) => model.availability === "active")
     .map((model) => model.id),
 );
+
+const DEFAULT_AI_RUNTIME_SETTINGS: AiRuntimeSettingsPayload = {
+  defaultModelId: "openai:gpt-5.4",
+  approvedOpenRouterModels: [],
+  modelMaxAgeMonths: 6,
+  showOlderModels: false,
+  updatedAt: null,
+};
 
 export const resolveBenchmarkMaxOutputTokens = (
   provider: string,
@@ -396,7 +423,7 @@ const normalizeBenchmarkTimeoutMs = (value: unknown): number | null => {
 
 const normalizeTarget = (value: unknown): BenchmarkTarget | null => {
   if (!value || typeof value !== "object") return null;
-  const typed = value as { provider?: unknown; model?: unknown; label?: unknown };
+  const typed = value as { provider?: unknown; model?: unknown; label?: unknown; reasoningEffort?: unknown };
   const provider = typeof typed.provider === "string" ? typed.provider.trim().toLowerCase() : "";
   const model = typeof typed.model === "string" ? typed.model.trim() : "";
   const label = typeof typed.label === "string" ? typed.label.trim() : "";
@@ -405,6 +432,7 @@ const normalizeTarget = (value: unknown): BenchmarkTarget | null => {
     provider,
     model,
     label: label || undefined,
+    reasoningEffort: isAiReasoningEffort(typed.reasoningEffort) ? typed.reasoningEffort : undefined,
   };
 };
 
@@ -554,9 +582,10 @@ const buildTripFromModelData = (
   parsedCities.forEach((city, index) => {
     cityOffsets[index] = currentDayOffset;
     cityDurations[index] = city.days;
+    const cityItemId = `city-${index}-${Date.now()}`;
 
     items.push({
-      id: `city-${index}-${Date.now()}`,
+      id: cityItemId,
       type: "city",
       title: city.name,
       startDateOffset: currentDayOffset,
@@ -594,8 +623,8 @@ const buildTripFromModelData = (
           duration: activityDuration,
           color: getActivityColor(activityTypes),
           description: String(typed.description || ""),
-          location: city.name,
           activityType: activityTypes,
+          ...buildModelActivityPlacementFields(typed, { id: cityItemId, name: city.name }),
         });
       });
     }
@@ -973,6 +1002,11 @@ const runGeneration = async (
   }
 
   const startedMs = Date.now();
+  const requestTarget = run.request_payload?.target;
+  const reasoningEffort = requestTarget && typeof requestTarget === "object"
+    && isAiReasoningEffort((requestTarget as Record<string, unknown>).reasoningEffort)
+    ? (requestTarget as { reasoningEffort: AiReasoningEffort }).reasoningEffort
+    : undefined;
   const persistRunTelemetry = async (
     input: {
       status: "success" | "failed";
@@ -1013,14 +1047,29 @@ const runGeneration = async (
     }
   };
 
+  const scenarioExecution = scenario.input?.execution;
+  const compactOutput = Boolean(
+    scenarioExecution
+    && typeof scenarioExecution === "object"
+    && !Array.isArray(scenarioExecution)
+    && (scenarioExecution as Record<string, unknown>).compactOutput === true
+  );
+
   try {
-    const result = await generateProviderItinerary({
+    const result = await generatePreparedTripItinerary({
       prompt: scenario.prompt,
       provider: run.provider,
       model: run.model,
       timeoutMs: providerTimeoutMs,
       maxOutputTokens: resolveBenchmarkMaxOutputTokens(run.provider, run.model, providerTimeoutMs),
-      jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      jsonSchema: compactOutput
+        ? TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA
+        : TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      reasoningEffort,
+      preparation: {
+        roundTrip: scenario.roundTrip,
+        minimumRecommendations: compactOutput ? 1 : 3,
+      },
     });
     const latencyMs = Date.now() - startedMs;
 
@@ -1029,19 +1078,28 @@ const runGeneration = async (
     }
 
     if (!result.ok) {
-      const failure = result;
-      const details = JSON.stringify(failure.value);
+      const isValidationFailure = result.kind === "validation";
+      const details = isValidationFailure
+        ? result.errors.join("; ")
+        : JSON.stringify(result.failure);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
+      const failureCode = isValidationFailure ? "BENCHMARK_DRAFT_VALIDATION_FAILED" : result.failure.code;
+      const failureMessage = isValidationFailure ? "Model draft failed semantic validation" : result.failure.error;
+      const failureUsage = isValidationFailure ? result.meta.usage : result.usage;
       await persistRunTelemetry({
         status: "failed",
         latencyMs,
-        httpStatus: failure.status,
-        providerModel: failure.value.providerModel,
-        errorCode: failure.value.code,
-        errorMessage: failure.value.error,
+        httpStatus: result.status,
+        provider: isValidationFailure ? result.meta.provider : run.provider,
+        model: isValidationFailure ? result.meta.model : run.model,
+        providerModel: isValidationFailure ? result.meta.providerModel : result.failure.providerModel,
+        usage: failureUsage,
+        errorCode: failureCode,
+        errorMessage: failureMessage,
         metadata: {
-          reason: "provider_request_failed",
+          reason: isValidationFailure ? "draft_validation_failed" : "provider_request_failed",
           timeoutMs: providerTimeoutMs,
+          semanticRepair: result.repair,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1051,41 +1109,32 @@ const runGeneration = async (
         status: "failed",
         finished_at: new Date().toISOString(),
         latency_ms: latencyMs,
-        error_message: `Generation failed (${failure.status}): ${formattedDetails}`,
+        schema_valid: isValidationFailure ? false : null,
+        validation_checks: isValidationFailure ? {
+          draftFirstPassValid: false,
+          semanticRepairAttempted: result.repair.attempted,
+          semanticRepairSucceeded: result.repair.succeeded,
+          semanticRepairAttempts: result.attempts,
+        } : null,
+        validation_errors: isValidationFailure ? result.errors : null,
+        usage: failureUsage || null,
+        raw_output: isValidationFailure ? result.draft || null : null,
+        error_message: `Generation failed (${result.status}): ${formattedDetails}`,
       });
       return;
     }
 
-    const modelData = result.value.data;
+    const draftData = result.value.draft;
     const usage: ProviderUsage = result.value.meta?.usage || {};
-
-    if (!modelData || typeof modelData !== "object") {
-      await persistRunTelemetry({
-        status: "failed",
-        latencyMs,
-        httpStatus: 200,
-        provider: result.value.meta.provider,
-        model: result.value.meta.model,
-        providerModel: result.value.meta.providerModel,
-        usage,
-        errorCode: "BENCHMARK_OUTPUT_INVALID",
-        errorMessage: "Provider response did not include a valid data object",
-        metadata: {
-          reason: "invalid_data_object",
-          timeoutMs: providerTimeoutMs,
-        },
-      });
-      if (await hasRunBeenCancelled(config, authToken, run.id)) {
-        return;
-      }
-      await updateRunRow(config, authToken, run.id, {
-        status: "failed",
-        finished_at: new Date().toISOString(),
-        latency_ms: latencyMs,
-        error_message: "Provider response did not include a valid data object",
-      });
-      return;
-    }
+    const prepared = result.value.data;
+    const modelData = prepared.data;
+    const repairChecks = {
+      draftFirstPassValid: !result.value.repair.attempted,
+      semanticRepairAttempted: result.value.repair.attempted,
+      semanticRepairSucceeded: result.value.repair.succeeded,
+      semanticRepairAttempts: result.value.attempts,
+      semanticRepairInitialErrors: result.value.repair.initialErrors,
+    };
 
     const validation = validateModelData(modelData as Record<string, unknown>, {
       roundTrip: scenario.roundTrip,
@@ -1105,6 +1154,8 @@ const runGeneration = async (
           reason: "validation_failed",
           validationErrorCount: validation.errors.length,
           timeoutMs: providerTimeoutMs,
+          tripCompiler: prepared.metrics,
+          semanticRepair: result.value.repair,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1115,9 +1166,9 @@ const runGeneration = async (
         finished_at: new Date().toISOString(),
         latency_ms: latencyMs,
         schema_valid: false,
-        validation_checks: validation.checks,
+        validation_checks: { ...validation.checks, ...repairChecks },
         validation_errors: validation.errors,
-        raw_output: modelData,
+        raw_output: draftData,
         error_message: `Model output failed validation: ${validation.errors.join("; ")}`,
       });
       return;
@@ -1180,11 +1231,11 @@ const runGeneration = async (
       finished_at: finishedAt,
       latency_ms: latencyMs,
       schema_valid: validation.schemaValid,
-      validation_checks: validation.checks,
+      validation_checks: { ...validation.checks, ...repairChecks },
       validation_errors: validation.errors,
       usage,
       cost_usd: estimatedCostUsd,
-      raw_output: modelData,
+      raw_output: draftData,
       normalized_trip: trip,
       trip_id: persistedTrip.tripId,
       trip_ai_meta: (trip.aiMeta as Record<string, unknown>) || null,
@@ -1203,6 +1254,8 @@ const runGeneration = async (
       metadata: {
         reason: "completed",
         timeoutMs: providerTimeoutMs,
+        tripCompiler: prepared.metrics,
+        semanticRepair: result.value.repair,
       },
     });
   } catch (error) {
@@ -1653,7 +1706,6 @@ const normalizeBenchmarkPreferencesForStorage = (
     fallbackPresets,
     defaultStartDate: options.defaultStartDate,
     defaultEndDate: options.defaultEndDate,
-    allowedModelIds: ACTIVE_BENCHMARK_MODEL_ID_SET,
     mergeFallbackModelIds: options.mergeFallbackModelIds,
   });
 };
@@ -1783,6 +1835,133 @@ const saveBenchmarkPreferencesRow = async (
   return {
     row: toBenchmarkPreferencesRow(Array.isArray(rows) ? rows[0] : rows),
   };
+};
+
+const normalizeAiRuntimeSettingsRow = (value: unknown): AiRuntimeSettingsPayload => {
+  const row = Array.isArray(value) ? value[0] : value;
+  if (!row || typeof row !== "object") return DEFAULT_AI_RUNTIME_SETTINGS;
+  const typed = row as Record<string, unknown>;
+  const rawAge = Number(typed.ai_model_max_age_months);
+  const approved = Array.isArray(typed.ai_approved_openrouter_models)
+    ? typed.ai_approved_openrouter_models.flatMap((entry) => (
+      typeof entry === "string" && entry.trim() ? [entry.trim()] : []
+    ))
+    : [];
+  return {
+    defaultModelId: typeof typed.ai_default_model_id === "string" && typed.ai_default_model_id.includes(":")
+      ? typed.ai_default_model_id.trim()
+      : DEFAULT_AI_RUNTIME_SETTINGS.defaultModelId,
+    approvedOpenRouterModels: Array.from(new Set(approved)),
+    modelMaxAgeMonths: Number.isFinite(rawAge) ? clampNumber(Math.round(rawAge), 1, 36) : 6,
+    showOlderModels: typed.ai_show_older_models === true,
+    updatedAt: typeof typed.updated_at === "string" ? typed.updated_at : null,
+  };
+};
+
+const fetchAiRuntimeSettings = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<AiRuntimeSettingsPayload> => {
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    "/rest/v1/app_runtime_settings?singleton=eq.true&select=ai_default_model_id,ai_approved_openrouter_models,ai_model_max_age_months,ai_show_older_models,updated_at&limit=1",
+    { method: "GET" },
+  );
+  if (!response.ok) {
+    throw new Error(`AI runtime settings request failed (${response.status}).`);
+  }
+  return normalizeAiRuntimeSettingsRow(await safeJsonParse(response));
+};
+
+const saveAiRuntimeSettings = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+  settings: AiRuntimeSettingsPayload,
+): Promise<AiRuntimeSettingsPayload> => {
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    "/rest/v1/rpc/admin_update_ai_runtime_settings",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_default_model_id: settings.defaultModelId,
+        p_approved_openrouter_models: settings.approvedOpenRouterModels,
+        p_model_max_age_months: settings.modelMaxAgeMonths,
+        p_show_older_models: settings.showOlderModels,
+      }),
+    },
+  );
+  if (!response.ok) {
+    const payload = await safeJsonParse(response);
+    throw new Error(payload?.message || payload?.error || `AI runtime settings update failed (${response.status}).`);
+  }
+  return normalizeAiRuntimeSettingsRow(await safeJsonParse(response));
+};
+
+const fetchLiveOpenRouterModels = async (): Promise<OpenRouterCatalogModel[]> => {
+  const apiKey = readEnv("OPENROUTER_API_KEY").trim();
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured.");
+  return await fetchOpenRouterCatalog(apiKey);
+};
+
+const handleModels = async (
+  request: Request,
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<Response> => {
+  if (request.method !== "GET" && request.method !== "POST") {
+    return json(405, { error: "Method not allowed. Use GET or POST." });
+  }
+
+  const [liveModels, currentSettings] = await Promise.all([
+    fetchLiveOpenRouterModels(),
+    fetchAiRuntimeSettings(config, authToken),
+  ]);
+  if (request.method === "GET") {
+    return json(200, { ok: true, models: liveModels, settings: currentSettings });
+  }
+
+  const body = (await safeJsonParse(request)) as Record<string, unknown> | null;
+  if (!body || typeof body !== "object") {
+    return json(400, { error: "Invalid AI runtime settings body." });
+  }
+
+  const liveModelById = new Map(liveModels.map((model) => [model.id, model]));
+  const approvedOpenRouterModels = Array.isArray(body.approvedOpenRouterModels)
+    ? body.approvedOpenRouterModels.flatMap((entry) => {
+      if (typeof entry !== "string") return [];
+      const slug = entry.trim().replace(/^openrouter:/, "");
+      return liveModelById.has(`openrouter:${slug}`) ? [slug] : [];
+    })
+    : currentSettings.approvedOpenRouterModels;
+  const defaultModelId = typeof body.defaultModelId === "string" ? body.defaultModelId.trim() : currentSettings.defaultModelId;
+  const isStaticDefault = ACTIVE_BENCHMARK_MODEL_ID_SET.has(defaultModelId);
+  const isApprovedLiveDefault = defaultModelId.startsWith("openrouter:")
+    && approvedOpenRouterModels.includes(defaultModelId.slice("openrouter:".length))
+    && liveModelById.has(defaultModelId);
+  if (!isStaticDefault && !isApprovedLiveDefault) {
+    return json(400, {
+      error: "Choose a current catalog model before making it the frontend default.",
+      code: "AI_DEFAULT_MODEL_NOT_APPROVED",
+    });
+  }
+
+  const rawAge = Number(body.modelMaxAgeMonths);
+  const saved = await saveAiRuntimeSettings(config, authToken, {
+    defaultModelId,
+    approvedOpenRouterModels: Array.from(new Set(approvedOpenRouterModels)),
+    modelMaxAgeMonths: Number.isFinite(rawAge)
+      ? clampNumber(Math.round(rawAge), 1, 36)
+      : currentSettings.modelMaxAgeMonths,
+    showOlderModels: typeof body.showOlderModels === "boolean"
+      ? body.showOlderModels
+      : currentSettings.showOlderModels,
+    updatedAt: currentSettings.updatedAt,
+  });
+
+  return json(200, { ok: true, models: liveModels, settings: saved });
 };
 
 const handlePreferences = async (
@@ -2664,6 +2843,10 @@ export default async (request: Request, context?: EdgeContextLike) => {
   const pathname = new URL(request.url).pathname;
 
   try {
+    if (pathname.endsWith("/models")) {
+      return await handleModels(request, config, authToken);
+    }
+
     if (pathname.endsWith("/preferences")) {
       return await handlePreferences(request, config, authToken);
     }

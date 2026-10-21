@@ -100,7 +100,7 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
             }}
             className={mergeClasses(
                 'group inline-flex min-w-0 max-w-full cursor-copy items-center gap-1 rounded px-1 text-left outline-none',
-                'hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-accent-300',
+                'hover:bg-secondary focus-visible:ring-2 focus-visible:ring-accent-300',
                 className
             )}
             title={copied ? 'Copied' : 'Click to select and copy UUID'}
@@ -112,8 +112,8 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
             <span
                 aria-hidden="true"
                 className={mergeClasses(
-                    'text-[10px] font-semibold text-slate-500 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100',
-                    copied && 'opacity-100 text-emerald-700',
+                    'text-[10px] font-semibold text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100',
+                    copied && 'opacity-100 text-emerald-700 dark:text-emerald-200',
                     hintClassName
                 )}
             >

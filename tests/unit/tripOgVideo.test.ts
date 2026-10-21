@@ -64,6 +64,11 @@ describe('video generation cost controls', () => {
     store.values.set('trip/state', { etag: 'old', data: { status: 'failed', revision: 'r1', requestedAt: now - 100 } });
     expect(await claimVideo(store as any, 'trip', 'r2', 'dark', true, now)).toMatchObject({ claimed: false, limited: true });
   });
+  it('carries only the last ready attachment into a replacement claim', async () => {
+    const store = makeStore();
+    store.values.set('trip/state', { etag: 'old', data: { status: 'ready', revision: 'r1', style: 'standard', mediaRevision: 'm1', assetKey: 'old-job', requestedAt: 0 } });
+    expect(await claimVideo(store as any, 'trip', 'r2', 'standard', true, now)).toMatchObject({ claimed: true, state: { previousReady: { revision: 'r1', assetKey: 'old-job' } } });
+  });
   it('caps all heavy work at 20 per hour, reusing fixed slots next hour', async () => {
     const store = makeStore();
     for (let n = 0; n < TRIP_VIDEO.hourlyRenderLimit; n++) expect(await claimRenderBudget(store as any, now)).toBe(true);
@@ -104,6 +109,14 @@ describe('ready-only OG video metadata', () => {
     const media = await resolveReadyTripVideoMedia('https://example.com', { tripId: 'trip', versionId: null });
     expect(media?.videoUrl).toContain('r=' + 'b'.repeat(24));
   });
+  it('keeps the previous attachment advertised if its replacement is rendering or failed', async () => {
+    for (const status of ['rendering', 'failed']) {
+      vi.stubGlobal('fetch', vi.fn(async () => Response.json({ status, attached: { revision: 'a'.repeat(24), mediaRevision: 'b'.repeat(24), posterAsImage: true, stale: false } })));
+      const media = await resolveReadyTripVideoMedia('https://example.com', { tripId: 'trip', versionId: null });
+      expect(media?.videoUrl).toContain('r=' + 'b'.repeat(24));
+      expect(media?.posterUrl).toContain('asset=poster');
+    }
+  });
   it('leaves version links image-only and does not request current video', async () => {
     const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
     expect(await resolveReadyTripVideoMedia('https://example.com', { token: 's', versionId: 'past' })).toBeUndefined();
@@ -122,6 +135,15 @@ describe('ready-only OG video metadata', () => {
 describe('animated frame safety', () => {
   it('resolves the actual Linux executable rather than a nonexistent package entry point', () => {
     expect(getVideoEncoderPath('linux')).toMatch(/@ffmpeg-installer\/linux-x64\/ffmpeg$/);
+  });
+  it('renders each leg in its stay color and distinguishes day-trip spokes', () => {
+    const svg = buildVideoFrameSvg({ title: 'Route', description: '', badge: '', style: 'standard', mapDataUri: 'data:image/png;base64,AA==', color: '#ff0000',
+      points: [{ x: .1, y: .1, label: 'A' }, { x: .5, y: .5, label: 'B' }, { x: .9, y: .9, label: 'C' }],
+      legStyles: [{ color: '#ff0000', dashed: false }, { color: '#00ff00', dashed: true }],
+    }, 1);
+    expect(svg).toContain('stroke="#ff0000"'); expect(svg).toContain('stroke="#00ff00"');
+    expect(svg).toContain('stroke-dasharray="8 7"');
+    expect(svg).toContain('mask="url(#leg-1)"');
   });
   it('escapes trip labels and progressively reveals map routes', () => {
     const data = { title: '<script>alert(1)</script>', description: 'October', badge: '2 weeks', style: 'clean' as const, mapDataUri: 'data:image/png;base64,AA==', color: '#4f46e5', points: [{ x: 0.2, y: 0.2, label: '<Taipei>' }, { x: 0.8, y: 0.8, label: 'Tainan' }] };

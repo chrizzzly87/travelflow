@@ -1,17 +1,27 @@
 # CLAUDE.md
 
+## This project is TravelFlow
+
+- This repository (`travelflow` / `travelflow-codex`) is **TravelFlow**. Always call it TravelFlow.
+- TravelFlow deploys **only** to Netlify project `travelflowapp`
+  (site ID `1abc3d37-f6af-4810-9097-489b2a282ac6`, `https://travelflowapp.netlify.app`).
+- Before any deploy, run `netlify status` and stop unless `Current project:` reads `travelflowapp`.
+  Resolve the target from this repo (`netlify status`, `.netlify/state.json`, `netlify.toml`, the git
+  remote) — never from memory.
+
 ## Startup checklist
 1. Read `docs/UPDATE_FORMAT.md` before making product changes.
 2. Follow existing project conventions and keep routes/components non-breaking.
 3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
 4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
-5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
-6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
-7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
+5. Before building any UI layout by hand, check `docs/DESIGN_SYSTEM_COMPONENTS.md` for an existing shared component in `components/ui/`; the admin visual contract is `docs/DESIGN.md`.
+6. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
+7. For localized copy placeholders, use single-brace syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation. For plurals use i18next native plural suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option.
+8. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Skill usage policy
 - Use `vercel-react-best-practices` for React performance/refactor tasks; apply only relevant high-impact guidance for the active change.
-- Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React edits, fix errors before merge, and triage warnings pragmatically.
+- `react-doctor` is optional, not a gate: reach for `pnpm dlx react-doctor@latest . --verbose --diff` when a React change feels risky, and triage what it reports pragmatically.
 - Avoid adding `useEffect` unless the component must synchronize with an external system such as network state, browser APIs, timers, subscriptions, or imperative third-party widgets. Prefer render-time derivation, event handlers, `useMemo` for expensive pure calculations, `useSyncExternalStore` for external stores, and `key`-based resets; every remaining effect should have tight dependencies and cleanup when it owns external resources.
 - Use `find-skills` only when a task requires discovery of capabilities not already covered by current skills/workflows.
 - Avoid unnecessary skill runs for straightforward changes.
@@ -33,6 +43,31 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 - Bump the release `version` whenever publishing a new release entry.
 - Set `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise main merge timestamp), but **always before 23:00 UTC**. Timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
 
+## AI and agent features
+- Read `docs/AI_AGENT_FEATURE_GUARDRAILS.md` before changing anything that calls a model, streams to the browser, or stores what a model produced.
+- Never stream, store or render hidden reasoning. Strip reasoning parts before persistence and on read.
+- Never put a raw exception in a response body. Redact every diagnostic that leaves the process (keys, tokens, URLs, prompt fragments) and give the client a code plus an authored sentence.
+- Never use a `VITE_`-prefixed credential server-side.
+- When swapping a provider, model or transport, port the guarantees the old path carried (approved models, retention, no-training, no fallback) or state which ones are now off.
+- Budget interactive runs below the platform limit (Netlify terminates a synchronous function at 60s) and give every long-lived record a sweeper.
+- Rebuild interactive state from its own record, never from a chat transcript.
+- Keep model-facing schemas forgiving (drop unknown keys, coerce numeric strings) and internal schemas strict; render a failed tool call visibly instead of letting prose claim success.
+
+## Runtime traps in this repo
+- The app renders through `preact/compat`. A plain function component never receives `ref`; anything used with Radix `asChild`, or focused/measured by a library, must be a real `forwardRef`. Symptoms: `getBoundingClientRect is not a function`, `focus is not a function`, popovers anchored at the origin. Libraries that require React 19 do not work here.
+- `i18next-icu` is installed but never registered in `i18n.ts`. Single-brace **placeholders** (`{name}`) work; ICU **plural/select syntax** renders as raw text. For plurals use i18next native plural suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option. See `tests/unit/festivalLocaleKeys.test.ts` and `tests/unit/storageNoticePlurals.test.ts`.
+- `supabase/migrations/*.sql` are never applied by a deploy. Write and verify them locally (`supabase/tests/`), then follow `docs/SUPABASE_RUNBOOK.md`; say plainly that a migration is pending.
+- Activities belong to a stay (`stayCityId`), and a day trip is an activity with `activityKind: 'day-trip'` whose `location`/`coordinates` are the destination. Resolve ownership only through `shared/activityStay.ts`, never a hand-rolled date window. A new item field must also be added to the Trip Agent's strict `timelineItemSchema` (`shared/tripAgent.ts`): every apply re-parses the whole trip, so a missing field fails every proposal on a trip that has it. Changing activities means changing the calendar, the map, AI generation (`dayTrips`), the agent wire schema, the benchmark and the example trips together — read `docs/ACTIVITIES_AND_DAY_TRIPS.md` first.
+- Trip card map previews are content-addressed and CDN-cached. `/api/trip-map-preview` must return image bytes (never a success redirect), every query parameter on a preview URL must change the picture, and trip cards must use `buildSettledMiniMapUrl` so a trip being edited is not re-rendered per state. Read `docs/TRIP_MAP_PREVIEW_CACHING.md` before touching the endpoint, the URL builder or the settle rule.
+- Postgres has no autonomous transactions: `UPDATE` then `RAISE` in one function rolls the update back. Return the status and let the caller raise.
+
+
+## Claims and bookkeeping
+- Tick a checklist box against the issue's own wording, not your memory of the session; audit inherited `Closes #123` lines before pushing to a branch.
+- State exactly what was verified. "No longer bundled" is not "removed from package.json".
+- Keep one curated release note per feature: a dozen user-facing lines for the release, not one line per iteration.
+- New overlays are dialogs: `role="dialog"`, `aria-modal`, focus capture and trap, Escape, mobile backdrop, focus restored to the trigger.
+
 ## Completion gate
 Before finalizing, ensure all applicable code changes are represented in release markdown and versioning is updated.
 - For localization changes, run `pnpm i18n:validate` and fix any locale parity/placeholder failures.
@@ -41,6 +76,9 @@ Before finalizing, ensure all applicable code changes are represented in release
 - Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.
 - For PRs adding files under `services/` or `config/`, include corresponding `tests/**` entries in the PR checklist/description.
 - For TripView/route-loader orchestration changes, follow `docs/TESTING_PHASE2_SCOPE.md` for phase-2 regression coverage.
+- For destination coverage changes (new countries, cities, islands, or refreshed source data), regenerating `data/destinationGuides.json` is not enough: the public API reads from Supabase. Run the sync steps in `docs/DESTINATION_INGESTION_RUNBOOK.md` and verify with `curl /api/destinations/<slug>?include=source-profile`, not by checking that the page returns 200.
+- For place-recommendation changes, `data/recommendations/*.json` is a seed and an offline fallback, not the source of truth — the deck reads published rows from Supabase. Follow `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`, and verify with `curl "/api/recommendations?country=TW"` rather than by checking the bundled file.
+- Manual CLI alias deploys (`netlify deploy --no-build --dir=dist --alias ...`) do not serve Netlify edge functions, so every `/api/*` route returns the SPA shell. Verify API-dependent behaviour on a real Deploy Preview or production — see `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
 
 ## Direction-Safety Requirement
 - For any new or modified component, evaluate whether CSS logical properties should be used for direction-aware layouts.
@@ -54,8 +92,18 @@ Before finalizing, ensure all applicable code changes are represented in release
 - For clickable marketing/planner UI changes, instrument events using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.
 - Use the existing event naming/payload convention; avoid ad-hoc query param tracking when Umami events are available.
 
+## Running the CI gates locally
+- `pnpm ci:local` runs the PR Quality workflow stage for stage (storage, toasts, `test:core`,
+  `build:netlify`, Playwright, the PWA e2e suite). Takes ~3m30s. Run it before pushing.
+- `pnpm ci:local --fast` skips the build and the browser suite (~70s); `--only=<stage>` and
+  `--from=<stage>` target one stage or resume after a failure; `--list` prints the stage names.
+- Keep the STAGES list in `scripts/ci-local.mjs` in step with `.github/workflows/pr-quality.yml`.
+- The runner warns when the local Node major differs from `.node-version` (22, matching Netlify).
+  It is a warning, not a gate — but match it before trusting a local result that disagrees with CI.
+
 ## Development Command Runtimes (for setting timers)
 - `pnpm test:core`: Takes ~50 seconds to complete. Set a 60-second timer.
 - `pnpm run build`: Takes ~85 seconds (runs test:core, generates assets, validates config, and builds). Set a 90-100 second timer.
 - `node scripts/run-lighthouse-audits.mjs`: Takes ~90 seconds (runs 5 sequential audits). Set a 100-second timer.
+- `pnpm ci:local`: Takes ~3m30s end to end. Set a 240-second timer. `--fast` takes ~70s.
 

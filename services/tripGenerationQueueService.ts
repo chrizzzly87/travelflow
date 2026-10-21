@@ -242,7 +242,7 @@ const buildPlaceholderTrip = (
                 title: destinationLabel,
                 startDateOffset: 0,
                 duration: 1,
-                color: 'bg-slate-100 border-slate-200 text-slate-500',
+                color: 'bg-secondary border-border text-muted-foreground',
                 description: 'Queued generation is preparing this trip.',
                 location: destinationLabel,
                 loading: true,

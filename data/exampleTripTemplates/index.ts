@@ -1,5 +1,17 @@
 import { ITimelineItem, ITrip, MapColorMode, MapStyle, RouteMode } from '../../types';
 import { CityColorPaletteId, applyCityPaletteToItems, findTravelBetweenCities, getHexFromColorClass } from '../../utils';
+import {
+    MAP_PREVIEW_LEG_MODES_PARAM,
+    serializeMapPreviewLegModes,
+} from '../../shared/mapPreviewLegModes';
+import { normalizeTransportMode } from '../../shared/transportModes';
+import {
+    buildMapPreviewDayTrips,
+    buildTripLaneDayTripMarks,
+    MAP_PREVIEW_DAY_TRIPS_PARAM,
+    serializeMapPreviewDayTrips,
+    type TripLaneDayTripMark,
+} from '../../shared/dayTripPreview';
 
 // Re-export validation
 export { validateTripSchema } from './_validation';
@@ -236,6 +248,8 @@ export interface ExampleTemplateMiniCalendarCityLane {
     title: string;
     nights: number;
     color: string;
+    /** Day trips from this stay, positioned along its lane segment. */
+    dayTrips?: TripLaneDayTripMark[];
 }
 
 export interface ExampleTemplateMiniCalendarRouteLane {
@@ -263,11 +277,13 @@ export const getExampleTemplateMiniCalendar = (templateId: string): ExampleTempl
 
     if (cityItems.length === 0) return null;
 
+    const dayTripMarks = buildTripLaneDayTripMarks(allItems as ITimelineItem[]);
     const cityLanes: ExampleTemplateMiniCalendarCityLane[] = cityItems.map((city, index) => ({
         id: city.id || `city-${index + 1}`,
         title: city.title || `City ${index + 1}`,
         nights: Math.max(0.5, Number.isFinite(city.duration) ? city.duration : 1),
         color: getHexFromColorClass(city.color || '#4f46e5'),
+        dayTrips: dayTripMarks.get(city.id) || [],
     }));
 
     const routeLanes: ExampleTemplateMiniCalendarRouteLane[] = cityItems
@@ -296,6 +312,7 @@ export const buildExampleTemplateMapPreviewUrl = (
 
     if (cityItems.length < 2) return null;
 
+    const allItems = template?.items || [];
     const config = getExampleTripTemplateConfig(templateId);
     const cityColors = cityItems.map((item) =>
         item.color ? getHexFromColorClass(item.color) : '#4f46e5'
@@ -313,6 +330,25 @@ export const buildExampleTemplateMapPreviewUrl = (
     searchParams.set('pathColor', firstCityColor);
     if (legColors.length > 0) {
         searchParams.set('legColors', legColors.join('|'));
+    }
+
+    // Flight legs have no driving route; without the mode they degraded to a
+    // straight line while the planner map drew an arc.
+    const legModes = cityItems
+        .slice(0, -1)
+        .map((fromCity, index) => normalizeTransportMode(
+            findTravelBetweenCities(allItems, fromCity, cityItems[index + 1])?.transportMode,
+        ));
+    if (legModes.some((mode) => mode === 'plane')) {
+        searchParams.set(MAP_PREVIEW_LEG_MODES_PARAM, serializeMapPreviewLegModes(legModes));
+    }
+    const dayTrips = buildMapPreviewDayTrips(
+        allItems as ITimelineItem[],
+        cityItems as ITimelineItem[],
+        (_stay, stayIndex) => cityColors[stayIndex] || firstCityColor,
+    );
+    if (dayTrips.length > 0) {
+        searchParams.set(MAP_PREVIEW_DAY_TRIPS_PARAM, serializeMapPreviewDayTrips(dayTrips));
     }
     const requestedWidth = options?.width ?? 560;
     const requestedHeight = options?.height ?? Math.round((requestedWidth * 288) / 680);

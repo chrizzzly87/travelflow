@@ -86,7 +86,9 @@ describe('components/profile/ProfileTripCard', () => {
     expect(screen.queryByRole('button', { name: 'Pin' })).not.toBeInTheDocument();
   });
 
-  it('renders an expired badge and fallback title for expired generation drafts', () => {
+  // The card used to swap in `expiredFallbackTitle` here; 688ecb2fe dropped that
+  // on purpose and shows the trip's own title next to the expired badge.
+  it('renders an expired badge and keeps the trip title for expired generation drafts', () => {
     render(
       React.createElement(
         MemoryRouter,
@@ -120,8 +122,8 @@ describe('components/profile/ProfileTripCard', () => {
     );
 
     expect(screen.getByText('Expired')).toBeInTheDocument();
-    expect(screen.getByText('Expired trip draft')).toBeInTheDocument();
-    expect(screen.queryByText('Trip generation failed. Please try again.')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Trip generation failed. Please try again.' })).toBeInTheDocument();
+    expect(screen.queryByText('Expired trip draft')).toBeNull();
   });
 
   it('dims private trips and shows a hidden state badge', () => {

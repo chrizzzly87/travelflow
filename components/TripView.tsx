@@ -1,14 +1,16 @@
-import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, Suspense, lazy } from 'react';
+import { Lock, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState, ITripRecommendationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
-import { GoogleMapsLoader } from './GoogleMapsLoader';
-import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
+import { GoogleMapsLoader, MapRuntimeProvider } from './GoogleMapsLoader';
+import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, TRAVEL_COLOR, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
 import { getTripSpan } from '../shared/tripSpan';
+import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
@@ -39,11 +41,13 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
-import { getLatestConflictBackupForTrip } from '../services/offlineChangeQueue';
+import { getLatestConflictBackupForTrip, resolveConflictBackupsForTrip } from '../services/offlineChangeQueue';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTripAgentAvailability } from '../hooks/useTripAgentAvailability';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useTripCopyNoticeToast } from './tripview/useTripCopyNoticeToast';
+import { TRIP_AGENT_LAUNCHER_POSITION_CLASS } from './tripview/tripBottomDock';
 import { useGenerationProgressMessage } from './tripview/useGenerationProgressMessage';
 import { useReleaseNoticeReady } from './tripview/useReleaseNoticeReady';
 import { useTripExpiryLifecycle } from './tripview/useTripExpiryLifecycle';
@@ -56,8 +60,28 @@ import { useTripViewSettingsSync } from './tripview/useTripViewSettingsSync';
 import { useTripAdminOverrideState } from './tripview/useTripAdminOverrideState';
 import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
+import { useTripMapCustomizationState } from './tripview/useTripMapCustomizationState';
+import { useMapRuntime } from './GoogleMapsLoader';
+import {
+    getClientMapRuntimeResolution,
+    getMapRendererChoice,
+    readMapRuntimeAdminOverride,
+    setMapRendererChoice,
+    subscribeToMapRendererChoice,
+} from '../services/mapRuntimeService';
+import {
+    MAP_ROUTE_THICKNESS_MULTIPLIER,
+    resolveEffectiveLightPreset,
+    resolveMapStyleFromAxes,
+} from '../shared/mapPreferences';
+import { MapCustomizeModal } from './maps/MapCustomizeModal';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
+import { useGoogleMyMapsActions } from './tripview/useGoogleMyMapsActions';
+import { buildMapIdeaMarkers, setIdeaReview } from '../shared/tripIdeas';
+import type { IdeaMapAction } from './maps/IdeaMapPopup';
+import { readTripIdeaLayerVisible, writeTripIdeaLayerVisible } from '../services/tripIdeaLayerStore';
+import { mergeRecommendationState, readStoredRecommendationState, writeStoredRecommendationState } from '../services/recommendationReactionsStore';
 import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
 import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGenerationRetryToast';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
@@ -87,6 +111,7 @@ import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
 import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
+import { buildMobileDayPlan } from './tripview/mobileDayPlanModel';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
 import { showAppToast } from './ui/appToast';
 import {
@@ -119,6 +144,7 @@ import { registerTripGenerationCompletionWatch } from '../services/tripGeneratio
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 import { toggleMarkdownTaskByLine } from './markdownPresentation';
+import { buildTripAgentContextRefs } from '../shared/tripAgent';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -141,9 +167,6 @@ const SelectedCitiesPanel = lazyWithRecovery('SelectedCitiesPanel', () =>
     import('./SelectedCitiesPanel').then((module) => ({ default: module.SelectedCitiesPanel }))
 );
 
-const TripDetailsDrawer = lazyWithRecovery('TripDetailsDrawer', () =>
-    import('./TripDetailsDrawer').then((module) => ({ default: module.TripDetailsDrawer }))
-);
 
 const AddActivityModal = lazyWithRecovery('AddActivityModal', () =>
     import('./AddActivityModal').then((module) => ({ default: module.AddActivityModal }))
@@ -160,6 +183,15 @@ const TripShareModal = lazyWithRecovery('TripShareModal', () =>
 const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
 );
+
+import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
+// Eager on purpose: the panel frame is small and must open on the click. The
+// chat inside it is its own chunk, warmed by the launcher.
+import { TripAgentPanel, TripAgentPanelFallback } from './trip-agent/TripAgentPanel';
+import { loadTripAgentChatSessionModule, preloadTripAgentTranslations, prefetchTripAgent } from './trip-agent/tripAgentPrefetch';
+
+const TRIP_AGENT_PANEL_INSET_PX = 444;
+
 
 let tripInfoModalModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
 
@@ -407,6 +439,15 @@ interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
     onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
+    onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string; changeSetId?: string }) => void;
+    /** Set while the Trip Agent previews a proposal in the planner. */
+    agentPreviewTrip?: ITrip | null;
+    /** The saved trip, unchanged by an active preview. */
+    agentCanonicalTrip?: ITrip;
+    onAgentPreviewTrip?: (trip: ITrip | null) => void;
+    /** Bumped when the agent replaces the trip, to refresh the planner surface. */
+    agentSurfaceNonce?: number;
+    onAgentTripChanged?: () => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
     initialViewSettings?: IViewSettings;
@@ -442,18 +483,18 @@ interface ExampleTransitionLocationState {
 }
 
 const MapLoadingFallback: React.FC = () => (
-    <div className="size-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex items-center justify-center bg-secondary text-xs text-muted-foreground">
         Loading map…
     </div>
 );
 
 const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
-    <div className="size-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex flex-col items-center justify-center gap-3 bg-secondary text-xs text-muted-foreground">
         <span>Preparing map…</span>
         <button
             type="button"
             onClick={onLoadNow}
-            className="inline-flex min-h-10 items-center rounded-md border border-gray-300 bg-white px-3 text-[11px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-[11px] font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
         >
             Load map now
         </button>
@@ -486,33 +527,33 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
                 aria-labelledby="trip-info-loading-title"
                 className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
             >
-                <div ref={dialogRef} className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div ref={dialogRef} className="pointer-events-auto bg-card rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh] dark:shadow-none">
+                    <div className="p-4 border-b border-border flex items-center justify-between">
                         <div>
-                            <h3 id="trip-info-loading-title" className="text-lg font-semibold text-gray-900">Trip information</h3>
-                            <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
+                            <h3 id="trip-info-loading-title" className="text-lg font-semibold text-foreground">Trip information</h3>
+                            <p className="text-xs text-muted-foreground">Plan details, destination info, and history.</p>
                         </div>
-                        <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                        <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-muted-foreground hover:bg-secondary">
                             Close
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                        <div className="rounded-xl border border-border p-3 space-y-2 animate-pulse">
                             <div className="h-5 w-44 rounded bg-gray-200" />
-                            <div className="h-3 w-64 rounded bg-gray-100" />
+                            <div className="h-3 w-64 rounded bg-secondary" />
                         </div>
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-3 animate-pulse">
+                        <div className="rounded-xl border border-border p-3 space-y-3 animate-pulse">
                             <div className="h-4 w-28 rounded bg-gray-200" />
                             <div className="grid grid-cols-2 gap-2">
                                 {TRIP_INFO_FALLBACK_ROWS.map((row) => (
-                                    <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-gray-100 border border-gray-100" />
+                                    <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-secondary border border-border" />
                                 ))}
                             </div>
                         </div>
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                        <div className="rounded-xl border border-border p-3 space-y-2 animate-pulse">
                             <div className="h-4 w-20 rounded bg-gray-200" />
-                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
-                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                            <div className="h-10 rounded bg-secondary border border-border" />
+                            <div className="h-10 rounded bg-secondary border border-border" />
                         </div>
                     </div>
                 </div>
@@ -522,11 +563,6 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
 };
 
 interface TripViewModalLayerProps {
-    isMobile: boolean;
-    detailsPanelVisible: boolean;
-    detailsPanelContent: React.ReactNode;
-    onCloseDetailsDrawer: () => void;
-    onOpenDetailsDrawer: () => void;
     addActivityState: { isOpen: boolean; dayOffset: number; location: string };
     onCloseAddActivity: () => void;
     onAddActivity: (...args: any[]) => void;
@@ -586,6 +622,7 @@ interface TripViewModalLayerProps {
     onExportCitiesCalendar: () => void;
     onExportAllCalendar: () => void;
     onOpenPrintLayout: () => void;
+    tripInfoMyMapsPanel?: React.ReactNode;
     shouldEnableReleaseNotice: boolean;
     isShareOpen: boolean;
     shareMode: ShareMode;
@@ -600,6 +637,8 @@ interface TripViewModalLayerProps {
     onHistoryGo: (item: any) => void;
     shareStatus?: ShareMode;
     onCopyTrip?: () => void;
+    /** Forwarded to TripViewHudOverlays so the view-only card clears the AI launcher. */
+    isAgentLauncherVisible: boolean;
     expirationLabel: string | null;
     tripId: string;
     paywallActivationMode: TripPaywallActivationMode;
@@ -623,12 +662,15 @@ interface TripViewModalLayerProps {
     onClaimConflictLogin: () => void;
 }
 
+const TripDiscoverOverlay = lazyWithRecovery('TripDiscoverOverlay', () =>
+    import('./recommendations/TripDiscoverOverlay').then((module) => ({ default: module.TripDiscoverOverlay }))
+);
+
+const GoogleMyMapsPanel = lazyWithRecovery('GoogleMyMapsPanel', () =>
+    import('./tripview/GoogleMyMapsPanel').then((module) => ({ default: module.GoogleMyMapsPanel }))
+);
+
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
-    isMobile,
-    detailsPanelVisible,
-    detailsPanelContent,
-    onCloseDetailsDrawer,
-    onOpenDetailsDrawer,
     addActivityState,
     onCloseAddActivity,
     onAddActivity,
@@ -683,6 +725,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onExportCitiesCalendar,
     onExportAllCalendar,
     onOpenPrintLayout,
+    tripInfoMyMapsPanel,
     shouldEnableReleaseNotice,
     isShareOpen,
     shareMode,
@@ -697,6 +740,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onHistoryGo,
     shareStatus,
     onCopyTrip,
+    isAgentLauncherVisible,
     expirationLabel,
     tripId,
     paywallActivationMode,
@@ -716,26 +760,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onClaimConflictLogin,
 }) => (
     <>
-        {isMobile && detailsPanelVisible && (
-            <Suspense fallback={null}>
-                <TripDetailsDrawer
-                    open={detailsPanelVisible}
-                    expanded={detailsPanelVisible}
-                    onOpenChange={(open) => {
-                        if (!open) onCloseDetailsDrawer();
-                    }}
-                    onExpandedChange={(expanded) => {
-                        if (expanded) {
-                            onOpenDetailsDrawer();
-                            return;
-                        }
-                        onCloseDetailsDrawer();
-                    }}
-                >
-                    {detailsPanelContent}
-                </TripDetailsDrawer>
-            </Suspense>
-        )}
         {addActivityState.isOpen && (
             <Suspense fallback={null}>
                 <AddActivityModal
@@ -804,6 +828,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onExportCitiesCalendar={onExportCitiesCalendar}
                     onExportAllCalendar={onExportAllCalendar}
                     onOpenPrintLayout={onOpenPrintLayout}
+                    myMapsPanel={tripInfoMyMapsPanel}
                 />
             </Suspense>
         )}
@@ -847,6 +872,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
         <TripViewHudOverlays
             shareStatus={shareStatus}
             onCopyTrip={onCopyTrip}
+            isAgentLauncherVisible={isAgentLauncherVisible}
             isPaywallLocked={isPaywallLocked}
             expirationLabel={expirationLabel}
             tripId={tripId}
@@ -919,7 +945,7 @@ const renderDetailsPanelContent = ({
     onExportActivityCalendar,
 }: RenderDetailsPanelContentOptions): React.ReactNode => (
     showSelectedCitiesPanel ? (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel…</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-muted-foreground">Loading selection panel…</div>}>
             <SelectedCitiesPanel
                 selectedCities={selectedCitiesInTimeline}
                 onClose={onCloseSelection}
@@ -930,7 +956,7 @@ const renderDetailsPanelContent = ({
             />
         </Suspense>
     ) : (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details…</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-muted-foreground">Loading details…</div>}>
             <DetailsPanel
                 item={selectedDetailItem}
                 isOpen={!!selectedItemId}
@@ -959,6 +985,12 @@ const useTripViewRender = ({
     trip,
     onUpdateTrip,
     onCommitState,
+    onAdoptAgentTripVersion,
+    agentPreviewTrip,
+    agentCanonicalTrip,
+    onAgentPreviewTrip,
+    agentSurfaceNonce = 0,
+    onAgentTripChanged,
     onOpenManager,
     onOpenSettings,
     initialViewSettings,
@@ -997,7 +1029,10 @@ const useTripViewRender = ({
     const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAtRef = useRef<number>(0);
-    tripRef.current = trip;
+    // Recovery and save paths read this ref. A preview is a rendering state, so
+    // it must never be what those paths write back: that turned an applied
+    // change into a disappearing one.
+    tripRef.current = agentPreviewTrip ? (agentCanonicalTrip ?? trip) : trip;
     onUpdateTripRef.current = onUpdateTrip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
@@ -1649,6 +1684,10 @@ const useTripViewRender = ({
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+    const [isTripAgentOpen, setIsTripAgentOpen] = useState(() => readTripAgentOpenState());
+    // Hides the recovery banner in this session as soon as the choice is made,
+    // without waiting for the next sync snapshot to report the cleared backup.
+    const [resolvedConflictTripId, setResolvedConflictTripId] = useState<string | null>(null);
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
     const mapColorMode = normalizeMapColorMode(trip.mapColorMode);
     const allowMapColorModeControls = useMemo(
@@ -1704,6 +1743,8 @@ const useTripViewRender = ({
         setTimelineHeight,
         detailsWidth,
         setDetailsWidth,
+        mapCustomization,
+        setMapCustomization,
     } = useTripLayoutControlsState({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
@@ -1849,6 +1890,9 @@ const useTripViewRender = ({
                 { label: 'Data: Restored server backup' }
             );
         }
+        // The decision is made, so the backup — and the banner offering it — goes.
+        resolveConflictBackupsForTrip(trip.id);
+        setResolvedConflictTripId(trip.id);
         showToast(t('connectivity.toast.serverBackupRestored'), {
             tone: 'neutral',
             title: t('connectivity.toast.title'),
@@ -1916,8 +1960,9 @@ const useTripViewRender = ({
         zoomBehavior,
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
-        timelineHeight: Math.round(timelineHeight)
-    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
+        timelineHeight: Math.round(timelineHeight),
+        mapCustomization,
+    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight, mapCustomization]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -2341,8 +2386,8 @@ const useTripViewRender = ({
     }, [displayTrip.items, displayTrip.title]);
     const effectiveMapFocusQuery = useMemo(() => {
         const queries = buildTripMapLocationContextQueries(trip, initialMapFocusQuery);
-        return queries.join(' || ');
-    }, [initialMapFocusQuery, trip]);
+        return (isGenerationInFlight ? queries.slice(0, 1) : queries).join(' || ');
+    }, [initialMapFocusQuery, isGenerationInFlight, trip]);
     const showGenerationOverlay = isTripDetailRoute
         && isGenerationInFlight
         && !isAdminFallbackView
@@ -2588,7 +2633,10 @@ const useTripViewRender = ({
         isHistoryOpen,
         isTripInfoOpen,
         autoOpenOnSelect: !isMobileViewport,
-        clearSelectionOnClose: isMobileViewport,
+        // The mobile planner renders a day's detail inline, so there is no
+        // drawer to close — and no close that could drop the selected day.
+        detailsPanelEnabled: !isMobileViewport,
+        clearSelectionOnClose: false,
         setPendingLabel,
         handleUpdateItems,
     });
@@ -2599,6 +2647,14 @@ const useTripViewRender = ({
 
     const handleMapActivitySelect = useCallback((activityId: string) => {
         handleTimelineSelect(activityId, { isCity: false });
+    }, [handleTimelineSelect]);
+
+    /**
+     * Letting go of a focused city. Selecting nothing is what brings the other
+     * cities, their labels and the connecting lines back onto the map.
+     */
+    const handleMapClearSelection = useCallback(() => {
+        handleTimelineSelect(null);
     }, [handleTimelineSelect]);
 
     const {
@@ -2634,6 +2690,192 @@ const useTripViewRender = ({
         safeUpdateTrip,
         scheduleCommit,
     });
+
+    // Which basemap is actually drawing, as opposed to which one was asked for:
+    // a missing Mapbox token falls the runtime back to Google, and the sheet
+    // says so rather than offering controls that would do nothing.
+    const { mapboxAccessToken } = useMapRuntime();
+    /**
+     * Resolved from the module store rather than from the context: this
+     * component renders `<GoogleMapsLoader>` inside its own JSX, so its own
+     * `useMapRuntime()` call sits outside the provider and would always read
+     * the fallback.
+     */
+    const activeRendererChoice = useSyncExternalStore(
+        subscribeToMapRendererChoice,
+        getMapRendererChoice,
+        () => 'auto' as const,
+    );
+    const activeMapRenderer = useMemo(() => getClientMapRuntimeResolution(
+        activeRendererChoice === 'auto'
+            ? { override: readMapRuntimeAdminOverride() }
+            : {
+                override: { selection: { renderer: activeRendererChoice } },
+                overrideSource: 'query',
+            },
+    ).effectiveSelection.renderer, [activeRendererChoice]);
+    const isMapboxRendererAvailable = mapboxAccessToken.trim().length > 0;
+
+    const {
+        preferences: mapPreferences,
+        applyPatch: applyMapPreferencePatch,
+        reset: resetMapPreferences,
+        saveAsDefault: saveMapPreferencesAsDefault,
+        applySavedPreset: applySavedMapPreset,
+        hasSavedPreset: hasSavedMapPreset,
+        isSavedPresetActive: isSavedMapPresetActive,
+        isCustomizeOpen: isMapCustomizeOpen,
+        openCustomize: openMapCustomize,
+        closeCustomize: closeMapCustomize,
+    } = useTripMapCustomizationState({
+        initialViewSettings,
+        mapStyle,
+        setMapStyle,
+        routeMode,
+        setRouteMode,
+        showCityNames,
+        setShowCityNames,
+        colorMode: mapColorMode,
+        setColorMode: handleMapColorModeChange,
+        customization: mapCustomization,
+        setCustomization: setMapCustomization,
+    });
+
+    // Every customize change is a deliberate one, so it counts as a manual view
+    // change and is what makes the look stick to the trip.
+    const handleMapPreferenceChange = useCallback((patch: Partial<typeof mapPreferences>) => {
+        markManualViewChange();
+        applyMapPreferencePatch(patch);
+    }, [applyMapPreferencePatch, markManualViewChange]);
+
+    /**
+     * The renderer lives above this component, in the map runtime provider, so
+     * the traveller's stored choice has to be pushed up to it — including on
+     * mount, when a trip opens carrying a basemap it was saved with.
+     */
+    useEffect(() => {
+        setMapRendererChoice(mapPreferences.renderer);
+    }, [mapPreferences.renderer]);
+
+
+    /**
+     * Stable identity: this object reaches a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    /**
+     * The device's own light/dark setting, watched so `auto` follows a theme
+     * change without a reload. An environment without `matchMedia` — an older
+     * embedded webview, or a server render — simply stays light.
+     */
+    const prefersDarkScheme = useSyncExternalStore(
+        useCallback((onChange: () => void) => {
+            if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+            const query = window.matchMedia('(prefers-color-scheme: dark)');
+            query.addEventListener('change', onChange);
+            return () => query.removeEventListener('change', onChange);
+        }, []),
+        () => (typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+            : false),
+        () => false,
+    );
+
+    /**
+     * Google renders from the six named style arrays and has no equivalent of
+     * the axes, so every combination has to land on one of them. Mapbox takes
+     * the axes directly.
+     */
+    const effectiveMapStyle = useMemo(() => resolveMapStyleFromAxes({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: mapPreferences.lightPreset,
+        prefersDarkScheme,
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+    /**
+     * Stable identity: these objects reach a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    const mapLookAxes = useMemo(() => ({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: resolveEffectiveLightPreset(mapPreferences.lightPreset, prefersDarkScheme),
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+/**
+     * The look is edited as axes, but a trip still stores a named `mapStyle`:
+     * it is what Google renders from and what every reader written before the
+     * axes existed understands. Kept in step here rather than in the customize
+     * hook so the flat field keeps its own setter, persistence and sync.
+     */
+    useEffect(() => {
+        if (effectiveMapStyle === mapStyle) return;
+        setMapStyle(effectiveMapStyle);
+    }, [effectiveMapStyle, mapStyle, setMapStyle]);
+
+    const mapBasemapDetail = useMemo(() => ({
+        showPlaceLabels: mapPreferences.showPlaceLabels,
+        showRoadLabels: mapPreferences.showRoadLabels,
+        showTransitLabels: mapPreferences.showTransitLabels,
+        showPoiLabels: mapPreferences.showPoiLabels,
+        showRoadsAndTransit: mapPreferences.showRoadsAndTransit,
+        // Footpaths are a sub-layer of roads: with roads off they would draw a
+        // ghost path network over nothing.
+        showPedestrianRoads: mapPreferences.showRoadsAndTransit && mapPreferences.showPedestrianRoads,
+        showAdminBoundaries: mapPreferences.showAdminBoundaries,
+        show3dObjects: mapPreferences.show3dObjects,
+    }), [
+        mapPreferences.show3dObjects,
+        mapPreferences.showAdminBoundaries,
+        mapPreferences.showPedestrianRoads,
+        mapPreferences.showPlaceLabels,
+        mapPreferences.showPoiLabels,
+        mapPreferences.showRoadLabels,
+        mapPreferences.showRoadsAndTransit,
+        mapPreferences.showTransitLabels,
+    ]);
+
+    /**
+     * Which day of the trip today is. Null outside the trip's own dates: before
+     * it starts nothing is past, and after it ends everything is, either of
+     * which would make "fade past days" fade the whole map or nothing at all.
+     */
+    const todayDayOffset = useMemo<number | null>(() => {
+        const startDate = displayTrip.startDate;
+        if (!startDate) return null;
+        const start = new Date(`${startDate.slice(0, 10)}T00:00:00Z`);
+        if (Number.isNaN(start.getTime())) return null;
+
+        const now = new Date();
+        const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const offset = Math.floor((todayUtc - start.getTime()) / 86400000);
+        if (!Number.isFinite(offset) || offset < 0) return null;
+
+        const lastDay = displayTrip.items.reduce(
+            (latest, item) => Math.max(latest, item.startDateOffset + Math.max(item.duration, 0)),
+            0,
+        );
+        return offset > lastDay ? null : offset;
+    }, [displayTrip.items, displayTrip.startDate]);
+
+    const mapTripOverlay = useMemo(() => ({
+        dimPastDays: mapPreferences.dimPastDays,
+        showRouteArrows: mapPreferences.showRouteArrows,
+        dashedRoutes: mapPreferences.dashedRoutes,
+        showTraffic: mapPreferences.showTraffic,
+        showTransitLines: mapPreferences.showTransitLines,
+    }), [
+        mapPreferences.dashedRoutes,
+        mapPreferences.dimPastDays,
+        mapPreferences.showRouteArrows,
+        mapPreferences.showTraffic,
+        mapPreferences.showTransitLines,
+    ]);
+
+    const handleMapPreferenceReset = useCallback(() => {
+        markManualViewChange();
+        resetMapPreferences();
+    }, [markManualViewChange, resetMapPreferences]);
 
     const {
         handleForceFill,
@@ -2885,8 +3127,9 @@ const useTripViewRender = ({
     const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
     const latestConflictBackupEntry = useMemo(() => {
         if (!showOwnedTripConnectivityStatus) return null;
+        if (resolvedConflictTripId === trip.id) return null;
         return getLatestConflictBackupForTrip(trip.id);
-    }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
+    }, [resolvedConflictTripId, showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
     const isAdminSession = access?.role === 'admin';
     const ownerSummary = useMemo(() => {
         const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
@@ -2948,6 +3191,55 @@ const useTripViewRender = ({
         return null;
     }, [adminOverrideEnabled, tripAccess?.source]);
 
+    /**
+     * Sets how a leg between two stays is travelled, creating the travel item
+     * when the leg has never had one.
+     *
+     * A generated trip can carry stays with no leg between them at all — the
+     * mobile strip still shows the journey, and it has to be possible to give
+     * it a transport from there rather than only being able to edit one that
+     * already exists.
+     */
+    const handleSetLegTransport = useCallback((
+        leg: { fromCityId: string; toCityId: string; travelItemId: string | null },
+        mode: string,
+    ) => {
+        if (!canEdit) return;
+        const nextMode = normalizeTransportMode(mode);
+        const modeTitle = `${nextMode.charAt(0).toUpperCase()}${nextMode.slice(1)} Travel`;
+
+        if (leg.travelItemId) {
+            const existing = trip.items.find((candidate) => candidate.id === leg.travelItemId);
+            if (!existing) return;
+            handleUpdateItem(leg.travelItemId, {
+                type: 'travel',
+                transportMode: nextMode,
+                title: modeTitle,
+                color: TRAVEL_COLOR,
+                duration: Math.max(0.1, existing.duration),
+            });
+            return;
+        }
+
+        const fromCity = trip.items.find((candidate) => candidate.id === leg.fromCityId);
+        const toCity = trip.items.find((candidate) => candidate.id === leg.toCityId);
+        if (!fromCity || !toCity) return;
+
+        const newItem: ITimelineItem = {
+            id: `travel-new-${Date.now()}`,
+            type: 'travel',
+            title: modeTitle,
+            description: `Travel from ${fromCity.title} to ${toCity.title}`,
+            transportMode: nextMode,
+            color: TRAVEL_COLOR,
+            startDateOffset: fromCity.startDateOffset + fromCity.duration,
+            duration: 0.2,
+        };
+        setPendingLabel('Data: Added transport');
+        handleUpdateItems([...trip.items, newItem]);
+        setSelectedItemId(newItem.id);
+    }, [canEdit, handleUpdateItem, handleUpdateItems, setPendingLabel, setSelectedItemId, trip.items]);
+
     const handleTimelineTaskToggle = useCallback((itemId: string, taskLineNumber: number, checked: boolean) => {
         const item = trip.items.find((candidate) => candidate.id === itemId);
         if (!item || typeof item.description !== 'string') return;
@@ -2956,8 +3248,149 @@ const useTripViewRender = ({
         handleUpdateItem(itemId, { description: nextDescription });
     }, [handleUpdateItem, trip.items]);
 
+    // Read once for the deep link, then owned by React.
+    //
+    // The URL cannot hold this: `useTripViewSettingsSync` rewrites the query
+    // with `history.replaceState`, which React Router never sees, so the
+    // router's `location.search` goes stale and the next write drops whichever
+    // parameter the other owner had just added. Reopening the deck read a
+    // stale query and closed itself again.
+    const [isDiscoverOpen, setDiscoverOpen] = useState(() => (
+        typeof window !== 'undefined'
+        && new URLSearchParams(window.location.search).get('discover') === '1'
+    ));
+    const [discoverInitialTab, setDiscoverInitialTab] = useState<'discover' | 'saved'>('discover');
+    // Keyed by trip, so switching trips in the same view reads the new trip's choice.
+    const [ideaLayer, setIdeaLayer] = useState(() => ({ tripId: trip.id, visible: readTripIdeaLayerVisible(trip.id) }));
+    const showIdeaMarkers = ideaLayer.tripId === trip.id ? ideaLayer.visible : readTripIdeaLayerVisible(trip.id);
+
+    const discoverCountryCodes = useMemo(() => {
+        const codes = new Set<string>();
+        displayTrip.items.forEach((item) => {
+            if (item.type === 'city' && item.countryCode) codes.add(item.countryCode.toUpperCase());
+        });
+        return Array.from(codes);
+    }, [displayTrip.items]);
+
+    const discoverDays = useMemo(
+        () => buildMobileDayPlan(displayTrip, { locale: appLanguage }),
+        [appLanguage, displayTrip],
+    );
+
+    /**
+     * Saved ideas are trip data: `persist` alone only reaches this browser's
+     * copy, and the next load from the database replaced it without them. The
+     * commit is what writes the database, exactly as for any item edit.
+     * No toast: keep / skip is a stream of small decisions.
+     */
+    const commitRecommendationState = useCallback((
+        next: ITripRecommendationState,
+        label = 'Data: Updated saved ideas',
+    ) => {
+        markUserEdit();
+        setPendingLabel(label);
+        const updatedTrip: ITrip = { ...tripRef.current, recommendationState: next, updatedAt: Date.now() };
+        safeUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings, { skipToast: true });
+    }, [currentViewSettings, markUserEdit, safeUpdateTrip, scheduleCommit, setPendingLabel, tripRef]);
+
+    const handleRecommendationStateChange = useCallback((next: ITripRecommendationState) => {
+        commitRecommendationState(next);
+    }, [commitRecommendationState]);
+
+    /**
+     * What the trip and this device know together, as the ideas deck reads it.
+     * Ideas saved before their commit reached the database live only on the
+     * device, and the map must still show them.
+     */
+    const mergedIdeaState = useMemo(
+        () => mergeRecommendationState(displayTrip.recommendationState, readStoredRecommendationState(trip.id)),
+        [displayTrip.recommendationState, trip.id],
+    );
+
+    // Ideas saved on this device whose commit never reached the database
+    // (the ideas deck and early imports only wrote this browser's copy) are
+    // written back once, when an editable trip opens here.
+    const repairedIdeasTripIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!canEdit || isExamplePreview || agentPreviewTrip) return;
+        if (repairedIdeasTripIdRef.current === trip.id) return;
+        const tripCopyCount = trip.recommendationState?.saved?.length ?? 0;
+        if (mergedIdeaState.saved.length <= tripCopyCount) return;
+        repairedIdeasTripIdRef.current = trip.id;
+        commitRecommendationState(mergedIdeaState, 'Data: Saved ideas kept on this device');
+    }, [agentPreviewTrip, canEdit, commitRecommendationState, isExamplePreview, mergedIdeaState, trip.id, trip.recommendationState]);
+
+    const handleShowIdeaMarkersChange = useCallback((enabled: boolean) => {
+        setIdeaLayer({ tripId: trip.id, visible: enabled });
+        writeTripIdeaLayerVisible(trip.id, enabled);
+        trackEvent('trip_view__map_idea_markers--toggle', { trip_id: trip.id, active: enabled });
+    }, [trip.id]);
+
+    const myMapsActions = useGoogleMyMapsActions({
+        trip,
+        displayTrip,
+        tripRef,
+        appLanguage,
+        ideaState: mergedIdeaState,
+        commitRecommendationState,
+        // Someone who just imported a map wants to see it on the map.
+        onIdeasImported: () => handleShowIdeaMarkersChange(true),
+    });
+    const hasKeptIdeas = myMapsActions.keptIdeaIds.length > 0;
+
+    const ideaMarkers = useMemo(
+        () => buildMapIdeaMarkers(mergedIdeaState.saved),
+        [mergedIdeaState],
+    );
+
+    const openDiscover = useCallback((tab: 'discover' | 'saved') => {
+        setDiscoverInitialTab(tab);
+        setDiscoverOpen(true);
+    }, []);
+
+    const handleIdeaAction = useCallback((ideaId: string, action: IdeaMapAction) => {
+        const review = action === 'save' ? 'saved' : action === 'unsave' ? 'pending' : 'skipped';
+        trackEvent(`trip_view__idea_review--${action === 'save' ? 'keep' : action}`, {
+            trip_id: trip.id,
+            recommendation_id: ideaId,
+            source: 'map_popup',
+        });
+        const next = setIdeaReview(mergedIdeaState, ideaId, review);
+        writeStoredRecommendationState(trip.id, next);
+        commitRecommendationState(next);
+    }, [commitRecommendationState, mergedIdeaState, trip.id]);
+
+    const tripInfoCities = useMemo(
+        () => displayTrip.items.filter((item) => item.type === 'city'),
+        [displayTrip.items],
+    );
+
+    const tripInfoMyMapsPanel = (
+        <Suspense fallback={null}>
+            <GoogleMyMapsPanel
+                tripId={trip.id}
+                canEdit={canEdit}
+                cities={tripInfoCities}
+                language={appLanguage}
+                keptIdeaIds={myMapsActions.keptIdeaIds}
+                activityTitles={myMapsActions.activityTitles}
+                onExport={myMapsActions.exportKml}
+                onImportIdeas={myMapsActions.importIdeas}
+                onOpenIdeas={() => {
+                    closeTripInfoModal();
+                    openDiscover('saved');
+                }}
+            />
+        </Suspense>
+    );
+
     const timelineCanvas = (
         <TripTimelineCanvas
+            // A trip replaced from outside the planner (agent apply, revert, or a
+            // preview toggle) rebuilds the canvas: its day geometry is measured,
+            // and a swapped-in trip alone left the calendar showing the old one.
+            key={`timeline-${agentSurfaceNonce}-${agentPreviewTrip ? 'preview' : 'live'}`}
             timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
@@ -3008,6 +3441,80 @@ const useTripViewRender = ({
         () => (selectedItemId ? routeStatusById[selectedItemId] : undefined),
         [routeStatusById, selectedItemId]
     );
+    const tripAgentContextRefs = useMemo(
+        () => buildTripAgentContextRefs(trip, selectedItemId, selectedCityIds),
+        [selectedCityIds, selectedItemId, trip]
+    );
+    // Rollout state, so the launcher never offers a panel the server refuses.
+    const isTripAgentRolledOut = useTripAgentAvailability(access?.role === 'admin');
+    const isTripAgentLocked = !DB_ENABLED
+        || !isAuthenticated
+        || isAnonymous
+        || !canEdit
+        || access?.entitlements.canUseTripAgent === false
+        || !onAdoptAgentTripVersion;
+    // The panel sits at the logical end, which is the left edge in Persian and
+    // Urdu; the floating map reserves that side instead of being switched off.
+    const isRtlAppLanguage = appLanguage === 'fa' || appLanguage === 'ur';
+    /**
+     * Adopts a trip the agent panel produced locally (a revert, a redo, or a
+     * re-apply of a reviewed set) as one new version, and refreshes the planner
+     * surface so the calendar rebuilds its measured geometry.
+     */
+    const adoptAgentTrip = useCallback((nextTrip: ITrip, label: string, changeSetId?: string) => {
+        onAdoptAgentTripVersion?.({
+            trip: { ...nextTrip, updatedAt: Date.now() },
+            versionId: '',
+            label,
+            changeSetId,
+        });
+        onAgentTripChanged?.();
+    }, [onAdoptAgentTripVersion, onAgentTripChanged]);
+
+    const openTripAgent = useCallback(() => {
+        trackEvent('trip_agent__launcher--open', {
+            trip_id: trip.id,
+            locked: isTripAgentLocked,
+            context_count: tripAgentContextRefs.length,
+        });
+        if (isTripAgentLocked) {
+            openLoginModal({
+                source: 'trip_agent_launcher',
+                nextPath: buildPathFromLocationParts({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                }),
+                reloadOnSuccess: true,
+            });
+            return;
+        }
+        prefetchTripAgent(trip.id);
+        setIsTripAgentOpen(true);
+        writeTripAgentOpenState(true);
+    }, [isTripAgentLocked, location.hash, location.pathname, location.search, openLoginModal, trip.id, tripAgentContextRefs.length]);
+    // Hover, focus and press all come before the click, so the chat chunk and
+    // the trip's chat are usually on their way by the time the panel opens.
+    const warmTripAgent = useCallback(() => {
+        if (isTripAgentLocked) return;
+        prefetchTripAgent(trip.id);
+    }, [isTripAgentLocked, trip.id]);
+    // Fetch the chat chunk while the page is idle. The chat itself is not
+    // loaded ahead of an intent: that request touches the database.
+    useEffect(() => {
+        if (!isTripAgentRolledOut || isTripAgentLocked || isTripAgentOpen) return;
+        if (typeof window === 'undefined') return;
+        const warm = () => {
+            void loadTripAgentChatSessionModule().catch(() => undefined);
+            preloadTripAgentTranslations();
+        };
+        if (typeof window.requestIdleCallback === 'function') {
+            const handle = window.requestIdleCallback(warm, { timeout: 5000 });
+            return () => window.cancelIdleCallback(handle);
+        }
+        const timer = window.setTimeout(warm, 2500);
+        return () => window.clearTimeout(timer);
+    }, [isTripAgentLocked, isTripAgentOpen, isTripAgentRolledOut]);
     const handleTripCalendarExport = useCallback((
         scope: TripCalendarExportScope,
         source: 'details_panel' | 'trip_info_modal' | 'print_view',
@@ -3074,7 +3581,7 @@ const useTripViewRender = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-muted-foreground">Preparing print layout…</div>}>
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}
@@ -3089,10 +3596,17 @@ const useTripViewRender = ({
         );
     }
 
+    /*
+     * The runtime provider, not the loader: the planner must never be
+     * re-parented. The Google Maps script is mounted by `GoogleMapsApiGate`
+     * around the map itself, which `isMapBootstrapEnabled` already defers, so
+     * the deferral is unchanged and nothing above the map is remounted when it
+     * finally starts.
+     */
     return (
-        <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
+        <MapRuntimeProvider language={appLanguage}>
             <div
-                className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
+                className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900 dark:selection:bg-accent-400/12 dark:selection:text-accent-200"
                 data-tf-handoff-ready="true"
             >
                 
@@ -3191,6 +3705,7 @@ const useTripViewRender = ({
                         void handleRetryGeneration('trip_strip');
                     }}
                     exampleTripBanner={exampleTripBanner}
+                    isAgentLauncherVisible={isTripAgentRolledOut && !isTripAgentOpen}
                 />
 
                 {/* Main Content */}
@@ -3198,9 +3713,13 @@ const useTripViewRender = ({
                     <TripViewPlannerWorkspace
                         isPaywallLocked={isPaywallLocked}
                         isMobile={isMobile}
-                        isMobileMapExpanded={isMobileMapExpanded}
-                        onCloseMobileMap={() => setIsMobileMapExpanded(false)}
-                        onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
+                        trip={displayTrip}
+                        onSelectTimelineItem={handleTimelineSelect}
+                        onUpdateTimelineItem={canEdit ? handleUpdateItem : undefined}
+                        onSetLegTransport={canEdit ? handleSetLegTransport : undefined}
+                        onAddTimelineActivity={canEdit ? handleOpenAddActivity : undefined}
+                        onOpenDiscover={discoverCountryCodes.length > 0 || hasKeptIdeas ? () => openDiscover('discover') : undefined}
+                        appLanguage={appLanguage}
                         timelineCanvas={timelineCanvas}
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
@@ -3271,6 +3790,26 @@ const useTripViewRender = ({
                         selectedItemId={selectedItemId}
                         onMapCitySelect={handleMapCitySelect}
                         onMapActivitySelect={handleMapActivitySelect}
+                        onMapClearSelection={handleMapClearSelection}
+                        cityFocusMode={mapPreferences.cityFocusMode}
+                        onOpenMapCustomize={openMapCustomize}
+                        showActivityMarkers={mapPreferences.showActivityMarkers}
+                        onShowActivityMarkersChange={(enabled) => handleMapPreferenceChange({ showActivityMarkers: enabled })}
+                        ideaMarkers={ideaMarkers}
+                        showIdeaMarkers={showIdeaMarkers}
+                        onShowIdeaMarkersChange={handleShowIdeaMarkersChange}
+                        onIdeaAction={handleIdeaAction}
+                        canEditIdeas={canEdit}
+                        basemapDetail={mapBasemapDetail}
+                        mapLookAxes={mapLookAxes}
+                        tripOverlay={mapTripOverlay}
+                        todayDayOffset={todayDayOffset}
+                        routeLineWeight={MAP_ROUTE_THICKNESS_MULTIPLIER[mapPreferences.routeThickness]}
+                        useGlobeProjection={mapPreferences.useGlobeProjection}
+                        showTerrain={mapPreferences.showTerrain}
+                        mapPitch={mapPreferences.pitch}
+                        isMapCustomizeOpen={isMapCustomizeOpen}
+                        mapCustomizeLabel={t('tripView.mapCustomize.open', 'Customize map')}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {
@@ -3284,7 +3823,7 @@ const useTripViewRender = ({
                             markManualViewChange();
                             setLayoutMode(mode);
                         }}
-                        mapStyle={mapStyle}
+                        mapStyle={effectiveMapStyle}
                         onMapStyleChange={(nextStyle) => {
                             if (nextStyle === mapStyle) return;
                             markManualViewChange();
@@ -3319,13 +3858,105 @@ const useTripViewRender = ({
                         onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
                         onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
+                        floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
+                        floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                     />
-                    <TripViewModalLayer
+                    <MapCustomizeModal
+                        isOpen={isMapCustomizeOpen}
+                        onClose={closeMapCustomize}
+                        preferences={mapPreferences}
+                        onChange={handleMapPreferenceChange}
+                        onReset={handleMapPreferenceReset}
+                        onSaveAsDefault={saveMapPreferencesAsDefault}
+                        hasSavedPreset={hasSavedMapPreset}
+                        onApplySavedPreset={applySavedMapPreset}
+                        isSavedPresetActive={isSavedMapPresetActive}
                         isMobile={isMobile}
-                        detailsPanelVisible={detailsPanelVisible}
-                        detailsPanelContent={detailsPanelContent}
-                        onCloseDetailsDrawer={closeDetailsPanel}
-                        onOpenDetailsDrawer={openDetailsPanel}
+                        activeRenderer={activeMapRenderer}
+                        isMapboxAvailable={isMapboxRendererAvailable}
+                        tripId={trip.id}
+                    />
+                    {isTripAgentRolledOut && !isTripAgentOpen && (
+                        <button
+                            type="button"
+                            onClick={openTripAgent}
+                            onPointerEnter={warmTripAgent}
+                            onPointerDown={warmTripAgent}
+                            onFocus={warmTripAgent}
+                            className={`fixed ${TRIP_AGENT_LAUNCHER_POSITION_CLASS} z-[1490] inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none`}
+                            aria-label={t('tripAgent.title')}
+                            {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
+                        >
+                            {isTripAgentLocked
+                                ? <Lock className="size-4 text-muted-foreground" />
+                                : <Sparkles className="size-4 text-accent-600 dark:text-accent-300" />}
+                            <span>{t('tripAgent.title')}</span>
+                        </button>
+                    )}
+                    {agentPreviewTrip && (
+                        <div
+                            role="status"
+                            className="pointer-events-none fixed inset-x-0 top-2 z-[1600] flex justify-center px-3"
+                        >
+                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
+                                {t('tripAgent.previewBanner')}
+                            </p>
+                        </div>
+                    )}
+                    {isTripAgentRolledOut && isTripAgentOpen && onAdoptAgentTripVersion && (
+                        <Suspense fallback={<TripAgentPanelFallback />}>
+                            <TripAgentPanel
+                                trip={agentCanonicalTrip || trip}
+                                contextRefs={tripAgentContextRefs}
+                                isOpen={isTripAgentOpen}
+                                onClose={() => {
+                                    setIsTripAgentOpen(false);
+                                    writeTripAgentOpenState(false);
+                                }}
+                                onAdoptCommittedTripVersion={(input) => {
+                                    onAdoptAgentTripVersion?.(input);
+                                    onAgentTripChanged?.();
+                                }}
+                                onPreviewTrip={onAgentPreviewTrip}
+                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
+                                    // Not an undo: history also holds view changes, so
+                                    // stepping back would revert whatever happened last
+                                    // rather than this change set. The snapshot from
+                                    // before the apply is restored as a new version.
+                                    adoptAgentTrip(previousTrip, label, changeSetId);
+                                    showToast(t('tripAgent.revertToast'), {
+                                        tone: 'neutral',
+                                        title: t('tripAgent.revertToastTitle'),
+                                        iconVariant: 'undo',
+                                        disableDefaultUndo: true,
+                                        action: {
+                                            label: t('tripAgent.redo'),
+                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
+                                        },
+                                    });
+                                }}
+                                onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
+                                    adoptAgentTrip(nextTrip, label, changeSetId);
+                                }}
+                            />
+                        </Suspense>
+                    )}
+                    {isDiscoverOpen && (
+                        <Suspense fallback={null}>
+                            <TripDiscoverOverlay
+                                open={isDiscoverOpen}
+                                onClose={() => setDiscoverOpen(false)}
+                                initialTab={discoverInitialTab}
+                                trip={displayTrip}
+                                countryCodes={discoverCountryCodes}
+                                days={discoverDays}
+                                canEdit={canEdit}
+                                onRecommendationStateChange={handleRecommendationStateChange}
+                                onAddActivity={handleAddActivityItem}
+                            />
+                        </Suspense>
+                    )}
+                    <TripViewModalLayer
                         addActivityState={addActivityState}
                         onCloseAddActivity={() => setAddActivityState((prev) => ({ ...prev, isOpen: false }))}
                         onAddActivity={handleAddActivityItem}
@@ -3388,6 +4019,7 @@ const useTripViewRender = ({
                             closeTripInfoModal();
                             setViewMode('print');
                         }}
+                        tripInfoMyMapsPanel={tripInfoMyMapsPanel}
                         shouldEnableReleaseNotice={shouldEnableReleaseNotice}
                         isShareOpen={isShareOpen}
                         shareMode={shareMode}
@@ -3407,6 +4039,7 @@ const useTripViewRender = ({
                         }}
                         shareStatus={shareStatus}
                         onCopyTrip={onCopyTrip}
+                        isAgentLauncherVisible={isTripAgentRolledOut && !isTripAgentOpen}
                         expirationLabel={expirationLabel}
                         tripId={trip.id}
                         paywallActivationMode={paywallActivationMode}
@@ -3430,8 +4063,23 @@ const useTripViewRender = ({
 
                 </main>
             </div>
-        </GoogleMapsLoader>
+        </MapRuntimeProvider>
     );
 };
 
-export const TripView: React.FC<TripViewProps> = (props) => useTripViewRender(props);
+export const TripView: React.FC<TripViewProps> = (props) => {
+    const [agentPreviewTrip, setAgentPreviewTrip] = useState<ITrip | null>(null);
+    const [agentSurfaceNonce, setAgentSurfaceNonce] = useState(0);
+
+    // The preview swaps the rendered trip, so editing is paused until it ends.
+    return useTripViewRender({
+        ...props,
+        trip: agentPreviewTrip || props.trip,
+        readOnly: props.readOnly || Boolean(agentPreviewTrip),
+        agentPreviewTrip,
+        agentCanonicalTrip: props.trip,
+        onAgentPreviewTrip: setAgentPreviewTrip,
+        agentSurfaceNonce,
+        onAgentTripChanged: () => setAgentSurfaceNonce((current) => current + 1),
+    });
+};

@@ -258,7 +258,7 @@ export const GlobalTooltipLayer: React.FC = () => {
   return createPortal(
     <div
       ref={tooltipRef}
-      className="pointer-events-none fixed rounded-md bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white shadow-xl"
+      className="pointer-events-none fixed max-w-[20rem] rounded-md bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white shadow-xl"
       style={{
         left: position?.x ?? 0,
         top: position?.y ?? 0,

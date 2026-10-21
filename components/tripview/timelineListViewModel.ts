@@ -1,11 +1,12 @@
 import type { ITrip, ITimelineItem } from '../../types';
 import { buildApprovedCityRoute, findTravelBetweenCities, getHexFromColorClass } from '../../utils';
 import { normalizeTransportMode } from '../../shared/transportModes';
+import { resolveExplicitActivityStay } from '../../shared/activityStay';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const OFFSET_EPSILON = 0.0001;
 
-const TRANSPORT_MODE_LABEL: Record<string, string> = {
+export const TRANSPORT_MODE_LABEL: Record<string, string> = {
     plane: 'Flight',
     train: 'Train',
     bus: 'Bus',
@@ -154,7 +155,10 @@ export const buildTimelineListModel = (
         const cityEndDay = Math.max(cityStartDay + 1, Math.ceil(cityEnd - OFFSET_EPSILON));
 
         const sectionActivities = activities.flatMap((activity) => {
-            if (activity.startDateOffset < (cityStart - OFFSET_EPSILON) || activity.startDateOffset >= (cityEnd - OFFSET_EPSILON)) {
+            const explicitStay = resolveExplicitActivityStay(activity, cities);
+            if (explicitStay) {
+                if (explicitStay.id !== city.id) return [];
+            } else if (activity.startDateOffset < (cityStart - OFFSET_EPSILON) || activity.startDateOffset >= (cityEnd - OFFSET_EPSILON)) {
                 return [];
             }
             const dayOffset = toDayOffset(activity.startDateOffset);

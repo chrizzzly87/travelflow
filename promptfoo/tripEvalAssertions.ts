@@ -1,5 +1,6 @@
 import { normalizeCityName, validateModelData } from '../shared/aiBenchmarkValidation.ts';
-import { TRIP_ITINERARY_JSON_SCHEMA } from '../shared/aiTripItinerarySchema.ts';
+import { TRIP_ITINERARY_COMPACT_JSON_SCHEMA } from '../shared/aiTripItinerarySchema.ts';
+import { prepareTripItineraryModelData } from '../shared/aiTripItineraryPreparation.ts';
 import type { TripEvalExpectations } from './tripEvalFixtures.ts';
 
 interface TripEvalAssertionContext {
@@ -75,9 +76,13 @@ export const assertSharedValidatorPasses = (output: string, context?: TripEvalAs
     const parsed = parseTripOutput(output);
     if (!parsed.ok) return fail(parsed.reason);
 
-    const validation = validateModelData(parsed.trip, {
-        roundTrip: Boolean(context?.vars?.roundTrip),
-    });
+    const roundTrip = Boolean(context?.vars?.roundTrip);
+    const prepared = prepareTripItineraryModelData(parsed.trip, { roundTrip, minimumRecommendations: 1 });
+    if (!prepared.ok) {
+        return fail(`Trip compiler rejected the draft: ${prepared.errors.join(' | ')}`);
+    }
+
+    const validation = validateModelData(prepared.value.data, { roundTrip });
 
     if (!validation.schemaValid) {
         return fail(`Shared validator failed: ${validation.errors.join(' | ')}`);
@@ -150,7 +155,15 @@ export const assertRoundTripReturnsToOrigin = (output: string, context?: TripEva
     const parsed = parseTripOutput(output);
     if (!parsed.ok) return fail(parsed.reason);
 
-    const cities = getCityNames(parsed.trip);
+    const prepared = prepareTripItineraryModelData(parsed.trip, {
+        roundTrip: true,
+        minimumRecommendations: 1,
+    });
+    if (!prepared.ok) {
+        return fail(`Trip compiler rejected the round-trip draft: ${prepared.errors.join(' | ')}`);
+    }
+
+    const cities = getCityNames(prepared.value.data);
     const firstCity = cities[0];
     const lastCity = cities[cities.length - 1];
 
@@ -201,7 +214,7 @@ export const buildTripEvalAssertions = (options: {
     expectations?: TripEvalExpectations;
 }) => {
     const assertions = [
-        { type: 'is-json' as const, value: TRIP_ITINERARY_JSON_SCHEMA },
+        { type: 'is-json' as const, value: TRIP_ITINERARY_COMPACT_JSON_SCHEMA },
         { type: 'javascript' as const, value: assertSharedValidatorPasses },
     ];
 

@@ -17,6 +17,7 @@ import {
     Play,
     ToggleLeft,
     ToggleRight,
+    Funnel,
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 if (typeof window !== 'undefined') {
@@ -26,8 +27,9 @@ import 'prismjs/components/prism-json';
 import {
     AI_MODEL_CATALOG,
     getDefaultCreateTripModel,
-    groupAiModelsByProvider,
+    registerRuntimeAiModels,
     sortAiModels,
+    type AiModelCatalogItem,
 } from '../config/aiModelCatalog';
 import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProviderCatalog';
 import { type GenerateOptions } from '../services/aiService';
@@ -60,14 +62,48 @@ import { AdminShell } from '../components/admin/AdminShell';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AppModal } from '../components/ui/app-modal';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Switch } from '../components/ui/switch';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import {
+    isAiModelOlderThanMonths,
+    mergeAiModelCatalogs,
+    type OpenRouterCatalogModel,
+} from '../services/openRouterModelCatalogService';
+import {
+    applyAiRuntimeSettings,
+    type AiRuntimeSettings,
+} from '../services/aiRuntimeSettingsService';
+import {
+    AI_REASONING_EFFORTS,
+    resolveSupportedReasoningEffort,
+    type AiReasoningEffort,
+} from '../shared/aiReasoning';
 
 interface BenchmarkSession {
     id: string;
@@ -171,6 +207,11 @@ interface BenchmarkPreferencesApiResponse extends BenchmarkApiResponse {
     updatedAt?: string | null;
 }
 
+interface BenchmarkModelsApiResponse extends BenchmarkApiResponse {
+    models?: OpenRouterCatalogModel[];
+    settings?: AiRuntimeSettings;
+}
+
 interface PresetEditorDraft {
     mode: 'edit' | 'create';
     id: string;
@@ -196,10 +237,22 @@ interface ValidationCheckStats {
 const DEFAULT_SESSION_NAME = 'AI benchmark session';
 const CUSTOM_JSON_PRESET_ID = '__custom_json__';
 const CUSTOM_JSON_PRESET_NAME = 'Custom JSON import';
-const BENCHMARK_PARALLEL_CONCURRENCY = 3;
+const BENCHMARK_CONCURRENCY_DEFAULT = 2;
+const BENCHMARK_CONCURRENCY_MAX = 5;
 const BENCHMARK_TIMEOUT_MIN_SECONDS = 20;
 const BENCHMARK_TIMEOUT_MAX_SECONDS = 180;
 const BENCHMARK_TIMEOUT_DEFAULT_SECONDS = 60;
+type BenchmarkReasoningMode = 'provider-default' | AiReasoningEffort;
+const REASONING_MODE_LABELS: Record<BenchmarkReasoningMode, string> = {
+    'provider-default': 'Model default',
+    none: 'Off',
+    minimal: 'Minimal',
+    low: 'Low · fastest',
+    medium: 'Medium',
+    high: 'High',
+    xhigh: 'Extra high',
+    max: 'Maximum',
+};
 const BENCHMARK_RUN_COMMENT_MAX_LENGTH = 2000;
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 const BENCHMARK_BASELINE_PREFERENCE_DEFAULTS = {
@@ -218,20 +271,20 @@ const SATISFACTION_META: Record<SatisfactionRating, { label: string; icon: React
     good: {
         label: 'Good',
         icon: <Smiley size={14} weight="fill" />,
-        activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700',
-        idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
+        activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
+        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
     medium: {
         label: 'Medium',
         icon: <SmileyMeh size={14} weight="fill" />,
-        activeClass: 'border-amber-300 bg-amber-50 text-amber-700',
-        idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
+        activeClass: 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
+        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
     bad: {
         label: 'Bad',
         icon: <SmileySad size={14} weight="fill" />,
-        activeClass: 'border-rose-300 bg-rose-50 text-rose-700',
-        idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
+        activeClass: 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
+        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
 };
 
@@ -284,11 +337,11 @@ const ProviderLabel: React.FC<{
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">
             <AiProviderLogo provider={provider} model={model} size={logoSize} />
-            <span className={providerClassName || 'font-semibold text-slate-800'} title={`${providerLabel} (${provider})`}>
+            <span className={providerClassName || 'font-semibold text-foreground'} title={`${providerLabel} (${provider})`}>
                 {providerShortName}
             </span>
             {modelLabel && showModel ? (
-                <span className={modelClassName || 'truncate text-slate-600'}>
+                <span className={modelClassName || 'truncate text-muted-foreground'}>
                     / {modelLabel}
                 </span>
             ) : null}
@@ -301,6 +354,61 @@ const getRunTimestampIso = (run: BenchmarkRun): string | null => {
 };
 
 const isRunActive = (run: BenchmarkRun): boolean => run.status === 'queued' || run.status === 'running';
+
+const RunLatency: React.FC<{ run: BenchmarkRun }> = React.memo(({ run }) => {
+    const startedMs = run.started_at ? Date.parse(run.started_at) : Number.NaN;
+    const [elapsedMs, setElapsedMs] = useState(() => (
+        Number.isFinite(startedMs) ? Math.max(0, Date.now() - startedMs) : 0
+    ));
+
+    useEffect(() => {
+        if (run.status !== 'running' || !Number.isFinite(startedMs)) return;
+        const updateElapsed = () => setElapsedMs(Math.max(0, Date.now() - startedMs));
+        updateElapsed();
+        const timer = window.setInterval(updateElapsed, 1000);
+        return () => window.clearInterval(timer);
+    }, [run.status, startedMs]);
+
+    if (typeof run.latency_ms === 'number') {
+        return <span className="tabular-nums">{formatDuration(run.latency_ms)}</span>;
+    }
+    if (run.status !== 'running' || !Number.isFinite(startedMs)) {
+        return <span>—</span>;
+    }
+    return <span className="tabular-nums">{Math.floor(elapsedMs / 1000)} s</span>;
+});
+
+RunLatency.displayName = 'RunLatency';
+
+const ModelReasoningSelect: React.FC<{
+    model: AiModelCatalogItem;
+    runDefault: BenchmarkReasoningMode;
+    value?: BenchmarkReasoningMode;
+    onChange: (value: BenchmarkReasoningMode | undefined) => void;
+}> = ({ model, runDefault, value, onChange }) => {
+    const isConfigurable = model.provider === 'openrouter' && model.supportsReasoning === true;
+    if (!isConfigurable) {
+        return <span className="text-xs text-muted-foreground">Not configurable</span>;
+    }
+
+    const supportedEfforts = (model.reasoningEfforts?.length ? model.reasoningEfforts : AI_REASONING_EFFORTS)
+        .filter((effort) => !model.reasoningMandatory || effort !== 'none');
+
+    return (
+        <Select value={value || 'inherit'} onValueChange={(nextValue) => onChange(nextValue === 'inherit' ? undefined : nextValue as BenchmarkReasoningMode)}>
+            <SelectTrigger aria-label={`${model.label} reasoning`} className="h-8"><SelectValue /></SelectTrigger>
+            <SelectContent>
+                <SelectGroup>
+                    <SelectItem value="inherit">Run default · {REASONING_MODE_LABELS[runDefault]}</SelectItem>
+                    <SelectItem value="provider-default">Model default</SelectItem>
+                    {supportedEfforts.map((effort) => (
+                        <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
+                    ))}
+                </SelectGroup>
+            </SelectContent>
+        </Select>
+    );
+};
 
 const isRunCancelledByUser = (run: BenchmarkRun): boolean => {
     if (run.status !== 'failed') return false;
@@ -494,9 +602,26 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [transportMask, setTransportMask] = useState<'automatic' | 'plane' | 'train' | 'camper'>('automatic');
     const [sessionName, setSessionName] = useState(DEFAULT_SESSION_NAME);
     const [benchmarkTimeoutSeconds, setBenchmarkTimeoutSeconds] = useState(BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
+    const [benchmarkReasoningMode, setBenchmarkReasoningMode] = useState<BenchmarkReasoningMode>('low');
+    const [benchmarkConcurrency, setBenchmarkConcurrency] = useState(BENCHMARK_CONCURRENCY_DEFAULT);
+    const [modelReasoningModes, setModelReasoningModes] = useState<Record<string, BenchmarkReasoningMode>>({});
     const [compactBenchmarkOutput, setCompactBenchmarkOutput] = useState(true);
+    const [workspaceTab, setWorkspaceTab] = useState<'setup' | 'results' | 'insights'>('setup');
 
     const [modelFilter, setModelFilter] = useState('');
+    const [modelProviderFilter, setModelProviderFilter] = useState('all');
+    const [modelCapabilityFilter, setModelCapabilityFilter] = useState('all');
+    const [modelPriceFilter, setModelPriceFilter] = useState('all');
+    const [liveOpenRouterModels, setLiveOpenRouterModels] = useState<OpenRouterCatalogModel[]>([]);
+    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>({
+        defaultModelId: getDefaultCreateTripModel().id,
+        approvedOpenRouterModels: [],
+        modelMaxAgeMonths: 6,
+        showOlderModels: false,
+        updatedAt: null,
+    });
+    const [modelCatalogLoading, setModelCatalogLoading] = useState(false);
+    const [modelCatalogLoaded, setModelCatalogLoaded] = useState(false);
     const [modelTargetIds, setModelTargetIds] = useState<string[]>(() => {
         const defaults = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) =>
             AI_MODEL_CATALOG.some((entry) => entry.id === modelId && entry.availability === 'active')
@@ -507,6 +632,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [inactiveModelTargetIds, setInactiveModelTargetIds] = useState<string[]>([]);
     const [modelModalOpen, setModelModalOpen] = useState(false);
     const [modelDraftIds, setModelDraftIds] = useState<string[]>([]);
+    const [templateDetailsOpen, setTemplateDetailsOpen] = useState(false);
     const [presetEditor, setPresetEditor] = useState<PresetEditorDraft | null>(null);
     const [customScenarioJsonDraft, setCustomScenarioJsonDraft] = useState('');
     const [customScenarioMeta, setCustomScenarioMeta] = useState<{
@@ -529,7 +655,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [cancelling, setCancelling] = useState(false);
-    const [liveNow, setLiveNow] = useState(() => Date.now());
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -553,7 +678,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const handledImportTokenRef = useRef<string | null>(null);
     const pendingImportedScenarioRef = useRef<ReturnType<typeof decodeBenchmarkScenarioImportPayload> | null>(null);
 
-    const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
+    const sortedModels = useMemo(
+        () => sortAiModels(mergeAiModelCatalogs(AI_MODEL_CATALOG, liveOpenRouterModels)),
+        [liveOpenRouterModels],
+    );
     const activeModelIdSet = useMemo(
         () => new Set(sortedModels.flatMap((model) => (model.availability === 'active' ? [model.id] : []))),
         [sortedModels],
@@ -570,30 +698,53 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [activeModelIdSet]);
 
     const filteredModels = useMemo(() => {
-        const activeModels = sortedModels.filter((model) => model.availability === 'active');
-        if (!modelFilter.trim()) return activeModels;
         const token = modelFilter.trim().toLocaleLowerCase();
-        return activeModels.filter((model) => {
+        return sortedModels.filter((model) => {
+            if (model.availability !== 'active') return false;
+            if (!aiRuntimeSettings.showOlderModels && isAiModelOlderThanMonths(model, aiRuntimeSettings.modelMaxAgeMonths)) return false;
+            if (modelProviderFilter !== 'all' && model.providerLabel !== modelProviderFilter) return false;
+            if (modelCapabilityFilter === 'structured' && model.supportsStructuredOutput !== true) return false;
+            if (modelCapabilityFilter === 'tools' && model.supportsTools !== true) return false;
+            if (modelCapabilityFilter === 'reasoning' && model.supportsReasoning !== true) return false;
+            if (modelPriceFilter === 'free' && model.isFree !== true) return false;
+            if (modelPriceFilter === 'budget' && (model.outputPricePerMillion === null || model.outputPricePerMillion === undefined || model.outputPricePerMillion > 5)) return false;
+            if (modelPriceFilter === 'premium' && (model.outputPricePerMillion === null || model.outputPricePerMillion === undefined || model.outputPricePerMillion <= 5)) return false;
+            if (!token) return true;
             return (
                 model.providerLabel.toLocaleLowerCase().includes(token)
                 || model.label.toLocaleLowerCase().includes(token)
                 || model.model.toLocaleLowerCase().includes(token)
             );
         });
-    }, [modelFilter, sortedModels]);
+    }, [
+        aiRuntimeSettings.modelMaxAgeMonths,
+        aiRuntimeSettings.showOlderModels,
+        modelCapabilityFilter,
+        modelFilter,
+        modelPriceFilter,
+        modelProviderFilter,
+        sortedModels,
+    ]);
 
-    const groupedModels = useMemo(() => groupAiModelsByProvider(filteredModels), [filteredModels]);
+    const groupedModels = useMemo(() => filteredModels.reduce<Record<string, AiModelCatalogItem[]>>((groups, model) => {
+        (groups[model.providerLabel] ||= []).push(model);
+        return groups;
+    }, {}), [filteredModels]);
+    const modelProviderOptions = useMemo(
+        () => Array.from(new Set(sortedModels.map((model) => model.providerLabel))).sort((left, right) => left.localeCompare(right)),
+        [sortedModels],
+    );
 
     const selectedTargets = useMemo(() => {
         const seen = new Set<string>();
         return modelTargetIds.flatMap((modelId) => {
-            const model = AI_MODEL_CATALOG.find((entry) => entry.id === modelId);
+            const model = sortedModels.find((entry) => entry.id === modelId);
             if (!model || model.availability !== 'active') return [];
             if (seen.has(model.id)) return [];
             seen.add(model.id);
             return [model];
         });
-    }, [modelTargetIds]);
+    }, [modelTargetIds, sortedModels]);
     const selectedTargetIdSet = useMemo(() => new Set(selectedTargets.map((target) => target.id)), [selectedTargets]);
     const inactiveTargetIdSet = useMemo(() => new Set(inactiveModelTargetIds), [inactiveModelTargetIds]);
     const runnableTargets = useMemo(
@@ -602,6 +753,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     );
     const allTargetsActive = selectedTargets.length > 0 && runnableTargets.length === selectedTargets.length;
     const allTargetsInactive = selectedTargets.length > 0 && runnableTargets.length === 0;
+    const reasoningTargets = useMemo(
+        () => selectedTargets.filter((model) => model.supportsReasoning === true),
+        [selectedTargets],
+    );
     const customScenarioDraftParse = useMemo(() => {
         const flowHint = customScenarioMeta?.flow || 'unknown';
         if (!customScenarioJsonDraft.trim()) {
@@ -666,6 +821,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         presetConfigs,
         selectedPresetId,
     ]);
+    const selectedTemplateJson = useMemo(() => (
+        selectedPresetId === CUSTOM_JSON_PRESET_ID && customScenarioJsonDraft.trim()
+            ? customScenarioJsonDraft
+            : JSON.stringify(selectedPreset?.scenario || {}, null, 2)
+    ), [customScenarioJsonDraft, selectedPreset?.scenario, selectedPresetId]);
+    const selectedTemplateJsonHtml = useMemo(() => Prism.highlight(
+        selectedTemplateJson,
+        Prism.languages.json,
+        'json',
+    ), [selectedTemplateJson]);
 
     const providerOptions = useMemo(() => {
         const values = Array.from(new Set(runs.flatMap((run) => (run.provider ? [run.provider] : []))));
@@ -735,6 +900,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             costCount: number;
             ratingSum: number;
             ratingCount: number;
+            totalTokensSum: number;
+            totalTokensCount: number;
+            repairAttemptedRuns: number;
         }>();
 
         runs.forEach((run) => {
@@ -751,6 +919,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     costCount: 0,
                     ratingSum: 0,
                     ratingCount: 0,
+                    totalTokensSum: 0,
+                    totalTokensCount: 0,
+                    repairAttemptedRuns: 0,
                 });
             }
 
@@ -773,6 +944,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 entry.ratingSum += SATISFACTION_SCORE[run.satisfaction_rating];
                 entry.ratingCount += 1;
             }
+
+            const totalTokens = Number(run.usage?.totalTokens ?? run.usage?.total_tokens);
+            if (Number.isFinite(totalTokens) && totalTokens >= 0) {
+                entry.totalTokensSum += totalTokens;
+                entry.totalTokensCount += 1;
+            }
+
+            if (run.validation_checks?.semanticRepairAttempted === true) {
+                entry.repairAttemptedRuns += 1;
+            }
         });
 
         return Array.from(bucket.values())
@@ -780,11 +961,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 const averageLatencyMs = entry.latencyCount > 0 ? Math.round(entry.latencySum / entry.latencyCount) : null;
                 const averageCostUsd = entry.costCount > 0 ? Number((entry.costSum / entry.costCount).toFixed(6)) : null;
                 const averageRatingScore = entry.ratingCount > 0 ? Number((entry.ratingSum / entry.ratingCount).toFixed(2)) : null;
+                const averageTotalTokens = entry.totalTokensCount > 0 ? Math.round(entry.totalTokensSum / entry.totalTokensCount) : null;
+                const successRate = entry.totalRuns > 0 ? entry.completedRuns / entry.totalRuns : 0;
+                const repairRate = entry.totalRuns > 0 ? entry.repairAttemptedRuns / entry.totalRuns : 0;
                 return {
                     ...entry,
                     averageLatencyMs,
                     averageCostUsd,
                     averageRatingScore,
+                    averageTotalTokens,
+                    successRate,
+                    repairRate,
                 };
             })
             .sort((left, right) => {
@@ -797,19 +984,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 return leftLatency - rightLatency;
             });
     }, [runs]);
-
-    const getDisplayLatencyMs = useCallback((run: BenchmarkRun): number | null => {
-        if (typeof run.latency_ms === 'number' && run.latency_ms > 0) {
-            return run.latency_ms;
-        }
-        if (run.status !== 'running') {
-            return typeof run.latency_ms === 'number' ? run.latency_ms : null;
-        }
-        if (!run.started_at) return null;
-        const startedMs = Date.parse(run.started_at);
-        if (!Number.isFinite(startedMs)) return null;
-        return Math.max(0, liveNow - startedMs);
-    }, [liveNow]);
 
     const benchmarkSessionParam = (searchParams.get('session') || '').trim();
 
@@ -941,12 +1115,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!hasPendingRuns) return;
-        const timer = window.setInterval(() => setLiveNow(Date.now()), 250);
-        return () => window.clearInterval(timer);
-    }, [hasPendingRuns]);
-
-    useEffect(() => {
         if (!isAuthenticated) {
             setAccessToken(null);
             setPreferencesLoaded(false);
@@ -1004,6 +1172,39 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
         return payload;
     }, [accessToken]);
+
+    const loadModelCatalog = useCallback(async (options?: { silent?: boolean }) => {
+        if (!accessToken) return;
+        setModelCatalogLoading(true);
+        try {
+            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/models', { method: 'GET' }) as BenchmarkModelsApiResponse;
+            const models = Array.isArray(payload.models) ? payload.models : [];
+            setLiveOpenRouterModels(models);
+            registerRuntimeAiModels(models);
+            if (payload.settings) {
+                setAiRuntimeSettings(payload.settings);
+                applyAiRuntimeSettings(payload.settings, models);
+            }
+            if (!options?.silent) {
+                setMessage(`OpenRouter catalog refreshed: ${models.length} compatible models available.`);
+            }
+        } catch (catalogError) {
+            if (!options?.silent) {
+                setError(catalogError instanceof Error ? catalogError.message : 'Could not refresh the OpenRouter model catalog.');
+            }
+        } finally {
+            setModelCatalogLoading(false);
+            setModelCatalogLoaded(true);
+        }
+    }, [accessToken, fetchBenchmarkApi]);
+
+    useEffect(() => {
+        if (!accessToken) {
+            setModelCatalogLoaded(false);
+            return;
+        }
+        void loadModelCatalog({ silent: true });
+    }, [accessToken, loadModelCatalog]);
 
     useEffect(() => {
         const encodedImport = (searchParams.get('import') || '').trim();
@@ -1113,10 +1314,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [accessToken, applyMaskScenario, fetchBenchmarkApi, normalizePreferencesForClient]);
 
     useEffect(() => {
-        if (!accessToken) return;
+        if (!accessToken || !modelCatalogLoaded) return;
         setPreferencesLoaded(false);
         void loadPreferences();
-    }, [accessToken, loadPreferences]);
+    }, [accessToken, loadPreferences, modelCatalogLoaded]);
 
     useEffect(() => {
         if (preferencesLoaded) return;
@@ -1343,6 +1544,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 execution: {
                     timeoutSeconds: benchmarkTimeoutSeconds,
                     compactOutput: compactBenchmarkOutput,
+                    reasoning: benchmarkReasoningMode,
                 },
             },
             metadata: {
@@ -1356,11 +1558,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 execution: {
                     timeoutSeconds: benchmarkTimeoutSeconds,
                     compactOutput: compactBenchmarkOutput,
+                    reasoning: benchmarkReasoningMode,
                 },
             },
         };
     }, [
         benchmarkTimeoutSeconds,
+        benchmarkReasoningMode,
         compactBenchmarkOutput,
         routeLock,
         readMaskScenario,
@@ -1433,9 +1637,30 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     sessionName: sessionName.trim() || DEFAULT_SESSION_NAME,
                     flow: 'classic',
                     scenario: buildScenario(),
-                    targets: selected,
+                    targets: selected.map((target) => {
+                        const catalogModel = sortedModels.find((model) => (
+                            model.provider === target.provider && model.model === target.model
+                        ));
+                        const requestedReasoningMode = catalogModel
+                            ? modelReasoningModes[catalogModel.id] ?? benchmarkReasoningMode
+                            : benchmarkReasoningMode;
+                        const shouldConfigureReasoning = target.provider === 'openrouter'
+                            && catalogModel?.supportsReasoning === true
+                            && requestedReasoningMode !== 'provider-default';
+                        const reasoningEffort = shouldConfigureReasoning
+                            ? resolveSupportedReasoningEffort(
+                                requestedReasoningMode as AiReasoningEffort,
+                                catalogModel.reasoningEfforts,
+                                catalogModel.reasoningMandatory,
+                            )
+                            : undefined;
+                        return {
+                            ...target,
+                            ...(reasoningEffort ? { reasoningEffort } : {}),
+                        };
+                    }),
                     runCount: 1,
-                    concurrency: BENCHMARK_PARALLEL_CONCURRENCY,
+                    concurrency: benchmarkConcurrency,
                     timeoutMs,
                 }),
             });
@@ -1453,7 +1678,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const hasPending = nextRuns.some((run) => isRunActive(run));
             if (hasPending) {
                 setMessage(
-                    `Queued ${selected.length} target(s). Running in background (${timeoutSeconds}s timeout, ${compactBenchmarkOutput ? 'compact' : 'standard'} output).`
+                    `Queued ${selected.length} target(s) with up to ${benchmarkConcurrency} parallel (${timeoutSeconds}s timeout, ${compactBenchmarkOutput ? 'compact' : 'standard'} output).`
                 );
             } else {
                 setMessage(
@@ -1482,7 +1707,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [
         accessToken,
         benchmarkTimeoutSeconds,
+        benchmarkReasoningMode,
+        benchmarkConcurrency,
         compactBenchmarkOutput,
+        modelReasoningModes,
         runnableTargets,
         runs,
         fetchBenchmarkApi,
@@ -1491,6 +1719,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         buildScenario,
         searchParams,
         setSearchParams,
+        sortedModels,
         refreshTelemetryData,
     ]);
 
@@ -1642,9 +1871,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [buildScenario]);
 
     const scrollToResults = useCallback(() => {
-        resultsSectionRef.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
+        setWorkspaceTab('results');
+        window.requestAnimationFrame(() => {
+            resultsSectionRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
         });
     }, []);
 
@@ -1756,9 +1988,35 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const openModelPicker = useCallback(() => {
         setModelFilter('');
+        setModelProviderFilter('all');
+        setModelCapabilityFilter('all');
+        setModelPriceFilter('all');
         setModelDraftIds(modelTargetIds);
         setModelModalOpen(true);
     }, [modelTargetIds]);
+
+    const persistAiRuntimeSettings = useCallback(async (
+        overrides: Partial<Pick<AiRuntimeSettings, 'defaultModelId' | 'approvedOpenRouterModels' | 'modelMaxAgeMonths' | 'showOlderModels'>>,
+        options?: { silent?: boolean },
+    ): Promise<AiRuntimeSettings | null> => {
+        try {
+            const draft: AiRuntimeSettings = { ...aiRuntimeSettings, ...overrides };
+            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/models', {
+                method: 'POST',
+                body: JSON.stringify(draft),
+            }) as BenchmarkModelsApiResponse;
+            const models = Array.isArray(payload.models) ? payload.models : liveOpenRouterModels;
+            const settings = payload.settings || draft;
+            setLiveOpenRouterModels(models);
+            setAiRuntimeSettings(settings);
+            applyAiRuntimeSettings(settings, models);
+            if (!options?.silent) setMessage('Frontend AI model settings saved.');
+            return settings;
+        } catch (settingsError) {
+            setError(settingsError instanceof Error ? settingsError.message : 'Could not save frontend AI model settings.');
+            return null;
+        }
+    }, [aiRuntimeSettings, fetchBenchmarkApi, liveOpenRouterModels]);
 
     const toggleModelDraft = useCallback((modelId: string) => {
         setModelDraftIds((current) => {
@@ -1787,28 +2045,52 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             presets: presetConfigs,
             selectedPresetId,
         });
-        if (normalized.modelTargets.length === 0) {
-            setError('Select at least one model target.');
-            return;
-        }
+        const liveModelIdSet = new Set(liveOpenRouterModels.map((model) => model.id));
+        const newlyApproved = normalized.modelTargets.flatMap((modelId) => (
+            liveModelIdSet.has(modelId) ? [modelId.slice('openrouter:'.length)] : []
+        ));
+        await persistAiRuntimeSettings({
+            approvedOpenRouterModels: Array.from(new Set([
+                ...aiRuntimeSettings.approvedOpenRouterModels,
+                ...newlyApproved,
+            ])),
+        }, { silent: true });
         setModelTargetIds(normalized.modelTargets);
         setInactiveModelTargetIds((current) => pruneInactiveBenchmarkTargetIds(current, normalized.modelTargets));
         setModelModalOpen(false);
         await savePreferences({
             modelTargets: normalized.modelTargets,
         }, { silent: true });
-    }, [modelDraftIds, normalizePreferencesForClient, presetConfigs, savePreferences, selectedPresetId]);
+    }, [
+        aiRuntimeSettings.approvedOpenRouterModels,
+        liveOpenRouterModels,
+        modelDraftIds,
+        normalizePreferencesForClient,
+        persistAiRuntimeSettings,
+        presetConfigs,
+        savePreferences,
+        selectedPresetId,
+    ]);
 
     const removeModelTarget = useCallback(async (modelId: string) => {
         const next = modelTargetIds.filter((entry) => entry !== modelId);
-        if (next.length === 0) {
-            setError('At least one model target is required.');
-            return;
-        }
         setModelTargetIds(next);
         setInactiveModelTargetIds((current) => current.filter((entry) => entry !== modelId));
         await savePreferences({ modelTargets: next }, { silent: true });
     }, [modelTargetIds, savePreferences]);
+
+    const removeAllModelTargets = useCallback(async () => {
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
+            title: 'Remove all benchmark models?',
+            message: 'This clears the selected benchmark model list. You can add models again at any time.',
+            confirmLabel: 'Remove all',
+        }));
+        if (!confirmed) return;
+        setModelTargetIds([]);
+        setInactiveModelTargetIds([]);
+        await savePreferences({ modelTargets: [] }, { silent: true });
+        setMessage('All benchmark models removed.');
+    }, [confirmDialog, savePreferences]);
 
     const handlePresetSelection = useCallback(async (presetId: string) => {
         if (presetId === CUSTOM_JSON_PRESET_ID) {
@@ -1934,50 +2216,50 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     return (
         <AdminShell
             title="AI Benchmark"
-            description="Compare model/provider outputs for the create-trip contract with persistent benchmark sessions."
+            description="Compare trip quality, latency, and cost."
             showGlobalSearch={false}
             showDateRange={false}
         >
-            <div className="mx-auto w-full max-w-[1600px] space-y-4">
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                            <h2 className="text-base font-semibold text-slate-900">Benchmark execution context</h2>
-                            <p className="mt-1 max-w-3xl text-sm text-slate-600">
-                                Default create-trip benchmark workspace. Configure session input on the left and compare selected model targets on the right.
-                                Session identifiers and filters persist in the URL.
-                            </p>
-                        </div>
-
-                        <div className="w-full max-w-sm space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 sm:p-3 sm:text-xs">
-                            <div className="font-semibold text-slate-700">Internal API auth</div>
-                            <div className="text-[11px] text-slate-500">
-                                Requests use your current Supabase bearer token with server-side admin validation.
-                            </div>
-                            <div className="text-[11px] text-slate-500">
-                                Access token state: <span className="font-semibold text-slate-700">{accessToken ? 'ready' : 'missing'}</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+            <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
 
                 {error && (
-                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {error}
                     </section>
                 )}
 
                 {message && (
-                    <section className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    <section className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                         {message}
                     </section>
                 )}
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                <Tabs
+                    value={workspaceTab}
+                    onValueChange={(value) => setWorkspaceTab(value as 'setup' | 'results' | 'insights')}
+                    className="flex flex-col gap-4"
+                >
+                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur dark:ring-0 dark:shadow-none">
+                        <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                            <TabsTrigger value="setup">Setup</TabsTrigger>
+                            <TabsTrigger value="results">Results · {runs.length}</TabsTrigger>
+                            <TabsTrigger value="insights">Insights</TabsTrigger>
+                        </TabsList>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Badge variant={accessToken ? 'secondary' : 'destructive'}>
+                                {accessToken ? 'Admin connected' : 'Re-auth required'}
+                            </Badge>
+                            <span className="tabular-nums">{runnableTargets.length} active models</span>
+                        </div>
+                    </div>
+
+                    <TabsContent value="insights" className="mt-0">
+
+                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h3 className="text-base font-semibold text-slate-900">7-day telemetry quick view</h3>
-                            <p className="text-xs text-slate-500">
+                            <h3 className="text-base font-semibold text-foreground">7-day telemetry quick view</h3>
+                            <p className="text-xs text-muted-foreground">
                                 Three quick ranking cards. Open the full telemetry page for detailed charts and filters.
                             </p>
                         </div>
@@ -1986,14 +2268,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 type="button"
                                 onClick={() => void refreshTelemetryData()}
                                 disabled={snapshotTelemetryLoading}
-                                className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <ArrowClockwise size={14} className={snapshotTelemetryLoading ? 'animate-spin' : ''} />
                                 Refresh snapshot
                             </button>
                             <Link
                                 to="/admin/ai-benchmark/telemetry"
-                                className="inline-flex items-center rounded border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                className="inline-flex items-center rounded border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                             >
                                 Open telemetry page
                             </Link>
@@ -2001,405 +2283,354 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
 
                     {snapshotTelemetryError && (
-                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {snapshotTelemetryError}
                         </div>
                     )}
 
-                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-                        Calls: <span className="font-semibold text-slate-800">{snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}</span>
-                        <span className="mx-2 text-slate-400">•</span>
-                        Success: <span className="font-semibold text-slate-800">{snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}</span>
-                        <span className="mx-2 text-slate-400">•</span>
-                        Cost: <span className="font-semibold text-slate-800">{snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}</span>
+                    <div className="mt-3 rounded-xl border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground">
+                        Calls: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}</span>
+                        <span className="mx-2 text-muted-foreground">•</span>
+                        Success: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}</span>
+                        <span className="mx-2 text-muted-foreground">•</span>
+                        Cost: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}</span>
                     </div>
 
                     <div className="mt-3 grid gap-3 xl:grid-cols-3">
                         {snapshotTelemetryCards.map((card) => (
-                            <article key={card.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{card.title}</p>
-                                <p className="mt-1 text-xl font-black text-slate-900">{card.metric}</p>
-                                <p className="mt-1 text-xs font-semibold text-slate-700">
+                            <article key={card.id} className="rounded-xl border border-border bg-card p-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{card.title}</p>
+                                <p className="mt-1 text-xl font-black text-foreground">{card.metric}</p>
+                                <p className="mt-1 text-xs font-semibold text-foreground">
                                     {card.model ? (
                                         <ProviderLabel
                                             provider={card.model.provider}
                                             model={card.model.model}
-                                            providerClassName="font-semibold text-slate-700"
-                                            modelClassName="text-slate-600"
+                                            providerClassName="font-semibold text-foreground"
+                                            modelClassName="text-muted-foreground"
                                             logoSize={13}
                                         />
                                     ) : 'No model yet'}
                                 </p>
-                                <p className="mt-1 text-[11px] text-slate-500">{card.detail}</p>
+                                <p className="mt-1 text-[11px] text-muted-foreground">{card.detail}</p>
                             </article>
                         ))}
                     </div>
                 </section>
 
-                <section className="grid gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(520px,1.05fr)]">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-900">Create-trip benchmark mask</h3>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Pick a preset and edit in modal so the results table stays in view.
-                                </p>
-                            </div>
-                            <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                                {!accessToken && isAuthenticated
-                                    ? 'Re-auth required on this localhost port'
-                                    : preferencesLoaded
-                                        ? 'DB sync ready'
-                                        : 'Loading prefs...'}
-                            </span>
+                    </TabsContent>
+
+                    <TabsContent value="setup" className="mt-0">
+
+                <Card className="gap-0 rounded-lg border-border py-0 shadow-sm">
+                    <CardHeader className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-start sm:justify-between md:px-6">
+                        <div>
+                            <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
+                                Benchmark setup
+                                <Badge variant="secondary">{runnableTargets.length} active</Badge>
+                                <Badge variant="outline">{selectedTargets.length} selected</Badge>
+                            </CardTitle>
+                            <CardDescription className="mt-1">Choose one trip template, tune execution, then compare the selected models.</CardDescription>
                         </div>
+                        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    scrollToResults();
+                                    void runBenchmark();
+                                }}
+                                disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
+                            >
+                                <Play data-icon="inline-start" weight="fill" />
+                                Run {runnableTargets.length} model{runnableTargets.length === 1 ? '' : 's'}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={cancelActiveRunsInSession}
+                                disabled={loading || cancelling || !session || !hasPendingRuns}
+                            >
+                                <StopCircle data-icon="inline-start" />
+                                Stop
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={cleanupSession}
+                                disabled={loading || cancelling || !session || hasPendingRuns}
+                            >
+                                <Trash data-icon="inline-start" />
+                                Clear
+                            </Button>
+                        </div>
+                    </CardHeader>
 
-                        <div className="mt-3 space-y-3">
-                            <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session name</span>
-	                                <input
-	                                    aria-label="Session name"
-	                                    value={sessionName}
-                                    onChange={(event) => setSessionName(event.target.value)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                />
-                            </label>
-
-                            <div className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preset</span>
+                    <CardContent className="divide-y divide-border px-0">
+                        <section className="grid gap-4 p-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(240px,1fr)_minmax(300px,1.4fr)] md:p-6">
+                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
+                                Trip template
                                 <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
-                                    <SelectTrigger aria-label="Preset">
-                                        <SelectValue placeholder="Choose benchmark preset" />
+                                    <SelectTrigger aria-label="Trip template" className="h-9">
+                                        <SelectValue placeholder="Choose a template" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {presetConfigs.map((preset) => (
-                                            <SelectItem key={preset.id} value={preset.id}>
-                                                {preset.name}
-                                            </SelectItem>
-                                        ))}
-                                        <SelectItem value={CUSTOM_JSON_PRESET_ID}>
-                                            {CUSTOM_JSON_PRESET_NAME}
-                                        </SelectItem>
+                                        <SelectGroup>
+                                            {presetConfigs.map((preset) => (
+                                                <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+                                            ))}
+                                            <SelectItem value={CUSTOM_JSON_PRESET_ID}>{CUSTOM_JSON_PRESET_NAME}</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </label>
 
-                            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-semibold text-slate-800">{selectedPreset?.name || 'Preset'}</span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] uppercase tracking-wide">
-                                        {selectedPreset?.kind || 'system'}
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-[11px] text-slate-500">
-                                    {selectedPreset?.description || 'No description saved for this preset.'}
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
-                                        {destinations || 'No destinations'}
-                                    </span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
-                                        {dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}
-                                    </span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">{budget}</span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">{pace}</span>
-                                </div>
-                            </div>
-                            {selectedPresetId === CUSTOM_JSON_PRESET_ID && (
-                                <div className="space-y-2 rounded-md border border-accent-200 bg-accent-50/50 p-3">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-accent-800">Custom JSON import</span>
-                                        <span className="rounded-full border border-accent-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-700">
-                                            mapped as {customScenarioDraftParse.flow}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-600">
-                                        Paste a trip generation payload or a benchmark scenario JSON. Apply it to prefill the benchmark mask.
-                                    </p>
-	                                    <textarea
-	                                        aria-label="Custom JSON import"
-	                                        value={customScenarioJsonDraft}
-                                        onChange={(event) => {
-                                            setCustomScenarioJsonDraft(event.target.value);
-                                            setCustomScenarioMeta((current) => current || {
-                                                source: 'manual',
-                                                flow: 'unknown',
-                                                tripId: null,
-                                            });
-                                        }}
-                                        rows={10}
-                                        spellCheck={false}
-                                        className="min-h-[200px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-[11px] text-slate-800 outline-none focus:ring-2 focus:ring-accent-500"
-                                        placeholder='{"destinationPrompt":"Berlin, Germany","options":{"budget":"Medium","pace":"Balanced"}}'
-                                    />
-                                    {customScenarioDraftParse.error ? (
-                                        <p className="text-[11px] font-medium text-rose-700">{customScenarioDraftParse.error}</p>
-                                    ) : (
-                                        <p className="text-[11px] text-slate-600">
-                                            Ready to apply. Destination preview: <span className="font-semibold text-slate-800">{customScenarioDraftParse.scenario?.destinations || 'n/a'}</span>
+                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
+                                Session name
+                                <Input
+                                    aria-label="Session name"
+                                    value={sessionName}
+                                    onChange={(event) => setSessionName(event.target.value)}
+                                    className="h-9"
+                                />
+                            </label>
+
+                            <div className="min-w-0 rounded-md border border-border bg-secondary p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="truncate text-sm font-semibold text-foreground">{selectedPreset?.name || 'Template'}</span>
+                                            <Badge variant="outline" className="h-5 text-[10px]">{selectedPreset?.kind || 'system'}</Badge>
+                                        </div>
+                                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                            {selectedPreset?.description || 'No description saved for this template.'}
                                         </p>
-                                    )}
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={applyCustomJsonToMask}
-                                            disabled={loading || cancelling || !customScenarioJsonDraft.trim() || Boolean(customScenarioDraftParse.error)}
-                                            className="inline-flex items-center gap-1 rounded-md border border-accent-300 bg-accent-100 px-2.5 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-200 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            Apply JSON to mask
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => loadCurrentMaskIntoCustomJson()}
-                                            disabled={loading || cancelling}
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            Load current mask JSON
-                                        </button>
                                     </div>
+                                    <Button type="button" variant="outline" size="xs" onClick={() => setTemplateDetailsOpen(true)}>
+                                        Details
+                                    </Button>
                                 </div>
-                            )}
-
-                            <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => openPresetEditor('edit')}
-                                    disabled={loading || cancelling || selectedPresetId === CUSTOM_JSON_PRESET_ID}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    Edit preset
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openPresetEditor('create')}
-                                    disabled={loading || cancelling}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <Plus size={14} />
-                                    New custom preset
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={openPromptPreview}
-                                    disabled={loading}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    Preview prompt
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-semibold text-slate-900">Model targets + execution</h3>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        scrollToResults();
-                                        void runBenchmark();
-                                    }}
-                                    disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
-                                    className="inline-flex items-center gap-1 rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <ArrowClockwise size={14} />
-                                    Test all
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={cancelActiveRunsInSession}
-                                    disabled={loading || cancelling || !session || !hasPendingRuns}
-                                    className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <StopCircle size={14} />
-                                    Abort active
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={cleanupSession}
-                                    disabled={loading || cancelling || !session || hasPendingRuns}
-                                    className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <Trash size={14} />
-                                    Cleanup session
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-                            <span className="font-semibold text-slate-700">Parallel workers:</span> {BENCHMARK_PARALLEL_CONCURRENCY}. Additional active models are queued automatically.
-                            {runnableTargets.length > BENCHMARK_PARALLEL_CONCURRENCY && (
-                                <span className="ml-1">
-                                    ({runnableTargets.length - BENCHMARK_PARALLEL_CONCURRENCY} queued with current active targets)
-                                </span>
-                            )}
-                            {selectedTargets.length > runnableTargets.length && (
-                                <span className="ml-1">
-                                    ({selectedTargets.length - runnableTargets.length} temporarily deactivated)
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                            <label className="space-y-1 text-xs">
-                                <span className="font-semibold uppercase tracking-wide text-slate-500">Timeout (seconds)</span>
-	                                <input
-	                                    type="number"
-	                                    aria-label="Timeout seconds"
-	                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
-                                    max={BENCHMARK_TIMEOUT_MAX_SECONDS}
-                                    step={5}
-                                    value={benchmarkTimeoutSeconds}
-                                    onChange={(event) => {
-                                        const parsed = Number(event.target.value);
-                                        if (!Number.isFinite(parsed)) {
-                                            setBenchmarkTimeoutSeconds(BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
-                                            return;
-                                        }
-                                        setBenchmarkTimeoutSeconds(
-                                            Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
-                                        );
-                                    }}
-                                    className="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-accent-500"
-                                />
-                            </label>
-
-                            <label className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-	                                <input
-	                                    type="checkbox"
-	                                    aria-label="Compact output"
-	                                    checked={compactBenchmarkOutput}
-                                    onChange={(event) => setCompactBenchmarkOutput(event.target.checked)}
-                                />
-                                Compact output (faster + more reliable JSON)
-                            </label>
-                        </div>
-
-                        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="space-y-0.5">
-                                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Model targets</div>
-                                    <div className="text-[11px] text-slate-500">{runnableTargets.length} active / {selectedTargets.length} selected</div>
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                    <Badge variant="secondary">{destinations || 'No destination'}</Badge>
+                                    <Badge variant="outline">{dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}</Badge>
+                                    <Badge variant="outline">{budget}</Badge>
+                                    <Badge variant="outline">{pace}</Badge>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={activateAllModelTargets}
-                                        disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}
-                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            </div>
+                        </section>
+
+                        <section className="p-4 md:p-6">
+                            <div className="mb-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-foreground">Execution</h3>
+                                    <p className="text-xs text-muted-foreground">Run defaults apply unless a model has its own reasoning setting below.</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span>{Math.max(0, runnableTargets.length - benchmarkConcurrency)} queued</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span>{preferencesLoaded ? 'Saved preferences ready' : 'Loading preferences'}</span>
+                                </div>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
+                                    Run default reasoning
+                                    <Select value={benchmarkReasoningMode} onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}>
+                                        <SelectTrigger aria-label="Run default reasoning" className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectItem value="provider-default">Model default</SelectItem>
+                                                {AI_REASONING_EFFORTS.map((effort) => (
+                                                    <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                    <span className="font-normal text-muted-foreground">Used by {reasoningTargets.length} compatible model{reasoningTargets.length === 1 ? '' : 's'}.</span>
+                                </label>
+
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
+                                    Parallel requests
+                                    <Select value={String(benchmarkConcurrency)} onValueChange={(value) => setBenchmarkConcurrency(Number(value))}>
+                                        <SelectTrigger aria-label="Parallel requests" className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {Array.from({ length: BENCHMARK_CONCURRENCY_MAX }, (_, index) => index + 1).map((count) => (
+                                                    <SelectItem key={count} value={String(count)}>{count} at a time</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                    <span className="font-normal text-muted-foreground">Lower reduces provider contention and timeout risk.</span>
+                                </label>
+
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
+                                    Time limit
+                                    <Input
+                                        type="number"
+                                        aria-label="Timeout seconds"
+                                        min={BENCHMARK_TIMEOUT_MIN_SECONDS}
+                                        max={BENCHMARK_TIMEOUT_MAX_SECONDS}
+                                        step={5}
+                                        value={benchmarkTimeoutSeconds}
+                                        className="h-9"
+                                        onChange={(event) => {
+                                            const parsed = Number(event.target.value);
+                                            setBenchmarkTimeoutSeconds(Number.isFinite(parsed)
+                                                ? Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
+                                                : BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
+                                        }}
+                                    />
+                                    <span className="font-normal text-muted-foreground">Seconds per model; actual latency stays visible.</span>
+                                </label>
+
+                                <div className="flex min-h-[76px] items-start justify-between gap-3 rounded-md border border-border bg-secondary p-3">
+                                    <div>
+                                        <div className="text-xs font-medium text-foreground">Compact output</div>
+                                        <p className="mt-1 text-xs text-muted-foreground">Shorter JSON, faster comparisons.</p>
+                                    </div>
+                                    <Switch aria-label="Compact output" checked={compactBenchmarkOutput} onCheckedChange={setCompactBenchmarkOutput} />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="p-4 md:p-6">
+                            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-foreground">Models</h3>
+                                    <p className="text-xs text-muted-foreground">Set each model’s reasoning, active status, and single-run actions.</p>
+                                </div>
+                                <Button type="button" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns}>
+                                    <Plus data-icon="inline-start" />
+                                    Add models
+                                </Button>
+                            </div>
+
+                            <div className="mb-3 grid gap-3 rounded-md border border-border bg-secondary p-3 lg:grid-cols-[minmax(260px,1fr)_auto]">
+                                <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
+                                    Frontend default model
+                                    <Select
+                                        value={aiRuntimeSettings.defaultModelId}
+                                        onValueChange={(value) => void persistAiRuntimeSettings({
+                                            defaultModelId: value,
+                                            approvedOpenRouterModels: Array.from(new Set([
+                                                ...aiRuntimeSettings.approvedOpenRouterModels,
+                                                ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
+                                            ])),
+                                        })}
                                     >
-                                        <ToggleRight size={12} />
-                                        Activate all
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={deactivateAllModelTargets}
-                                        disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}
-                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <ToggleLeft size={12} />
-                                        Deactivate all
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={openModelPicker}
-                                        disabled={loading || cancelling || hasPendingRuns}
-                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <Plus size={14} />
-                                        Add models
-                                    </button>
+                                        <SelectTrigger aria-label="Frontend default model" className="h-9 bg-card">
+                                            <SelectValue placeholder="Choose the frontend model" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {sortedModels.filter((model) => model.availability === 'active').map((model) => (
+                                                    <SelectItem key={model.id} value={model.id}>{model.providerShortName} · {model.label}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                                <div className="flex flex-wrap items-end gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={activateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}>
+                                        <ToggleRight data-icon="inline-start" /> Activate all
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={deactivateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}>
+                                        <ToggleLeft data-icon="inline-start" /> Deactivate all
+                                    </Button>
+                                    <Button type="button" variant="destructive" size="sm" onClick={() => void removeAllModelTargets()} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
+                                        <Trash data-icon="inline-start" /> Remove all
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {selectedTargets.length === 0 && (
-                                    <div className="text-xs text-slate-500">No model target selected.</div>
+                            <div className="overflow-hidden rounded-md border border-border">
+                                {selectedTargets.length === 0 ? (
+                                    <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                                        No benchmark models selected. Add models to build a comparison set.
+                                    </div>
+                                ) : (
+                                    <Table>
+                                        <TableHeader className="bg-secondary">
+                                            <TableRow>
+                                                <TableHead className="ps-4">Model</TableHead>
+                                                <TableHead className="w-[220px]">Reasoning</TableHead>
+                                                <TableHead className="w-[110px]">Active</TableHead>
+                                                <TableHead className="w-[100px] pe-4 text-end">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {selectedTargets.map((model) => {
+                                                const isActive = !inactiveTargetIdSet.has(model.id);
+                                                const singleTarget: AiBenchmarkRunTarget = { provider: model.provider, model: model.model, label: model.label };
+                                                return (
+                                                    <TableRow key={model.id} className={!isActive ? 'bg-secondary/70 text-muted-foreground' : undefined}>
+                                                        <TableCell className="ps-4">
+                                                            <div className="flex items-center gap-2 font-medium text-foreground">
+                                                                <AiProviderLogo provider={model.provider} model={model.model} size={20} />
+                                                                <span className="truncate">{model.label}</span>
+                                                                {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend</Badge>}
+                                                            </div>
+                                                            <div className="ps-7 text-xs text-muted-foreground">{model.providerShortName} · {model.model}</div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <ModelReasoningSelect
+                                                                model={model}
+                                                                runDefault={benchmarkReasoningMode}
+                                                                value={modelReasoningModes[model.id]}
+                                                                onChange={(value) => setModelReasoningModes((current) => {
+                                                                    if (value === undefined) {
+                                                                        const next = { ...current };
+                                                                        delete next[model.id];
+                                                                        return next;
+                                                                    }
+                                                                    return { ...current, [model.id]: value };
+                                                                })}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <Switch
+                                                                    checked={isActive}
+                                                                    onCheckedChange={() => toggleModelTargetActive(model.id)}
+                                                                    disabled={loading || cancelling || hasPendingRuns}
+                                                                    aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${model.label}`}
+                                                                />
+                                                                <span className="text-xs text-muted-foreground">{isActive ? 'On' : 'Off'}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="pe-4">
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => { scrollToResults(); runSingleTarget(singleTarget); }} disabled={loading || cancelling || hasPendingRuns} aria-label={`Run ${model.label} only`} title={`Run ${model.label} only`}>
+                                                                    <Play weight="fill" />
+                                                                </Button>
+                                                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => void removeModelTarget(model.id)} disabled={loading || cancelling || hasPendingRuns} aria-label={`Remove ${model.label}`} title={`Remove ${model.label}`}>
+                                                                    <X />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
                                 )}
-                                {selectedTargets.map((model) => {
-                                    const isActive = !inactiveTargetIdSet.has(model.id);
-                                    const singleTarget: AiBenchmarkRunTarget = {
-                                        provider: model.provider,
-                                        model: model.model,
-                                        label: model.label,
-                                    };
-                                    return (
-                                        <span
-                                            key={model.id}
-                                            className={[
-                                                'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px]',
-                                                isActive
-                                                    ? 'border-slate-300 bg-slate-50 text-slate-700'
-                                                    : 'border-slate-300 bg-slate-100 text-slate-500',
-                                            ].join(' ')}
-                                        >
-                                            <ProviderLabel
-                                                provider={model.provider}
-                                                model={model.model}
-                                                showModel={false}
-                                                providerClassName={isActive ? 'text-slate-600' : 'text-slate-500'}
-                                                logoSize={12}
-                                            />
-                                            <span className={`font-semibold ${isActive ? '' : 'line-through'}`}>{model.label}</span>
-                                            {model.isCurrentRuntime && (
-                                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
-                                                    Frontend current
-                                                </span>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleModelTargetActive(model.id)}
-                                                disabled={loading || cancelling || hasPendingRuns}
-                                                className={[
-                                                    'rounded-full p-0.5 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50',
-                                                    isActive ? 'text-emerald-700 hover:text-emerald-800' : 'text-slate-500 hover:text-slate-800',
-                                                ].join(' ')}
-                                                aria-label={isActive ? `Deactivate ${model.label} for Test all` : `Activate ${model.label} for Test all`}
-                                                title={isActive ? `Deactivate ${model.label} for Test all` : `Activate ${model.label} for Test all`}
-                                            >
-                                                {isActive ? <ToggleRight size={10} /> : <ToggleLeft size={10} />}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    scrollToResults();
-                                                    runSingleTarget(singleTarget);
-                                                }}
-                                                disabled={loading || cancelling || hasPendingRuns}
-                                                className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label={`Run ${model.label} only`}
-                                                title={`Run ${model.label} only`}
-                                            >
-                                                <Play size={10} weight="fill" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => void removeModelTarget(model.id)}
-                                                disabled={loading || cancelling || hasPendingRuns || selectedTargets.length <= 1}
-                                                className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label={`Remove ${model.label}`}
-                                                title={`Remove ${model.label}`}
-                                            >
-                                                <X size={10} />
-                                            </button>
-                                        </span>
-                                    );
-                                })}
                             </div>
-                        </div>
+                            <p className="mt-2 text-xs text-muted-foreground">{COST_ESTIMATE_FOOTNOTE}</p>
+                        </section>
+                    </CardContent>
+                </Card>
 
-                        <div className="mt-2 text-[11px] text-slate-500">
-                            {COST_ESTIMATE_FOOTNOTE}
-                        </div>
-                    </div>
-                </section>
 
-                <section ref={resultsSectionRef} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                    </TabsContent>
+
+                    <TabsContent value="results" className="mt-0">
+
+                <section ref={resultsSectionRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-lg font-semibold text-slate-900">Benchmark runs</h3>
-                            <p className="text-xs text-slate-500">
+                            <h3 className="text-lg font-semibold text-foreground">Benchmark runs</h3>
+                            <p className="text-xs text-muted-foreground">
                                 Session: {session ? `${session.name || 'Unnamed'} (${session.share_token})` : 'No session loaded'}
                             </p>
                         </div>
@@ -2409,7 +2640,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 type="button"
                                 onClick={() => downloadAllZip(false)}
                                 disabled={loading || !session || runs.length === 0}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <DownloadSimple size={14} />
                                 Download all
@@ -2418,7 +2649,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 type="button"
                                 onClick={() => downloadAllZip(true)}
                                 disabled={loading || !session || runs.length === 0}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <DownloadSimple size={14} />
                                 Download all + logs
@@ -2433,14 +2664,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         <SelectItem key={provider} value={provider}>
                                             <ProviderLabel
                                                 provider={provider}
-                                                providerClassName="text-slate-700"
+                                                providerClassName="text-foreground"
                                                 logoSize={12}
                                             />
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Hide failed"
@@ -2449,7 +2680,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 />
                                 Hide failed
                             </label>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Only warnings"
@@ -2458,7 +2689,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 />
                                 Only warnings
                             </label>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Only unrated"
@@ -2471,37 +2702,37 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
 
                     {summary && (
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600 sm:grid-cols-4">
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Completed:</span> {summary.completed}/{summary.total}
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground sm:grid-cols-4">
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Completed:</span> {summary.completed}/{summary.total}
                             </div>
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Failed:</span> {summary.failed}
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Failed:</span> {summary.failed}
                             </div>
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Avg latency:</span> {formatDuration(summary.averageLatencyMs)}
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Avg latency:</span> {formatDuration(summary.averageLatencyMs)}
                             </div>
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Total est.:</span> {hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'}
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Total est.:</span> {hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'}
                             </div>
                         </div>
                     )}
 
-                    <p className="mt-2 text-[11px] text-slate-500">
+                    <p className="mt-2 text-[11px] text-muted-foreground">
                         Cost column uses exact provider cost when returned; otherwise it falls back to the catalog estimate for that model.
                     </p>
 
                     <div className="mt-3 overflow-x-auto">
                         <table className="min-w-full border-collapse text-left text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                <tr className="border-b border-border bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
                                     <th className="px-3 py-2">Model</th>
                                     <th className="px-3 py-2">Status</th>
                                     <th className="px-3 py-2">
                                         <button
                                             type="button"
                                             onClick={() => setRunSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
-                                            className="inline-flex items-center gap-1 font-semibold text-slate-600 hover:text-slate-900"
+                                            className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground"
                                         >
                                             Run at
                                             <ArrowsDownUp size={12} />
@@ -2519,7 +2750,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <tbody>
                                 {displayRuns.length === 0 && (
                                     <tr>
-                                        <td colSpan={10} className="px-3 py-6 text-center text-sm text-slate-500">
+                                        <td colSpan={10} className="px-3 py-6 text-center text-sm text-muted-foreground">
                                             {loading ? 'Loading benchmark runs...' : 'No runs yet. Configure targets and click Test all.'}
                                         </td>
                                     </tr>
@@ -2531,7 +2762,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     const isPending = isRunActive(run);
                                     const isCancelled = isRunCancelledByUser(run);
                                     const statusIcon = isCancelled
-                                        ? <StopCircle size={15} className="text-amber-700" />
+                                        ? <StopCircle size={15} className="text-amber-700 dark:text-amber-200" />
                                         : isFailed
                                             ? <WarningCircle size={15} className="text-rose-600" />
                                         : isCompleted
@@ -2556,26 +2787,26 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     const canSaveComment = canEditComment && isCommentDirty && !isCommentTooLong && !isCommentSaveBusy && !loading;
 
                                     return (
-                                        <tr key={run.id} className="border-b border-slate-100 align-top">
+                                        <tr key={run.id} className="border-b border-border align-top">
                                             <td className="px-3 py-2">
-                                                <div className="font-semibold text-slate-800">
+                                                <div className="font-semibold text-foreground">
                                                     <ProviderLabel provider={run.provider} model={run.model} />
                                                 </div>
-                                                <div className="text-xs text-slate-500">run #{run.run_index}</div>
+                                                <div className="text-xs text-muted-foreground">run #{run.run_index}</div>
                                             </td>
                                             <td className="px-3 py-2">
-                                                <div className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                                                <div className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-foreground">
                                                     {statusIcon}
                                                     {statusLabel}
                                                 </div>
                                                 {run.error_message && (
-                                                    <div className="mt-1 max-w-[320px] space-y-1 text-xs text-rose-700">
+                                                    <div className="mt-1 max-w-[320px] space-y-1 text-xs text-rose-700 dark:text-rose-200">
                                                         <div>{parsedError.shortMessage}</div>
                                                         {hasErrorDetails && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setErrorModalRun(run)}
-                                                                className="rounded border border-rose-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 hover:bg-rose-50"
+                                                                className="rounded border border-rose-300 bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                                             >
                                                                 Details
                                                             </button>
@@ -2583,18 +2814,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-3 py-2 text-xs text-slate-600">{formatTimestamp(getRunTimestampIso(run))}</td>
-                                            <td className="px-3 py-2 text-sm text-slate-700">{formatDuration(getDisplayLatencyMs(run))}</td>
-                                            <td className="px-3 py-2 text-sm text-slate-700">
+                                            <td className="px-3 py-2 text-xs text-muted-foreground">{formatTimestamp(getRunTimestampIso(run))}</td>
+                                            <td className="px-3 py-2 text-sm text-foreground"><RunLatency run={run} /></td>
+                                            <td className="px-3 py-2 text-sm text-foreground">
                                                 <div className="space-y-1">
                                                     <div>
                                                         {run.schema_valid === null ? '—' : run.schema_valid ? 'Valid' : 'Invalid'}
                                                         {validationStats.total > 0 && (
-                                                            <span className="ml-1 text-xs text-slate-500">({validationStats.passed}/{validationStats.total})</span>
+                                                            <span className="ml-1 text-xs text-muted-foreground">({validationStats.passed}/{validationStats.total})</span>
                                                         )}
                                                     </div>
                                                     {warningCount > 0 && (
-                                                        <div className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                                                        <div className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                             {warningCount} warning{warningCount === 1 ? '' : 's'}
                                                         </div>
                                                     )}
@@ -2602,20 +2833,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => setValidationModalRun(run)}
-                                                            className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700 hover:bg-slate-50"
+                                                            className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground hover:bg-secondary"
                                                         >
                                                             Checks
                                                         </button>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-2 text-sm text-slate-700">
+                                            <td className="px-3 py-2 text-sm text-foreground">
                                                 {typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd) ? (
                                                     formatUsd(run.cost_usd)
                                                 ) : costEstimateLabel ? (
                                                     <div className="space-y-0.5">
                                                         <div>{costEstimateLabel}</div>
-                                                        <div className="text-[10px] uppercase tracking-wide text-slate-500">catalog est.</div>
+                                                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">catalog est.</div>
                                                     </div>
                                                 ) : '—'}
                                             </td>
@@ -2625,7 +2856,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         href={`/trip/${encodeURIComponent(run.trip_id)}`}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="font-semibold text-accent-700 hover:underline"
+                                                        className="font-semibold text-accent-700 hover:underline dark:text-accent-200"
                                                     >
                                                         Open trip
                                                     </a>
@@ -2672,23 +2903,23 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         maxLength={BENCHMARK_RUN_COMMENT_MAX_LENGTH}
                                                         rows={2}
                                                         placeholder={canEditComment ? 'Add run note…' : 'Comment after run completes'}
-                                                        className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                                        className="w-full resize-y rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-secondary dark:text-foreground"
                                                     />
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className={`text-[10px] ${isCommentTooLong ? 'text-rose-600' : 'text-slate-500'}`}>
+                                                        <span className={`text-[10px] ${isCommentTooLong ? 'text-rose-600' : 'text-muted-foreground'}`}>
                                                             {commentLength}/{BENCHMARK_RUN_COMMENT_MAX_LENGTH}
                                                         </span>
                                                         <button
                                                             type="button"
                                                             onClick={() => void saveRunComment(run)}
                                                             disabled={!canSaveComment}
-                                                            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            className="rounded border border-border bg-card px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                                         >
                                                             {isCommentSaveBusy ? 'Saving…' : 'Save'}
                                                         </button>
                                                     </div>
                                                     {run.run_comment_updated_at && (
-                                                        <div className="text-[10px] text-slate-500">
+                                                        <div className="text-[10px] text-muted-foreground">
                                                             Saved {formatTimestamp(run.run_comment_updated_at)}
                                                         </div>
                                                     )}
@@ -2700,7 +2931,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         type="button"
                                                         onClick={() => rerunTarget(run)}
                                                         disabled={loading || cancelling || isPending}
-                                                        className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         Rerun
                                                     </button>
@@ -2709,7 +2940,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                             type="button"
                                                             onClick={() => cancelRun(run)}
                                                             disabled={cancelling}
-                                                            className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                         >
                                                             Abort
                                                         </button>
@@ -2718,7 +2949,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         type="button"
                                                         onClick={() => downloadRow(run)}
                                                         disabled={isPending}
-                                                        className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         JSON
                                                     </button>
@@ -2731,17 +2962,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </table>
                     </div>
 
-                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <h4 className="text-sm font-semibold text-slate-800">Model dashboard</h4>
-                        <p className="text-[11px] text-slate-500">Averages are computed from persisted runs in the loaded session.</p>
+                    <div className="mt-4 rounded-xl border border-border bg-secondary p-3">
+                        <h4 className="text-sm font-semibold text-foreground">Model dashboard</h4>
+                        <p className="text-[11px] text-muted-foreground">Averages are computed from persisted runs in the loaded session.</p>
 
                         <div className="mt-2 overflow-x-auto">
                             <table className="min-w-full border-collapse text-left text-xs">
                                 <thead>
-                                    <tr className="border-b border-slate-200 uppercase tracking-wide text-slate-500">
+                                    <tr className="border-b border-border uppercase tracking-wide text-muted-foreground">
                                         <th className="px-2 py-1.5">Model</th>
                                         <th className="px-2 py-1.5">Avg time</th>
                                         <th className="px-2 py-1.5">Avg cost</th>
+                                        <th className="px-2 py-1.5">Avg tokens</th>
+                                        <th className="px-2 py-1.5">Success</th>
+                                        <th className="px-2 py-1.5">Repair</th>
                                         <th className="px-2 py-1.5">Avg satisfaction</th>
                                         <th className="px-2 py-1.5">Votes</th>
                                         <th className="px-2 py-1.5">Runs</th>
@@ -2750,7 +2984,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <tbody>
                                     {modelDashboardRows.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-2 py-4 text-center text-slate-500">
+                                            <td colSpan={9} className="px-2 py-4 text-center text-muted-foreground">
                                                 No model metrics yet.
                                             </td>
                                         </tr>
@@ -2758,24 +2992,27 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                                     {modelDashboardRows.map((row) => {
                                         const satisfactionClass = row.averageRatingScore === null
-                                            ? 'text-slate-500'
+                                            ? 'text-muted-foreground'
                                             : row.averageRatingScore >= 2.5
-                                                ? 'text-emerald-700'
+                                                ? 'text-emerald-700 dark:text-emerald-200'
                                                 : row.averageRatingScore >= 1.75
-                                                    ? 'text-amber-700'
-                                                    : 'text-rose-700';
+                                                    ? 'text-amber-700 dark:text-amber-200'
+                                                    : 'text-rose-700 dark:text-rose-200';
                                         return (
-                                            <tr key={`${row.provider}-${row.model}`} className="border-b border-slate-200/70">
-                                                <td className="px-2 py-1.5 font-semibold text-slate-800">
+                                            <tr key={`${row.provider}-${row.model}`} className="border-b border-border/70">
+                                                <td className="px-2 py-1.5 font-semibold text-foreground">
                                                     <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
                                                 </td>
-                                                <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.averageLatencyMs)}</td>
-                                                <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.averageCostUsd)}</td>
+                                                <td className="px-2 py-1.5 text-foreground">{formatDuration(row.averageLatencyMs)}</td>
+                                                <td className="px-2 py-1.5 text-foreground">{formatUsd(row.averageCostUsd)}</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{row.averageTotalTokens?.toLocaleString() ?? '—'}</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{Math.round(row.successRate * 100)}%</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{Math.round(row.repairRate * 100)}%</td>
                                                 <td className={`px-2 py-1.5 font-semibold ${satisfactionClass}`}>
                                                     {row.averageRatingScore === null ? 'No votes' : `${row.averageRatingScore.toFixed(2)} / 3`}
                                                 </td>
-                                                <td className="px-2 py-1.5 text-slate-700">{row.ratingCount}</td>
-                                                <td className="px-2 py-1.5 text-slate-700">{row.totalRuns}</td>
+                                                <td className="px-2 py-1.5 text-foreground">{row.ratingCount}</td>
+                                                <td className="px-2 py-1.5 text-foreground">{row.totalRuns}</td>
                                             </tr>
                                         );
                                     })}
@@ -2784,6 +3021,90 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </div>
                     </div>
                 </section>
+
+                    </TabsContent>
+                </Tabs>
+
+                <AppModal
+                    isOpen={templateDetailsOpen}
+                    onClose={() => setTemplateDetailsOpen(false)}
+                    title={selectedPreset?.name || 'Trip template details'}
+                    description="Review the benchmark input without losing the run configuration."
+                    size="xl"
+                    mobileSheet={false}
+                    contentClassName="sm:rounded-lg"
+                    footer={(
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={openPromptPreview}>Preview prompt</Button>
+                            <div className="flex items-center gap-2">
+                                {selectedPresetId !== CUSTOM_JSON_PRESET_ID && (
+                                    <Button type="button" variant="outline" size="sm" onClick={() => { setTemplateDetailsOpen(false); openPresetEditor('edit'); }}>
+                                        Edit template
+                                    </Button>
+                                )}
+                                <Button type="button" size="sm" onClick={() => setTemplateDetailsOpen(false)}>Done</Button>
+                            </div>
+                        </div>
+                    )}
+                >
+                    <div className="space-y-4">
+                        <div className="grid gap-2 sm:grid-cols-4">
+                            {[
+                                { label: 'Route', value: destinations || 'Not set' },
+                                { label: 'Dates', value: dateInputMode === 'flex' ? `${flexWeeks} weeks · ${flexWindow}` : `${startDate} → ${endDate}` },
+                                { label: 'Budget', value: budget },
+                                { label: 'Pace', value: pace },
+                            ].map((item) => (
+                                <div key={item.label} className="rounded-md border border-border bg-secondary p-3">
+                                    <div className="text-[11px] font-medium text-muted-foreground">{item.label}</div>
+                                    <div className="mt-1 truncate text-sm font-semibold text-foreground" title={item.value}>{item.value}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div>
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-foreground">Scenario JSON</h4>
+                                    <p className="text-xs text-muted-foreground">The normalized input sent through the classic benchmark contract.</p>
+                                </div>
+                                {selectedPresetId === CUSTOM_JSON_PRESET_ID && (
+                                    <Badge variant={customScenarioDraftParse.error ? 'destructive' : 'secondary'}>
+                                        {customScenarioDraftParse.error || `Mapped as ${customScenarioDraftParse.flow}`}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {selectedPresetId === CUSTOM_JSON_PRESET_ID ? (
+                                <div className="space-y-2">
+                                    <textarea
+                                        aria-label="Custom scenario JSON"
+                                        value={customScenarioJsonDraft}
+                                        onChange={(event) => {
+                                            setCustomScenarioJsonDraft(event.target.value);
+                                            setCustomScenarioMeta((current) => current || { source: 'manual', flow: 'unknown', tripId: null });
+                                        }}
+                                        rows={16}
+                                        spellCheck={false}
+                                        className="min-h-[320px] w-full rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100 outline-none focus:border-accent-400"
+                                        placeholder='{"destinationPrompt":"Berlin, Germany","options":{"budget":"Medium"}}'
+                                    />
+                                    <div className="flex flex-wrap justify-end gap-2">
+                                        <Button type="button" variant="outline" size="sm" onClick={() => loadCurrentMaskIntoCustomJson()}>Load current setup</Button>
+                                        <Button type="button" size="sm" onClick={applyCustomJsonToMask} disabled={!customScenarioJsonDraft.trim() || Boolean(customScenarioDraftParse.error)}>Apply JSON</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <pre className="max-h-[420px] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-4 text-xs leading-6">
+                                    <code
+                                        className="language-json"
+                                        dangerouslySetInnerHTML={{ __html: selectedTemplateJsonHtml }}
+                                    />
+                                </pre>
+                            )}
+                        </div>
+                    </div>
+                </AppModal>
 
                 <AppModal
                     isOpen={modelModalOpen}
@@ -2794,35 +3115,63 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     mobileSheet={false}
                     footer={(
                         <div className="flex items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setModelModalOpen(false)}
-                                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void saveModelDraft()}
-                                className="rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700"
-                            >
-                                Save models
-                            </button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setModelModalOpen(false)}>Cancel</Button>
+                            <Button type="button" size="sm" onClick={() => void saveModelDraft()}>Save {modelDraftIds.length} models</Button>
                         </div>
                     )}
                 >
-                    <div className="space-y-3">
-	                        <input
-	                            aria-label="Search provider, label, or model id"
-	                            value={modelFilter}
-                            onChange={(event) => setModelFilter(event.target.value)}
-                            placeholder="Search provider, label, or model id"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                        />
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-border bg-secondary/80 p-3">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-foreground"><Funnel size={15} /> Catalog filters</div>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => void loadModelCatalog()} disabled={modelCatalogLoading}>
+                                    <ArrowClockwise className={modelCatalogLoading ? 'animate-spin' : ''} data-icon="inline-start" /> Refresh OpenRouter
+                                </Button>
+                            </div>
+                            <Input aria-label="Search provider, label, or model id" value={modelFilter} onChange={(event) => setModelFilter(event.target.value)} placeholder="Search provider, model, or exact OpenRouter ID" />
+                            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                <Select value={modelProviderFilter} onValueChange={setModelProviderFilter}>
+                                    <SelectTrigger aria-label="Filter model provider"><SelectValue placeholder="All providers" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">All providers</SelectItem>{modelProviderOptions.map((provider) => <SelectItem key={provider} value={provider}>{provider}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <Select value={modelCapabilityFilter} onValueChange={setModelCapabilityFilter}>
+                                    <SelectTrigger aria-label="Filter model capability"><SelectValue placeholder="All capabilities" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">All capabilities</SelectItem><SelectItem value="structured">Structured output</SelectItem><SelectItem value="tools">Tool support</SelectItem><SelectItem value="reasoning">Reasoning</SelectItem></SelectContent>
+                                </Select>
+                                <Select value={modelPriceFilter} onValueChange={setModelPriceFilter}>
+                                    <SelectTrigger aria-label="Filter model price"><SelectValue placeholder="Any price" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">Any price</SelectItem><SelectItem value="free">Free</SelectItem><SelectItem value="budget">Budget (≤ $5/M output)</SelectItem><SelectItem value="premium">Premium (&gt; $5/M output)</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+                                <label className="flex items-center gap-2 text-xs font-medium text-foreground">
+                                    Newer than
+                                    <Select value={String(aiRuntimeSettings.modelMaxAgeMonths)} onValueChange={(value) => {
+                                        const modelMaxAgeMonths = Number(value);
+                                        setAiRuntimeSettings((current) => ({ ...current, modelMaxAgeMonths }));
+                                        void persistAiRuntimeSettings({ modelMaxAgeMonths }, { silent: true });
+                                    }}>
+                                        <SelectTrigger aria-label="Model age threshold" className="h-8 w-[110px]"><SelectValue /></SelectTrigger>
+                                        <SelectContent>{[3, 6, 12, 24].map((months) => <SelectItem key={months} value={String(months)}>{months} months</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </label>
+                                <label className="flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Switch checked={aiRuntimeSettings.showOlderModels} onCheckedChange={(showOlderModels) => {
+                                        setAiRuntimeSettings((current) => ({ ...current, showOlderModels }));
+                                        void persistAiRuntimeSettings({ showOlderModels }, { silent: true });
+                                    }} aria-label="Show older models" />
+                                    Show older models
+                                </label>
+                                <span className="text-xs text-muted-foreground">{filteredModels.length} compatible models</span>
+                            </div>
+                        </div>
                         <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
+                            {filteredModels.length === 0 && (
+                                <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No compatible models match these filters. Try showing older models or clearing a filter.</div>
+                            )}
                             {Object.entries(groupedModels).map(([providerLabel, models]) => (
                                 <div key={providerLabel} className="space-y-1">
-                                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         <AiProviderLogo provider={models[0]?.provider || providerLabel} model={models[0]?.model} size={12} />
                                         <span>{providerLabel}</span>
                                     </div>
@@ -2839,21 +3188,27 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     className={[
                                                         'flex w-full items-center justify-between rounded-md border p-2 text-left text-xs',
                                                         selected
-                                                            ? 'border-accent-300 bg-accent-50 text-accent-900'
-                                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                                                            ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary',
                                                         disabled ? 'cursor-not-allowed opacity-50' : '',
                                                     ].join(' ')}
                                                 >
-                                                    <span className="inline-flex min-w-0 items-center gap-1.5">
-                                                        <AiProviderLogo provider={model.provider} model={model.model} size={12} />
-                                                        <span className="min-w-0 truncate font-semibold">{model.label}</span>
-                                                        {model.isCurrentRuntime && (
-                                                            <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
-                                                                Frontend current
-                                                            </span>
-                                                        )}
+                                                    <span className="flex min-w-0 flex-col gap-1">
+                                                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                                                            <AiProviderLogo provider={model.provider} model={model.model} size={12} />
+                                                            <span className="min-w-0 truncate font-semibold">{model.label}</span>
+                                                            {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary" className="h-5 text-[10px]">Frontend default</Badge>}
+                                                            {model.catalogSource === 'openrouter-live' && <Badge variant="outline" className="h-5 text-[10px]">Live</Badge>}
+                                                            {model.isFree && <Badge variant="outline" className="h-5 text-[10px]">Free</Badge>}
+                                                        </span>
+                                                        <span className="truncate text-[10px] font-normal text-muted-foreground">
+                                                            {model.contextLength ? `${Math.round(model.contextLength / 1000)}k context · ` : ''}
+                                                            {model.supportsReasoning
+                                                                ? `Reasoning ${model.reasoningMandatory ? 'required' : 'optional'} · ${model.reasoningEfforts?.join(', ') || 'provider controlled'}${model.defaultReasoningEffort ? ` · default ${model.defaultReasoningEffort}` : ''}`
+                                                                : 'No configurable reasoning'}
+                                                        </span>
                                                     </span>
-                                                    <span className="ml-2 shrink-0 text-[10px] text-slate-500">{model.estimatedCostPerQueryLabel}</span>
+                                                    <span className="ml-2 shrink-0 text-[10px] text-muted-foreground">{model.estimatedCostPerQueryLabel}</span>
                                                 </button>
                                             );
                                         })}
@@ -2876,7 +3231,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setPresetEditor(null)}
-                                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
                             >
                                 Cancel
                             </button>
@@ -2893,38 +3248,38 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     {presetEditor && (
                         <div className="grid grid-cols-1 gap-3">
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
 	                                <input
 	                                    aria-label="Name"
 	                                    value={presetEditor.name}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, name: event.target.value } : current)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</span>
 	                                <input
 	                                    aria-label="Description"
 	                                    value={presetEditor.description}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, description: event.target.value } : current)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Destinations</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Destinations</span>
 	                                <input
 	                                    aria-label="Destinations"
 	                                    value={presetEditor.scenario.destinations}
                                     onChange={(event) => updatePresetDraftScenario('destinations', event.target.value)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date mode</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date mode</span>
                                     <Select
                                         value={presetEditor.scenario.dateInputMode}
                                         onValueChange={(value) => updatePresetDraftScenario('dateInputMode', value as BenchmarkMaskScenario['dateInputMode'])}
@@ -2941,7 +3296,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                                 {presetEditor.scenario.dateInputMode === 'flex' ? (
                                     <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex weeks</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Flex weeks</span>
 	                                        <input
 	                                            type="number"
 	                                            aria-label="Flex weeks"
@@ -2953,18 +3308,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 const normalized = Number.isFinite(next) ? Math.min(12, Math.max(1, Math.round(next))) : 1;
                                                 updatePresetDraftScenario('flexWeeks', normalized);
                                             }}
-                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 ) : (
                                     <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start date</span>
 	                                        <input
 	                                            type="date"
 	                                            aria-label="Start date"
 	                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
                                             onChange={(event) => updatePresetDraftScenario('startDate', event.target.value)}
-                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 )}
@@ -2973,18 +3328,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {presetEditor.scenario.dateInputMode === 'exact' ? (
                                     <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">End date</span>
 	                                        <input
 	                                            type="date"
 	                                            aria-label="End date"
 	                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
                                             onChange={(event) => updatePresetDraftScenario('endDate', event.target.value)}
-                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 ) : (
                                     <div className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex window</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Flex window</span>
                                         <Select
                                             value={presetEditor.scenario.flexWindow}
                                             onValueChange={(value) => updatePresetDraftScenario('flexWindow', value as BenchmarkMaskScenario['flexWindow'])}
@@ -3004,7 +3359,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 )}
 
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Round trip</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Round trip</span>
                                     <Select
                                         value={presetEditor.scenario.roundTrip ? 'yes' : 'no'}
                                         onValueChange={(value) => updatePresetDraftScenario('roundTrip', value === 'yes')}
@@ -3022,7 +3377,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Budget</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Budget</span>
                                     <Select value={presetEditor.scenario.budget} onValueChange={(value) => updatePresetDraftScenario('budget', value)}>
                                         <SelectTrigger aria-label="Budget">
                                             <SelectValue placeholder="Budget" />
@@ -3036,7 +3391,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pace</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pace</span>
                                     <Select value={presetEditor.scenario.pace} onValueChange={(value) => updatePresetDraftScenario('pace', value)}>
                                         <SelectTrigger aria-label="Pace">
                                             <SelectValue placeholder="Pace" />
@@ -3052,16 +3407,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Specific cities</span>
 	                                    <input
 	                                        aria-label="Specific cities"
 	                                        value={presetEditor.scenario.specificCities}
                                         onChange={(event) => updatePresetDraftScenario('specificCities', event.target.value)}
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
                                 <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Stops</span>
 	                                    <input
 	                                        type="number"
 	                                        aria-label="Stops"
@@ -3072,14 +3427,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             const next = event.target.value ? Number(event.target.value) : null;
                                             updatePresetDraftScenario('numCities', Number.isFinite(next as number) ? (next as number) : null);
                                         }}
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Traveler setup</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Traveler setup</span>
                                     <Select
                                         value={presetEditor.scenario.travelerSetup}
                                         onValueChange={(value) => updatePresetDraftScenario('travelerSetup', value as BenchmarkMaskScenario['travelerSetup'])}
@@ -3096,7 +3451,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip style</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trip style</span>
                                     <Select
                                         value={presetEditor.scenario.tripStyleMask}
                                         onValueChange={(value) => updatePresetDraftScenario('tripStyleMask', value as BenchmarkMaskScenario['tripStyleMask'])}
@@ -3112,7 +3467,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transport</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Transport</span>
                                     <Select
                                         value={presetEditor.scenario.transportMask}
                                         onValueChange={(value) => updatePresetDraftScenario('transportMask', value as BenchmarkMaskScenario['transportMask'])}
@@ -3131,17 +3486,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </div>
 
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notes/interests</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes/interests</span>
 	                                <textarea
 	                                    aria-label="Notes/interests"
 	                                    rows={3}
                                     value={presetEditor.scenario.notes}
                                     onChange={(event) => updatePresetDraftScenario('notes', event.target.value)}
-                                    className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full resize-y rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
-                            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                            <label className="inline-flex items-center gap-2 text-sm text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Route lock"
@@ -3163,32 +3518,32 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             onClick={() => setPromptModal(null)}
                         />
                         <div
-                            className="relative z-10 w-full max-w-4xl rounded-xl border border-slate-300 bg-white shadow-2xl"
+                            className="relative z-10 w-full max-w-4xl rounded-xl border border-border bg-card shadow-2xl dark:shadow-none"
                         >
-                            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                            <div className="flex items-center justify-between border-b border-border px-4 py-3">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-900">Generated benchmark prompt</h4>
-                                    <p className="text-xs text-slate-500">{formatTimestamp(promptModal.generatedAt)}</p>
+                                    <h4 className="text-sm font-semibold text-foreground">Generated benchmark prompt</h4>
+                                    <p className="text-xs text-muted-foreground">{formatTimestamp(promptModal.generatedAt)}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={copyPromptToClipboard}
-                                        className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                     >
                                         Copy
                                     </button>
                                     <button
                                         type="button"
                                         onClick={downloadPromptText}
-                                        className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                     >
                                         Download .txt
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPromptModal(null)}
-                                        className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                     >
                                         Close
                                     </button>
@@ -3200,7 +3555,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 	                                    value={promptModal.prompt}
                                     readOnly
                                     rows={18}
-                                    className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-800 outline-none"
+                                    className="w-full rounded-md border border-border bg-secondary px-3 py-2 font-mono text-xs text-foreground outline-none"
                                 />
                             </div>
                         </div>
@@ -3221,12 +3576,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
                                     <h4 className="text-sm font-semibold text-slate-100">Run error details</h4>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-muted-foreground">
                                         <ProviderLabel
                                             provider={errorModalRun.provider}
                                             model={errorModalRun.model}
                                             providerClassName="text-slate-300"
-                                            modelClassName="text-slate-400"
+                                            modelClassName="text-muted-foreground"
                                             logoSize={12}
                                         />
                                         <span className="ml-1">· run #{errorModalRun.run_index}</span>
@@ -3266,12 +3621,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
                                     <h4 className="text-sm font-semibold text-slate-100">Validation details</h4>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-muted-foreground">
                                         <ProviderLabel
                                             provider={validationModalRun.provider}
                                             model={validationModalRun.model}
                                             providerClassName="text-slate-300"
-                                            modelClassName="text-slate-400"
+                                            modelClassName="text-muted-foreground"
                                             logoSize={12}
                                         />
                                         <span className="ml-1">· run #{validationModalRun.run_index}</span>
@@ -3301,12 +3656,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
                 )}
 
-                <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
-                    <div className="font-semibold">Important implementation note</div>
-                    <div className="mt-1">
-                        This benchmark page now mirrors the default create-trip mask while preserving the existing classic prompt contract for comparable results across runs.
-                    </div>
-                </section>
             </div>
         </AdminShell>
     );

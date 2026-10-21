@@ -9,6 +9,7 @@ import { hasRenderableHandoffNode } from './services/bootstrapHandoffService';
 import { preloadCriticalRouteModules } from './services/criticalRoutePreload';
 import { shouldHydrateReactRoot } from './services/reactRootRenderMode';
 import { AppBootstrapShell } from './components/bootstrap/AppBootstrapShell';
+import { registerServiceWorker } from './services/serviceWorkerRegistration';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -35,8 +36,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       return (
         <div className="p-8 font-sans text-center" data-tf-handoff-ready="true" data-tf-error-boundary="true">
           <h1 className="text-2xl font-semibold text-red-600 mb-4">Something went wrong</h1>
-          <p className="text-gray-600 mb-4">The application encountered an error while loading.</p>
-          <pre className="bg-gray-100 p-4 rounded text-left text-sm overflow-auto max-w-2xl mx-auto">
+          <p className="text-muted-foreground mb-4">The application encountered an error while loading.</p>
+          <pre className="bg-secondary p-4 rounded text-left text-sm overflow-auto max-w-2xl mx-auto">
             {this.state.error?.toString()}
           </pre>
           <button type="button"
@@ -199,3 +200,7 @@ const warmShellI18nThenMount = async () => {
 
 setupBootstrapShellHandoff(rootElement);
 void warmShellI18nThenMount();
+
+// Offline shell caching. Self-defers to idle time, so it never competes with
+// the mount above for bandwidth on a phone.
+registerServiceWorker();

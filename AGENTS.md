@@ -6,6 +6,7 @@ This repository uses markdown release files as the source of truth for product u
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
 - Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
 - Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
+- Follow `docs/ACTIVITIES_AND_DAY_TRIPS.md` for any change to activity placement, day trips, the add-activity dialog, the map's activity layers, trip generation schemas, the Trip Agent item schema, or example trips. Resolve an activity's stay only through `shared/activityStay.ts`, and add every new `ITimelineItem` field to the Trip Agent's strict `timelineItemSchema` as well.
 - Follow `docs/MAPS_INTEGRATION_WORKFLOW.md` for all new or updated map surfaces (planner, profile/admin cards, blog/marketing).
 - Keep route slugs English-only for canonical URLs. Do not add localized slug aliases or compatibility redirects (for example `/impressum`) unless a dedicated issue explicitly requests it. Locale support is prefix-only (`/{locale}/...`) on top of English slugs.
 - Treat `lib/legal/cookies.config.ts` as the single source of truth for browser persistence disclosures (cookies + localStorage + sessionStorage). Any new/changed/removed storage key must be updated there and reflected by the legal cookie policy page.
@@ -14,13 +15,20 @@ This repository uses markdown release files as the source of truth for product u
 - When creating or editing GitHub PR descriptions with `gh`, always use a Markdown body file (`--body-file`) or stdin heredoc with real newlines; never pass escaped `\n` or escaped backticks in inline `--body` strings.
 - For user-facing copy changes in marketing/planner surfaces, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
 - Admin workspace copy (`/admin/*`, admin tables, drawers, and admin-only controls) is English-only by default and is exempt from EN/DE style sign-off and translation requirements unless the user explicitly asks for localization.
-- For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.
+- For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`. ICU plural/select syntax does not work: `i18next-icu` is installed but never registered in `i18n.ts`. For plurals use i18next suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option.
+- Before changing anything that calls a model, streams to the browser, or stores model output, read `docs/AI_AGENT_FEATURE_GUARDRAILS.md`: no hidden reasoning streamed or stored, no raw exception in a response, no `VITE_` credential server-side, run budgets under the platform limit, interactive state rebuilt from its record.
+- Production renders through Preact 11 `preact/compat`; component tests and types still use React 18. Keep real `forwardRef`s for Radix `asChild` and components focused/measured by a library so they work in both runtimes.
+- `supabase/migrations/*.sql` are not applied by any deploy. Verify a migration locally against a throwaway Postgres (`supabase/tests/`), then hand over the steps in `docs/SUPABASE_RUNBOOK.md` and say the migration is pending.
+- Tick issue checkboxes against the issue's wording, and audit inherited `Closes #123` claims before pushing to a branch.
 - When adding locale keys for localized user-facing surfaces, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and validate namespace placement (`common/pages/legal` vs route-specific namespace). Admin-only UI copy is excluded unless localization is explicitly requested.
 - Run `pnpm i18n:validate` for locale-related changes before finalizing.
+- `tests/unit/connectivityLocaleCoverage.test.ts` fails only on untranslated **sentences** (multi-word values identical to English). Single-word labels are printed as a note and never fail: an audit of every identical value across all ten locales found only true cognates ("Standard", "Normal", "Base", "Satellite", "Export", "Debug", "Visa", "Offline"), zero real misses. Do not re-add a per-locale allowlist -- that is what made the gate fail on branches that had touched none of the keys.
+- Brand-name keys in that test are *exempt* from the sentence check, never pinned to English. Google and Apple publish localized names for Maps and the locales use them (`Google Карты`, `Google 지도`, `نقشه گوگل`), so asserting they stayed English is wrong.
 - For behavioral code changes (business logic, state flow, permissions, data transforms), add or update Vitest coverage in the same PR.
 - For bug fixes, add a regression test that fails on the pre-fix behavior and passes with the fix.
 - Docs-only, copy-only, and style-only changes are exempt from mandatory new tests.
 - For behavioral changes, run `pnpm test:core` before finalizing whenever feasible.
+- Run `pnpm ci:local` before pushing. It runs the PR Quality workflow stage for stage (~3m30s), so a red pipeline is found here instead of by email. `--fast` (~70s) skips the build and browser suite; `--only=<stage>`/`--from=<stage>` target or resume a stage.
 - In fresh git worktrees, run `pnpm worktree:sync-env` before starting env-dependent tooling if `.env` or `.env.local` is missing. This repo also installs a `post-checkout` hook to copy those files automatically when worktrees are created.
 - For PRs that add new files under `services/` or `config/`, include a corresponding `tests/**` entry in the PR checklist/description.
 - For TripView/route-loader orchestration work, follow `docs/TESTING_PHASE2_SCOPE.md` when planning component/hook regression coverage.
@@ -45,12 +53,26 @@ This repository uses markdown release files as the source of truth for product u
 - Prefer CSS logical properties (for example `margin-inline`, `padding-inline`, `inset-inline`) over left/right-specific properties when it makes sense.
 - If it is unclear whether logical properties are appropriate for a change, stop and ask the user for clarification before finalizing.
 
+## CI parity
+- `pnpm ci:local` mirrors `.github/workflows/pr-quality.yml`. When you add a step to that workflow,
+  add it to the STAGES list in `scripts/ci-local.mjs`; the two drifting apart is the whole failure
+  mode this script exists to prevent.
+- Node is pinned to `.node-version` (22), matching `NODE_VERSION` in `netlify.toml`. `ci:local` warns
+  when the local major differs; it is a warning, not a gate, but match it before trusting a local
+  result that disagrees with CI.
+- `pnpm build:netlify` re-encodes two blog images and rewrites generated data on every run.
+  `ci:local` reverts exactly what the build dirtied; if you run the build by hand, check
+  `git status` before `git add -A`.
+- Workflow actions are pinned to their node24 majors (`actions/checkout@v7`, `actions/setup-node@v7`,
+  `actions/upload-artifact@v7`, `pnpm/action-setup@v6`). `cache: pnpm` must stay explicit on
+  `setup-node`: v6 limited automatic cache detection to npm.
+
 ## Scope
 These instructions apply to all coding agents and LLM assistants working in this repo.
 
 ## Skill usage policy
 - Use `vercel-react-best-practices` for React performance/refactor tasks to guide high-impact decisions, but apply only rules relevant to the current change.
-- Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React changes; treat reported errors as fix-before-merge and triage warnings by impact/scope.
+- `react-doctor` is optional, not a merge gate: run `pnpm dlx react-doctor@latest . --verbose --diff` when a React change feels risky, and triage what it reports by impact/scope.
 - For new React feature work, record the React Doctor score before and after the change when feasible, and consult `vercel-react-best-practices` so the feature does not make React quality worse.
 - Avoid adding `useEffect` unless the component must synchronize with an external system such as network state, browser APIs, timers, subscriptions, or imperative third-party widgets. Prefer render-time derivation, event handlers, `useMemo` for expensive pure calculations, `useSyncExternalStore` for external stores, and `key`-based resets; every remaining effect should have tight dependencies and cleanup when it owns external resources.
 - Use `find-skills` only when current skills/workflows do not clearly cover the task and a capability discovery step is needed.

@@ -101,13 +101,13 @@ const buildSpreads = (
 const StampPlaceholder: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
   <div
     className={[
-      'flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-slate-400',
+      'flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-secondary/50 p-4 text-center text-muted-foreground',
       compact ? 'p-3 gap-1.5' : '',
     ].join(' ')}
   >
     <LockSimple size={24} weight="duotone" className="text-slate-300" />
-    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 opacity-80">Hidden</span>
-    <span className="text-[10px] leading-relaxed text-slate-400 opacity-60">Keep traveling to discover more</span>
+    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-80">Hidden</span>
+    <span className="text-[10px] leading-relaxed text-muted-foreground opacity-60">Keep traveling to discover more</span>
   </div>
 );
 
@@ -120,8 +120,8 @@ const StampBookSideView: React.FC<{
 }> = ({ side, locale, emptySlotLabel, compact = false, position }) => (
   <article className={`stamp-book-page ${position ? `stamp-book-page--${position}` : ''}`}>
     {side.groupLabel ? (
-      <header className="mb-2 border-b border-slate-200/80 pb-1 pt-1 text-center">
-        <p className="text-xl font-bold tracking-tight text-slate-700">{side.groupLabel}</p>
+      <header className="mb-2 border-b border-border/80 pb-1 pt-1 text-center">
+        <p className="text-xl font-bold tracking-tight text-foreground">{side.groupLabel}</p>
       </header>
     ) : null}
     <div className="stamp-book-page-grid">
@@ -333,7 +333,7 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
           type="button"
           onClick={() => startTurn('prev')}
           disabled={!canGoPrev}
-          className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-45"
         >
           <CaretLeft size={14} weight="bold" />
           {labels.previousPage}
@@ -342,7 +342,7 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
           type="button"
           onClick={() => startTurn('next')}
           disabled={!canGoNext}
-          className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-45"
         >
           {labels.nextPage}
           <CaretRight size={14} weight="bold" />

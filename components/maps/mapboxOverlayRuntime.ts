@@ -1,5 +1,8 @@
 import type mapboxgl from 'mapbox-gl';
 
+import { isMapboxMapUsable } from './mapboxBasemapUtils';
+import { MARKER_HOVER_Z_INDEX, MARKER_TOOLTIP_HIDDEN_TRANSFORM, MARKER_TOOLTIP_SHOWN_TRANSFORM } from './markerTooltip';
+
 export type MapCoordinates = {
   lat: number;
   lng: number;
@@ -49,12 +52,14 @@ type MapboxLineHandleOptions = {
 };
 
 const clearMapboxLayer = (map: mapboxgl.Map, layerId: string): void => {
+  if (!isMapboxMapUsable(map)) return;
   if (map.getLayer(layerId)) {
     map.removeLayer(layerId);
   }
 };
 
 const clearMapboxSource = (map: mapboxgl.Map, sourceId: string): void => {
+  if (!isMapboxMapUsable(map)) return;
   if (map.getSource(sourceId)) {
     map.removeSource(sourceId);
   }
@@ -89,15 +94,18 @@ export const createMapboxOverlayMarker = ({
     event.stopPropagation();
     onClick?.();
   };
+  let restingZIndex = zIndex;
   const showTooltip = () => {
+    element.style.zIndex = `${MARKER_HOVER_Z_INDEX}`;
     if (!tooltipNode) return;
     tooltipNode.style.opacity = '1';
-    tooltipNode.style.transform = 'translate(-50%, calc(-100% - 14px))';
+    tooltipNode.style.transform = MARKER_TOOLTIP_SHOWN_TRANSFORM;
   };
   const hideTooltip = () => {
+    element.style.zIndex = `${restingZIndex}`;
     if (!tooltipNode) return;
     tooltipNode.style.opacity = '0';
-    tooltipNode.style.transform = 'translate(-50%, calc(-100% - 8px))';
+    tooltipNode.style.transform = MARKER_TOOLTIP_HIDDEN_TRANSFORM;
   };
   if (clickable) {
     element.addEventListener('click', handleClick);
@@ -117,15 +125,22 @@ export const createMapboxOverlayMarker = ({
   return {
     setMap(nextMap) {
       if (nextMap) {
-        if (!isAttached) {
+        if (!isAttached && isMapboxMapUsable(map)) {
           marker.addTo(map);
           isAttached = true;
         }
         return;
       }
-      if (isAttached) {
+      if (!isAttached) return;
+      isAttached = false;
+      // A DOM marker does not depend on the style, so remove it even while the
+      // style is unreadable. Gating this on isMapboxMapUsable leaked every label
+      // of the previous style during a setStyle switch: old dark chips stayed
+      // stacked under the new light ones.
+      try {
         marker.remove();
-        isAttached = false;
+      } catch {
+        element.remove();
       }
     },
     update(updates) {
@@ -133,6 +148,7 @@ export const createMapboxOverlayMarker = ({
         marker.setLngLat(toLngLat(updates.position));
       }
       if (updates.zIndex !== undefined) {
+        restingZIndex = updates.zIndex;
         element.style.zIndex = `${updates.zIndex}`;
       }
       if (updates.html !== undefined) {
@@ -196,9 +212,11 @@ export const createMapboxLineHandle = ({
       if (!isAttached) {
         return;
       }
+      // Marked detached first: a map that has already gone took its layers and
+      // sources with it, so the handle is spent either way.
+      isAttached = false;
       layerIds.forEach((layerId) => clearMapboxLayer(map, layerId));
       clearMapboxSource(map, sourceId);
-      isAttached = false;
     },
   };
 };

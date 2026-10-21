@@ -7,10 +7,14 @@
  * 1. No edge function uses inline `export const config` (routes must be in netlify.toml only).
  * 2. Every [[edge_functions]] entry in netlify.toml points to an existing file.
  * 3. Every function file in the edge-functions directory has at least one toml route.
+ * 4. Every relative import reachable from an edge function carries an explicit file
+ *    extension and resolves on disk. Deno's edge bundler does not resolve
+ *    extensionless specifiers, so a missing ".ts" fails the Netlify build even
+ *    though Vite and tsc accept it.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
-import { resolve, basename } from "node:path";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { resolve, basename, dirname } from "node:path";
 import {
   findCatchAllEdgeEntries,
   parseEdgeFunctionEntries,
@@ -96,6 +100,73 @@ for (const file of efFiles) {
     );
     warnings++;
   }
+}
+
+// ── 4. Transitive relative imports must carry explicit extensions ───────────
+//
+// Regression guard for the 2026-08-18 outage: an edge function began importing
+// config/aiModelCatalog.ts, which imported "../shared/aiReasoning" with no
+// extension. Vite and tsc resolve that; Deno's edge bundler does not, so every
+// Netlify build failed with "cannot resolve file:///opt/build/repo/shared/aiReasoning"
+// and NO edge functions were deployed at all.
+
+// Only *value* imports matter. `import type` / `export type` statements are erased
+// before bundling, which is why the many extensionless `import type { X } from "../types"`
+// specifiers in this repo never broke a build.
+const VALUE_IMPORT_REGEX =
+  /(?:^|\n)\s*(?:import|export)\s+(?!type\s)(?:[^;'"]*?\s+from\s*)?["'](\.{1,2}\/[^"']+)["']/g;
+const DYNAMIC_IMPORT_REGEX = /\bimport\s*\(\s*["'](\.{1,2}\/[^"']+)["']/g;
+const ALLOWED_EXTENSIONS = [".ts", ".tsx", ".js", ".mjs", ".jsx", ".json"];
+
+const visited = new Set();
+
+const walkEdgeImports = (filePath, originLabel) => {
+  if (visited.has(filePath)) return;
+  visited.add(filePath);
+
+  let content;
+  try {
+    content = readFileSync(filePath, "utf-8");
+  } catch {
+    return;
+  }
+
+  const specifiers = [
+    ...content.matchAll(VALUE_IMPORT_REGEX),
+    ...content.matchAll(DYNAMIC_IMPORT_REGEX),
+  ];
+
+  for (const match of specifiers) {
+    const specifier = match[1];
+    const importerRelative = filePath.slice(ROOT.length + 1);
+
+    if (!ALLOWED_EXTENSIONS.some((ext) => specifier.endsWith(ext))) {
+      console.error(
+        `ERROR: ${importerRelative} imports "${specifier}" without a file extension. ` +
+          `Reachable from edge function ${originLabel}. Deno's edge bundler cannot ` +
+          `resolve extensionless specifiers - add the explicit extension (e.g. ".ts"). ` +
+          `See docs/EDGE_FUNCTIONS.md.`
+      );
+      errors++;
+      continue;
+    }
+
+    const resolved = resolve(dirname(filePath), specifier);
+    if (!existsSync(resolved)) {
+      console.error(
+        `ERROR: ${importerRelative} imports "${specifier}", which does not exist on disk. ` +
+          `Reachable from edge function ${originLabel}.`
+      );
+      errors++;
+      continue;
+    }
+
+    if (/\.(ts|tsx|js|mjs|jsx)$/.test(resolved)) walkEdgeImports(resolved, originLabel);
+  }
+};
+
+for (const file of efFiles) {
+  walkEdgeImports(resolve(EF_DIR, file), file);
 }
 
 // ── Result ──────────────────────────────────────────────────────────────────

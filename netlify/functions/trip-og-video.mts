@@ -2,7 +2,7 @@ import { refreshTripVideoMetadata } from '../lib/trip-video-cache.ts';
 import type { Config, Context } from '@netlify/functions';
 import { claimRenderBudget, claimVideo, videoRevision, videoStore } from '../lib/trip-video-store.ts';
 import { canManageTripVideo, loadTripForVideo, resolvePublicVideoTrip } from '../lib/trip-video-access.ts';
-import { isTripVideoId, normalizeTripVideoStyle, normalizeTripVideoRouteMode, parseVideoRange, tripVideoLeaseExpired, TRIP_VIDEO, type TripVideoState } from '../../shared/tripOgVideo.ts';
+import { isTripVideoId, normalizeTripVideoStyle, normalizeTripVideoRouteMode, parseVideoRange, tripVideoLeaseExpired, tripVideoAttachment, tripVideoAssetPath, TRIP_VIDEO, type TripVideoState } from '../../shared/tripOgVideo.ts';
 
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'cache-control': 'no-store' } });
 
@@ -62,10 +62,12 @@ export default async (request: Request, context?: Context) => {
       return json(state, 202);
     }
     const stale = Boolean(state && state.revision !== videoRevision(trip, state.style, state.routeMode));
-    if (url.searchParams.get('status') === '1') return json({ ...state, status: state && tripVideoLeaseExpired(state) ? 'failed' : state?.status || 'missing', ...(state && tripVideoLeaseExpired(state) ? { error: 'The video worker did not finish. Retry after the cooldown.' } : {}), stale, settingsMatch: (!url.searchParams.has('mapStyle') || normalizeTripVideoStyle(url.searchParams.get('mapStyle')) === state?.style) && (!url.searchParams.has('routeMode') || normalizeTripVideoRouteMode(url.searchParams.get('routeMode')) === (state?.routeMode || 'simple')), spec: TRIP_VIDEO });
-    if (state?.status !== 'ready' || (!manager && stale) || (url.searchParams.has('r') && url.searchParams.get('r') !== (state.mediaRevision || state.revision))) return json({ error: 'Video preview is not ready.' }, 404);
+    const attached = tripVideoAttachment(state);
+    const attachmentStale = Boolean(attached && attached.revision !== videoRevision(trip, attached.style, attached.routeMode));
+    if (url.searchParams.get('status') === '1') return json({ ...state, status: state && tripVideoLeaseExpired(state) ? 'failed' : state?.status || 'missing', ...(state && tripVideoLeaseExpired(state) ? { error: 'The video worker did not finish. Retry after the cooldown.' } : {}), stale, attached: attached ? { ...attached, stale: attachmentStale } : null, settingsMatch: (!url.searchParams.has('mapStyle') || normalizeTripVideoStyle(url.searchParams.get('mapStyle')) === (attached || state)?.style) && (!url.searchParams.has('routeMode') || normalizeTripVideoRouteMode(url.searchParams.get('routeMode')) === ((attached || state)?.routeMode || 'simple')), spec: TRIP_VIDEO });
+    if (!attached || (!manager && attachmentStale) || (url.searchParams.has('r') && url.searchParams.get('r') !== (attached.mediaRevision || attached.revision))) return json({ error: 'Video preview is not ready.' }, 404);
     const poster = url.searchParams.get('asset') === 'poster';
-    const entry = await store.getWithMetadata(`${trip.id}/${poster ? 'poster' : 'video'}`, { type: 'arrayBuffer' });
+    const entry = await store.getWithMetadata(tripVideoAssetPath(trip.id, attached, poster ? 'poster' : 'video'), { type: 'arrayBuffer' });
     if (!entry) return json({ error: 'Video preview unavailable.' }, 404);
     const bytes = new Uint8Array(entry.data);
     const range = poster ? null : parseVideoRange(request.headers.get('range'), bytes.byteLength);

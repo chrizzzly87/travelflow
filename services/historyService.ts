@@ -8,6 +8,8 @@ export interface HistoryEntry {
     url: string;
     label: string;
     ts: number;
+    /** Trip Agent change set this entry came from, when one produced it. */
+    changeSetId?: string;
     snapshot?: {
         trip?: ITrip;
         view?: IViewSettings;
@@ -195,7 +197,7 @@ export const appendHistoryEntry = (
     tripId: string,
     url: string,
     label: string,
-    options?: { snapshot?: { trip: ITrip; view?: IViewSettings }; ts?: number }
+    options?: { snapshot?: { trip: ITrip; view?: IViewSettings }; ts?: number; changeSetId?: string }
 ): boolean => {
     const store = loadStore();
     const list = store[tripId] || [];
@@ -207,6 +209,7 @@ export const appendHistoryEntry = (
         tripId,
         url,
         label,
+        ...(options?.changeSetId ? { changeSetId: options.changeSetId } : {}),
         ts: options?.ts ?? Date.now(),
         snapshot: options?.snapshot,
     };
@@ -242,6 +245,8 @@ export const createTripHistorySnapshotEntry = ({
     label,
     ts,
     baseUrlOverride,
+    versionId: suppliedVersionId,
+    changeSetId,
 }: {
     tripId: string;
     trip: ITrip;
@@ -249,8 +254,10 @@ export const createTripHistorySnapshotEntry = ({
     label: string;
     ts?: number;
     baseUrlOverride?: string;
+    versionId?: string;
+    changeSetId?: string;
 }): { url: string; persisted: boolean } => {
-    const versionId = generateVersionId();
+    const versionId = suppliedVersionId || generateVersionId();
     const url = baseUrlOverride
         ? (() => {
             const origin = typeof window !== 'undefined' ? window.location.origin : HISTORY_WRITE_FALLBACK_ORIGIN;
@@ -263,6 +270,7 @@ export const createTripHistorySnapshotEntry = ({
     const persisted = appendHistoryEntry(tripId, url, label, {
         snapshot: { trip, view },
         ts,
+        changeSetId,
     });
 
     return {

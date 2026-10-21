@@ -1,0 +1,96 @@
+import React, { useEffect, useRef } from 'react';
+
+export interface TripAgentMentionItem {
+    key: string;
+    group: string;
+    label: string;
+    meta?: string;
+    isSelected?: boolean;
+    icon?: React.ReactNode;
+}
+
+/**
+ * Mention and preset list for the prompt input.
+ *
+ * Focus stays in the textarea and the caller drives the highlight from its key
+ * handler: cmdk owns focus and wires its keyboard through refs, which
+ * preact/compat drops for plain function components, so arrow keys never
+ * reached the list.
+ */
+export const TripAgentMentionMenu: React.FC<{
+    items: TripAgentMentionItem[];
+    activeIndex: number;
+    emptyLabel: string;
+    listId: string;
+    onSelect: (index: number) => void;
+    onHover: (index: number) => void;
+}> = ({ items, activeIndex, emptyLabel, listId, onSelect, onHover }) => {
+    const listRef = useRef<HTMLUListElement | null>(null);
+    const activeRef = useRef<HTMLLIElement | null>(null);
+
+    // Keep the active option in view by scrolling the list alone.
+    // scrollIntoView also scrolls every scrollable ancestor (the chat, the
+    // panel), and on open it pushed the first group heading out of sight.
+    useEffect(() => {
+        const list = listRef.current;
+        const option = activeRef.current;
+        if (!list || !option) return;
+        if (activeIndex === 0) {
+            list.scrollTop = 0;
+            return;
+        }
+        const top = option.offsetTop;
+        const bottom = top + option.offsetHeight;
+        if (top < list.scrollTop) list.scrollTop = top;
+        else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+    }, [activeIndex]);
+
+    if (items.length === 0) {
+        return <p className="px-3 py-4 text-center text-xs text-muted-foreground">{emptyLabel}</p>;
+    }
+
+    let lastGroup: string | null = null;
+
+    return (
+        <ul ref={listRef} id={listId} role="listbox" className="relative max-h-64 overflow-y-auto py-1">
+            {items.map((item, index) => {
+                const showGroup = item.group !== lastGroup;
+                lastGroup = item.group;
+                const isActive = index === activeIndex;
+                return (
+                    <React.Fragment key={item.key}>
+                        {showGroup && (
+                            <li
+                                aria-hidden="true"
+                                className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+                            >
+                                {item.group}
+                            </li>
+                        )}
+                        <li
+                            ref={isActive ? activeRef : undefined}
+                            id={`${listId}-option-${index}`}
+                            role="option"
+                            aria-selected={isActive}
+                            onMouseEnter={() => onHover(index)}
+                            onMouseDown={(event) => {
+                                event.preventDefault();
+                                onSelect(index);
+                            }}
+                            className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 ${
+                                isActive ? 'bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200' : 'text-foreground'
+                            }`}
+                        >
+                            {item.icon}
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm">{item.label}</span>
+                                {item.meta && <span className="block truncate text-[11px] text-muted-foreground">{item.meta}</span>}
+                            </span>
+                            {item.isSelected && <span className="text-[11px] font-medium text-accent-600 dark:text-accent-300">✓</span>}
+                        </li>
+                    </React.Fragment>
+                );
+            })}
+        </ul>
+    );
+};

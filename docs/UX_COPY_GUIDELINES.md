@@ -43,7 +43,7 @@ This guide defines how to write copy for TravelFlow marketing pages, CTAs, and p
 - Prefer equivalent concept over literal phrasing.
 - Keep product and brand terms stable unless localized naming is explicitly approved.
 - Avoid idioms that do not transfer well across languages.
-- For interpolation in locale files, use ICU placeholders (`{name}`), not legacy moustache placeholders (`{{name}}`).
+- For interpolation in locale files, use single-brace placeholders (`{name}`), not legacy moustache placeholders (`{{name}}`). ICU `plural`/`select` blocks are inert at runtime; For plurals use i18next suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option. See `docs/I18N_PAGE_WORKFLOW.md`.
 - Before adding keys, decide namespace placement (`common/pages/legal` vs route namespace) using `docs/I18N_PAGE_WORKFLOW.md`.
 - For new user-facing keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`, `fa`, `ur`) in the same change.
 

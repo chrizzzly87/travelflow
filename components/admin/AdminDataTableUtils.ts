@@ -4,17 +4,17 @@ export type AdminTableSortDirection = 'asc' | 'desc';
 
 export const ADMIN_TABLE_ROW_SURFACE_CLASS = [
     'group transition-colors',
-    'hover:[&>td]:bg-slate-100',
+    'hover:[&>td]:bg-secondary',
     'data-[state=selected]:[&>td]:bg-accent-50/50',
     'data-[state=selected]:hover:[&>td]:bg-accent-50/50',
 ].join(' ');
 const ADMIN_TABLE_STICKY_BASE_CLASS = '';
 const ADMIN_TABLE_STICKY_TRAILING_EDGE_CLASS = [
-    'border-r border-slate-300',
+    'border-r border-border',
     'before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-px before:bg-slate-300',
 ].join(' ');
-export const ADMIN_TABLE_SORTED_HEADER_CLASS = 'bg-accent-50 text-accent-900';
-export const ADMIN_TABLE_SORTED_CELL_CLASS = 'bg-accent-50/50 group-hover:bg-accent-50/50 group-data-[state=selected]:bg-accent-50/50';
+export const ADMIN_TABLE_SORTED_HEADER_CLASS = 'bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200';
+export const ADMIN_TABLE_SORTED_CELL_CLASS = 'bg-accent-50/50 group-hover:bg-accent-50/50 group-data-[state=selected]:bg-accent-50/50 dark:bg-accent-400/12 dark:group-hover:bg-accent-400/12';
 
 const ADMIN_TABLE_STICKY_TRAILING_SHADOW_CLASS = [
     'shadow-[8px_0_14px_-10px_rgba(15,23,42,0.45)]',
@@ -28,7 +28,7 @@ export const getAdminStickyHeaderCellClass = (params: {
     isSorted?: boolean;
 }) => cn(
     params.isFirst ? ADMIN_TABLE_STICKY_BASE_CLASS : ADMIN_TABLE_STICKY_TRAILING_EDGE_CLASS,
-    'bg-slate-50',
+    'bg-secondary',
     params.isSorted ? ADMIN_TABLE_SORTED_HEADER_CLASS : '',
     params.isScrolled
         ? (params.isFirst ? '' : ADMIN_TABLE_STICKY_TRAILING_SHADOW_CLASS)
@@ -42,8 +42,8 @@ export const getAdminStickyBodyCellClass = (params: {
     isSorted?: boolean;
 }) => cn(
     params.isFirst ? ADMIN_TABLE_STICKY_BASE_CLASS : ADMIN_TABLE_STICKY_TRAILING_EDGE_CLASS,
-    params.isSelected ? 'bg-accent-50 group-hover:bg-accent-50' : 'bg-white group-hover:bg-slate-100',
-    params.isSorted ? 'bg-accent-50 group-hover:bg-accent-50' : '',
+    params.isSelected ? 'bg-accent-50 group-hover:bg-accent-50 dark:bg-accent-400/12 dark:group-hover:bg-accent-400/12' : 'bg-card group-hover:bg-secondary',
+    params.isSorted ? 'bg-accent-50 group-hover:bg-accent-50 dark:bg-accent-400/12 dark:group-hover:bg-accent-400/12' : '',
     params.isScrolled
         ? (params.isFirst ? '' : ADMIN_TABLE_STICKY_TRAILING_SHADOW_CLASS)
         : '',

@@ -19,7 +19,7 @@ describe('trip details OG previews', () => {
     expect(await screen.findByAltText('Attached trip sharing preview')).toHaveAttribute('src', '/api/og/trip?trip=taiwan');
     expect(mocks.generate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Generate video' }));
-    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'clean', routeMode: 'simple', force: false }));
+    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'standard', routeMode: 'simple', force: false }));
   });
   it('uses authenticated media blobs and releases them when the drawer closes', async () => {
     mocks.state.mockResolvedValue({ status: 'ready', style: 'dark', bytes: 29000 });

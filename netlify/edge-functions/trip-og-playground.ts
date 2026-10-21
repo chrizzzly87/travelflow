@@ -612,9 +612,10 @@ export default async (request: Request): Promise<Response> => {
         try {
           const response = await fetch('/api/og/trip-video?' + query, { signal: AbortSignal.timeout(15000) });
           if (!response.ok) throw new Error('unavailable');
-          const state = await response.json();
+          const result = await response.json();
+          const state = result.status === 'ready' ? result : result.attached ? { ...result.attached, status: 'ready', settingsMatch: result.settingsMatch, replacing: result.status } : result;
           if (requestId !== videoRequestId) return;
-          status.textContent = state.settingsMatch === false ? 'Selected settings differ from the cached video. Open admin to apply them; no render starts automatically.' : state.stale ? 'The trip changed. Regenerate its video in admin.' : state.status === 'ready' ? 'Attached video · ' + Math.round(state.bytes / 1024) + ' KB' : 'Video: ' + state.status + '. Generate and manage previews in admin.';
+          status.textContent = state.settingsMatch === false ? 'Selected settings differ from the cached video. Open admin to apply them; no render starts automatically.' : state.stale ? 'The trip changed. Regenerate its video in admin.' : state.status === 'ready' ? 'Attached video · ' + Math.round(state.bytes / 1024) + ' KB' + (state.replacing ? ' · Replacement: ' + state.replacing : '') : 'Video: ' + state.status + '. Generate and manage previews in admin.';
           if (state.status === 'ready' && !state.stale && state.settingsMatch !== false) {
             query.delete('status');
             query.set('r', state.mediaRevision || state.revision);

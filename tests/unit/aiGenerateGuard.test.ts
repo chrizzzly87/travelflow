@@ -47,11 +47,11 @@ describe('validateGenerateInput', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('defaults to gemini and the default model when no target is provided', () => {
+  it('defaults to the current production OpenAI model when no target is provided', () => {
     const result = validateGenerateInput({ prompt: 'Trip to Japan' });
     expect(result).toMatchObject({
       ok: true,
-      value: { provider: 'gemini', model: 'gemini-3-pro-preview' },
+      value: { provider: 'openai', model: 'gpt-5.4' },
     });
   });
 

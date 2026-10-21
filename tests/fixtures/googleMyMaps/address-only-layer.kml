@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Taiwan Saved Posts</name>
+    <description><![CDATA[Places from a saved collection, organized by category.]]></description>
+    <Style id="icon-1899-0288D1-normal">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <Folder>
+      <name>All Saved Places</name>
+      <Placemark>
+        <name><![CDATA[Taipei 101 Observatory]]></name>
+        <address><![CDATA[Taipei 101, Taipei, Taiwan]]></address>
+        <description><![CDATA[Location: Taipei 101, Taipei, Taiwan<br>Category: Sights & Landmarks<br>Area: Taipei<br>Notes: Go at sunset &amp; stay for the city lights<br>Source: @example_traveller<br>PostURL: https://www.instagram.com/example_traveller/reel/ABC123/]]></description>
+        <styleUrl>#icon-1899-0288D1</styleUrl>
+        <ExtendedData>
+          <Data name="Location">
+            <value><![CDATA[Taipei 101, Taipei, Taiwan]]></value>
+          </Data>
+          <Data name="Category">
+            <value><![CDATA[Sights & Landmarks]]></value>
+          </Data>
+          <Data name="Area">
+            <value>Taipei</value>
+          </Data>
+          <Data name="Notes">
+            <value><![CDATA[Go at sunset & stay for the city lights]]></value>
+          </Data>
+          <Data name="Source">
+            <value>@example_traveller</value>
+          </Data>
+          <Data name="PostURL">
+            <value>https://www.instagram.com/example_traveller/reel/ABC123/</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Raohe Night Market]]></name>
+        <address><![CDATA[Raohe Street Night Market, Taipei, Taiwan]]></address>
+        <description><![CDATA[Location: Raohe Street Night Market, Taipei, Taiwan<br>Category: Night Market<br>Area: Taipei<br>Notes: Pepper buns at the temple gate]]></description>
+        <ExtendedData>
+          <Data name="Location">
+            <value><![CDATA[Raohe Street Night Market, Taipei, Taiwan]]></value>
+          </Data>
+          <Data name="Category">
+            <value>Night Market</value>
+          </Data>
+          <Data name="Area">
+            <value>Taipei</value>
+          </Data>
+          <Data name="Notes">
+            <value><![CDATA[Pepper buns at the temple gate]]></value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Jiufen Old Street]]></name>
+        <address><![CDATA[Jiufen Old Street, New Taipei City, Taiwan]]></address>
+        <ExtendedData>
+          <Data name="Category">
+            <value><![CDATA[Nature & Day Trips]]></value>
+          </Data>
+          <Data name="Area">
+            <value>New Taipei City</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Jiufen Old Street]]></name>
+        <address><![CDATA[Jiufen Old Street, New Taipei City, Taiwan]]></address>
+        <ExtendedData>
+          <Data name="Category">
+            <value><![CDATA[Nature & Day Trips]]></value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Hand-placed pins</name>
+      <Placemark>
+        <name>Elephant Mountain trailhead</name>
+        <description><![CDATA[Short, steep climb.<br>Best view of <b>Taipei 101</b>.]]></description>
+        <Point>
+          <coordinates>
+            121.5767,25.0272,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Walk along the river</name>
+        <LineString>
+          <coordinates>121.50,25.05,0 121.51,25.06,0</coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

@@ -1,12 +1,13 @@
 import { enqueueTripVideoFromWorker } from "../edge-lib/trip-og-video-enqueue.ts";
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
+import { buildModelActivityPlacementFields } from "../../shared/aiTripActivityPlacement.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import {
-  generateProviderItinerary,
   resolveTimeoutMs,
 } from "../edge-lib/ai-provider-runtime.ts";
+import { generatePreparedTripItinerary, type SemanticRepairMetadata } from "../edge-lib/ai-trip-generation.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 
 interface WorkerJobRow {
@@ -275,9 +276,11 @@ const classifyFailureKind = (params: {
   if (
     code.includes("parse")
     || code.includes("quality")
+    || code.includes("validation")
     || code.includes("refusal")
     || code.includes("incomplete")
     || message.includes("quality")
+    || message.includes("validation")
     || message.includes("refused")
     || message.includes("incomplete")
   ) {
@@ -389,8 +392,9 @@ const buildTripFromModelData = (
   parsedCities.forEach((city, index) => {
     cityOffsets[index] = currentDayOffset;
     cityDurations[index] = city.days;
+    const cityItemId = `city-${index}-${Date.now()}`;
     items.push({
-      id: `city-${index}-${Date.now()}`,
+      id: cityItemId,
       type: "city",
       title: city.name,
       startDateOffset: currentDayOffset,
@@ -426,8 +430,8 @@ const buildTripFromModelData = (
           duration: activityDuration,
           color: getActivityColor(activityTypes),
           description: String(typed.description || ""),
-          location: city.name,
           activityType: activityTypes,
+          ...buildModelActivityPlacementFields(typed, { id: cityItemId, name: city.name }),
         });
       });
     }
@@ -1316,19 +1320,39 @@ const processJob = async (
   const provider = payload.target.provider || DEFAULT_PROVIDER;
   const model = payload.target.model || DEFAULT_MODEL;
   const startedAt = Date.now();
+  let successfulGenerationMeta: {
+    provider: string;
+    model: string;
+    providerModel?: string;
+    usage?: {
+      promptTokens?: number;
+      completionTokens?: number;
+      totalTokens?: number;
+      estimatedCostUsd?: number;
+    };
+  } | null = null;
+  let semanticRepair: SemanticRepairMetadata | null = null;
 
   try {
-    const generation = await generateProviderItinerary({
+    const generation = await generatePreparedTripItinerary({
       prompt: payload.prompt,
       provider,
       model,
       timeoutMs: WORKER_PROVIDER_TIMEOUT_MS,
       jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      preparation: { roundTrip: payload.roundTrip },
     });
     const durationMs = Math.max(0, Date.now() - startedAt);
 
     if (!generation.ok) {
-      const failure = generation.value as ProviderFailure;
+      if (generation.kind === "validation") {
+        successfulGenerationMeta = generation.meta;
+        semanticRepair = generation.repair;
+        const validationError = new Error(generation.errors.slice(0, 12).join("; "));
+        validationError.name = "TRIP_DRAFT_VALIDATION_FAILED";
+        throw validationError;
+      }
+      const failure = generation.failure as ProviderFailure;
       const statusCode = "status" in generation ? generation.status : 500;
       const message = asString(failure.error) || "Provider generation failed.";
       const errorCode = asString(failure.code) || "ASYNC_WORKER_PROVIDER_FAILED";
@@ -1352,6 +1376,7 @@ const processJob = async (
         metadata: {
           source: WORKER_SOURCE,
           details: asString(failure.details),
+          semantic_repair: generation.repair,
         },
       });
 
@@ -1374,6 +1399,7 @@ const processJob = async (
         p_metadata: {
           source: WORKER_SOURCE,
           details: asString(failure.details),
+          semantic_repair: generation.repair,
           trip_upsert_ok: failedTripPersisted,
           trip_version_ok: failedTripVersionLogged,
         },
@@ -1406,6 +1432,10 @@ const processJob = async (
         httpStatus: statusCode,
         errorCode,
         errorMessage: message,
+        promptTokens: generation.usage?.promptTokens,
+        completionTokens: generation.usage?.completionTokens,
+        totalTokens: generation.usage?.totalTokens,
+        estimatedCostUsd: generation.usage?.estimatedCostUsd,
         metadata: {
           endpoint: "/api/internal/ai/generation-worker",
           trip_id: job.trip_id,
@@ -1413,6 +1443,7 @@ const processJob = async (
           queue_request_id: payload.queueRequestId,
           flow: payload.flow,
           source: payload.source,
+          semantic_repair: generation.repair,
         },
       });
       return {
@@ -1429,7 +1460,11 @@ const processJob = async (
       };
     }
 
-    const builtTrip = buildTripFromModelData(generation.value.data, {
+    successfulGenerationMeta = generation.value.meta;
+    semanticRepair = generation.value.repair;
+    const prepared = generation.value.data;
+
+    const builtTrip = buildTripFromModelData(prepared.data, {
       tripId: job.trip_id,
       startDate: payload.startDate || tripRow.start_date || new Date().toISOString(),
       roundTrip: payload.roundTrip,
@@ -1451,6 +1486,8 @@ const processJob = async (
         statusCode: 200,
         metadata: {
           source: WORKER_SOURCE,
+          trip_compiler: prepared.metrics,
+          semantic_repair: semanticRepair,
         },
       },
     );
@@ -1481,6 +1518,7 @@ const processJob = async (
         source: WORKER_SOURCE,
         trip_upsert_ok: true,
         trip_version_ok: true,
+        semantic_repair: semanticRepair,
       },
     });
     const jobCompleted = await completeJob(config, job.id, workerId);
@@ -1515,6 +1553,8 @@ const processJob = async (
         queue_request_id: payload.queueRequestId,
         flow: payload.flow,
         source: payload.source,
+        trip_compiler: prepared.metrics,
+        semantic_repair: semanticRepair,
       },
     });
     return {
@@ -1532,25 +1572,30 @@ const processJob = async (
     const durationMs = Math.max(0, Date.now() - startedAt);
     const message = error instanceof Error ? error.message : "Unexpected async worker error";
     const errorCode = error instanceof Error ? error.name : "ASYNC_WORKER_UNKNOWN_ERROR";
+    const statusCode = errorCode === "TRIP_DRAFT_VALIDATION_FAILED" ? 502 : 500;
+    const failureProvider = successfulGenerationMeta?.provider || provider;
+    const failureModel = successfulGenerationMeta?.model || model;
+    const failureProviderModel = successfulGenerationMeta?.providerModel || null;
     const failureKind = classifyFailureKind({
       code: errorCode,
-      status: 500,
+      status: statusCode,
       message,
     });
     const failedTrip = applyFailedGenerationState(tripData, {
       flow: payload.flow,
       attemptId: payload.attemptId,
       requestId: payload.requestId,
-      provider,
-      model,
-      providerModel: null,
-      statusCode: 500,
+      provider: failureProvider,
+      model: failureModel,
+      providerModel: failureProviderModel,
+      statusCode,
       failureKind,
       errorCode,
       errorMessage: message,
       durationMs,
       metadata: {
         source: WORKER_SOURCE,
+        semantic_repair: semanticRepair,
       },
     });
     const failedTripPersisted = await upsertTripRow(config, failedTrip, job.owner_id);
@@ -1560,12 +1605,12 @@ const processJob = async (
     const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "failed",
-      p_provider: provider,
-      p_model: model,
-      p_provider_model: null,
+      p_provider: failureProvider,
+      p_model: failureModel,
+      p_provider_model: failureProviderModel,
       p_request_id: payload.requestId,
       p_duration_ms: durationMs,
-      p_status_code: 500,
+      p_status_code: statusCode,
       p_failure_kind: failureKind,
       p_error_code: errorCode,
       p_error_message: message.slice(0, 1200),
@@ -1573,6 +1618,7 @@ const processJob = async (
         source: WORKER_SOURCE,
         trip_upsert_ok: failedTripPersisted,
         trip_version_ok: failedTripVersionLogged,
+        semantic_repair: semanticRepair,
       },
     });
     const jobFailed = await failJob(config, {
@@ -1595,13 +1641,18 @@ const processJob = async (
     await persistAiGenerationTelemetry({
       source: "create_trip",
       requestId: payload.requestId,
-      provider,
-      model,
+      provider: failureProvider,
+      model: failureModel,
+      providerModel: failureProviderModel || undefined,
       status: "failed",
       latencyMs: durationMs,
-      httpStatus: 500,
+      httpStatus: statusCode,
       errorCode,
       errorMessage: message,
+      promptTokens: successfulGenerationMeta?.usage?.promptTokens,
+      completionTokens: successfulGenerationMeta?.usage?.completionTokens,
+      totalTokens: successfulGenerationMeta?.usage?.totalTokens,
+      estimatedCostUsd: successfulGenerationMeta?.usage?.estimatedCostUsd,
       metadata: {
         endpoint: "/api/internal/ai/generation-worker",
         trip_id: job.trip_id,
@@ -1609,6 +1660,7 @@ const processJob = async (
         queue_request_id: payload.queueRequestId,
         flow: payload.flow,
         source: payload.source,
+        semantic_repair: semanticRepair,
       },
     });
     return {

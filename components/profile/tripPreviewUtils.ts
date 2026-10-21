@@ -1,11 +1,28 @@
 import type { AppLanguage, ITrip, ITimelineItem } from '../../types';
 import {
   DEFAULT_DISTANCE_UNIT,
+  findTravelBetweenCities,
   formatDistance,
   getHexFromColorClass,
   getTripDistanceKm,
 } from '../../utils';
+import { buildFlightPreviewCurvePath } from '../../shared/flightRouteCurve';
+import {
+  MAP_PREVIEW_LEG_MODES_PARAM,
+  parseMapPreviewLegModes,
+  serializeMapPreviewLegModes,
+} from '../../shared/mapPreviewLegModes';
+import { normalizeTransportMode, type TransportMode } from '../../shared/transportModes';
+import {
+  buildGoogleDayTripParams,
+  buildMapboxDayTripOverlays,
+  buildMapPreviewDayTrips,
+  MAP_PREVIEW_DAY_TRIPS_PARAM,
+  parseMapPreviewDayTrips,
+  serializeMapPreviewDayTrips,
+} from '../../shared/dayTripPreview';
 import { getClientMapRuntimeResolution, getMapboxAccessToken } from '../../services/mapRuntimeService';
+import { resolveSettledTripMapPreviewUrl } from '../../services/tripMapPreviewSettleService';
 import { MAP_RUNTIME_CACHE_KEY_QUERY_PARAM } from '../../shared/mapRuntime';
 import { getMapboxStyleDescriptor } from '../../services/mapRendererVisualStyleService';
 import {
@@ -217,6 +234,20 @@ const resolveLegColor = (legColors: string[], index: number, fallback: string): 
   return legColors[index] || legColors[legColors.length - 1] || fallback;
 };
 
+const isFlightLeg = (legModes: TransportMode[], index: number): boolean => legModes[index] === 'plane';
+
+/**
+ * Plane legs trace the same arc the planner map draws; every other leg keeps
+ * its straight two-point geometry.
+ */
+const buildPreviewLegGeometry = (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  isFlight: boolean,
+): Array<{ lat: number; lng: number }> => (
+  isFlight ? buildFlightPreviewCurvePath(from, to) : [from, to]
+);
+
 const formatCoord = (coord: { lat: number; lng: number }): string => `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
 
 const encodePolylineCoordinate = (value: number): string => {
@@ -267,6 +298,7 @@ export const buildDirectStaticMapPreviewUrlWithKey = (params: URLSearchParams, m
     ? normalizeMapPreviewColor(params.get('pathColor'), BRAND_ROUTE_COLOR)
     : BRAND_ROUTE_COLOR;
   const requestedLegColors = parsePreviewLegColors(params.get('legColors'));
+  const legModes = parseMapPreviewLegModes(params.get(MAP_PREVIEW_LEG_MODES_PARAM));
   const legColors = coords.slice(0, -1).map((_, index) => (
     colorMode === 'trip' ? resolveLegColor(requestedLegColors, index, pathColor) : BRAND_ROUTE_COLOR
   ));
@@ -294,6 +326,11 @@ export const buildDirectStaticMapPreviewUrlWithKey = (params: URLSearchParams, m
 
   for (let index = 0; index < coords.length - 1; index += 1) {
     const legColor = resolveLegColor(legColors, index, pathColor);
+    if (isFlightLeg(legModes, index)) {
+      const curve = buildPreviewLegGeometry(coords[index], coords[index + 1], true);
+      directParams.append('path', `color:0x${legColor}|weight:4|enc:${encodePolylinePath(curve)}`);
+      continue;
+    }
     directParams.append('path', `color:0x${legColor}|weight:4|${formatCoord(coords[index])}|${formatCoord(coords[index + 1])}`);
   }
 
@@ -308,6 +345,14 @@ export const buildDirectStaticMapPreviewUrlWithKey = (params: URLSearchParams, m
     const legWaypointColor = legColors[Math.min(index + 1, legColors.length - 1)] || waypointColor;
     directParams.append('markers', `size:tiny|color:0x${legWaypointColor}|${formatCoord(coord)}`);
   });
+
+  const dayTripParams = buildGoogleDayTripParams(
+    parseMapPreviewDayTrips(params.get(MAP_PREVIEW_DAY_TRIPS_PARAM), coords.length),
+    coords,
+    pathColor,
+  );
+  dayTripParams.paths.forEach((path) => directParams.append('path', path));
+  dayTripParams.markers.forEach((marker) => directParams.append('markers', marker));
 
   directParams.set('key', normalizedKey);
   return `https://maps.googleapis.com/maps/api/staticmap?${directParams.toString()}`;
@@ -332,6 +377,7 @@ export const buildDirectMapboxStaticMapPreviewUrlWithToken = (
     ? normalizeMapPreviewColor(params.get('pathColor'), BRAND_ROUTE_COLOR)
     : BRAND_ROUTE_COLOR;
   const requestedLegColors = parsePreviewLegColors(params.get('legColors'));
+  const legModes = parseMapPreviewLegModes(params.get(MAP_PREVIEW_LEG_MODES_PARAM));
   const legColors = coords.slice(0, -1).map((_, index) => (
     colorMode === 'trip' ? resolveLegColor(requestedLegColors, index, pathColor) : BRAND_ROUTE_COLOR
   ));
@@ -346,8 +392,8 @@ export const buildDirectMapboxStaticMapPreviewUrlWithToken = (
 
   for (let index = 0; index < coords.length - 1; index += 1) {
     const color = resolveLegColor(legColors, index, pathColor);
-    const encodedPolyline = encodePolylinePath([coords[index], coords[index + 1]]);
-    overlays.push(`path-4+${color}-0.85(${encodedPolyline})`);
+    const geometry = buildPreviewLegGeometry(coords[index], coords[index + 1], isFlightLeg(legModes, index));
+    overlays.push(`path-4+${color}-0.85(${encodePolylinePath(geometry)})`);
   }
 
   const start = coords[0];
@@ -361,6 +407,15 @@ export const buildDirectMapboxStaticMapPreviewUrlWithToken = (
     const color = legColors[index] || waypointColor;
     overlays.push(`pin-s+${color}(${coord.lng.toFixed(6)},${coord.lat.toFixed(6)})`);
   });
+
+  const dayTripOverlays = buildMapboxDayTripOverlays(
+    parseMapPreviewDayTrips(params.get(MAP_PREVIEW_DAY_TRIPS_PARAM), coords.length),
+    coords,
+    pathColor,
+  );
+  const pathCount = coords.length - 1;
+  overlays.splice(Math.max(0, pathCount), 0, ...dayTripOverlays.paths);
+  overlays.push(...dayTripOverlays.pins);
 
   const descriptor = getMapboxStyleDescriptor(style === 'cleanDark' ? 'dark' : style);
   const overlaySegment = overlays.map((overlay) => encodeURIComponent(overlay)).join(',');
@@ -471,6 +526,7 @@ export const buildMiniMapUrl = (
         return [];
       }
       return [{
+        item,
         coordinates: item.coordinates,
         colorHex: variant === 'standard' ? resolveTripItemColorHex(item.color) : null,
       }];
@@ -487,11 +543,20 @@ export const buildMiniMapUrl = (
   const legColors = routeCoordinates
     .slice(1)
     .map((coord) => coord.colorHex || mapColors.route);
+  // The renderer cannot tell a flight from a road trip by coordinates alone, so
+  // the card sends the mode of every leg and plane legs get the planner's arc.
+  const legModes = routeCoordinates
+    .slice(0, -1)
+    .map((entry, index) => normalizeTransportMode(
+      findTravelBetweenCities(trip.items, entry.item, routeCoordinates[index + 1].item)?.transportMode,
+    ));
 
   const params = new URLSearchParams();
   params.set('coords', routeCoordinates.map((coord) => formatCoord(coord.coordinates)).join('|'));
   params.set('style', variant === 'accent' ? 'clean' : 'standard');
-  params.set('routeMode', 'simple');
+  // Trip cards trace the itinerary the same way the planner map does: a straight
+  // line between two stops reads as a flight even when the leg is a road trip.
+  params.set('routeMode', 'realistic');
   params.set('colorMode', 'trip');
   params.set('pathColor', pathColor);
   params.set('startMarkerColor', start.colorHex || mapColors.start);
@@ -500,11 +565,33 @@ export const buildMiniMapUrl = (
   params.set('w', '640');
   params.set('h', '360');
   params.set('scale', '2');
-  params.set('language', mapLanguage);
+  // The preview URL is the CDN cache key, so a parameter that does not change
+  // the picture still splits the cache. Mapbox static renders ignore the
+  // language entirely; sending it anyway gave every locale its own render of
+  // the same map.
+  if (runtime.effectiveSelection.staticMaps !== 'mapbox') {
+    params.set('language', mapLanguage);
+  }
   params.set(MAP_RUNTIME_CACHE_KEY_QUERY_PARAM, runtime.activeSelectionKey);
 
   if (legColors.length > 0) {
     params.set('legColors', legColors.join('|'));
+  }
+
+  if (legModes.some((mode) => mode === 'plane')) {
+    params.set(MAP_PREVIEW_LEG_MODES_PARAM, serializeMapPreviewLegModes(legModes));
+  }
+
+  // Day trips leave from a stay on this route and come back the same day; the
+  // renderer draws them as dashed spokes in the stay's colour.
+  const routeItems = routeCoordinates.map((entry) => entry.item);
+  const dayTrips = buildMapPreviewDayTrips(
+    trip.items,
+    routeItems,
+    (_stay, stayIndex) => routeCoordinates[stayIndex].colorHex || mapColors.route,
+  );
+  if (dayTrips.length > 0) {
+    params.set(MAP_PREVIEW_DAY_TRIPS_PARAM, serializeMapPreviewDayTrips(dayTrips));
   }
 
   const previewPath = `/api/trip-map-preview?${params.toString()}`;
@@ -518,3 +605,26 @@ export const buildMiniMapUrl = (
   }
   return previewPath;
 };
+
+/**
+ * The preview URL a trip card should load.
+ *
+ * `buildMiniMapUrl` answers "what does this trip look like right now", which
+ * changes with every edit. A card asks a different question: "what should I
+ * show", and the answer holds the previous picture while the trip is still
+ * moving, so a burst of edits costs one render instead of one per state. See
+ * `services/tripMapPreviewSettleService.ts` and
+ * `docs/TRIP_MAP_PREVIEW_CACHING.md`.
+ *
+ * Admin surfaces deliberately keep calling `buildMiniMapUrl`: someone
+ * inspecting a trip needs its current state, not a settled one.
+ */
+export const buildSettledMiniMapUrl = (
+  trip: ITrip,
+  mapLanguage: AppLanguage,
+  options?: MiniMapOptions
+): string | null => resolveSettledTripMapPreviewUrl({
+  tripId: trip.id,
+  updatedAt: trip.updatedAt,
+  freshUrl: buildMiniMapUrl(trip, mapLanguage, options),
+}).url;

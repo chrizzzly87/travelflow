@@ -19,6 +19,8 @@ import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
+import type { RecommendationRow } from '../shared/recommendationRows';
+import type { RecommendationStatus } from '../shared/recommendations';
 
 type AdminTripGenerationState = 'failed' | 'running' | 'queued' | 'succeeded';
 
@@ -223,6 +225,51 @@ export interface AdminAirportBulkUpdatePatch {
     airportType?: AirportReference['airportType'];
     scheduledService?: boolean;
     timezone?: string | null;
+}
+
+export type AdminDestinationTargetKind = 'guide' | 'country_profile';
+export type AdminDestinationOverrideStatus = 'draft' | 'published';
+
+export interface AdminDestinationGuideRow {
+    id: string;
+    slug: string;
+    kind: 'country' | 'city' | 'island';
+    country_code: string;
+    parent_id: string | null;
+    name: string;
+    region: string;
+    priority_rank: number | null;
+    source_updated_at: string;
+    reviewed_at: string;
+    payload: Record<string, unknown>;
+}
+
+export interface AdminDestinationProfileRow extends Record<string, unknown> {
+    country_code: string;
+    name: string;
+    slug: string;
+    region: string;
+    source_provider: string;
+    origin_url: string;
+}
+
+export interface AdminDestinationOverrideRow {
+    id: string;
+    target_kind: AdminDestinationTargetKind;
+    target_id: string;
+    status: AdminDestinationOverrideStatus;
+    patch: Record<string, unknown>;
+    note: string | null;
+    updated_at: string;
+    updated_by: string | null;
+}
+
+export interface AdminDestinationCatalogResponse {
+    guides: AdminDestinationGuideRow[];
+    profiles: AdminDestinationProfileRow[];
+    overrides: AdminDestinationOverrideRow[];
+    importRuns: Array<Record<string, unknown>>;
+    referralCount: number;
 }
 
 const normalizeAirportIdentList = (value: unknown): string[] => (
@@ -1256,6 +1303,18 @@ const resolveInternalApiDevMessages = (path: string): { notFound: string; proxyF
             proxyFailure: 'Vite could not reach Netlify dev for admin airport requests (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing airport sync and editing.',
         };
     }
+    if (path.startsWith('/api/internal/admin/destinations')) {
+        return {
+            notFound: 'Admin destination routes are unavailable in Vite-only dev. Run `pnpm dev:netlify` alongside `pnpm dev` to browse and edit destination content.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin destination requests. Start `pnpm dev:netlify` before testing destination editing.',
+        };
+    }
+    if (path.startsWith('/api/internal/admin/recommendations')) {
+        return {
+            notFound: 'Admin recommendation routes are unavailable in Vite-only dev. Run `pnpm dev:netlify` alongside `pnpm dev` to browse and edit the idea library.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin recommendation requests. Start `pnpm dev:netlify` before testing the idea library.',
+        };
+    }
     return null;
 };
 
@@ -1703,4 +1762,152 @@ export const adminDeleteAirportCatalogRecords = async (idents: string[]): Promis
         idents,
     });
     return normalizeAirportIdentList(payload.deletedIdents);
+};
+
+const isAdminDestinationGuideRow = (value: unknown): value is AdminDestinationGuideRow => {
+    if (!value || typeof value !== 'object') return false;
+    const row = value as Record<string, unknown>;
+    return typeof row.id === 'string' && typeof row.slug === 'string' && typeof row.name === 'string'
+        && (row.kind === 'country' || row.kind === 'city' || row.kind === 'island')
+        && Boolean(row.payload) && typeof row.payload === 'object' && !Array.isArray(row.payload);
+};
+
+const isAdminDestinationProfileRow = (value: unknown): value is AdminDestinationProfileRow => {
+    if (!value || typeof value !== 'object') return false;
+    const row = value as Record<string, unknown>;
+    return typeof row.country_code === 'string' && typeof row.name === 'string' && typeof row.slug === 'string';
+};
+
+const isAdminDestinationOverrideRow = (value: unknown): value is AdminDestinationOverrideRow => {
+    if (!value || typeof value !== 'object') return false;
+    const row = value as Record<string, unknown>;
+    return typeof row.id === 'string' && typeof row.target_id === 'string'
+        && (row.target_kind === 'guide' || row.target_kind === 'country_profile')
+        && (row.status === 'draft' || row.status === 'published')
+        && Boolean(row.patch) && typeof row.patch === 'object' && !Array.isArray(row.patch);
+};
+
+const normalizeAdminDestinationCatalog = (payload: Record<string, unknown>): AdminDestinationCatalogResponse => ({
+    guides: Array.isArray(payload.guides) ? payload.guides.filter(isAdminDestinationGuideRow) : [],
+    profiles: Array.isArray(payload.profiles) ? payload.profiles.filter(isAdminDestinationProfileRow) : [],
+    overrides: Array.isArray(payload.overrides) ? payload.overrides.filter(isAdminDestinationOverrideRow) : [],
+    importRuns: Array.isArray(payload.importRuns)
+        ? payload.importRuns.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry))
+        : [],
+    referralCount: typeof payload.referralCount === 'number' ? payload.referralCount : 0,
+});
+
+export const adminGetDestinationCatalog = async (): Promise<AdminDestinationCatalogResponse> => {
+    const payload = await callAdminInternalApiGet<Record<string, unknown>>('/api/internal/admin/destinations');
+    return normalizeAdminDestinationCatalog(payload);
+};
+
+export const adminSaveDestinationOverride = async (input: {
+    targetKind: AdminDestinationTargetKind;
+    targetId: string;
+    status: AdminDestinationOverrideStatus;
+    patch: Record<string, unknown>;
+    note?: string | null;
+}): Promise<AdminDestinationOverrideRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/destinations', {
+        action: 'saveOverride',
+        ...input,
+    });
+    if (!isAdminDestinationOverrideRow(payload.override)) throw new Error('Destination override response was invalid.');
+    return payload.override;
+};
+
+export const adminDeleteDestinationOverride = async (
+    targetKind: AdminDestinationTargetKind,
+    targetId: string,
+): Promise<void> => {
+    await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/destinations', {
+        action: 'deleteOverride',
+        targetKind,
+        targetId,
+    });
+};
+
+
+// ---------------------------------------------------------------------------
+// Recommendations library
+// ---------------------------------------------------------------------------
+
+/**
+ * A row exactly as the table stores it, plus the timestamps the list sorts by.
+ * The admin edits rows rather than the app's camelCase shape, so that what is
+ * saved is visibly the same thing that is stored.
+ */
+export interface AdminRecommendationRow extends RecommendationRow {
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
+export interface AdminRecommendationCatalog {
+    rows: AdminRecommendationRow[];
+    countries: string[];
+}
+
+export const adminGetRecommendationCatalog = async (
+    countryCode?: string,
+): Promise<AdminRecommendationCatalog> => {
+    const query = countryCode ? `?country=${encodeURIComponent(countryCode)}` : '';
+    const payload = await callAdminInternalApiGet<Record<string, unknown>>(
+        `/api/internal/admin/recommendations${query}`,
+    );
+    return {
+        rows: Array.isArray(payload.rows) ? payload.rows as AdminRecommendationRow[] : [],
+        countries: Array.isArray(payload.countries) ? payload.countries as string[] : [],
+    };
+};
+
+export const adminSaveRecommendation = async (
+    recommendation: Record<string, unknown>,
+): Promise<AdminRecommendationRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'save',
+        recommendation,
+    });
+    if (!payload.recommendation || typeof payload.recommendation !== 'object') {
+        throw new Error('The saved recommendation was not returned.');
+    }
+    return payload.recommendation as AdminRecommendationRow;
+};
+
+export const adminSetRecommendationStatus = async (
+    id: string,
+    status: RecommendationStatus,
+): Promise<AdminRecommendationRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'setStatus',
+        id,
+        status,
+    });
+    if (!payload.recommendation || typeof payload.recommendation !== 'object') {
+        throw new Error('The updated recommendation was not returned.');
+    }
+    return payload.recommendation as AdminRecommendationRow;
+};
+
+export const adminDeleteRecommendation = async (id: string): Promise<void> => {
+    await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'delete',
+        id,
+    });
+};
+
+/** Seeds a country from the bundled dataset, in chunks the gateway accepts. */
+export const adminImportRecommendations = async (
+    recommendations: Record<string, unknown>[],
+): Promise<number> => {
+    let imported = 0;
+    const CHUNK = 200;
+    for (let index = 0; index < recommendations.length; index += CHUNK) {
+        const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+            action: 'import',
+            recommendations: recommendations.slice(index, index + CHUNK),
+        });
+        imported += typeof payload.imported === 'number' ? payload.imported : 0;
+    }
+    return imported;
 };

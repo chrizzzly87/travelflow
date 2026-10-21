@@ -9,6 +9,8 @@
     "createTrip": "Créer un voyage",
     "myTrips": "Mes voyages",
     "openMenu": "Ouvrir le menu",
+    "themeToDark": "Passer en mode sombre",
+    "themeToLight": "Passer en mode clair",
     "admin": "Admin",
     "logout": "Se déconnecter"
   },
@@ -192,80 +194,80 @@
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect.",
-        "browserTitle": "You are offline. Changes stay local.",
-        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
-        "serviceTitle": "Cloud sync is temporarily unavailable.",
-        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+        "title": "Tu es hors ligne. Les modifications sont mises en file d'attente.",
+        "messageNone": "Le planificateur reste utilisable avec les données enregistrées.",
+        "messageOne": "{count} modification est en attente et sera synchronisée dès le retour de la connexion.",
+        "messageMany": "{count} modifications sont en attente et seront synchronisées dès le retour de la connexion.",
+        "browserTitle": "Tu es hors ligne. Les modifications restent sur cet appareil.",
+        "browserMessage": "La synchronisation cloud reprendra dès que tu seras reconnecté. On réessaie automatiquement.",
+        "serviceTitle": "La synchronisation cloud est momentanément indisponible.",
+        "serviceMessage": "Ta connexion fonctionne, mais le service de synchronisation ne répond pas. Tes modifications restent en attente, à l'abri."
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
-        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+        "title": "La connexion est instable. On enregistre en mode sécurisé.",
+        "messageNone": "Le planificateur reste utilisable pendant qu'on réessaie en arrière-plan.",
+        "messageOne": "{count} modification sera synchronisée dès que la connexion se stabilise.",
+        "messageMany": "{count} modifications seront synchronisées dès que la connexion se stabilise.",
+        "serviceMessage": "La synchronisation cloud est instable en ce moment. On continue de réessayer en arrière-plan."
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "Synchronisation en cours",
+        "messageOne": "{count} modification attend d'être synchronisée.",
+        "messageMany": "{count} modifications attendent d'être synchronisées.",
+        "progressOne": "Synchronisation de {count} modification en attente…",
+        "progressMany": "Synchronisation de {count} modifications en attente…"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "La simulation de panne de connexion est active en mode débogage.",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "Relancer la synchronisation",
+        "dismiss": "Masquer le message de connexion",
         "contact": "Contact",
-        "email": "Email support"
+        "email": "Écrire au support"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "On réessaie de se connecter toutes les 30 s tant que cet onglet reste ouvert."
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
-        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
-        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+        "messageNone": "Mode hors ligne activé. Les données du voyage viennent du cache local.",
+        "messageOne": "Mode hors ligne activé. {count} modification est en attente de synchronisation.",
+        "messageMany": "Mode hors ligne activé. {count} modifications sont en attente de synchronisation.",
+        "browser": "Mode hors ligne activé. Tes dernières modifications sont enregistrées sur cet appareil jusqu'au retour de la connexion.",
+        "service": "La synchronisation cloud est indisponible pour le moment. Tes dernières modifications sont en attente, à l'abri."
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
-        "service": "Connection is degraded. We are retrying queued edits in the background."
+        "messageNone": "La connexion est faible. On protège tes modifications avec la file d'attente locale.",
+        "messageOne": "La connexion est faible. {count} modification est en attente de renvoi.",
+        "messageMany": "La connexion est faible. {count} modifications sont en attente de renvoi.",
+        "service": "La connexion est faible. On renvoie les modifications en attente en arrière-plan."
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(forcé depuis le débogueur)",
+      "retry": "Relancer la synchronisation",
+      "serverBackup": "Une version plus récente existait sur le serveur. On l'a sauvegardée avant le renvoi et tu peux la restaurer si besoin.",
+      "restoreServerVersion": "Restaurer la version du serveur",
+      "syncingOne": "Envoi de {count} modification en attente vers le cloud…",
+      "syncingMany": "Envoi de {count} modifications en attente vers le cloud…",
+      "pendingOne": "{count} modification attend d'être renvoyée.",
+      "pendingMany": "{count} modifications attendent d'être renvoyées."
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "État de la synchronisation",
+      "syncCompleted": "Les modifications en attente de ce voyage sont synchronisées.",
+      "serverBackupRestored": "La sauvegarde serveur de ce voyage est restaurée.",
       "conflictPreserved": "Le serveur contenait des modifications plus récentes pour ce voyage. Votre version hors ligne a été conservée comme sauvegarde.",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "Connexion rétablie. Envoi de {count} modification en attente.",
+      "syncStartedMany": "Connexion rétablie. Envoi de {count} modifications en attente.",
+      "syncPartialFailureOne": "{count} modification n'est toujours pas passée. Tu peux réessayer.",
+      "syncPartialFailureMany": "{count} modifications ne sont toujours pas passées. Tu peux réessayer."
     },
     "globalBadge": {
-      "offline": "Offline",
-      "syncing": "Syncing...",
-      "online": "Online",
+      "offline": "Hors ligne",
+      "syncing": "Synchronisation…",
+      "online": "En ligne",
       "details": {
-        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
-        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
-        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
-        "online": "Connection is healthy and sync is up to date."
+        "offlineBrowser": "Tu es hors ligne. Tes modifications restent sur cet appareil et partiront dès que la connexion revient.",
+        "offlineService": "Ta connexion fonctionne, mais la synchronisation cloud est indisponible. On continue de réessayer.",
+        "syncingQueue": "Envoi des modifications en attente. Il en reste : {count}.",
+        "online": "La connexion est bonne et tout est synchronisé."
       }
     }
   },
@@ -312,52 +314,52 @@
     },
     "generation": {
       "strip": {
-        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
-        "running": "Trip generation is running...",
-        "retry": "Retry generation",
-        "retrying": "Retrying...",
+        "failedDefault": "La création du voyage a échoué. Consulte le diagnostic ou relance avec le modèle par défaut.",
+        "running": "Ton voyage est en cours de création…",
+        "retry": "Relancer la création",
+        "retrying": "Nouvelle tentative…",
         "slow": "Cela prend plus de temps que d'habitude.",
         "abortRetry": "Annuler et réessayer",
         "changeModel": "Changer de modèle"
       },
       "tripInfo": {
-        "title": "AI generation",
-        "provider": "Provider",
-        "model": "Model",
-        "providerModel": "Provider model",
-        "requestId": "Request ID",
-        "runTime": "Run time",
-        "httpStatus": "HTTP status",
-        "started": "Started",
-        "finished": "Finished",
-        "failureKind": "Failure kind",
-        "errorCode": "Error code",
-        "errorMessage": "Error message",
-        "generatedAt": "Generated at",
-        "recentAttempts": "Recent attempts",
-        "modelFallback": "Model n/a",
-        "retry": "Retry generation with default model",
-        "retrying": "Retrying with default model...",
+        "title": "Génération par IA",
+        "provider": "Fournisseur",
+        "model": "Modèle",
+        "providerModel": "Modèle du fournisseur",
+        "requestId": "ID de requête",
+        "runTime": "Durée",
+        "httpStatus": "Statut HTTP",
+        "started": "Début",
+        "finished": "Fin",
+        "failureKind": "Type d'échec",
+        "errorCode": "Code d'erreur",
+        "errorMessage": "Message d'erreur",
+        "generatedAt": "Créé le",
+        "recentAttempts": "Tentatives récentes",
+        "modelFallback": "Modèle n. d.",
+        "retry": "Relancer avec le modèle par défaut",
+        "retrying": "Nouvelle tentative avec le modèle par défaut…",
         "state": {
-          "failed": "failed",
-          "running": "running",
-          "queued": "queued",
-          "succeeded": "succeeded"
+          "failed": "échec",
+          "running": "en cours",
+          "queued": "en attente",
+          "succeeded": "réussi"
         },
         "orchestration": "Mode d'exécution"
       },
       "retry": {
-        "readOnly": "This trip is read-only, so generation retry is unavailable.",
-        "readOnlyTitle": "Retry unavailable",
-        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
-        "missingSnapshotTitle": "Retry unavailable",
-        "queued": "Trip generation retry started and is running in the background.",
-        "queuedTitle": "Retry started",
-        "completed": "Trip generation completed with the default model.",
-        "completedTitle": "Retry completed",
-        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
-        "failedTitle": "Retry failed",
-        "unexpected": "Retry failed unexpectedly."
+        "readOnly": "Ce voyage est en lecture seule, impossible de relancer la création.",
+        "readOnlyTitle": "Relance impossible",
+        "missingSnapshot": "Pour relancer, il nous faut les données de départ enregistrées, et ce voyage n'en a pas.",
+        "missingSnapshotTitle": "Relance impossible",
+        "queued": "La nouvelle tentative tourne maintenant en arrière-plan.",
+        "queuedTitle": "Nouvelle tentative lancée",
+        "completed": "Ton voyage a été créé avec le modèle par défaut.",
+        "completedTitle": "Nouvelle tentative réussie",
+        "failed": "La création a de nouveau échoué. Consulte le diagnostic et réessaie plus tard.",
+        "failedTitle": "Échec de la nouvelle tentative",
+        "unexpected": "La nouvelle tentative a échoué de façon inattendue."
       }
     },
     "pendingAuth": {
@@ -380,131 +382,495 @@
       "description": "Certaines étapes contiennent des précautions pratiques selon votre profil de voyageur."
     },
     "header": {
-      "titleTooltipEditable": "Open trip details and edit the title",
-      "titleTooltipReadonly": "Open trip details",
-      "editTitleCta": "Edit title",
-      "openDetailsCta": "Open details",
-      "trips": "Trips",
-      "tripsTooltip": "Back to your trips",
-      "share": "Share",
-      "shareDisabled": "Activate this trip to share it"
+      "titleTooltipEditable": "Ouvrir les détails du voyage et modifier le titre",
+      "titleTooltipReadonly": "Ouvrir les détails du voyage",
+      "editTitleCta": "Modifier le titre",
+      "openDetailsCta": "Ouvrir les détails",
+      "trips": "Voyages",
+      "tripsTooltip": "Retour à tes voyages",
+      "share": "Partager",
+      "shareDisabled": "Active ce voyage pour pouvoir le partager"
     },
     "zoom": {
-      "fit": "Fit",
-      "fitAria": "Fit timeline to available space",
-      "presetAria": "Set timeline zoom to {value}"
+      "fit": "Ajuster",
+      "fitAria": "Ajuster la frise à l'espace disponible",
+      "presetAria": "Régler le zoom de la frise sur {value}"
     },
     "infoDialog": {
-      "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
-      "close": "Close trip details dialog",
+      "title": "Détails du voyage",
+      "description": "Modifie les infos clés, consulte l'historique, exporte le voyage et vérifie le contexte de la destination.",
+      "close": "Fermer les détails du voyage",
       "tabs": {
-        "general": "General",
-        "history": "History",
-        "export": "Export",
+        "general": "Général",
+        "history": "Historique",
+        "export": "Exporter",
+        "importExport": "Import et export",
         "destination": "Destination",
-        "debug": "Debug"
+        "debug": "Débogage"
       },
       "general": {
-        "titleLabel": "Trip title",
+        "titleLabel": "Titre du voyage",
         "editAction": "Modifier le titre",
         "saveAction": "Enregistrer le titre",
-        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
-        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
-        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
-        "favoriteAdd": "Add to favorites",
-        "favoriteRemove": "Remove from favorites",
-        "favoriteOn": "Favorite",
-        "favoriteOff": "Favorite",
-        "retryInProgress": "Retry is already in progress.",
-        "openBenchmark": "Open in AI Benchmark",
+        "editHint": "Clique sur le titre pour renommer le voyage, ou ajuste ici l'essentiel.",
+        "readOnlyHintExample": "Les voyages d'exemple restent en lecture seule. Copie d'abord le voyage si tu veux le renommer ou l'ajouter aux favoris.",
+        "readOnlyHintShared": "Ce voyage partagé est en lecture seule. Tu peux consulter les détails, mais pas les modifier.",
+        "favoriteAdd": "Ajouter aux favoris",
+        "favoriteRemove": "Retirer des favoris",
+        "favoriteOn": "Favori",
+        "favoriteOff": "Favori",
+        "retryInProgress": "Une tentative est déjà en cours.",
+        "openBenchmark": "Ouvrir dans AI Benchmark",
         "sections": {
-          "meta": "Trip meta",
-          "source": "Trip source"
+          "meta": "Infos du voyage",
+          "source": "Origine du voyage"
         },
         "meta": {
-          "duration": "Duration",
-          "totalDays": "Total days",
-          "totalDaysValue": "{count} days",
+          "duration": "Durée",
+          "totalDays": "Nombre de jours",
+          "totalDaysValue": "{count} jours",
           "tripSpan": "Jours et nuits",
           "tripSpanValue": "{days} jours / {nights} nuits",
-          "cities": "Cities",
-          "totalDistance": "Total distance",
-          "owner": "Owner",
-          "access": "Access"
+          "cities": "Villes",
+          "totalDistance": "Distance totale",
+          "owner": "Propriétaire",
+          "access": "Accès"
         },
-        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
-        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
-        "viewSource": "View source"
+        "sourceSharedDescription": "Cet itinéraire a été copié depuis un voyage partagé.",
+        "sourceTripDescription": "Cet itinéraire a été copié depuis un autre voyage de ton espace.",
+        "viewSource": "Voir l'original"
       },
       "history": {
-        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
-        "undo": "Undo",
-        "redo": "Redo",
-        "showAll": "Show all",
-        "showRecent": "Show recent",
-        "empty": "No history entries yet.",
-        "current": "Current",
-        "notSynced": "Not synced",
-        "go": "Go",
-        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
-        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
-        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
-        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+        "example": "Les voyages d'exemple n'enregistrent pas d'historique. Copie d'abord ce voyage si tu veux garder tes modifications et y revenir.",
+        "undo": "Annuler",
+        "redo": "Rétablir",
+        "showAll": "Tout afficher",
+        "showRecent": "Afficher les récentes",
+        "empty": "Pas encore d'entrée dans l'historique.",
+        "current": "Actuel",
+        "notSynced": "Non synchronisé",
+        "go": "Aller",
+        "pendingSyncOne": "1 modification récente est enregistrée sur cet appareil et pas encore synchronisée.",
+        "pendingSyncMany": "{count} modifications récentes sont enregistrées sur cet appareil et pas encore synchronisées.",
+        "failedSyncOne": "1 modification en attente n'est toujours pas synchronisée. Relance la synchronisation pour la publier.",
+        "failedSyncMany": "{count} modifications en attente ne sont toujours pas synchronisées. Relance la synchronisation pour les publier."
       },
       "export": {
         "activities": {
-          "title": "Activities calendar",
-          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
-          "action": "Export activities (.ics)"
+          "title": "Calendrier des activités",
+          "description": "Exporte les activités prévues dans un fichier .ics à glisser dans ton agenda.",
+          "action": "Exporter les activités (.ics)"
         },
         "cities": {
-          "title": "Cities calendar",
-          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
-          "action": "Export cities (.ics)"
+          "title": "Calendrier des villes",
+          "description": "Crée une trame de voyage plus épurée, avec seulement les arrivées et les séjours.",
+          "action": "Exporter les villes (.ics)"
         },
         "everything": {
-          "title": "Complete calendar bundle",
-          "description": "Download one calendar file with cities, transfers, and activities together.",
-          "action": "Download everything (.ics)"
+          "title": "Calendrier complet",
+          "description": "Télécharge un seul fichier d'agenda avec les villes, les trajets et les activités.",
+          "action": "Tout télécharger (.ics)"
         },
         "print": {
-          "title": "Print layout",
-          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
-          "action": "Open print layout"
+          "title": "Version imprimable",
+          "description": "Ouvre une version imprimable de ce voyage, pratique en PDF ou sur papier.",
+          "action": "Ouvrir la version imprimable"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Itinéraire",
+          "stops": "Étapes",
+          "activities": "Activités",
+          "dayTrips": "Excursions d'une journée",
+          "ideas": "Idées"
+        },
+        "export": {
+          "title": "Télécharger pour Google My Maps",
+          "description": "Enregistrez vos étapes, votre itinéraire, vos activités et vos idées dans un fichier KML. Dans My Maps, créez une carte et choisissez Importer.",
+          "action": "Télécharger le .kml",
+          "skipped_one": "{count} lieu sans position sur la carte a été ignoré.",
+          "skipped_many": "{count} lieux sans position sur la carte ont été ignorés.",
+          "skipped_other": "{count} lieux sans position sur la carte ont été ignorés."
+        },
+        "import": {
+          "title": "Importer depuis Google My Maps",
+          "description": "Collez le lien d'une carte partagée avec « Tous les utilisateurs disposant du lien ». Ses repères rejoignent les idées de ce voyage, prêts à être placés sur un jour.",
+          "linkLabel": "Lien Google My Maps",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Charger la carte",
+          "loading": "Chargement…",
+          "upload": "Importer un fichier KML ou KMZ"
+        },
+        "preview": {
+          "untitled": "Carte sans titre",
+          "places_one": "{count} lieu",
+          "places_many": "{count} lieux",
+          "places_other": "{count} lieux",
+          "alreadyKept_one": "{count} figure déjà dans ce voyage",
+          "alreadyKept_many": "{count} figurent déjà dans ce voyage",
+          "alreadyKept_other": "{count} figurent déjà dans ce voyage",
+          "shapes_one": "{count} ligne ou forme est ignorée",
+          "shapes_many": "{count} lignes ou formes sont ignorées",
+          "shapes_other": "{count} lignes ou formes sont ignorées",
+          "add_one": "Ajouter {count} lieu aux idées",
+          "add_many": "Ajouter {count} lieux aux idées",
+          "add_other": "Ajouter {count} lieux aux idées",
+          "nothingNew": "Tout ce qui figure sur cette carte est déjà dans ce voyage.",
+          "cancel": "Annuler"
+        },
+        "progress": "Recherche des lieux sur la carte… {done} sur {total}",
+        "done": {
+          "added_one": "{count} lieu ajouté à vos idées.",
+          "added_many": "{count} lieux ajoutés à vos idées.",
+          "added_other": "{count} lieux ajoutés à vos idées.",
+          "unlocated_one": "{count} lieu n'a pas encore été trouvé sur la carte. Vous pourrez le préciser en le planifiant.",
+          "unlocated_many": "{count} lieux n'ont pas encore été trouvés sur la carte. Vous pourrez les préciser en les planifiant.",
+          "unlocated_other": "{count} lieux n'ont pas encore été trouvés sur la carte. Vous pourrez les préciser en les planifiant.",
+          "importAnother": "Importer une autre carte",
+          "onMap": "Elles sont maintenant sur la carte, estompées jusqu'à ce que vous les enregistriez ou les ignoriez."
+        },
+        "openIdeas": "Ouvrir les idées",
+        "errors": {
+          "invalid_link": "Ce n'est pas un lien Google My Maps. Dans My Maps, cliquez sur Partager et copiez le lien : il contient /maps/d/.",
+          "not_shared": "Cette carte n'est pas partagée. Dans My Maps, partagez-la avec « Tous les utilisateurs disposant du lien » ou importez-la en fichier KML.",
+          "network": "Impossible de joindre Google Maps. Vérifiez votre connexion et réessayez.",
+          "not_kml": "Ce fichier n'est pas une carte. Dans My Maps, ouvrez le menu, choisissez Exporter au format KML/KMZ et importez ce fichier.",
+          "empty": "Cette carte n'a aucun repère à importer.",
+          "unsupported_file": "Impossible de lire ce fichier. Importez un fichier .kml ou .kmz issu de My Maps."
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "Les détails de la destination se débloquent une fois ce voyage activé.",
+        "empty": "Aucune information sur la destination n'est encore disponible pour ce voyage.",
+        "futureChecksTitle": "Prochaines vérifications de destination",
+        "futureChecksDescription": "Cet onglet accueillera d'autres conseils sur mesure à mesure que nos données de destination s'étoffent.",
         "futureChecks": {
           "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
+          "entryRules": "Conditions d'entrée",
+          "safety": "Sécurité",
+          "customs": "Douane",
+          "connectivity": "Connectivité",
+          "health": "Santé"
         }
       }
     },
     "claimConflict": {
-      "eyebrow": "Claim unavailable",
-      "title": "This trip draft was already claimed",
-      "descriptionLoggedOut": "Sign in with the original account or start a similar trip with the same setup.",
-      "descriptionLoggedIn": "This draft is already attached to another account. Start a similar trip with the same setup.",
-      "loginCta": "Sign in with the original account",
-      "createSimilarCta": "Create similar trip",
-      "benefitsTitle": "What we kept",
+      "eyebrow": "Récupération impossible",
+      "title": "Ce brouillon de voyage a déjà été récupéré",
+      "descriptionLoggedOut": "Connecte-toi avec le compte d'origine ou lance un voyage similaire avec la même configuration.",
+      "descriptionLoggedIn": "Ce brouillon est déjà rattaché à un autre compte. Lance un voyage similaire avec la même configuration.",
+      "loginCta": "Se connecter avec le compte d'origine",
+      "createSimilarCta": "Créer un voyage similaire",
+      "benefitsTitle": "Ce qu'on a gardé",
       "benefits": {
-        "prefill": "Reuse your traveler setup, dates, and transport choices.",
-        "adjust": "Adjust the draft before starting a fresh generation."
+        "prefill": "Réutilise ton profil de voyageur, tes dates et tes choix de transport.",
+        "adjust": "Ajuste le brouillon avant de relancer une création."
       }
     },
     "addActivity": {
       "aiError": "Impossible de charger des idées d'activités. Réessayez.",
       "aiRetry": "Réessayer"
+    },
+    "mapLinks": {
+      "google": "Google Maps",
+      "apple": "Plans",
+      "heading": "Ouvrir dans les cartes",
+      "approximate": "Position approximative",
+      "openDetails": "Ouvrir les détails",
+      "close": "Fermer",
+      "popupLabel": "Détails de l'activité"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "Les lieux que vous avez prévu de visiter.",
+        "label": "Repères d'activités"
+      },
+      "arrows": {
+        "description": "Montrent le sens du voyage.",
+        "label": "Flèches de direction"
+      },
+      "base": {
+        "description": "Une carte dessinée ou des images satellite.",
+        "label": "Fond",
+        "map": "Carte",
+        "satellite": "Satellite"
+      },
+      "boundaries": {
+        "description": "Les limites à l'intérieur d'un pays, pas seulement entre pays.",
+        "label": "Frontières régionales"
+      },
+      "buildings": {
+        "description": "Bâtiments en relief, plus visibles avec un peu d'inclinaison.",
+        "label": "Bâtiments 3D"
+      },
+      "cityFocus": {
+        "description": "Cadre la ville sur votre propre plan et masque le reste du parcours.",
+        "label": "Cadrer une ville sélectionnée"
+      },
+      "cityNames": {
+        "description": "Nomme chaque étape de votre itinéraire.",
+        "label": "Noms des villes"
+      },
+      "close": "Fermer",
+      "colorMode": {
+        "brand": "Accent unique",
+        "label": "Couleur",
+        "trip": "Couleurs des villes"
+      },
+      "colorTheme": {
+        "default": "Complet",
+        "description": "La quantité de couleur sur la carte.",
+        "faded": "Atténué",
+        "label": "Couleur",
+        "monochrome": "Mono",
+        "satelliteNote": "Les images satellite ont leurs propres couleurs."
+      },
+      "copied": "Copié",
+      "copyPreset": "Copier",
+      "dashed": {
+        "description": "Des tirets plutôt que des traits pleins.",
+        "label": "Traits pointillés"
+      },
+      "description": "Enregistré avec ce voyage au fil de vos réglages.",
+      "dimPast": {
+        "description": "Renvoie à l'arrière-plan les jours déjà passés.",
+        "label": "Estomper les jours passés"
+      },
+      "globe": {
+        "description": "Courbe le monde. Idéal pour un long voyage et une grande carte.",
+        "label": "Vue globe"
+      },
+      "googleOnly": "Disponible avec Google Maps.",
+      "group": {
+        "features": "Éléments",
+        "labels": "Étiquettes",
+        "pins": "Vos repères",
+        "routes": "Tracés d'itinéraire"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "L'app proposée en premier quand vous ouvrez un lieu.",
+        "google": "Google Maps",
+        "label": "Ouvrir les lieux dans"
+      },
+      "light": {
+        "auto": "Automatique",
+        "dawn": "Aube",
+        "day": "Jour",
+        "description": "Le moment de la journée qui éclaire la carte. Automatique suit votre appareil.",
+        "dusk": "Crépuscule",
+        "googleNote": "Google Maps ne propose que jour et nuit.",
+        "label": "Lumière",
+        "night": "Nuit"
+      },
+      "mapboxOnly": "Disponible avec Mapbox.",
+      "mapboxUnavailableHere": "Nécessite Mapbox, qui n'est pas configuré ici.",
+      "paths": {
+        "description": "Chemins et voies piétonnes.",
+        "label": "Chemins piétons"
+      },
+      "pitch": {
+        "description": "Regarder la carte de biais plutôt que d'en haut.",
+        "flat": "À plat",
+        "label": "Inclinaison"
+      },
+      "placeLabels": {
+        "description": "Villes et villages du fond de carte.",
+        "label": "Noms des lieux"
+      },
+      "poiLabels": {
+        "description": "Commerces, monuments et lieux que vous n'avez pas prévus.",
+        "label": "Points d'intérêt"
+      },
+      "preset": {
+        "label": "Préréglages"
+      },
+      "renderer": {
+        "auto": "Automatique",
+        "description": "La carte que l'app affiche.",
+        "google": "Google",
+        "label": "Fournisseur de cartes",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox n'est pas configuré ici, Google est donc utilisé."
+      },
+      "reset": "Réinitialiser",
+      "roadLabels": {
+        "description": "Utiles de près, encombrants de loin.",
+        "label": "Noms des rues"
+      },
+      "roads": {
+        "description": "Désactivez pour une carte épurée qui ne montre que votre voyage.",
+        "label": "Routes et transports"
+      },
+      "routeMode": {
+        "description": "Suivre les routes, ou relier les étapes en ligne droite.",
+        "label": "Forme",
+        "realistic": "Suivre les routes",
+        "simple": "Direct"
+      },
+      "saveAsDefault": "Enregistrer",
+      "saveAsDefaultTooltip": "Enregistrer comme mon préréglage",
+      "saved": "Enregistré",
+      "switchToMapbox": "Passer à Mapbox",
+      "tab": {
+        "camera": "Caméra",
+        "detail": "Détail",
+        "look": "Allure",
+        "trip": "Voyage"
+      },
+      "terrain": {
+        "description": "Fait ressortir collines et montagnes.",
+        "label": "Relief"
+      },
+      "thickness": {
+        "label": "Épaisseur",
+        "normal": "Normale",
+        "thick": "Épaisse",
+        "thin": "Fine"
+      },
+      "title": "Personnaliser la carte",
+      "traffic": {
+        "description": "État actuel des routes.",
+        "label": "Trafic en direct"
+      },
+      "transitLabels": {
+        "description": "Arrêts et gares avec leur nom.",
+        "label": "Noms des stations"
+      },
+      "transitLines": {
+        "description": "Lignes de métro et de train sur la carte.",
+        "label": "Lignes de transport"
+      },
+      "style": {
+        "standard": "Standard",
+        "minimal": "Minimal",
+        "clean": "Épuré",
+        "dark": "Sombre",
+        "cleanDark": "Épuré sombre",
+        "satellite": "Satellite"
+      },
+      "showWholeJourney": "Voir tout le parcours",
+      "open": "Personnaliser la carte",
+      "presetSet": {
+        "label": "Partir de",
+        "default": "Défaut",
+        "detailed": "Détaillé",
+        "minimalistic": "Minimal",
+        "mine": "Le mien",
+        "customNote": "Votre propre combinaison de réglages."
+      },
+      "myLocation": {
+        "blocked": "L’accès à la position est bloqué dans les réglages du navigateur.",
+        "description": "Affiche où tu te trouves pendant ton voyage. Enregistré uniquement sur cet appareil.",
+        "label": "Ma position"
+      }
+    },
+    "activityPlan": {
+      "dialogTitle": "Ajouter au programme",
+      "sectionLabel": "Séjour et jour",
+      "kindLabel": "Que voulez-vous ajouter ?",
+      "kindActivity": "Activité",
+      "kindDayTrip": "Excursion d’une journée",
+      "stayLabel": "Séjour",
+      "stayPlaceholder": "Choisir un séjour",
+      "dayLabel": "Jour",
+      "dayOption": "Jour {day} · {date}",
+      "dayOptionShort": "Jour {day}",
+      "destinationLabel": "Destination",
+      "destinationPlaceholder": "ex. Sintra",
+      "routeHint": "Part de {stay} et y revient le jour même.",
+      "routeHintOther": "Part de {stay} et termine la journée à {returnStay}.",
+      "moreOptions": "Plus d’options",
+      "returnLabel": "La journée se termine à",
+      "returnSame": "{stay} (retour au même séjour)",
+      "dayTripTitlePlaceholder": "ex. Palais de Sintra",
+      "submitDayTrip": "Ajouter l’excursion",
+      "findingPlace": "Recherche du lieu…"
+    },
+    "timelineControls": {
+      "horizontalDirection": "Frise horizontale",
+      "verticalDirection": "Frise verticale",
+      "zoomOut": "Dézoomer la frise",
+      "zoomIn": "Zoomer la frise",
+      "calendarView": "Vue calendrier",
+      "listView": "Vue liste"
+    },
+    "panels": {
+      "resizeDetails": "Redimensionner le panneau de détails",
+      "resizeTimelineAndMap": "Redimensionner la frise et la carte",
+      "resizeTimeline": "Redimensionner la frise"
+    },
+    "mapControls": {
+      "minimizePreview": "Réduire l'aperçu de la carte",
+      "maximizePreview": "Agrandir l'aperçu de la carte",
+      "layoutVertical": "Disposition verticale",
+      "layoutHorizontal": "Disposition horizontale",
+      "fitToItinerary": "Cadrer l'itinéraire",
+      "shrinkMap": "Réduire la carte",
+      "expandMap": "Agrandir la carte",
+      "showLabels": "Afficher les noms des villes",
+      "hideLabels": "Masquer les noms des villes",
+      "showActivityMarkers": "Afficher les repères d'activités",
+      "hideActivityMarkers": "Masquer les repères d'activités",
+      "showMyLocation": "Afficher ma position",
+      "centerOnMyLocation": "Centrer sur ma position",
+      "myLocationLocating": "Recherche de ta position…",
+      "myLocationBlocked": "L’accès à la position est bloqué. Autorise-le dans les réglages du navigateur.",
+      "showIdeaMarkers": "Afficher les idées sur la carte",
+      "hideIdeaMarkers": "Masquer les idées sur la carte"
+    },
+    "floatingMap": {
+      "move": "Déplacer l'aperçu flottant de la carte",
+      "useCompactSize": "Carte flottante compacte",
+      "useExpandedSize": "Carte flottante agrandie",
+      "switchToLandscape": "Passer l'aperçu de la carte en paysage",
+      "switchToPortrait": "Passer l'aperçu de la carte en portrait",
+      "settling": "Placement de l'aperçu de la carte"
+    },
+    "banners": {
+      "shareViewOnly": "Voyage partagé · Lecture seule",
+      "shareEditable": "Voyage partagé · Modification activée",
+      "snapshotOlder": "Vous consultez une ancienne version. Ce voyage a été mis à jour depuis.",
+      "snapshotCurrent": "Vous consultez une version enregistrée de ce voyage partagé.",
+      "openLatest": "Ouvrir la dernière version",
+      "copyTrip": "Copier le voyage"
+    },
+    "exampleBanner": {
+      "eyebrow": "Voyage d'exemple à explorer",
+      "title": "Explorez librement. Copiez-le pour le garder et le modifier.",
+      "body": "Cet itinéraire sert uniquement d'exemple et n'enregistre jamais les modifications.",
+      "countryFocus": "Pays : {countries}.",
+      "dismiss": "Fermer l'avis sur le voyage d'exemple"
+    },
+    "listView": {
+      "openTransfer": "Ouvrir les détails du trajet ({mode})",
+      "taskCompleted": "Tâche terminée",
+      "taskOpen": "Tâche à faire",
+      "days": "Jours",
+      "daysRange": "Jours {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Ajouter une ville à la fin",
+      "addTransfer": "Ajouter un trajet",
+      "transportUndecided": "Transport non défini",
+      "transportMode": "Transport : {mode}",
+      "addActivity": "Ajouter une activité",
+      "occupySpace": "Occuper l'espace disponible",
+      "stretchToFill": "Étirer pour combler l'espace",
+      "reverseSelectedCities": "Inverser les villes sélectionnées"
+    },
+    "ideas": {
+      "keep": "Enregistrer",
+      "skip": "Ignorer",
+      "keepNamed": "Enregistrer {title}",
+      "skipNamed": "Ignorer {title}",
+      "reviewHint": "Importée et pas encore examinée. Enregistrez-la pour l'afficher pleinement sur la carte, ou ignorez-la.",
+      "popupLabel": "Idée : {title}",
+      "statusToReview": "À examiner",
+      "statusSaved": "Enregistrée",
+      "unsave": "Annuler l'enregistrement"
     }
   },
   "tripRouteShell": {
@@ -515,8 +881,44 @@
     "loadingExampleTrip": "Chargement du voyage exemple",
     "preparingExamplePlanner": "Préparation du planificateur exemple"
   },
+  "tripAgent": {
+    "title": "Planifier avec l’IA",
+    "previewBanner": "Aperçu des changements — édition en pause",
+    "revertToast": "Votre voyage est revenu à son état précédent.",
+    "revertToastTitle": "Changement annulé",
+    "redo": "Rétablir"
+  },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",
-    "tripsPrunedDescription": "{count, plural, one {Votre voyage enregistre le plus ancien a ete supprime de cet appareil pour liberer de l'espace.} other {Vos # voyages enregistres les plus anciens ont ete supprimes de cet appareil pour liberer de l'espace.}}"
+    "tripsPrunedDescription_one": "Ton voyage enregistré le plus ancien a été supprimé de cet appareil pour libérer de l'espace.",
+    "tripsPrunedDescription_many": "Tes {count} voyages enregistrés les plus anciens ont été supprimés de cet appareil pour libérer de l'espace.",
+    "tripsPrunedDescription_other": "Tes {count} voyages enregistrés les plus anciens ont été supprimés de cet appareil pour libérer de l'espace."
+  },
+  "trips": {
+    "pageTitle": "Mes voyages",
+    "pageSubtitle": "Tout ce que vous avez planifié. Disponible hors ligne une fois chargé.",
+    "signedOut": {
+      "title": "Vous n'êtes pas connecté",
+      "body": "Connectez-vous pour voir les voyages enregistrés dans votre compte.",
+      "action": "Se connecter"
+    },
+    "list": {
+      "searchLabel": "Rechercher des voyages ou des villes",
+      "searchPlaceholder": "Rechercher des voyages ou des villes...",
+      "empty": "Aucun voyage enregistré pour le moment.",
+      "noMatches": "Aucun résultat pour « {query} ».",
+      "favorites": "Favoris",
+      "yourTrips": "Vos voyages"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Gardez vos voyages à portée",
+      "body": "Ajoutez TravelFlow à votre écran d'accueil : vos voyages s'ouvrent même sans réseau.",
+      "action": "Installer",
+      "dismiss": "Plus tard",
+      "iosStepShare": "Touchez Partager",
+      "iosStepAdd": "puis « Sur l'écran d'accueil »"
+    }
   }
 }

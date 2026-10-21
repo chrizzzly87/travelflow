@@ -8,15 +8,16 @@
 - Read `docs/UX_COPY_GUIDELINES.md` before editing marketing/planner copy or CTA text.
 - Read `docs/ANALYTICS_CONVENTION.md` before adding/updating analytics events.
 - For manual Netlify CLI previews, use the env-safe deploy command documented in `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md` (`dotenv-cli`), not shell `source`.
-- Use ICU placeholder syntax in locale strings (`{name}`), never legacy `{{name}}` placeholders.
+- Use ICU placeholder syntax in locale strings (`{name}`), never legacy `{{name}}` placeholders. ICU plural/select blocks are inert: `i18next-icu` is not registered in `i18n.ts`.
 - For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and explicitly decide namespace placement (`common/pages/legal` vs route/feature namespace).
+- Read `docs/AI_AGENT_FEATURE_GUARDRAILS.md` before touching model calls, streaming responses, or storage of model output.
 - Keep code changes aligned with existing architecture and route stability.
 - Any completed feature/fix must be reflected in `content/updates/*.md`.
 - For new components, check whether logical CSS properties should be used for direction safety; if unclear, ask for clarification.
 - For user-facing copy edits, ask the user for EN/DE style sign-off unless they explicitly opt out.
 - Release notes in `content/updates/*.md` are always written in English and do not require EN/DE translation prompts or style sign-off unless explicitly requested.
 - For clickable marketing/planner UI updates, add `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` in the standard format unless explicitly excluded.
-- For locale changes, run `pnpm i18n:validate` to enforce locale namespace parity and ICU placeholder syntax.
+- For locale changes, run `pnpm i18n:validate` to enforce locale namespace parity and single-brace placeholder syntax.
 - For behavioral code changes (business logic/service flow/data transforms), add or update Vitest coverage in the same PR.
 - For bug fixes, add a regression test that fails before the fix and passes after.
 - Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.

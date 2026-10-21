@@ -14,16 +14,19 @@ const AdminAiWorkerHealthPage = lazyWithRecovery('AdminAiWorkerHealthPage', () =
 const AdminUsersPage = lazyWithRecovery('AdminUsersPage', () => import('./AdminUsersPage').then((module) => ({ default: module.AdminUsersPage })));
 const AdminTripsPage = lazyWithRecovery('AdminTripsPage', () => import('./AdminTripsPage').then((module) => ({ default: module.AdminTripsPage })));
 const AdminAirportsPage = lazyWithRecovery('AdminAirportsPage', () => import('./AdminAirportsPage').then((module) => ({ default: module.AdminAirportsPage })));
+const AdminDestinationsPage = lazyWithRecovery('AdminDestinationsPage', () => import('./AdminDestinationsPage').then((module) => ({ default: module.AdminDestinationsPage })));
+const AdminRecommendationsPage = lazyWithRecovery('AdminRecommendationsPage', () => import('./AdminRecommendationsPage').then((module) => ({ default: module.AdminRecommendationsPage })));
 const AdminTiersPage = lazyWithRecovery('AdminTiersPage', () => import('./AdminTiersPage').then((module) => ({ default: module.AdminTiersPage })));
 const AdminBillingPage = lazyWithRecovery('AdminBillingPage', () => import('./AdminBillingPage').then((module) => ({ default: module.AdminBillingPage })));
 const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./AdminAuditPage').then((module) => ({ default: module.AdminAuditPage })));
 const AdminOgToolsPage = lazyWithRecovery('AdminOgToolsPage', () => import('./AdminOgToolsPage').then((module) => ({ default: module.AdminOgToolsPage })));
 const AdminDesignSystemPlaygroundPage = lazyWithRecovery('AdminDesignSystemPlaygroundPage', () => import('./AdminDesignSystemPlaygroundPage').then((module) => ({ default: module.AdminDesignSystemPlaygroundPage })));
 const AdminComponentPlaygroundPage = lazyWithRecovery('AdminComponentPlaygroundPage', () => import('./AdminComponentPlaygroundPage').then((module) => ({ default: module.AdminComponentPlaygroundPage })));
+const AdminGlobalSettingsPage = lazyWithRecovery('AdminGlobalSettingsPage', () => import('./AdminGlobalSettingsPage').then((module) => ({ default: module.AdminGlobalSettingsPage })));
 const AdminLegalTermsPage = lazyWithRecovery('AdminLegalTermsPage', () => import('./AdminLegalTermsPage').then((module) => ({ default: module.AdminLegalTermsPage })));
 
 const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+    <div className="min-h-[42vh] w-full bg-secondary" aria-hidden="true" />
 );
 
 export const AdminWorkspaceRouter: React.FC = () => (
@@ -34,10 +37,13 @@ export const AdminWorkspaceRouter: React.FC = () => (
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="trips" element={<AdminTripsPage />} />
             <Route path="airports" element={<AdminAirportsPage />} />
+            <Route path="destinations" element={<AdminDestinationsPage />} />
+            <Route path="recommendations" element={<AdminRecommendationsPage />} />
             <Route path="tiers" element={<AdminTiersPage />} />
             <Route path="billing" element={<AdminBillingPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
             <Route path="legal" element={<AdminLegalTermsPage />} />
+            <Route path="settings" element={<AdminGlobalSettingsPage />} />
             <Route path="ai-benchmark" element={<AdminAiBenchmarkPage />} />
             <Route path="ai-benchmark/telemetry" element={<AdminAiTelemetryPage />} />
             <Route path="ai-benchmark/worker-health" element={<AdminAiWorkerHealthPage />} />

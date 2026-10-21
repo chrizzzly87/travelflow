@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { ItineraryMap } from '../../components/ItineraryMap';
 import { useGoogleMaps, useMapRuntime } from '../../components/GoogleMapsLoader';
+import { loadEnglishCommonTranslations } from '../helpers/i18n';
 
 vi.mock('../../components/GoogleMapsLoader', () => ({
   useGoogleMaps: vi.fn(),
@@ -15,6 +16,8 @@ const mockedUseGoogleMaps = vi.mocked(useGoogleMaps);
 const mockedUseMapRuntime = vi.mocked(useMapRuntime);
 
 describe('components/ItineraryMap map controls availability', () => {
+  beforeAll(loadEnglishCommonTranslations);
+
   beforeEach(() => {
     mockedUseGoogleMaps.mockReset();
     mockedUseMapRuntime.mockReset();
@@ -46,6 +49,7 @@ describe('components/ItineraryMap map controls availability', () => {
         layoutMode: 'horizontal',
         onLayoutChange,
         onStyleChange: vi.fn(),
+        onOpenCustomize: vi.fn(),
       }),
     );
 
@@ -54,10 +58,11 @@ describe('components/ItineraryMap map controls availability', () => {
     expect(screen.getByLabelText('Horizontal layout')).toBeInTheDocument();
 
     const fitButton = screen.getByLabelText('Fit to itinerary');
-    const styleButton = screen.getByLabelText('Map style');
-    const activityToggleButton = screen.getByLabelText('Show activity markers');
+    const customizeButton = screen.getByLabelText('Customize map');
+    // Activity markers default to on, so the toggle offers to hide them.
+    const activityToggleButton = screen.getByLabelText('Hide activity markers');
     expect(fitButton).toBeDisabled();
-    expect(styleButton).toBeDisabled();
+    expect(customizeButton).toBeDisabled();
     expect(activityToggleButton).toBeDisabled();
 
     fireEvent.click(screen.getByLabelText('Vertical layout'));
@@ -73,6 +78,7 @@ describe('components/ItineraryMap map controls availability', () => {
         layoutMode: 'vertical',
         onLayoutChange: vi.fn(),
         onStyleChange: vi.fn(),
+        onOpenCustomize: vi.fn(),
       }),
     );
 
@@ -80,7 +86,7 @@ describe('components/ItineraryMap map controls availability', () => {
     expect(screen.getByLabelText('Vertical layout')).toBeInTheDocument();
     expect(screen.getByLabelText('Horizontal layout')).toBeInTheDocument();
     expect(screen.getByLabelText('Fit to itinerary')).toBeDisabled();
-    expect(screen.getByLabelText('Map style')).toBeDisabled();
-    expect(screen.getByLabelText('Show activity markers')).toBeDisabled();
+    expect(screen.getByLabelText('Customize map')).toBeDisabled();
+    expect(screen.getByLabelText('Hide activity markers')).toBeDisabled();
   });
 });

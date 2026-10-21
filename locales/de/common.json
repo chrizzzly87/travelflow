@@ -9,6 +9,8 @@
     "createTrip": "Reise erstellen",
     "myTrips": "Meine Reisen",
     "openMenu": "Menü öffnen",
+    "themeToDark": "Zu dunklem Design wechseln",
+    "themeToLight": "Zu hellem Design wechseln",
     "admin": "Admin",
     "logout": "Abmelden"
   },
@@ -192,80 +194,80 @@
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect.",
-        "browserTitle": "You are offline. Changes stay local.",
-        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
-        "serviceTitle": "Cloud sync is temporarily unavailable.",
-        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+        "title": "Du bist offline. Änderungen werden zwischengespeichert.",
+        "messageNone": "Der Planer läuft weiter mit den gespeicherten Daten.",
+        "messageOne": "{count} Änderung liegt bereit und wird synchronisiert, sobald du wieder online bist.",
+        "messageMany": "{count} Änderungen liegen bereit und werden synchronisiert, sobald du wieder online bist.",
+        "browserTitle": "Du bist offline. Änderungen bleiben auf diesem Gerät.",
+        "browserMessage": "Sobald du wieder online bist, läuft die Cloud-Synchronisierung weiter. Wir versuchen es automatisch.",
+        "serviceTitle": "Die Cloud-Synchronisierung ist vorübergehend nicht erreichbar.",
+        "serviceMessage": "Dein Internet läuft, nur der Sync-Dienst antwortet gerade nicht. Deine Änderungen bleiben sicher gespeichert."
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
-        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+        "title": "Die Verbindung ist instabil. Wir speichern im Sicherheitsmodus.",
+        "messageNone": "Der Planer läuft weiter, während wir es im Hintergrund erneut versuchen.",
+        "messageOne": "{count} Änderung wird synchronisiert, sobald die Verbindung wieder stabil ist.",
+        "messageMany": "{count} Änderungen werden synchronisiert, sobald die Verbindung wieder stabil ist.",
+        "serviceMessage": "Die Cloud-Synchronisierung ist gerade wackelig. Wir versuchen es im Hintergrund weiter."
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "Synchronisierung läuft",
+        "messageOne": "{count} Änderung wartet auf die Synchronisierung.",
+        "messageMany": "{count} Änderungen warten auf die Synchronisierung.",
+        "progressOne": "{count} Änderung wird synchronisiert …",
+        "progressMany": "{count} Änderungen werden synchronisiert …"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "Die simulierte Verbindungsstörung ist im Debugger-Modus aktiv.",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "Synchronisierung erneut versuchen",
+        "dismiss": "Verbindungshinweis ausblenden",
         "contact": "Kontakt",
-        "email": "Email support"
+        "email": "Support per E-Mail"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "Wir versuchen alle 30 Sekunden erneut zu verbinden, solange dieser Tab offen bleibt."
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
-        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
-        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+        "messageNone": "Offline-Modus aktiv. Die Reisedaten kommen aus dem lokalen Speicher.",
+        "messageOne": "Offline-Modus aktiv. {count} Änderung wartet auf die Synchronisierung.",
+        "messageMany": "Offline-Modus aktiv. {count} Änderungen warten auf die Synchronisierung.",
+        "browser": "Offline-Modus aktiv. Deine letzten Bearbeitungen bleiben lokal gespeichert, bis du wieder online bist.",
+        "service": "Die Cloud-Synchronisierung ist gerade nicht erreichbar. Deine letzten Bearbeitungen liegen sicher bereit."
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
-        "service": "Connection is degraded. We are retrying queued edits in the background."
+        "messageNone": "Die Verbindung ist schwach. Deine Bearbeitungen sichern wir solange lokal.",
+        "messageOne": "Die Verbindung ist schwach. {count} Änderung wartet auf die Übertragung.",
+        "messageMany": "Die Verbindung ist schwach. {count} Änderungen warten auf die Übertragung.",
+        "service": "Die Verbindung ist schwach. Wir übertragen die offenen Bearbeitungen im Hintergrund."
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(über den Debugger erzwungen)",
+      "retry": "Synchronisierung erneut versuchen",
+      "serverBackup": "Auf dem Server lag eine neuere Version. Wir haben sie vor der Übertragung gesichert und du kannst sie bei Bedarf zurückholen.",
+      "restoreServerVersion": "Serverversion wiederherstellen",
+      "syncingOne": "{count} Änderung wird in die Cloud übertragen …",
+      "syncingMany": "{count} Änderungen werden in die Cloud übertragen …",
+      "pendingOne": "{count} Änderung wartet auf die Übertragung.",
+      "pendingMany": "{count} Änderungen warten auf die Übertragung."
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "Synchronisierung",
+      "syncCompleted": "Deine offenen Änderungen an der Reise sind synchronisiert.",
+      "serverBackupRestored": "Die gesicherte Serverversion dieser Reise ist wiederhergestellt.",
       "conflictPreserved": "Der Server hatte neuere Änderungen für diese Reise. Deine Offline-Version wurde als Backup behalten.",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "Verbindung steht wieder. {count} Änderung wird jetzt übertragen.",
+      "syncStartedMany": "Verbindung steht wieder. {count} Änderungen werden jetzt übertragen.",
+      "syncPartialFailureOne": "{count} Änderung konnte weiterhin nicht übertragen werden. Du kannst es erneut versuchen.",
+      "syncPartialFailureMany": "{count} Änderungen konnten weiterhin nicht übertragen werden. Du kannst es erneut versuchen."
     },
     "globalBadge": {
       "offline": "Offline",
-      "syncing": "Syncing...",
+      "syncing": "Synchronisierung …",
       "online": "Online",
       "details": {
-        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
-        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
-        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
-        "online": "Connection is healthy and sync is up to date."
+        "offlineBrowser": "Du bist offline. Deine Bearbeitungen bleiben auf diesem Gerät und werden übertragen, sobald du wieder online bist.",
+        "offlineService": "Dein Internet läuft, aber die Cloud-Synchronisierung ist nicht erreichbar. Wir versuchen es weiter.",
+        "syncingQueue": "Deine Bearbeitungen werden gerade übertragen. Noch offen: {count}.",
+        "online": "Die Verbindung steht und alles ist synchronisiert."
       }
     }
   },
@@ -312,32 +314,32 @@
     },
     "generation": {
       "strip": {
-        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
-        "running": "Trip generation is running...",
-        "retry": "Retry generation",
-        "retrying": "Retrying...",
+        "failedDefault": "Die Reiseplanung ist fehlgeschlagen. Sieh dir die Diagnose an oder starte einen neuen Versuch mit dem Standardmodell.",
+        "running": "Deine Reise wird erstellt …",
+        "retry": "Erneut erstellen",
+        "retrying": "Neuer Versuch läuft …",
         "slow": "Es dauert länger als gewöhnlich.",
         "abortRetry": "Abbrechen & erneut versuchen",
         "changeModel": "Modell ändern"
       },
       "tripInfo": {
-        "title": "AI generation",
-        "provider": "Provider",
-        "model": "Model",
-        "providerModel": "Provider model",
-        "requestId": "Request ID",
-        "runTime": "Run time",
-        "httpStatus": "HTTP status",
-        "started": "Started",
-        "finished": "Finished",
-        "failureKind": "Failure kind",
-        "errorCode": "Error code",
-        "errorMessage": "Error message",
-        "generatedAt": "Generated at",
-        "recentAttempts": "Recent attempts",
-        "modelFallback": "Model n/a",
-        "retry": "Retry generation with default model",
-        "retrying": "Retrying with default model...",
+        "title": "KI-Generierung",
+        "provider": "Anbieter",
+        "model": "Modell",
+        "providerModel": "Anbietermodell",
+        "requestId": "Anfrage-ID",
+        "runTime": "Laufzeit",
+        "httpStatus": "HTTP-Status",
+        "started": "Gestartet",
+        "finished": "Beendet",
+        "failureKind": "Fehlerart",
+        "errorCode": "Fehlercode",
+        "errorMessage": "Fehlermeldung",
+        "generatedAt": "Erstellt am",
+        "recentAttempts": "Letzte Versuche",
+        "modelFallback": "Modell n. v.",
+        "retry": "Mit dem Standardmodell erneut erstellen",
+        "retrying": "Neuer Versuch mit dem Standardmodell …",
         "state": {
           "failed": "fehlgeschlagen",
           "running": "läuft",
@@ -347,17 +349,17 @@
         "orchestration": "Ausführungsmodus"
       },
       "retry": {
-        "readOnly": "This trip is read-only, so generation retry is unavailable.",
-        "readOnlyTitle": "Retry unavailable",
-        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
-        "missingSnapshotTitle": "Retry unavailable",
-        "queued": "Trip generation retry started and is running in the background.",
-        "queuedTitle": "Retry started",
-        "completed": "Trip generation completed with the default model.",
-        "completedTitle": "Retry completed",
-        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
-        "failedTitle": "Retry failed",
-        "unexpected": "Retry failed unexpectedly."
+        "readOnly": "Diese Reise ist schreibgeschützt, ein neuer Versuch ist deshalb nicht möglich.",
+        "readOnlyTitle": "Neuer Versuch nicht möglich",
+        "missingSnapshot": "Für einen neuen Versuch brauchen wir die gespeicherten Ausgangsdaten. Für diese Reise gibt es keine.",
+        "missingSnapshotTitle": "Neuer Versuch nicht möglich",
+        "queued": "Der neue Versuch läuft jetzt im Hintergrund.",
+        "queuedTitle": "Neuer Versuch gestartet",
+        "completed": "Deine Reise wurde mit dem Standardmodell erstellt.",
+        "completedTitle": "Neuer Versuch erfolgreich",
+        "failed": "Die Reiseplanung ist erneut fehlgeschlagen. Sieh dir die Diagnose an und versuch es später noch einmal.",
+        "failedTitle": "Neuer Versuch fehlgeschlagen",
+        "unexpected": "Der neue Versuch ist unerwartet fehlgeschlagen."
       }
     },
     "pendingAuth": {
@@ -384,9 +386,9 @@
       "titleTooltipReadonly": "Trip-Details öffnen",
       "editTitleCta": "Titel bearbeiten",
       "openDetailsCta": "Details öffnen",
-      "trips": "Trips",
+      "trips": "Reisen",
       "tripsTooltip": "Zurück zu deinen Trips",
-      "share": "Share",
+      "share": "Teilen",
       "shareDisabled": "Aktiviere diesen Trip, um ihn zu teilen"
     },
     "zoom": {
@@ -402,6 +404,7 @@
         "general": "Allgemein",
         "history": "Verlauf",
         "export": "Export",
+        "importExport": "Import & Export",
         "destination": "Ziel",
         "debug": "Debug"
       },
@@ -474,6 +477,63 @@
           "action": "Drucklayout öffnen"
         }
       },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Route",
+          "stops": "Stationen",
+          "activities": "Aktivitäten",
+          "dayTrips": "Tagesausflüge",
+          "ideas": "Ideen"
+        },
+        "export": {
+          "title": "Für Google My Maps herunterladen",
+          "description": "Speichere Stationen, Route, Aktivitäten und Ideen als KML-Datei. Erstelle in My Maps eine Karte und wähle „Importieren“.",
+          "action": ".kml herunterladen",
+          "skipped_one": "{count} Ort ohne Kartenposition wurde ausgelassen.",
+          "skipped_other": "{count} Orte ohne Kartenposition wurden ausgelassen."
+        },
+        "import": {
+          "title": "Aus Google My Maps importieren",
+          "description": "Füge den Link einer Karte ein, die für „Jeder mit dem Link“ freigegeben ist. Ihre Pins landen in den Ideen dieser Reise und warten darauf, eingeplant zu werden.",
+          "linkLabel": "Google-My-Maps-Link",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Karte laden",
+          "loading": "Lädt…",
+          "upload": "KML- oder KMZ-Datei hochladen"
+        },
+        "preview": {
+          "untitled": "Karte ohne Titel",
+          "places_one": "{count} Ort",
+          "places_other": "{count} Orte",
+          "alreadyKept_one": "{count} ist schon in dieser Reise",
+          "alreadyKept_other": "{count} sind schon in dieser Reise",
+          "shapes_one": "{count} Linie oder Fläche wird ausgelassen",
+          "shapes_other": "{count} Linien oder Flächen werden ausgelassen",
+          "add_one": "{count} Ort zu den Ideen hinzufügen",
+          "add_other": "{count} Orte zu den Ideen hinzufügen",
+          "nothingNew": "Alles auf dieser Karte ist schon in dieser Reise.",
+          "cancel": "Abbrechen"
+        },
+        "progress": "Orte werden auf der Karte gesucht… {done} von {total}",
+        "done": {
+          "added_one": "{count} Ort zu deinen Ideen hinzugefügt.",
+          "added_other": "{count} Orte zu deinen Ideen hinzugefügt.",
+          "unlocated_one": "{count} Ort wurde noch nicht auf der Karte gefunden. Du kannst ihn beim Einplanen festlegen.",
+          "unlocated_other": "{count} Orte wurden noch nicht auf der Karte gefunden. Du kannst sie beim Einplanen festlegen.",
+          "importAnother": "Weitere Karte importieren",
+          "onMap": "Sie sind jetzt auf der Karte – blass, bis du sie merkst oder überspringst."
+        },
+        "openIdeas": "Ideen öffnen",
+        "errors": {
+          "invalid_link": "Das ist kein Google-My-Maps-Link. Klicke in My Maps auf „Teilen“ und kopiere den Link – er enthält /maps/d/.",
+          "not_shared": "Diese Karte ist nicht freigegeben. Stell die Freigabe in My Maps auf „Jeder mit dem Link“ oder lade die Karte als KML-Datei hoch.",
+          "network": "Google Maps ist gerade nicht erreichbar. Prüf deine Verbindung und versuch es noch einmal.",
+          "not_kml": "Diese Datei ist keine Karte. Wähle in My Maps im Menü „In KML/KMZ exportieren“ und lade diese Datei hoch.",
+          "empty": "Auf dieser Karte gibt es keine Pins zum Importieren.",
+          "unsupported_file": "Diese Datei lässt sich nicht lesen. Lade eine .kml- oder .kmz-Datei aus My Maps hoch."
+        }
+      },
       "destination": {
         "locked": "Zielinformationen werden freigeschaltet, sobald dieser Trip aktiviert ist.",
         "empty": "Für diesen Trip sind noch keine Zielinformationen verfügbar.",
@@ -505,6 +565,305 @@
     "addActivity": {
       "aiError": "Wir konnten keine Aktivitätsideen laden. Bitte versuch es erneut.",
       "aiRetry": "Erneut versuchen"
+    },
+    "mapLinks": {
+      "google": "Google Maps",
+      "apple": "Apple Karten",
+      "heading": "In Karten öffnen",
+      "approximate": "Ungefähre Position",
+      "openDetails": "Details öffnen",
+      "close": "Schließen",
+      "popupLabel": "Aktivitätsdetails"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "Die Orte, die du besuchen wolltest.",
+        "label": "Aktivitäts-Pins"
+      },
+      "arrows": {
+        "description": "Zeigt, in welche Richtung die Reise läuft.",
+        "label": "Richtungspfeile"
+      },
+      "base": {
+        "description": "Eine gezeichnete Karte oder Satellitenbilder.",
+        "label": "Basis",
+        "map": "Karte",
+        "satellite": "Satellit"
+      },
+      "boundaries": {
+        "description": "Grenzen innerhalb eines Landes, nicht nur dazwischen.",
+        "label": "Regionsgrenzen"
+      },
+      "buildings": {
+        "description": "Erhöhte Gebäude, am besten mit etwas Neigung.",
+        "label": "3D-Gebäude"
+      },
+      "cityFocus": {
+        "description": "Rahmt die Stadt auf deinem eigenen Plan ein und blendet den Rest der Reise aus.",
+        "label": "Stadt bei Auswahl fokussieren"
+      },
+      "cityNames": {
+        "description": "Beschriftet jeden Stopp deiner Route.",
+        "label": "Städtenamen"
+      },
+      "close": "Schließen",
+      "colorMode": {
+        "brand": "Ein Akzent",
+        "label": "Farbe",
+        "trip": "Stadtfarben"
+      },
+      "colorTheme": {
+        "default": "Voll",
+        "description": "Wie viel Farbe die Karte trägt.",
+        "faded": "Gedämpft",
+        "label": "Farbe",
+        "monochrome": "Mono",
+        "satelliteNote": "Satellitenbilder haben ihre eigene Farbe."
+      },
+      "copied": "Kopiert",
+      "copyPreset": "Kopieren",
+      "dashed": {
+        "description": "Gestrichelt statt durchgezogen.",
+        "label": "Gestrichelte Linien"
+      },
+      "description": "Wird bei dieser Reise gespeichert, während du sie änderst.",
+      "dimPast": {
+        "description": "Rückt bereits vergangene Tage in den Hintergrund.",
+        "label": "Vergangene Tage abschwächen"
+      },
+      "globe": {
+        "description": "Wölbt die Welt. Am besten bei langer Reise und großer Karte.",
+        "label": "Globusansicht"
+      },
+      "googleOnly": "Verfügbar mit Google Maps.",
+      "group": {
+        "features": "Elemente",
+        "labels": "Beschriftungen",
+        "pins": "Deine Pins",
+        "routes": "Routenlinien"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "Welche App zuerst angeboten wird, wenn du einen Ort öffnest.",
+        "google": "Google Maps",
+        "label": "Orte öffnen in"
+      },
+      "light": {
+        "auto": "Automatisch",
+        "dawn": "Morgengrauen",
+        "day": "Tag",
+        "description": "Tageszeit, für die die Karte beleuchtet ist. Automatisch folgt deinem Gerät.",
+        "dusk": "Dämmerung",
+        "googleNote": "Google Maps kennt nur Tag und Nacht.",
+        "label": "Licht",
+        "night": "Nacht"
+      },
+      "mapboxOnly": "Verfügbar mit Mapbox.",
+      "mapboxUnavailableHere": "Braucht Mapbox, das hier nicht eingerichtet ist.",
+      "paths": {
+        "description": "Fuß- und Gehwege.",
+        "label": "Fußwege"
+      },
+      "pitch": {
+        "description": "Über die Karte blicken statt senkrecht darauf.",
+        "flat": "Flach",
+        "label": "Neigung"
+      },
+      "placeLabels": {
+        "description": "Orte und Städte auf der Basiskarte.",
+        "label": "Ortsnamen"
+      },
+      "poiLabels": {
+        "description": "Geschäfte, Sehenswürdigkeiten und Orte, die du nicht geplant hast.",
+        "label": "Sehenswertes"
+      },
+      "preset": {
+        "label": "Voreinstellungen"
+      },
+      "renderer": {
+        "auto": "Automatisch",
+        "description": "Welche Karte die App zeichnet.",
+        "google": "Google",
+        "label": "Kartenanbieter",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox ist hier nicht eingerichtet, deshalb wird Google verwendet."
+      },
+      "reset": "Zurücksetzen",
+      "roadLabels": {
+        "description": "Nah nützlich, aus der Ferne unruhig.",
+        "label": "Straßennamen"
+      },
+      "roads": {
+        "description": "Ausschalten für eine aufgeräumte Karte nur mit deiner Reise.",
+        "label": "Straßen und Nahverkehr"
+      },
+      "routeMode": {
+        "description": "Den Straßen folgen oder direkt zwischen den Stopps zeichnen.",
+        "label": "Form",
+        "realistic": "Straßen folgen",
+        "simple": "Direkt"
+      },
+      "saveAsDefault": "Speichern",
+      "saveAsDefaultTooltip": "Als meine Voreinstellung speichern",
+      "saved": "Gespeichert",
+      "switchToMapbox": "Zu Mapbox wechseln",
+      "tab": {
+        "camera": "Kamera",
+        "detail": "Details",
+        "look": "Optik",
+        "trip": "Reise"
+      },
+      "terrain": {
+        "description": "Hebt Hügel und Berge hervor.",
+        "label": "Gelände"
+      },
+      "thickness": {
+        "label": "Dicke",
+        "normal": "Normal",
+        "thick": "Dick",
+        "thin": "Dünn"
+      },
+      "title": "Karte anpassen",
+      "traffic": {
+        "description": "Aktuelle Lage auf den Straßen.",
+        "label": "Live-Verkehr"
+      },
+      "transitLabels": {
+        "description": "Haltestellen und Bahnhöfe mit Namen.",
+        "label": "Haltestellennamen"
+      },
+      "transitLines": {
+        "description": "U-Bahn- und Bahnlinien auf der Karte.",
+        "label": "Nahverkehrslinien"
+      },
+      "style": {
+        "standard": "Standard",
+        "minimal": "Minimal",
+        "clean": "Aufgeräumt",
+        "dark": "Dunkel",
+        "cleanDark": "Aufgeräumt dunkel",
+        "satellite": "Satellit"
+      },
+      "showWholeJourney": "Ganze Reise zeigen",
+      "open": "Karte anpassen",
+      "presetSet": {
+        "label": "Starte mit",
+        "default": "Standard",
+        "detailed": "Detailliert",
+        "minimalistic": "Minimal",
+        "mine": "Meins",
+        "customNote": "Deine eigene Mischung aus Einstellungen."
+      },
+      "myLocation": {
+        "blocked": "Der Standortzugriff ist in deinen Browsereinstellungen blockiert.",
+        "description": "Zeigt, wo du gerade bist, während du reist. Wird nur auf diesem Gerät gespeichert.",
+        "label": "Mein Standort"
+      }
+    },
+    "activityPlan": {
+      "dialogTitle": "Zum Plan hinzufügen",
+      "sectionLabel": "Aufenthalt und Tag",
+      "kindLabel": "Was möchtest du hinzufügen?",
+      "kindActivity": "Aktivität",
+      "kindDayTrip": "Tagesausflug",
+      "stayLabel": "Aufenthalt",
+      "stayPlaceholder": "Aufenthalt wählen",
+      "dayLabel": "Tag",
+      "dayOption": "Tag {day} · {date}",
+      "dayOptionShort": "Tag {day}",
+      "destinationLabel": "Ziel",
+      "destinationPlaceholder": "z. B. Sintra",
+      "routeHint": "Startet in {stay} und kehrt am selben Tag dorthin zurück.",
+      "routeHintOther": "Startet in {stay} und endet in {returnStay}.",
+      "moreOptions": "Weitere Optionen",
+      "returnLabel": "Tag endet in",
+      "returnSame": "{stay} (zurück zum selben Aufenthalt)",
+      "dayTripTitlePlaceholder": "z. B. Paläste von Sintra",
+      "submitDayTrip": "Tagesausflug hinzufügen",
+      "findingPlace": "Ort wird gesucht …"
+    },
+    "timelineControls": {
+      "horizontalDirection": "Timeline horizontal anzeigen",
+      "verticalDirection": "Timeline vertikal anzeigen",
+      "zoomOut": "Timeline herauszoomen",
+      "zoomIn": "Timeline hineinzoomen",
+      "calendarView": "Kalenderansicht",
+      "listView": "Listenansicht der Timeline"
+    },
+    "panels": {
+      "resizeDetails": "Detailbereich in der Breite anpassen",
+      "resizeTimelineAndMap": "Timeline und Karte in der Größe anpassen",
+      "resizeTimeline": "Timeline in der Höhe anpassen"
+    },
+    "mapControls": {
+      "minimizePreview": "Kartenvorschau verkleinern",
+      "maximizePreview": "Kartenvorschau vergrößern",
+      "layoutVertical": "Vertikales Layout",
+      "layoutHorizontal": "Horizontales Layout",
+      "fitToItinerary": "Karte an Route anpassen",
+      "shrinkMap": "Karte verkleinern",
+      "expandMap": "Karte vergrößern",
+      "showLabels": "Städtenamen einblenden",
+      "hideLabels": "Städtenamen ausblenden",
+      "showActivityMarkers": "Aktivitäts-Pins einblenden",
+      "hideActivityMarkers": "Aktivitäts-Pins ausblenden",
+      "showMyLocation": "Meinen Standort anzeigen",
+      "centerOnMyLocation": "Auf meinen Standort zentrieren",
+      "myLocationLocating": "Standort wird ermittelt…",
+      "myLocationBlocked": "Standortzugriff ist blockiert. Erlaube ihn in deinen Browsereinstellungen.",
+      "showIdeaMarkers": "Ideen auf der Karte einblenden",
+      "hideIdeaMarkers": "Ideen auf der Karte ausblenden"
+    },
+    "floatingMap": {
+      "move": "Schwebende Kartenvorschau verschieben",
+      "useCompactSize": "Kompakte Kartengröße nutzen",
+      "useExpandedSize": "Große Kartengröße nutzen",
+      "switchToLandscape": "Kartenvorschau ins Querformat drehen",
+      "switchToPortrait": "Kartenvorschau ins Hochformat drehen",
+      "settling": "Kartenvorschau wird ausgerichtet"
+    },
+    "banners": {
+      "shareViewOnly": "Geteilte Reise · Nur ansehen",
+      "shareEditable": "Geteilte Reise · Bearbeiten aktiv",
+      "snapshotOlder": "Du siehst einen älteren Stand. Diese Reise wurde inzwischen aktualisiert.",
+      "snapshotCurrent": "Du siehst einen gespeicherten Stand dieser geteilten Reise.",
+      "openLatest": "Neuesten Stand öffnen",
+      "copyTrip": "Reise kopieren"
+    },
+    "exampleBanner": {
+      "eyebrow": "Beispielreise zum Ausprobieren",
+      "title": "Schau dich in Ruhe um. Kopiere die Reise, wenn du sie behalten und bearbeiten willst.",
+      "body": "Diese Route ist nur ein Beispiel und speichert keine Änderungen.",
+      "countryFocus": "Länderfokus: {countries}.",
+      "dismiss": "Hinweis zur Beispielreise schließen"
+    },
+    "listView": {
+      "openTransfer": "Transfer-Details öffnen ({mode})",
+      "taskCompleted": "Erledigte Aufgabe",
+      "taskOpen": "Offene Aufgabe",
+      "days": "Tage",
+      "daysRange": "Tage {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Stadt am Ende hinzufügen",
+      "addTransfer": "Transfer hinzufügen",
+      "transportUndecided": "Verkehrsmittel noch offen",
+      "transportMode": "Verkehrsmittel: {mode}",
+      "addActivity": "Aktivität hinzufügen",
+      "occupySpace": "Freien Platz ausfüllen",
+      "stretchToFill": "Bis zur Lücke strecken",
+      "reverseSelectedCities": "Ausgewählte Städte tauschen"
+    },
+    "ideas": {
+      "keep": "Merken",
+      "skip": "Überspringen",
+      "keepNamed": "{title} merken",
+      "skipNamed": "{title} überspringen",
+      "reviewHint": "Importiert und noch nicht geprüft. Merk dir die Idee, damit sie voll auf der Karte erscheint, oder überspring sie.",
+      "popupLabel": "Idee: {title}",
+      "statusToReview": "Zu prüfen",
+      "statusSaved": "Gemerkt",
+      "unsave": "Nicht mehr merken"
     }
   },
   "tripRouteShell": {
@@ -515,8 +874,43 @@
     "loadingExampleTrip": "Beispielreise wird geladen",
     "preparingExamplePlanner": "Beispiel-Planer wird vorbereitet"
   },
+  "tripAgent": {
+    "title": "Mit KI planen",
+    "previewBanner": "Vorschau der Vorschläge – Bearbeiten pausiert",
+    "revertToast": "Deine Reise ist wieder wie vor dieser Änderung.",
+    "revertToastTitle": "Änderung rückgängig",
+    "redo": "Wiederherstellen"
+  },
   "storageNotice": {
-    "tripsPrunedTitle": "Der Geratespeicher ist voll",
-    "tripsPrunedDescription": "{count, plural, one {Deine alteste gespeicherte Reise wurde von diesem Gerat entfernt, um Platz zu schaffen.} other {Deine # altesten gespeicherten Reisen wurden von diesem Gerat entfernt, um Platz zu schaffen.}}"
+    "tripsPrunedTitle": "Der Gerätespeicher ist voll",
+    "tripsPrunedDescription_one": "Deine älteste gespeicherte Reise wurde von diesem Gerät entfernt, um Platz zu schaffen.",
+    "tripsPrunedDescription_other": "Deine {count} ältesten gespeicherten Reisen wurden von diesem Gerät entfernt, um Platz zu schaffen."
+  },
+  "trips": {
+    "pageTitle": "Meine Reisen",
+    "pageSubtitle": "Alles, was du geplant hast. Nach dem Laden auch offline verfügbar.",
+    "signedOut": {
+      "title": "Du bist nicht angemeldet",
+      "body": "Melde dich an, um die Reisen aus deinem Konto zu sehen.",
+      "action": "Anmelden"
+    },
+    "list": {
+      "searchLabel": "Reisen oder Städte suchen",
+      "searchPlaceholder": "Reisen oder Städte suchen ...",
+      "empty": "Noch keine gespeicherten Reisen.",
+      "noMatches": "Keine Treffer für „{query}“.",
+      "favorites": "Favoriten",
+      "yourTrips": "Deine Reisen"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Deine Reisen immer dabei",
+      "body": "Füge TravelFlow zum Home-Bildschirm hinzu — dann öffnen sich deine Reisen auch ohne Empfang.",
+      "action": "Installieren",
+      "dismiss": "Jetzt nicht",
+      "iosStepShare": "Auf Teilen tippen",
+      "iosStepAdd": "dann „Zum Home-Bildschirm“"
+    }
   }
 }

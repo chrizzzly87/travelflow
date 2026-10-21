@@ -38,7 +38,7 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                        className="px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary"
                     >
                         Cancel
                     </button>
@@ -63,8 +63,8 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                     onChange={() => onShareModeChange('view')}
                 />
                 <div>
-                    <span className="font-semibold text-gray-900">View only</span>
-                    <span className="block text-xs text-gray-500">People can see the trip but can’t edit.</span>
+                    <span className="font-semibold text-foreground">View only</span>
+                    <span className="block text-xs text-muted-foreground">People can see the trip but can’t edit.</span>
                 </div>
             </label>
             <label className="flex items-start gap-3 text-sm cursor-pointer">
@@ -77,24 +77,24 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                     onChange={() => onShareModeChange('edit')}
                 />
                 <div>
-                    <span className="font-semibold text-gray-900">Allow editing</span>
-                    <span className="block text-xs text-gray-500">Anyone with the link can make changes.</span>
+                    <span className="font-semibold text-foreground">Allow editing</span>
+                    <span className="block text-xs text-muted-foreground">Anyone with the link can make changes.</span>
                 </div>
             </label>
             {activeShareUrl && (
                 <div className="mt-2">
-                    <div className="mb-1 text-xs font-semibold text-gray-600">Share link</div>
+                    <div className="mb-1 text-xs font-semibold text-muted-foreground">Share link</div>
                     <div className="flex items-center gap-2">
                         <input
                             value={activeShareUrl}
                             readOnly
                             aria-label="Trip share link"
-                            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
+                            className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-xs"
                         />
                         <button
                             type="button"
                             onClick={onCopyShareLink}
-                            className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                            className="rounded-lg bg-secondary px-3 py-2 text-xs font-semibold text-foreground hover:bg-gray-200"
                         >
                             Copy
                         </button>

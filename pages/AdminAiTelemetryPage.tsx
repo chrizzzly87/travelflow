@@ -199,16 +199,16 @@ const createProviderChartTooltip = (
         if (!providerId) return null;
 
         return (
-            <div className="rounded-md border border-slate-200 bg-white px-2 py-1.5 shadow-lg">
-                <p className="mb-1 text-[11px] font-semibold text-slate-900">
-                    <ProviderLabel provider={providerId} providerClassName="text-slate-900" logoSize={12} />
+            <div className="rounded-md border border-border bg-card px-2 py-1.5 shadow-lg dark:shadow-none">
+                <p className="mb-1 text-[11px] font-semibold text-foreground">
+                    <ProviderLabel provider={providerId} providerClassName="text-foreground" logoSize={12} />
                 </p>
                 <div className="space-y-0.5">
                     {payload.map((entry) => {
                         const metricName = String(entry.name || 'Value');
                         const metricValue = toNumericTooltipValue(entry.value);
                         return (
-                            <p key={metricName} className="text-[11px] text-slate-700">
+                            <p key={metricName} className="text-[11px] text-foreground">
                                 {metricName}: {formatValue(metricName, metricValue)}
                             </p>
                         );
@@ -240,11 +240,11 @@ const ProviderLabel: React.FC<{
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">
             <AiProviderLogo provider={provider} model={model} size={logoSize} />
-            <span className={providerClassName || 'font-semibold text-slate-800'} title={`${metadata.label} (${provider})`}>
+            <span className={providerClassName || 'font-semibold text-foreground'} title={`${metadata.label} (${provider})`}>
                 {metadata.shortName}
             </span>
             {model ? (
-                <span className={modelClassName || 'truncate text-slate-600'}>
+                <span className={modelClassName || 'truncate text-muted-foreground'}>
                     / {model}
                 </span>
             ) : null}
@@ -257,7 +257,7 @@ const compactModelLabelNode = (provider: string, model: string): React.ReactNode
     return (
         <span className="inline-flex min-w-0 max-w-[270px] items-center gap-1.5">
             <AiProviderLogo provider={provider} model={model} size={12} />
-            <span className="truncate text-slate-700" title={`${metadata.shortName} / ${model}`}>
+            <span className="truncate text-foreground" title={`${metadata.shortName} / ${model}`}>
                 {metadata.shortName} / {model}
             </span>
         </span>
@@ -667,7 +667,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     type="button"
                     onClick={() => void loadTelemetry()}
                     disabled={telemetryLoading}
-                    className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     <ArrowClockwise size={14} className={telemetryLoading ? 'animate-spin' : ''} />
                     Refresh
@@ -676,7 +676,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
         >
             <div className="mx-auto w-full max-w-[1600px] space-y-4">
                 {telemetryError && (
-                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {telemetryError}
                     </section>
                 )}
@@ -687,7 +687,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                         <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Window</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Window</p>
                             <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
                                 <SelectTrigger className="h-9 text-sm">
                                     <SelectValue placeholder="Window" />
@@ -703,7 +703,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Source</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Source</p>
                             <Select value={telemetrySource} onValueChange={(value) => setTelemetrySource(value as TelemetrySourceFilter)}>
                                 <SelectTrigger className="h-9 text-sm">
                                     <SelectValue placeholder="Source" />
@@ -717,7 +717,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Provider</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Provider</p>
                             <Select value={telemetryProviderFilter} onValueChange={setTelemetryProviderFilter}>
                                 <SelectTrigger className="h-9 text-sm">
                                     <SelectValue placeholder="Provider" />
@@ -728,7 +728,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                         <SelectItem key={provider} value={provider}>
                                             <ProviderLabel
                                                 provider={provider}
-                                                providerClassName="text-slate-700"
+                                                providerClassName="text-foreground"
                                                 logoSize={12}
                                             />
                                         </SelectItem>
@@ -738,7 +738,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Ranking size</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Ranking size</p>
                             <Select value={String(rankLimit)} onValueChange={(value) => setRankLimit(Number(value))}>
                                 <SelectTrigger className="h-9 text-sm">
                                     <SelectValue placeholder="Top X" />
@@ -754,12 +754,12 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Action</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Action</p>
                             <button
                                 type="button"
                                 onClick={() => void loadTelemetry()}
                                 disabled={telemetryLoading}
-                                className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <ArrowClockwise size={14} className={telemetryLoading ? 'animate-spin' : ''} />
                                 Refresh data
@@ -772,31 +772,31 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     <AdminSurfaceCard>
                         <Text>Total calls</Text>
                         <Metric>{telemetrySummary ? telemetrySummary.total : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-slate-500">Selected filter scope</Text>
+                        <Text className="mt-1 text-xs text-muted-foreground">Selected filter scope</Text>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
                         <Text>Success rate</Text>
                         <Metric>{telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-slate-500">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</Text>
+                        <Text className="mt-1 text-xs text-muted-foreground">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</Text>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
                         <Text>Failure rate</Text>
                         <Metric>{formatPercent(failureRate)}</Metric>
-                        <Text className="mt-1 text-xs text-slate-500">Quick reliability read</Text>
+                        <Text className="mt-1 text-xs text-muted-foreground">Quick reliability read</Text>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
                         <Text>Avg duration</Text>
                         <Metric>{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-slate-500">Across all calls</Text>
+                        <Text className="mt-1 text-xs text-muted-foreground">Across all calls</Text>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
                         <Text>Total cost (est.)</Text>
                         <Metric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-slate-500">
+                        <Text className="mt-1 text-xs text-muted-foreground">
                             Models with success: {formatPercent(successfulModelCoverage)}
                         </Text>
                     </AdminSurfaceCard>
@@ -814,7 +814,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatDuration(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No successful speed data.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No successful speed data.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -829,7 +829,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatUsd(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No successful cost data.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No successful cost data.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -844,7 +844,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => `${formatUsd(value)} / sec`}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No successful value data.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No successful value data.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -859,7 +859,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatPercent(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No success-rate data.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No success-rate data.</Text>
                         )}
                     </AdminSurfaceCard>
                 </section>
@@ -883,7 +883,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No time-series call data for this filter set.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No time-series call data for this filter set.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -908,7 +908,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No success-rate trend data for this filter set.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No success-rate trend data for this filter set.</Text>
                         )}
                     </AdminSurfaceCard>
                 </section>
@@ -933,7 +933,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No latency trend data for this filter set.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No latency trend data for this filter set.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -956,7 +956,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No cost trend data for this filter set.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No cost trend data for this filter set.</Text>
                         )}
                     </AdminSurfaceCard>
                 </section>
@@ -979,7 +979,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend={false}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No cost data available for the current month.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No cost data available for the current month.</Text>
                         )}
                     </AdminSurfaceCard>
                 </section>
@@ -1003,7 +1003,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 customTooltip={ProviderBreakdownTooltip}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No provider breakdown in this filter set.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No provider breakdown in this filter set.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -1025,7 +1025,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                         setSelectedProviderShare(null);
                                         setSelectedModelShare(null);
                                     }}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                 >
                                     <ArrowLeft size={13} />
                                     Providers
@@ -1048,7 +1048,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 />
 
                                 <div className="space-y-2">
-                                    <Text className="text-xs uppercase tracking-[0.1em] text-slate-500">
+                                    <Text className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
                                         {selectedProviderShare ? 'Model legend' : 'Provider legend'}
                                     </Text>
 
@@ -1085,8 +1085,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                     }}
                                                     className={`flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-left text-xs transition ${
                                                         isSelected
-                                                            ? 'border-blue-300 bg-blue-50 text-blue-900'
-                                                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                                            ? 'border-blue-300 bg-blue-50 text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30'
+                                                            : 'border-border bg-card text-foreground hover:border-border'
                                                     } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
                                                 >
                                                     <span className="inline-flex min-w-0 items-center gap-2">
@@ -1096,7 +1096,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                         )}
                                                         <span className="truncate">{displayLabel}</span>
                                                     </span>
-                                                    <span className="ml-2 shrink-0 text-slate-500">
+                                                    <span className="ml-2 shrink-0 text-muted-foreground">
                                                         {entry.calls.toLocaleString()} • {formatPercent(entry.sharePercent)}
                                                     </span>
                                                 </button>
@@ -1106,13 +1106,13 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No provider-share data in this filter set.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No provider-share data in this filter set.</Text>
                         )}
 
                         {selectedProviderStats && (
-                            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                                <p className="font-semibold text-slate-900">
-                                    Provider details: <ProviderLabel provider={selectedProviderStats.provider} providerClassName="font-bold text-slate-900" logoSize={12} />
+                            <div className="mt-3 rounded-md border border-border bg-secondary px-3 py-2 text-xs text-foreground">
+                                <p className="font-semibold text-foreground">
+                                    Provider details: <ProviderLabel provider={selectedProviderStats.provider} providerClassName="font-bold text-foreground" logoSize={12} />
                                 </p>
                                 <p className="mt-1">
                                     Calls {selectedProviderStats.total.toLocaleString()} • Success {formatPercent(
@@ -1125,9 +1125,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         )}
 
                         {selectedModelStats && (
-                            <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                            <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30">
                                 <p className="font-semibold">
-                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-blue-900" modelClassName="text-blue-800" logoSize={12} />
+                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-blue-900 dark:text-blue-200" modelClassName="text-blue-800 dark:text-blue-200" logoSize={12} />
                                 </p>
                                 <p className="mt-1">
                                     Calls {selectedModelStats.total.toLocaleString()} • Success {formatPercent(selectedModelStats.successRate)} • Avg duration {formatDuration(selectedModelStats.averageLatencyMs)} • Avg cost {formatUsd(selectedModelStats.averageCostUsd)}
@@ -1157,7 +1157,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 customTooltip={ProviderSuccessRateTooltip}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No provider success-rate data available.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No provider success-rate data available.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -1179,7 +1179,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 customTooltip={ProviderCostPerSuccessTooltip}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No provider cost-per-success data available.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No provider cost-per-success data available.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -1194,7 +1194,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatCallCount(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No recent failures in the selected filter scope.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No recent failures in the selected filter scope.</Text>
                         )}
                     </AdminSurfaceCard>
                 </section>
@@ -1211,7 +1211,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatCallCount(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-slate-500">No model activity data in this filter set.</Text>
+                            <Text className="mt-3 text-xs text-muted-foreground">No model activity data in this filter set.</Text>
                         )}
                     </AdminSurfaceCard>
 
@@ -1219,10 +1219,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         <Title>Recent calls</Title>
                         <Subtitle>Latest rows with status, duration, and error code.</Subtitle>
 
-                        <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-slate-200">
+                        <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-border">
                             <table className="min-w-full border-collapse text-left text-xs">
                                 <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
+                                    <tr className="border-b border-border bg-secondary uppercase tracking-wide text-muted-foreground">
                                         <th className="px-2 py-1.5">Time</th>
                                         <th className="px-2 py-1.5">Model</th>
                                         <th className="px-2 py-1.5">Status</th>
@@ -1234,26 +1234,26 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 <tbody>
                                     {telemetryRecent.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-3 py-4 text-center text-slate-500">
+                                            <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
                                                 {telemetryLoading ? 'Loading telemetry...' : 'No telemetry rows yet.'}
                                             </td>
                                         </tr>
                                     )}
 
                                     {telemetryRecent.map((row) => (
-                                        <tr key={row.id} className="border-b border-slate-100">
-                                            <td className="px-2 py-1.5 text-slate-600">{formatTimestamp(row.created_at)}</td>
-                                            <td className="px-2 py-1.5 text-slate-800">
+                                        <tr key={row.id} className="border-b border-border">
+                                            <td className="px-2 py-1.5 text-muted-foreground">{formatTimestamp(row.created_at)}</td>
+                                            <td className="px-2 py-1.5 text-foreground">
                                                 <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
                                             </td>
                                             <td className="px-2 py-1.5">
-                                                <span className={row.status === 'success' ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700'}>
+                                                <span className={row.status === 'success' ? 'font-semibold text-emerald-700 dark:text-emerald-200' : 'font-semibold text-rose-700 dark:text-rose-200'}>
                                                     {row.status}
                                                 </span>
                                             </td>
-                                            <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.latency_ms)}</td>
-                                            <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.estimated_cost_usd)}</td>
-                                            <td className="px-2 py-1.5 text-slate-600">{row.error_code || '—'}</td>
+                                            <td className="px-2 py-1.5 text-foreground">{formatDuration(row.latency_ms)}</td>
+                                            <td className="px-2 py-1.5 text-foreground">{formatUsd(row.estimated_cost_usd)}</td>
+                                            <td className="px-2 py-1.5 text-muted-foreground">{row.error_code || '—'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -1268,36 +1268,36 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         <Subtitle>
                             Qualitative notes captured per run, grouped by provider/model in the current telemetry filter window.
                         </Subtitle>
-                        <Text className="mt-1 text-xs text-slate-500">
+                        <Text className="mt-1 text-xs text-muted-foreground">
                             Total comments: {telemetryCommentTotal.toLocaleString()}
                         </Text>
 
-                        <div className="mt-3 max-h-[500px] space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <div className="mt-3 max-h-[500px] space-y-3 overflow-y-auto rounded-xl border border-border bg-secondary p-3">
                             {telemetryCommentGroups.length === 0 && (
-                                <div className="rounded-md border border-slate-200 bg-white px-3 py-4 text-xs text-slate-500">
+                                <div className="rounded-md border border-border bg-card px-3 py-4 text-xs text-muted-foreground">
                                     {telemetryLoading ? 'Loading comments...' : 'No benchmark run comments in this filter window.'}
                                 </div>
                             )}
 
                             {telemetryCommentGroups.map((group) => (
-                                <div key={group.key} className="rounded-md border border-slate-200 bg-white p-3">
+                                <div key={group.key} className="rounded-md border border-border bg-card p-3">
                                     <div className="flex items-center justify-between gap-2">
-                                        <p className="text-xs font-semibold text-slate-900">
-                                            <ProviderLabel provider={group.provider} model={group.model} providerClassName="text-slate-900" modelClassName="text-slate-700" logoSize={12} />
+                                        <p className="text-xs font-semibold text-foreground">
+                                            <ProviderLabel provider={group.provider} model={group.model} providerClassName="text-foreground" modelClassName="text-foreground" logoSize={12} />
                                         </p>
-                                        <span className="text-[11px] text-slate-500">
+                                        <span className="text-[11px] text-muted-foreground">
                                             {group.total} comment{group.total === 1 ? '' : 's'}
                                         </span>
                                     </div>
-                                    <p className="mt-0.5 text-[11px] text-slate-500">
+                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
                                         Latest: {formatTimestamp(group.latestCommentAt)}
                                     </p>
 
                                     <div className="mt-2 space-y-2">
                                         {group.comments.map((comment) => (
-                                            <div key={`${group.key}-${comment.runId}-${comment.updatedAt}`} className="rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs">
-                                                <p className="whitespace-pre-wrap text-slate-800">{comment.comment}</p>
-                                                <p className="mt-1 text-[10px] text-slate-500">
+                                            <div key={`${group.key}-${comment.runId}-${comment.updatedAt}`} className="rounded border border-border bg-secondary px-2 py-1.5 text-xs">
+                                                <p className="whitespace-pre-wrap text-foreground">{comment.comment}</p>
+                                                <p className="mt-1 text-[10px] text-muted-foreground">
                                                     Run {comment.runId.slice(0, 8)} • {comment.status || 'unknown'} • {comment.satisfactionRating || 'unrated'} • {formatTimestamp(comment.updatedAt)}
                                                 </p>
                                             </div>

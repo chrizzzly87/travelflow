@@ -1,4 +1,4 @@
-import type { MapStyle } from '../types';
+import type { MapBaseSurface, MapColorTheme, MapLightPreset, MapStyle } from '../types';
 
 export interface MapboxStyleConfigProperty {
   fragmentId: string;
@@ -29,6 +29,20 @@ type MapboxStyleLayerVisibilityMap = Pick<
   'addLayer' | 'addSource' | 'getLayer' | 'getSource' | 'getStyle' | 'setFilter' | 'setLayoutProperty' | 'setPaintProperty'
 >;
 
+/**
+ * A map torn down by `Map.remove()` has no `style`, and every accessor here
+ * reaches through it. Polish can be asked to run during that window — a style
+ * reload racing a provider switch — so it checks before touching anything.
+ */
+const canMutateMapboxStyle = (map: MapboxStyleLayerVisibilityMap): boolean => {
+  if ((map as unknown as { _removed?: boolean })._removed === true) return false;
+  try {
+    return Boolean(map.getStyle());
+  } catch {
+    return false;
+  }
+};
+
 const buildMapboxStyleDescriptor = (
   owner: string,
   styleId: string,
@@ -43,6 +57,13 @@ const buildMapboxStyleDescriptor = (
 const MAPBOX_LIGHT_BOUNDARY_COLOR = '#1f2937';
 const MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR = '#64748b';
 const MAPBOX_DARK_BOUNDARY_COLOR = '#ffffff';
+/**
+ * Satellite gets a warm border rather than a white or grey one. Over imagery a
+ * neutral line reads as haze or as a road — it disappears into the terrain it
+ * is supposed to divide. Amber is not a colour satellite imagery produces at
+ * line width, so the border stays legible over green, rock and water alike.
+ */
+const MAPBOX_SATELLITE_BOUNDARY_COLOR = '#fbbf24';
 
 const buildMapboxStandardVisualConfig = ({
   boundaryColor,
@@ -250,10 +271,12 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
 } => {
   if (mapStyle === 'satellite') {
     return {
-      lineColor: 'rgba(255, 255, 255, 0.99)',
-      lineOpacity: 0.98,
-      glowColor: 'rgba(255, 255, 255, 0.72)',
-      glowOpacity: 0.34,
+      lineColor: 'rgba(251, 191, 36, 0.95)',
+      lineOpacity: 0.95,
+      // A dark glow rather than a white one: the job over imagery is to lift the
+      // line off a busy background, which a light halo cannot do.
+      glowColor: 'rgba(23, 23, 23, 0.55)',
+      glowOpacity: 0.42,
     };
   }
   if (mapStyle === 'clean') {
@@ -440,20 +463,131 @@ export const GOOGLE_BASEMAP_HIDDEN_STYLES = [
   { elementType: 'labels.text.stroke', stylers: [{ visibility: 'off' }] },
 ] as const;
 
+/**
+ * What the traveller turned on or off in the customize sheet, on top of
+ * whichever style they picked. A style stays the starting point; these only
+ * override the handful of properties the sheet exposes.
+ */
+export interface MapboxBasemapDetailOverrides {
+  showPlaceLabels?: boolean;
+  showRoadLabels?: boolean;
+  showTransitLabels?: boolean;
+  showPoiLabels?: boolean;
+  showRoadsAndTransit?: boolean;
+  showPedestrianRoads?: boolean;
+  showAdminBoundaries?: boolean;
+  show3dObjects?: boolean;
+}
+
+const MAPBOX_DETAIL_OVERRIDE_PROPERTIES: Array<{
+  key: keyof MapboxBasemapDetailOverrides;
+  property: string;
+}> = [
+  { key: 'showPlaceLabels', property: 'showPlaceLabels' },
+  { key: 'showRoadLabels', property: 'showRoadLabels' },
+  { key: 'showTransitLabels', property: 'showTransitLabels' },
+  { key: 'showPoiLabels', property: 'showPointOfInterestLabels' },
+  { key: 'showRoadsAndTransit', property: 'showRoadsAndTransit' },
+  { key: 'showPedestrianRoads', property: 'showPedestrianRoads' },
+  { key: 'showAdminBoundaries', property: 'showAdminBoundaries' },
+  { key: 'show3dObjects', property: 'show3dObjects' },
+];
+
+/**
+ * A look built from its axes rather than looked up by name.
+ *
+ * The six named styles were only ever combinations of `theme` and
+ * `lightPreset` over two base styles, so this is the same surface with the
+ * combinations that had no name — dawn, and every theme at dusk — reachable.
+ */
+export const buildMapboxStyleFromAxes = ({
+  base,
+  colorTheme,
+  lightPreset,
+  overrides,
+}: {
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: Exclude<MapLightPreset, 'auto'>;
+  overrides?: MapboxBasemapDetailOverrides;
+}): { styleUrl: string; config: MapboxStyleConfigMap } => {
+  const styleId = base === 'satellite' ? 'standard-satellite' : 'standard';
+  const isDark = lightPreset === 'dusk' || lightPreset === 'night';
+
+  const basemap: Record<string, boolean | string | number> = {
+    lightPreset,
+    // Satellite has no colour theme: the imagery *is* the colour, and setting
+    // one on `standard-satellite` is ignored rather than merely subtle.
+    ...(base === 'satellite' ? {} : { theme: colorTheme }),
+    showPlaceLabels: true,
+    showPointOfInterestLabels: false,
+    showTransitLabels: false,
+    showRoadLabels: false,
+    showAdminBoundaries: false,
+    colorAdminBoundaries: base === 'satellite'
+      ? MAPBOX_SATELLITE_BOUNDARY_COLOR
+      : isDark
+        ? MAPBOX_DARK_BOUNDARY_COLOR
+        : (colorTheme === 'faded' ? MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR : MAPBOX_LIGHT_BOUNDARY_COLOR),
+  };
+
+  MAPBOX_DETAIL_OVERRIDE_PROPERTIES.forEach(({ key, property }) => {
+    const value = overrides?.[key];
+    if (typeof value !== 'boolean') return;
+    basemap[property] = value;
+  });
+
+  return { styleUrl: `mapbox://styles/mapbox/${styleId}`, config: { basemap } };
+};
+
+/** The surface colour behind a look built from axes, before tiles arrive. */
+export const getMapSurfaceBackgroundColorForAxes = ({
+  base,
+  colorTheme,
+  lightPreset,
+}: {
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: Exclude<MapLightPreset, 'auto'>;
+}): string => {
+  if (base === 'satellite') return '#4d6972';
+  if (lightPreset === 'dusk' || lightPreset === 'night') return '#0f172a';
+  if (colorTheme === 'monochrome') return '#edf2f7';
+  return '#dbe5ee';
+};
+
 export const getMapboxStyleDescriptor = (mapStyle: MapStyle): MapboxStyleDescriptor => (
   MAPBOX_STYLE_DESCRIPTORS[mapStyle] ?? MAPBOX_STYLE_DESCRIPTORS.standard
 );
 
-export const buildMapboxStyleConfig = (mapStyle: MapStyle): MapboxStyleConfigMap | undefined => {
+export const buildMapboxStyleConfig = (
+  mapStyle: MapStyle,
+  overrides?: MapboxBasemapDetailOverrides,
+): MapboxStyleConfigMap | undefined => {
   const descriptor = getMapboxStyleDescriptor(mapStyle);
   if (!descriptor.configProperties?.length) return undefined;
 
-  return descriptor.configProperties.reduce<MapboxStyleConfigMap>((config, entry) => {
-    const fragmentConfig = config[entry.fragmentId] ?? {};
+  const config = descriptor.configProperties.reduce<MapboxStyleConfigMap>((accumulator, entry) => {
+    const fragmentConfig = accumulator[entry.fragmentId] ?? {};
     fragmentConfig[entry.property] = entry.value;
-    config[entry.fragmentId] = fragmentConfig;
-    return config;
+    accumulator[entry.fragmentId] = fragmentConfig;
+    return accumulator;
   }, {});
+
+  if (!overrides) return config;
+
+  const basemap = config.basemap ?? {};
+  MAPBOX_DETAIL_OVERRIDE_PROPERTIES.forEach(({ key, property }) => {
+    const value = overrides[key];
+    if (typeof value !== 'boolean') return;
+    basemap[property] = value;
+    // Pedestrian roads are a sub-layer of the road fragment: leaving them on
+    // with roads off draws a ghost street grid with no streets under it.
+    if (key === 'showRoadsAndTransit') basemap.showPedestrianRoads = value;
+  });
+  config.basemap = basemap;
+
+  return config;
 };
 
 export const shouldHideMapboxTripLabelLayer = (
@@ -572,8 +706,12 @@ const MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS = [
 const shouldHideMapboxTripRoadGeometryLayer = (
   layer: MapboxStyleLayerLike,
   mapStyle: MapStyle,
+  overrides?: MapboxBasemapDetailOverrides,
 ): boolean => {
-  if (!isCleanMapStyle(mapStyle)) return false;
+  // The style config alone does not clear every road layer on every style, so
+  // an explicit "no roads" also sweeps the geometry the way a clean style does.
+  const hideRoads = overrides?.showRoadsAndTransit === false || isCleanMapStyle(mapStyle);
+  if (!hideRoads) return false;
   if (layer['source-layer'] === 'road' || layer['source-layer'] === 'motorway_junction') {
     return layer.type === 'line' || layer.type === 'fill';
   }
@@ -665,15 +803,60 @@ const hideMapboxLayer = (
   }
 };
 
+/**
+ * Roads over satellite imagery.
+ *
+ * The satellite style draws its road network in a pale neutral grey meant to sit
+ * on a light vector basemap. Over imagery that grey has nothing to contrast
+ * with: on rock and sand it vanishes, and on forest and water it reads as haze
+ * rather than as a road. Warming it and giving it a dark casing makes the
+ * network legible without competing with the trip's own route lines.
+ */
+const applyMapboxSatelliteRoadPolish = (
+  map: MapboxStyleLayerVisibilityMap,
+  layers: MapboxStyleLayerLike[],
+): void => {
+  layers.forEach((layer) => {
+    if (!layer.id || layer.type !== 'line') return;
+    if (layer['source-layer'] !== 'road') return;
+    if (!map.getLayer(layer.id)) return;
+
+    const isCasing = /casing|bg$|-bg-/i.test(layer.id);
+    try {
+      map.setPaintProperty(
+        layer.id,
+        'line-color',
+        isCasing ? 'rgba(28, 25, 23, 0.72)' : 'rgba(253, 230, 190, 0.92)',
+      );
+    } catch {
+      // A layer whose colour is data-driven rejects a flat value. Leaving it at
+      // the style's own colour is a worse-looking road, not a broken map.
+    }
+  });
+};
+
 export const applyMapboxTripVisualPolish = (
   map: MapboxStyleLayerVisibilityMap,
   mapStyle: MapStyle,
+  overrides?: MapboxBasemapDetailOverrides,
 ): void => {
+  if (!canMutateMapboxStyle(map)) return;
   const layers = (map.getStyle()?.layers ?? []) as MapboxStyleLayerLike[];
   applyMapboxCountryBoundaryOverlay(map, mapStyle, layers);
+  if (mapStyle === 'satellite') {
+    applyMapboxSatelliteRoadPolish(map, layers);
+  }
+  // Country borders are always drawn by the overlay above. This switch is about
+  // the borders *inside* a country, which the polish otherwise strips wholesale.
+  const keepRegionBoundaries = overrides?.showAdminBoundaries === true;
   layers.forEach((layer) => {
     if (!layer.id) return;
-    if (shouldHideMapboxTripBoundaryLayer(layer)) {
+    if (!keepRegionBoundaries && shouldHideMapboxTripBoundaryLayer(layer)) {
+      hideMapboxLayer(map, layer);
+      return;
+    }
+    if (keepRegionBoundaries && isMapboxTripCountryBoundaryLayer(layer)) {
+      // The overlay already draws these; the style's own copy would double them.
       hideMapboxLayer(map, layer);
       return;
     }
@@ -685,7 +868,7 @@ export const applyMapboxTripVisualPolish = (
       );
       return;
     }
-    if (shouldHideMapboxTripRoadGeometryLayer(layer, mapStyle)) {
+    if (shouldHideMapboxTripRoadGeometryLayer(layer, mapStyle, overrides)) {
       hideMapboxLayer(map, layer);
       return;
     }

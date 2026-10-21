@@ -138,6 +138,84 @@ Why this matters:
 - Forgot-password / set-password emails redirect users to `/auth/reset-password`.
 - If this path is missing in Redirect URLs, recovery links fail or land on an auth error page.
 
+## Applying a Trip Agent migration
+
+`supabase/migrations/*.sql` are not applied automatically. Deploys ship code
+only, and PostgREST cannot run DDL, so an agent working in this repo can write
+and verify a migration but cannot install it.
+
+To apply one (for example `20260904120000_trip_agent_access_and_stale_fix.sql`):
+
+1. Open the Supabase SQL Editor for the TravelFlow project.
+2. Paste the migration file whole and run it. Every statement is
+   `create or replace`, so re-running is safe.
+3. Confirm the functions exist and behave:
+
+   ```sql
+   select proname, pronargs from pg_proc
+    where proname in ('trip_agent_can_edit', 'trip_agent_can_edit_with_share',
+                      'apply_trip_agent_change_set');
+   ```
+
+Alternatively, from a machine that has the real connection string:
+
+```bash
+psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f supabase/migrations/20260904120000_trip_agent_access_and_stale_fix.sql
+```
+
+`.env.local` in a fresh worktree carries placeholder database URLs; only
+`VITE_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are real, and those reach
+PostgREST only.
+
+### Verifying a migration before it touches the project
+
+`supabase/tests/` holds a stub schema and a behaviour script, so a migration can
+be exercised on a throwaway Postgres first:
+
+```bash
+initdb -D /tmp/pgdata -U postgres --auth=trust
+LC_ALL=C pg_ctl -D /tmp/pgdata -o "-p 55432 -h 127.0.0.1" -l /tmp/pg.log start
+psql -h 127.0.0.1 -p 55432 -U postgres -c "create role anon; create role authenticated; create role service_role;"
+psql -h 127.0.0.1 -p 55432 -U postgres -f supabase/tests/_trip_agent_stub_schema.sql
+psql -h 127.0.0.1 -p 55432 -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/<migration>.sql
+psql -h 127.0.0.1 -p 55432 -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/<migration>.verify.sql
+pg_ctl -D /tmp/pgdata stop -m fast
+```
+
+`LC_ALL=C` is required on macOS, where the server otherwise refuses to start
+("Postmaster became multithreaded during startup").
+
+**A `.verify.sql` is for a throwaway database only.** These scripts insert
+fixture rows, and a fixture with `status = 'published'` in a table the app reads
+is live data. On 2026-09-17 the recommendations verify script reached the real
+project and put a place called "Renamed" into the Ideas deck. Verify scripts now
+refuse to run where an `auth` schema exists and delete their own fixtures, but
+treat the rule as the protection and the guard as the backstop.
+
+Two things make an RLS check mean something, and both are easy to skip: run it
+inside a transaction (`set local role` outside one is silently ignored) and as a
+non-superuser (a superuser bypasses RLS entirely). A check that misses either
+passes for the wrong reason.
+
+### Pending migrations
+
+| Migration | What it adds | Applied |
+|---|---|---|
+| `20260917090000_recommendations_library.sql` | `public.recommendations` — the place-idea library behind the trip Ideas deck, with a published-only read policy for `anon` and `authenticated`. Verified against a throwaway Postgres by `supabase/tests/20260917090000_recommendations_library.verify.sql`. | **Yes**, 2026-09-17, and Taiwan seeded with 84 published rows |
+
+Where an unapplied recommendations migration leaves things: `/api/recommendations`
+returns 502 and the deck falls back to the dataset bundled in the repo, so
+nothing breaks and nothing an editor writes becomes visible. After applying it,
+seed a country with **Import bundled** at `/admin/recommendations` or with
+`scripts/sync-recommendations-to-supabase.ts`, then publish. The full procedure
+is in `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`.
+
+Note the asymmetry that makes seeding part of "applied": an **empty** published
+list is a real answer and does **not** fall back, because falling back would
+show ideas an editor deliberately unpublished. So a migration applied without a
+seed gives an empty deck, not the bundled one.
+
 ## Data Model (Current)
 
 Core tables:
@@ -467,6 +545,39 @@ select id, status, owner_user_id, requested_by_anon_id, result_trip_id, error_me
 from public.trip_generation_requests
 where id = '<request-id>';
 ```
+
+## Trip Agent rollout
+
+Use **/admin/settings** (Global Settings). It writes the same row through an
+admin-only function, and covers the Trip Agent rollout, the default AI model and
+its approved list, the map provider and default map style, and the planner beta
+gate.
+
+The map provider setting replaces the build-time `VITE_MAP_RUNTIME_PRESET`,
+which stays as the fallback when the row has never been written. Production has
+been running `google_all`, which is why the live map and every generated preview
+image carry a Google attribution.
+
+The SQL below stays documented for the case where the admin page itself is
+broken. `app_runtime_settings` holds the two Trip Agent flags; both the API
+(`assertTripAgentAvailable`) and the planner launcher read them, so they are the
+only switch the feature has.
+
+```sql
+-- who can use the Trip Agent right now
+select trip_agent_enabled, trip_agent_admin_preview from public.app_runtime_settings where singleton = true;
+
+-- open it to every entitled account
+update public.app_runtime_settings set trip_agent_enabled = true where singleton = true;
+
+-- close it again; nothing needs redeploying
+update public.app_runtime_settings set trip_agent_enabled = false where singleton = true;
+```
+
+The client reads them through `get_public_runtime_settings`, which
+`20260908090000_trip_agent_rollout_in_public_settings.sql` widens. Before that
+migration runs, the client cannot see the flags and falls back to
+administrators only — the same answer the server gives today.
 
 ## Minimal Smoke Test
 

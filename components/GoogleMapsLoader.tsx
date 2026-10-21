@@ -1,19 +1,32 @@
 import React from 'react';
 import { AppLanguage } from '../types';
-import { MapRuntimeProvider, useGoogleMaps, useMapRuntime } from './MapRuntimeProvider';
+import {
+    GoogleMapsApiGate,
+    MapRuntimeProvider,
+    useGoogleMaps,
+    useMapRuntime,
+} from './MapRuntimeProvider';
 
 interface GoogleMapsLoaderProps {
     children: React.ReactNode;
     language?: AppLanguage;
-    enabled?: boolean;
 }
 
-export { useGoogleMaps, useMapRuntime };
+export { useGoogleMaps, useMapRuntime, GoogleMapsApiGate, MapRuntimeProvider };
 
-export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language, enabled = true }) => {
+/**
+ * Map runtime plus the Google Maps script, for a page whose map is on screen
+ * from the start.
+ *
+ * A screen that defers its map must not use this: mount `MapRuntimeProvider`
+ * high, and `GoogleMapsApiGate` around the map component itself. Toggling a
+ * gate around long-lived UI re-parents it, and React answers that by
+ * remounting the whole subtree.
+ */
+export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language }) => {
     return (
-        <MapRuntimeProvider language={language} enabled={enabled}>
-            {children}
+        <MapRuntimeProvider language={language}>
+            <GoogleMapsApiGate>{children}</GoogleMapsApiGate>
         </MapRuntimeProvider>
     );
 };

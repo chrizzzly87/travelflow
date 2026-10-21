@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
+import { resolveActivityStay } from '../shared/activityStay';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
-import { renderToStaticMarkup } from 'react-dom/server';
 import type mapboxgl from 'mapbox-gl';
 import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
@@ -10,7 +10,7 @@ import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, ge
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
-import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { buildActivityIconMarkup } from './maps/activityIconMarkup';
 import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
 import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
 import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
@@ -54,12 +54,14 @@ import {
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
 import { isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 import type { MapImplementation } from '../shared/mapRuntime';
+import { MARKER_TOOLTIP_HIDDEN_TRANSFORM } from './maps/markerTooltip';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
     selectedItemId?: string | null;
     onCityMarkerSelect?: (cityId: string) => void;
     onActivityMarkerSelect?: (activityId: string) => void;
+    enableActivityPopup?: boolean;
     layoutMode?: 'horizontal' | 'vertical';
     onLayoutChange?: (mode: 'horizontal' | 'vertical') => void;
     showLayoutControls?: boolean;
@@ -878,8 +880,6 @@ export const isRoutePathLikelyStraight = (
     return hasStraightLikeDetour || hasStraightLikeShape;
 };
 
-const ACTIVITY_ICON_MARKUP_CACHE = new Map<string, string>();
-
 const escapeHtml = (value: string): string => (
     value
         .replace(/&/g, '&amp;')
@@ -888,21 +888,6 @@ const escapeHtml = (value: string): string => (
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;')
 );
-
-const buildActivityIconMarkup = (type: ActivityType, iconSize: number): string => {
-    const cacheKey = `${type}:${iconSize}`;
-    const cached = ACTIVITY_ICON_MARKUP_CACHE.get(cacheKey);
-    if (cached) return cached;
-    const markup = renderToStaticMarkup(
-        <ActivityTypeIcon type={type} size={iconSize} />
-    );
-    const styled = markup.replace(
-        '<svg',
-        `<svg style="width:${iconSize}px;height:${iconSize}px;display:block;stroke:currentColor;stroke-width:2.3;color:currentColor;fill:none;"`,
-    );
-    ACTIVITY_ICON_MARKUP_CACHE.set(cacheKey, styled);
-    return styled;
-};
 
 const buildActivityMarkerHtml = (
     type: ActivityType,
@@ -920,7 +905,7 @@ const buildActivityMarkerHtml = (
         ? escapeHtml(title.trim())
         : '';
     const tooltipMarkup = tooltipLabel
-        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:translate(-50%, calc(-100% - 8px));pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:${profile.activity.tooltipPaddingY}px ${profile.activity.tooltipPaddingX}px;font-size:${profile.activity.tooltipFontSize}px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
+        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:${MARKER_TOOLTIP_HIDDEN_TRANSFORM};pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:${profile.activity.tooltipPaddingY}px ${profile.activity.tooltipPaddingX}px;font-size:${profile.activity.tooltipFontSize}px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
         : '';
 
     return `
@@ -945,17 +930,7 @@ type ResolvedActivityMarker = {
 const resolveActivityOwnerCity = (
     activity: ITimelineItem,
     cityItems: ITimelineItem[],
-): ITimelineItem | null => {
-    const directOwner = cityItems.find((city) => (
-        activity.startDateOffset >= city.startDateOffset
-        && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
-    ));
-    if (directOwner) return directOwner;
-
-    const previousCity = [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset);
-    if (previousCity) return previousCity;
-    return cityItems[0] || null;
-};
+): ITimelineItem | null => resolveActivityStay(activity, cityItems);
 
 export const resolveActivityMarkerPositions = (
     items: ITimelineItem[],
@@ -1033,12 +1008,12 @@ export const resolveSelectedMapFocusPosition = ({
     selectedCityId?: string | null;
     activityMarkerPositions: Map<string, google.maps.LatLngLiteral>;
     cities: ITimelineItem[];
-}): { position: google.maps.LatLngLiteral; zoom: number } | null => {
+}): { position: google.maps.LatLngLiteral; zoom: number; kind: 'activity' | 'city' } | null => {
     const selectionTuning = getTripMapProviderTuning(provider).selection;
     if (selectedActivityId) {
         const activityPosition = activityMarkerPositions.get(selectedActivityId);
         if (activityPosition) {
-            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom };
+            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom, kind: 'activity' };
         }
     }
     if (selectedCityId) {
@@ -1047,6 +1022,7 @@ export const resolveSelectedMapFocusPosition = ({
             return {
                 position: { lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng },
                 zoom: selectionTuning.cityFocusZoom,
+                kind: 'city',
             };
         }
     }
@@ -1078,15 +1054,20 @@ export const resolveSelectionViewportActions = ({
     isTargetWithinSafeZone,
     currentZoom,
     targetZoom,
+    alwaysCenter = false,
 }: {
     isTargetVisible: boolean;
     isTargetWithinSafeZone?: boolean;
     currentZoom: number | null;
     targetZoom: number;
+    // Activity pins are small and easy to lose among the city markers, so
+    // selecting one always recenters the map instead of leaving an
+    // already-visible pin wherever it happens to sit.
+    alwaysCenter?: boolean;
 }): { shouldPan: boolean; shouldZoom: boolean } => {
     const isTargetComfortablyVisible = isTargetWithinSafeZone ?? isTargetVisible;
     const shouldZoom = currentZoom === null || currentZoom < targetZoom;
-    const shouldPan = !isTargetComfortablyVisible || shouldZoom;
+    const shouldPan = alwaysCenter || !isTargetComfortablyVisible || shouldZoom;
     return { shouldPan, shouldZoom };
 };
 

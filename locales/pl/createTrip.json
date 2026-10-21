@@ -197,14 +197,14 @@
   },
   "notifications": {
     "prompt": {
-      "title": "Otrzymywac powiadomienie, gdy podroz bedzie gotowa?",
-      "message": "Generowanie podrozy moze zajac okolo minuty. Wlacz powiadomienia przegladarki, a damy znac, gdy plan bedzie gotowy.",
+      "title": "Otrzymywać powiadomienie, gdy podróż będzie gotowa?",
+      "message": "Generowanie podróży może zająć około minuty. Włącz powiadomienia przeglądarki, a damy znać, gdy plan będzie gotowy.",
       "enable": "Wlacz powiadomienia",
       "notNow": "Nie teraz"
     },
     "ready": {
       "title": "Podroz gotowa",
-      "body": "Twoj plan podrozy jest gotowy do sprawdzenia."
+      "body": "Twój plan podróży jest gotowy do sprawdzenia."
     }
   },
   "wizard": {

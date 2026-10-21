@@ -227,3 +227,18 @@ export const getLatestConflictBackupForTrip = (tripId: string): OfflineConflictB
   const backups = readConflictBackups();
   return backups.find((entry) => entry.tripId === tripId) ?? null;
 };
+
+/**
+ * Drops the stored conflict backups for one trip once the user has decided what
+ * to keep. Without this the recovery banner had nothing to clear it: the entry
+ * stayed in storage and the banner outlived the restore it prompted.
+ */
+export const resolveConflictBackupsForTrip = (tripId: string): OfflineConflictBackupEntry[] => {
+  const existing = readConflictBackups();
+  const remaining = existing.filter((entry) => entry.tripId !== tripId);
+  if (remaining.length === existing.length) return existing;
+  const persisted = writeConflictBackups(remaining);
+  // Reuse the queue event so subscribers refresh their snapshot counts.
+  notifyQueueListeners(readQueue());
+  return persisted;
+};

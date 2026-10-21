@@ -6,6 +6,7 @@ import {
   collectModulePreloadHrefs,
   injectModulePreloadHints,
   stripBootstrapShell,
+  isPrerenderedShell,
 } from '../../scripts/prerender-html-utils.mjs';
 
 describe('collectModulePreloadHrefs', () => {
@@ -108,5 +109,30 @@ describe('stripBootstrapShell', () => {
     expect(result.removedShell).toBe(false);
     expect(result.removedStyle).toBe(false);
     expect(result.removedScript).toBe(false);
+  });
+});
+
+describe('isPrerenderedShell', () => {
+  it('flags a document that already carries captured route markup', () => {
+    expect(isPrerenderedShell('<div id="root" data-tf-prerendered-root="true">hero</div>')).toBe(true);
+  });
+
+  it('accepts the clean boot shell', () => {
+    expect(isPrerenderedShell('<div id="root"></div>')).toBe(false);
+  });
+
+  it('accepts a shell whose content merely mentions the attribute name in prose', () => {
+    expect(isPrerenderedShell('<div id="root"></div><script>const K = "data-tf-prerender";</script>'))
+      .toBe(false);
+  });
+
+  it('recognises the marker the prerender step actually writes', () => {
+    const rendered = readFileSync(
+      resolve(__dirname, '../../scripts/prerender-routes.mjs'),
+      'utf8',
+    );
+    // The check is only meaningful while the writer and the reader agree on the
+    // attribute; this pins them together.
+    expect(rendered).toContain('data-tf-prerendered-root="true"');
   });
 });

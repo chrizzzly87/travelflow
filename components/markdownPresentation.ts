@@ -3,15 +3,15 @@ import type { Content, Heading, List, ListItem, Root } from 'mdast';
 export const TASK_CHECKBOX_LINE_REGEX = /^(\s*(?:>\s*)*(?:[-*+]|\d+[.)])\s+\[)( |x|X)(\].*)$/;
 const HEADING_LINE_REGEX = /^(#{1,6})\s+(.*)$/;
 
-export const MARKDOWN_H1_CLASS = 'mt-4 mb-2 border-t border-gray-100 pt-2 text-base font-black tracking-tight text-gray-800 first:mt-0 first:border-t-0 first:pt-0';
-export const MARKDOWN_H2_CLASS = 'mt-4 mb-2 border-t border-gray-100 pt-2 text-sm font-extrabold tracking-wide text-gray-800 first:mt-0 first:border-t-0 first:pt-0';
-export const MARKDOWN_H3_CLASS = 'mt-4 mb-2 border-t border-gray-100 pt-2 text-sm font-black tracking-wide text-gray-800 first:mt-0 first:border-t-0 first:pt-0';
+export const MARKDOWN_H1_CLASS = 'mt-4 mb-2 border-t border-border pt-2 text-base font-black tracking-tight text-foreground first:mt-0 first:border-t-0 first:pt-0';
+export const MARKDOWN_H2_CLASS = 'mt-4 mb-2 border-t border-border pt-2 text-sm font-extrabold tracking-wide text-foreground first:mt-0 first:border-t-0 first:pt-0';
+export const MARKDOWN_H3_CLASS = 'mt-4 mb-2 border-t border-border pt-2 text-sm font-black tracking-wide text-foreground first:mt-0 first:border-t-0 first:pt-0';
 export const MARKDOWN_TASK_LIST_CLASS = 'my-2 space-y-2 ps-0';
 export const MARKDOWN_TASK_ITEM_CLASS = 'list-none ps-0';
 export const MARKDOWN_TASK_ROW_CLASS = 'flex items-start gap-3';
-export const MARKDOWN_TASK_TEXT_CLASS = 'min-w-0 flex-1 leading-6 text-slate-700 [&_p]:m-0';
+export const MARKDOWN_TASK_TEXT_CLASS = 'min-w-0 flex-1 leading-6 text-foreground [&_p]:m-0';
 export const MARKDOWN_HEADS_UP_LIST_CLASS = 'my-2 space-y-2 ps-0';
-export const MARKDOWN_HEADS_UP_BANNER_CLASS = 'list-none rounded-lg border border-slate-200 bg-slate-100/85 px-3 py-2 text-sm leading-6 text-slate-700 [&_p]:m-0';
+export const MARKDOWN_HEADS_UP_BANNER_CLASS = 'list-none rounded-lg border border-border bg-secondary/85 px-3 py-2 text-sm leading-6 text-foreground [&_p]:m-0';
 
 const getNodeText = (node: Content | Heading['children'][number]): string => {
     if ('value' in node && typeof node.value === 'string') return node.value;

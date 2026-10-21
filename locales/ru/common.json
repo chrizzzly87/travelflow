@@ -9,6 +9,8 @@
     "createTrip": "Создать поездку",
     "myTrips": "Мои поездки",
     "openMenu": "Открыть меню",
+    "themeToDark": "Переключиться на тёмную тему",
+    "themeToLight": "Переключиться на светлую тему",
     "admin": "Админ",
     "logout": "Выйти"
   },
@@ -192,80 +194,80 @@
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect.",
-        "browserTitle": "You are offline. Changes stay local.",
-        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
-        "serviceTitle": "Cloud sync is temporarily unavailable.",
-        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+        "title": "Вы офлайн. Изменения встанут в очередь.",
+        "messageNone": "Планировщик работает на сохранённых данных.",
+        "messageOne": "{count} изменение в очереди — синхронизируем, как только связь вернётся.",
+        "messageMany": "Изменений в очереди: {count}. Синхронизируем, как только связь вернётся.",
+        "browserTitle": "Вы офлайн. Изменения остаются на этом устройстве.",
+        "browserMessage": "Синхронизация с облаком продолжится, как только связь вернётся. Мы пробуем автоматически.",
+        "serviceTitle": "Синхронизация с облаком временно недоступна.",
+        "serviceMessage": "Интернет работает, но сервис синхронизации не отвечает. Ваши правки ждут в очереди и не потеряются."
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
-        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+        "title": "Связь нестабильна. Сохраняем в защищённом режиме.",
+        "messageNone": "Планировщик работает, а мы повторяем попытки в фоне.",
+        "messageOne": "{count} изменение синхронизируется, как только связь стабилизируется.",
+        "messageMany": "Изменений в очереди: {count}. Синхронизируем, как только связь стабилизируется.",
+        "serviceMessage": "Синхронизация с облаком сейчас нестабильна. Продолжаем повторять попытки в фоне."
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "Идёт синхронизация",
+        "messageOne": "{count} изменение ждёт синхронизации.",
+        "messageMany": "Ждут синхронизации: {count}.",
+        "progressOne": "Синхронизируем {count} изменение из очереди…",
+        "progressMany": "Синхронизируем изменения из очереди: {count}…"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "В режиме отладки включена имитация сбоя связи.",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "Повторить синхронизацию",
+        "dismiss": "Скрыть уведомление о связи",
         "contact": "Контакты",
-        "email": "Email support"
+        "email": "Написать в поддержку"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "Пробуем подключиться каждые 30 с, пока эта вкладка открыта."
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
-        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
-        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+        "messageNone": "Офлайн-режим включён. Данные поездки берём из локальной копии.",
+        "messageOne": "Офлайн-режим включён. {count} изменение ждёт синхронизации.",
+        "messageMany": "Офлайн-режим включён. Ждут синхронизации: {count}.",
+        "browser": "Офлайн-режим включён. Последние правки хранятся на этом устройстве до возвращения связи.",
+        "service": "Синхронизация с облаком сейчас недоступна. Последние правки ждут в очереди и не потеряются."
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
-        "service": "Connection is degraded. We are retrying queued edits in the background."
+        "messageNone": "Связь слабая. Правки защищены локальной очередью.",
+        "messageOne": "Связь слабая. {count} изменение ждёт отправки.",
+        "messageMany": "Связь слабая. Ждут отправки: {count}.",
+        "service": "Связь слабая. Отправляем накопленные правки в фоне."
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(включено из отладчика)",
+      "retry": "Повторить синхронизацию",
+      "serverBackup": "На сервере была более свежая версия. Мы сохранили её перед отправкой — при необходимости можно вернуть.",
+      "restoreServerVersion": "Восстановить версию с сервера",
+      "syncingOne": "Отправляем {count} изменение в облако…",
+      "syncingMany": "Отправляем изменения в облако: {count}…",
+      "pendingOne": "{count} изменение ждёт отправки.",
+      "pendingMany": "Ждут отправки: {count}."
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "Состояние синхронизации",
+      "syncCompleted": "Накопленные изменения поездки синхронизированы.",
+      "serverBackupRestored": "Резервная копия поездки с сервера восстановлена.",
       "conflictPreserved": "На сервере были более новые изменения для этой поездки. Ваша офлайн-версия сохранена как резервная копия.",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "Связь восстановлена. Отправляем {count} изменение.",
+      "syncStartedMany": "Связь восстановлена. Отправляем изменения: {count}.",
+      "syncPartialFailureOne": "{count} изменение всё ещё не отправлено. Можно повторить.",
+      "syncPartialFailureMany": "Всё ещё не отправлено изменений: {count}. Можно повторить."
     },
     "globalBadge": {
-      "offline": "Offline",
-      "syncing": "Syncing...",
-      "online": "Online",
+      "offline": "Офлайн",
+      "syncing": "Синхронизация…",
+      "online": "В сети",
       "details": {
-        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
-        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
-        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
-        "online": "Connection is healthy and sync is up to date."
+        "offlineBrowser": "Вы офлайн. Правки остаются на этом устройстве и уйдут, как только связь вернётся.",
+        "offlineService": "Интернет работает, но синхронизация с облаком недоступна. Мы продолжим повторять попытки.",
+        "syncingQueue": "Отправляем накопленные правки. Осталось: {count}.",
+        "online": "Связь в порядке, всё синхронизировано."
       }
     }
   },
@@ -312,52 +314,52 @@
     },
     "generation": {
       "strip": {
-        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
-        "running": "Trip generation is running...",
-        "retry": "Retry generation",
-        "retrying": "Retrying...",
+        "failedDefault": "Не удалось составить поездку. Посмотрите диагностику или повторите с моделью по умолчанию.",
+        "running": "Составляем вашу поездку…",
+        "retry": "Составить заново",
+        "retrying": "Пробуем снова…",
         "slow": "Это занимает больше времени, чем обычно.",
         "abortRetry": "Прервать и повторить",
         "changeModel": "Сменить модель"
       },
       "tripInfo": {
-        "title": "AI generation",
-        "provider": "Provider",
-        "model": "Model",
-        "providerModel": "Provider model",
-        "requestId": "Request ID",
-        "runTime": "Run time",
-        "httpStatus": "HTTP status",
-        "started": "Started",
-        "finished": "Finished",
-        "failureKind": "Failure kind",
-        "errorCode": "Error code",
-        "errorMessage": "Error message",
-        "generatedAt": "Generated at",
-        "recentAttempts": "Recent attempts",
-        "modelFallback": "Model n/a",
-        "retry": "Retry generation with default model",
-        "retrying": "Retrying with default model...",
+        "title": "Генерация ИИ",
+        "provider": "Провайдер",
+        "model": "Модель",
+        "providerModel": "Модель провайдера",
+        "requestId": "ID запроса",
+        "runTime": "Длительность",
+        "httpStatus": "HTTP-статус",
+        "started": "Начало",
+        "finished": "Завершение",
+        "failureKind": "Тип сбоя",
+        "errorCode": "Код ошибки",
+        "errorMessage": "Текст ошибки",
+        "generatedAt": "Создано",
+        "recentAttempts": "Последние попытки",
+        "modelFallback": "Модель н/д",
+        "retry": "Составить заново с моделью по умолчанию",
+        "retrying": "Пробуем снова с моделью по умолчанию…",
         "state": {
-          "failed": "failed",
-          "running": "running",
-          "queued": "queued",
-          "succeeded": "succeeded"
+          "failed": "сбой",
+          "running": "выполняется",
+          "queued": "в очереди",
+          "succeeded": "готово"
         },
         "orchestration": "Режим выполнения"
       },
       "retry": {
-        "readOnly": "This trip is read-only, so generation retry is unavailable.",
-        "readOnlyTitle": "Retry unavailable",
-        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
-        "missingSnapshotTitle": "Retry unavailable",
-        "queued": "Trip generation retry started and is running in the background.",
-        "queuedTitle": "Retry started",
-        "completed": "Trip generation completed with the default model.",
-        "completedTitle": "Retry completed",
-        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
-        "failedTitle": "Retry failed",
-        "unexpected": "Retry failed unexpectedly."
+        "readOnly": "Эта поездка доступна только для чтения, поэтому составить её заново нельзя.",
+        "readOnlyTitle": "Повтор недоступен",
+        "missingSnapshot": "Для повтора нужны сохранённые исходные данные, а у этой поездки их нет.",
+        "missingSnapshotTitle": "Повтор недоступен",
+        "queued": "Новая попытка запущена и идёт в фоне.",
+        "queuedTitle": "Повтор запущен",
+        "completed": "Поездка составлена с моделью по умолчанию.",
+        "completedTitle": "Повтор удался",
+        "failed": "Составить поездку снова не удалось. Посмотрите диагностику и попробуйте позже.",
+        "failedTitle": "Повтор не удался",
+        "unexpected": "Повтор неожиданно завершился ошибкой."
       }
     },
     "pendingAuth": {
@@ -380,131 +382,502 @@
       "description": "Некоторые остановки содержат практические предупреждения с учетом вашего профиля путешественника."
     },
     "header": {
-      "titleTooltipEditable": "Open trip details and edit the title",
-      "titleTooltipReadonly": "Open trip details",
-      "editTitleCta": "Edit title",
-      "openDetailsCta": "Open details",
-      "trips": "Trips",
-      "tripsTooltip": "Back to your trips",
-      "share": "Share",
-      "shareDisabled": "Activate this trip to share it"
+      "titleTooltipEditable": "Открыть сведения о поездке и изменить название",
+      "titleTooltipReadonly": "Открыть сведения о поездке",
+      "editTitleCta": "Изменить название",
+      "openDetailsCta": "Открыть сведения",
+      "trips": "Поездки",
+      "tripsTooltip": "Назад к вашим поездкам",
+      "share": "Поделиться",
+      "shareDisabled": "Активируйте поездку, чтобы поделиться ею"
     },
     "zoom": {
-      "fit": "Fit",
-      "fitAria": "Fit timeline to available space",
-      "presetAria": "Set timeline zoom to {value}"
+      "fit": "Вместить",
+      "fitAria": "Вместить таймлайн в доступное пространство",
+      "presetAria": "Установить масштаб таймлайна на {value}"
     },
     "infoDialog": {
-      "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
-      "close": "Close trip details dialog",
+      "title": "Сведения о поездке",
+      "description": "Измените основное, посмотрите историю, экспортируйте поездку и загляните в справку по направлению.",
+      "close": "Закрыть сведения о поездке",
       "tabs": {
-        "general": "General",
-        "history": "History",
-        "export": "Export",
-        "destination": "Destination",
-        "debug": "Debug"
+        "general": "Основное",
+        "history": "История",
+        "export": "Экспорт",
+        "importExport": "Импорт и экспорт",
+        "destination": "Направление",
+        "debug": "Отладка"
       },
       "general": {
-        "titleLabel": "Trip title",
+        "titleLabel": "Название поездки",
         "editAction": "Изменить название",
         "saveAction": "Сохранить название",
-        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
-        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
-        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
-        "favoriteAdd": "Add to favorites",
-        "favoriteRemove": "Remove from favorites",
-        "favoriteOn": "Favorite",
-        "favoriteOff": "Favorite",
-        "retryInProgress": "Retry is already in progress.",
-        "openBenchmark": "Open in AI Benchmark",
+        "editHint": "Нажмите на название, чтобы переименовать поездку, или поправьте здесь главное.",
+        "readOnlyHintExample": "Примеры поездок доступны только для чтения. Сначала скопируйте поездку, чтобы переименовать её или добавить в избранное.",
+        "readOnlyHintShared": "Эта поездка открыта только для чтения. Сведения посмотреть можно, а редактировать — нет.",
+        "favoriteAdd": "В избранное",
+        "favoriteRemove": "Убрать из избранного",
+        "favoriteOn": "Избранное",
+        "favoriteOff": "Избранное",
+        "retryInProgress": "Повтор уже выполняется.",
+        "openBenchmark": "Открыть в AI Benchmark",
         "sections": {
-          "meta": "Trip meta",
-          "source": "Trip source"
+          "meta": "Данные поездки",
+          "source": "Источник поездки"
         },
         "meta": {
-          "duration": "Duration",
-          "totalDays": "Total days",
-          "totalDaysValue": "{count} days",
+          "duration": "Длительность",
+          "totalDays": "Всего дней",
+          "totalDaysValue": "дней: {count}",
           "tripSpan": "Дни и ночи",
           "tripSpanValue": "{days} дней / {nights} ночей",
-          "cities": "Cities",
-          "totalDistance": "Total distance",
-          "owner": "Owner",
-          "access": "Access"
+          "cities": "Города",
+          "totalDistance": "Общее расстояние",
+          "owner": "Владелец",
+          "access": "Доступ"
         },
-        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
-        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
-        "viewSource": "View source"
+        "sourceSharedDescription": "Этот маршрут скопирован из поездки, которой с вами поделились.",
+        "sourceTripDescription": "Этот маршрут скопирован из другой вашей поездки.",
+        "viewSource": "Открыть оригинал"
       },
       "history": {
-        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
-        "undo": "Undo",
-        "redo": "Redo",
-        "showAll": "Show all",
-        "showRecent": "Show recent",
-        "empty": "No history entries yet.",
-        "current": "Current",
-        "notSynced": "Not synced",
-        "go": "Go",
-        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
-        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
-        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
-        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+        "example": "Примеры поездок не сохраняют историю. Сначала скопируйте поездку, чтобы сохранять правки и возвращаться к ним.",
+        "undo": "Отменить",
+        "redo": "Вернуть",
+        "showAll": "Показать всё",
+        "showRecent": "Показать недавние",
+        "empty": "В истории пока пусто.",
+        "current": "Текущее",
+        "notSynced": "Не синхронизировано",
+        "go": "Перейти",
+        "pendingSyncOne": "1 недавнее изменение сохранено на устройстве и ещё не синхронизировано.",
+        "pendingSyncMany": "Сохранено на устройстве и ещё не синхронизировано изменений: {count}.",
+        "failedSyncOne": "1 изменение из очереди так и не синхронизировалось. Повторите синхронизацию, чтобы опубликовать его.",
+        "failedSyncMany": "Не синхронизировалось изменений из очереди: {count}. Повторите синхронизацию, чтобы опубликовать их."
       },
       "export": {
         "activities": {
-          "title": "Activities calendar",
-          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
-          "action": "Export activities (.ics)"
+          "title": "Календарь активностей",
+          "description": "Выгрузите запланированные активности в файл .ics и добавьте их в свой календарь.",
+          "action": "Выгрузить активности (.ics)"
         },
         "cities": {
-          "title": "Cities calendar",
-          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
-          "action": "Export cities (.ics)"
+          "title": "Календарь городов",
+          "description": "Получите более лаконичный каркас поездки — только приезды и проживание.",
+          "action": "Выгрузить города (.ics)"
         },
         "everything": {
-          "title": "Complete calendar bundle",
-          "description": "Download one calendar file with cities, transfers, and activities together.",
-          "action": "Download everything (.ics)"
+          "title": "Полный календарь",
+          "description": "Скачайте один файл календаря с городами, переездами и активностями.",
+          "action": "Скачать всё (.ics)"
         },
         "print": {
-          "title": "Print layout",
-          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
-          "action": "Open print layout"
+          "title": "Версия для печати",
+          "description": "Откройте версию поездки для печати — удобно для PDF или бумажной распечатки.",
+          "action": "Открыть версию для печати"
+        }
+      },
+      "myMaps": {
+        "title": "Google My Maps",
+        "layers": {
+          "route": "Маршрут",
+          "stops": "Остановки",
+          "activities": "Занятия",
+          "dayTrips": "Однодневные поездки",
+          "ideas": "Идеи"
+        },
+        "export": {
+          "title": "Скачать для Google My Maps",
+          "description": "Сохраните остановки, маршрут, занятия и идеи в файл KML. В My Maps создайте карту и выберите «Импорт».",
+          "action": "Скачать .kml",
+          "skipped_one": "{count} место без координат не попало в файл.",
+          "skipped_few": "{count} места без координат не попали в файл.",
+          "skipped_many": "{count} мест без координат не попали в файл.",
+          "skipped_other": "{count} места без координат не попали в файл."
+        },
+        "import": {
+          "title": "Импорт из Google My Maps",
+          "description": "Вставьте ссылку на карту с доступом «Все, у кого есть ссылка». Её метки попадут в идеи этой поездки, и их можно будет распределить по дням.",
+          "linkLabel": "Ссылка на Google My Maps",
+          "linkPlaceholder": "https://www.google.com/maps/d/…",
+          "load": "Загрузить карту",
+          "loading": "Загрузка…",
+          "upload": "Загрузить файл KML или KMZ"
+        },
+        "preview": {
+          "untitled": "Карта без названия",
+          "places_one": "{count} место",
+          "places_few": "{count} места",
+          "places_many": "{count} мест",
+          "places_other": "{count} места",
+          "alreadyKept_one": "{count} уже есть в этой поездке",
+          "alreadyKept_few": "{count} уже есть в этой поездке",
+          "alreadyKept_many": "{count} уже есть в этой поездке",
+          "alreadyKept_other": "{count} уже есть в этой поездке",
+          "shapes_one": "{count} линия или фигура не будет импортирована",
+          "shapes_few": "{count} линии или фигуры не будут импортированы",
+          "shapes_many": "{count} линий или фигур не будут импортированы",
+          "shapes_other": "{count} линии или фигуры не будут импортированы",
+          "add_one": "Добавить {count} место в идеи",
+          "add_few": "Добавить {count} места в идеи",
+          "add_many": "Добавить {count} мест в идеи",
+          "add_other": "Добавить {count} места в идеи",
+          "nothingNew": "Всё с этой карты уже есть в этой поездке.",
+          "cancel": "Отмена"
+        },
+        "progress": "Ищем места на карте… {done} из {total}",
+        "done": {
+          "added_one": "{count} место добавлено в идеи.",
+          "added_few": "{count} места добавлены в идеи.",
+          "added_many": "{count} мест добавлено в идеи.",
+          "added_other": "{count} места добавлены в идеи.",
+          "unlocated_one": "{count} место пока не найдено на карте. Вы сможете указать его при планировании.",
+          "unlocated_few": "{count} места пока не найдены на карте. Вы сможете указать их при планировании.",
+          "unlocated_many": "{count} мест пока не найдено на карте. Вы сможете указать их при планировании.",
+          "unlocated_other": "{count} места пока не найдены на карте. Вы сможете указать их при планировании.",
+          "importAnother": "Импортировать другую карту",
+          "onMap": "Теперь они на карте — бледные, пока вы их не сохраните или не пропустите."
+        },
+        "openIdeas": "Открыть идеи",
+        "errors": {
+          "invalid_link": "Это не ссылка Google My Maps. В My Maps нажмите «Поделиться» и скопируйте ссылку — в ней есть /maps/d/.",
+          "not_shared": "Доступ к этой карте закрыт. В My Maps откройте доступ «Все, у кого есть ссылка» или загрузите карту файлом KML.",
+          "network": "Не удалось связаться с Google Maps. Проверьте подключение и попробуйте ещё раз.",
+          "not_kml": "Этот файл не является картой. В My Maps откройте меню, выберите «Экспорт в KML/KMZ» и загрузите этот файл.",
+          "empty": "На этой карте нет меток для импорта.",
+          "unsupported_file": "Не удалось прочитать файл. Загрузите файл .kml или .kmz из My Maps."
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "Сведения о направлении откроются, когда вы активируете поездку.",
+        "empty": "Для этой поездки пока нет сведений о направлении.",
+        "futureChecksTitle": "Что появится о направлении",
+        "futureChecksDescription": "Здесь появятся более подробные подсказки по мере того, как мы расширяем данные о направлениях.",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
+          "visa": "Виза",
+          "entryRules": "Правила въезда",
+          "safety": "Безопасность",
+          "customs": "Таможня",
+          "connectivity": "Связь",
+          "health": "Здоровье"
         }
       }
     },
     "claimConflict": {
-      "eyebrow": "Claim unavailable",
-      "title": "This trip draft was already claimed",
-      "descriptionLoggedOut": "Sign in with the original account or start a similar trip with the same setup.",
-      "descriptionLoggedIn": "This draft is already attached to another account. Start a similar trip with the same setup.",
-      "loginCta": "Sign in with the original account",
-      "createSimilarCta": "Create similar trip",
-      "benefitsTitle": "What we kept",
+      "eyebrow": "Забрать не получится",
+      "title": "Этот черновик поездки уже забрали",
+      "descriptionLoggedOut": "Войдите под исходным аккаунтом или начните похожую поездку с теми же настройками.",
+      "descriptionLoggedIn": "Черновик уже привязан к другому аккаунту. Начните похожую поездку с теми же настройками.",
+      "loginCta": "Войти под исходным аккаунтом",
+      "createSimilarCta": "Создать похожую поездку",
+      "benefitsTitle": "Что мы сохранили",
       "benefits": {
-        "prefill": "Reuse your traveler setup, dates, and transport choices.",
-        "adjust": "Adjust the draft before starting a fresh generation."
+        "prefill": "Ваш профиль путешественника, даты и выбранный транспорт останутся.",
+        "adjust": "Поправьте черновик перед новой генерацией."
       }
     },
     "addActivity": {
       "aiError": "Не удалось загрузить идеи занятий. Попробуйте ещё раз.",
       "aiRetry": "Повторить"
+    },
+    "mapLinks": {
+      "google": "Google Карты",
+      "apple": "Apple Карты",
+      "heading": "Открыть в картах",
+      "approximate": "Приблизительное положение",
+      "openDetails": "Открыть детали",
+      "close": "Закрыть",
+      "popupLabel": "Детали активности"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "Места, которые вы планировали посетить.",
+        "label": "Метки активностей"
+      },
+      "arrows": {
+        "description": "Показывают, в какую сторону идёт маршрут.",
+        "label": "Стрелки направления"
+      },
+      "base": {
+        "description": "Нарисованная карта или снимки со спутника.",
+        "label": "Основа",
+        "map": "Карта",
+        "satellite": "Спутник"
+      },
+      "boundaries": {
+        "description": "Границы внутри страны, а не только между странами.",
+        "label": "Границы регионов"
+      },
+      "buildings": {
+        "description": "Объёмные здания, лучше видно с наклоном.",
+        "label": "3D-здания"
+      },
+      "cityFocus": {
+        "description": "Показывает город по вашему плану и скрывает остальной маршрут.",
+        "label": "Приближать выбранный город"
+      },
+      "cityNames": {
+        "description": "Подписывает каждую остановку маршрута.",
+        "label": "Названия городов"
+      },
+      "close": "Закрыть",
+      "colorMode": {
+        "brand": "Один акцент",
+        "label": "Цвет",
+        "trip": "Цвета городов"
+      },
+      "colorTheme": {
+        "default": "Полный",
+        "description": "Сколько цвета несёт карта.",
+        "faded": "Приглушённый",
+        "label": "Цвет",
+        "monochrome": "Моно",
+        "satelliteNote": "У спутниковых снимков свой цвет."
+      },
+      "copied": "Скопировано",
+      "copyPreset": "Копировать",
+      "dashed": {
+        "description": "Пунктир вместо сплошных линий.",
+        "label": "Пунктирные линии"
+      },
+      "description": "Сохраняется с этой поездкой по мере изменений.",
+      "dimPast": {
+        "description": "Отодвигает на задний план уже прошедшие дни.",
+        "label": "Приглушать прошедшие дни"
+      },
+      "globe": {
+        "description": "Изгибает мир. Лучше всего для длинной поездки и большой карты.",
+        "label": "Вид глобуса"
+      },
+      "googleOnly": "Доступно с Google Maps.",
+      "group": {
+        "features": "Элементы",
+        "labels": "Подписи",
+        "pins": "Ваши метки",
+        "routes": "Линии маршрута"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "Какое приложение предлагается первым, когда вы открываете место.",
+        "google": "Google Maps",
+        "label": "Открывать места в"
+      },
+      "light": {
+        "auto": "Автоматически",
+        "dawn": "Рассвет",
+        "day": "День",
+        "description": "Время суток, под которое освещена карта. Автоматически следует настройке устройства.",
+        "dusk": "Закат",
+        "googleNote": "В Google Maps есть только день и ночь.",
+        "label": "Освещение",
+        "night": "Ночь"
+      },
+      "mapboxOnly": "Доступно с Mapbox.",
+      "mapboxUnavailableHere": "Нужен Mapbox, а он здесь не настроен.",
+      "paths": {
+        "description": "Пешеходные дорожки и тропы.",
+        "label": "Пешеходные дорожки"
+      },
+      "pitch": {
+        "description": "Смотреть вдоль карты, а не строго сверху.",
+        "flat": "Без наклона",
+        "label": "Наклон"
+      },
+      "placeLabels": {
+        "description": "Города и посёлки на основе карты.",
+        "label": "Названия мест"
+      },
+      "poiLabels": {
+        "description": "Магазины, достопримечательности и места, которые вы не планировали.",
+        "label": "Точки интереса"
+      },
+      "preset": {
+        "label": "Пресеты"
+      },
+      "renderer": {
+        "auto": "Автоматически",
+        "description": "Какую карту рисует приложение.",
+        "google": "Google",
+        "label": "Поставщик карт",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox здесь не настроен, поэтому используется Google."
+      },
+      "reset": "Сбросить",
+      "roadLabels": {
+        "description": "Полезны вблизи, мешают издалека.",
+        "label": "Названия улиц"
+      },
+      "roads": {
+        "description": "Выключите, чтобы на карте осталась только ваша поездка.",
+        "label": "Дороги и транспорт"
+      },
+      "routeMode": {
+        "description": "Идти по дорогам или чертить прямо между остановками.",
+        "label": "Форма",
+        "realistic": "По дорогам",
+        "simple": "Напрямую"
+      },
+      "saveAsDefault": "Сохранить",
+      "saveAsDefaultTooltip": "Сохранить как мой пресет",
+      "saved": "Сохранено",
+      "switchToMapbox": "Перейти на Mapbox",
+      "tab": {
+        "camera": "Камера",
+        "detail": "Детали",
+        "look": "Вид",
+        "trip": "Поездка"
+      },
+      "terrain": {
+        "description": "Подчёркивает холмы и горы.",
+        "label": "Рельеф"
+      },
+      "thickness": {
+        "label": "Толщина",
+        "normal": "Обычная",
+        "thick": "Толстая",
+        "thin": "Тонкая"
+      },
+      "title": "Настроить карту",
+      "traffic": {
+        "description": "Текущая обстановка на дорогах.",
+        "label": "Пробки"
+      },
+      "transitLabels": {
+        "description": "Остановки и станции с названиями.",
+        "label": "Названия станций"
+      },
+      "transitLines": {
+        "description": "Линии метро и железных дорог на карте.",
+        "label": "Линии транспорта"
+      },
+      "style": {
+        "standard": "Стандартный",
+        "minimal": "Минимальный",
+        "clean": "Чистый",
+        "dark": "Тёмный",
+        "cleanDark": "Чистый тёмный",
+        "satellite": "Спутник"
+      },
+      "showWholeJourney": "Показать весь маршрут",
+      "open": "Настроить карту",
+      "presetSet": {
+        "label": "Начать с",
+        "default": "Обычный",
+        "detailed": "Подробный",
+        "minimalistic": "Минимум",
+        "mine": "Мой",
+        "customNote": "Ваш собственный набор настроек."
+      },
+      "myLocation": {
+        "blocked": "Доступ к геолокации заблокирован в настройках браузера.",
+        "description": "Показывает, где вы находитесь во время поездки. Хранится только на этом устройстве.",
+        "label": "Моё местоположение"
+      }
+    },
+    "activityPlan": {
+      "dialogTitle": "Добавить в план",
+      "sectionLabel": "Остановка и день",
+      "kindLabel": "Что вы добавляете?",
+      "kindActivity": "Занятие",
+      "kindDayTrip": "Однодневная поездка",
+      "stayLabel": "Остановка",
+      "stayPlaceholder": "Выберите остановку",
+      "dayLabel": "День",
+      "dayOption": "День {day} · {date}",
+      "dayOptionShort": "День {day}",
+      "destinationLabel": "Куда",
+      "destinationPlaceholder": "например, Синтра",
+      "routeHint": "Отправление из {stay} и возвращение туда в тот же день.",
+      "routeHintOther": "Отправление из {stay}, день заканчивается в {returnStay}.",
+      "moreOptions": "Другие параметры",
+      "returnLabel": "День заканчивается в",
+      "returnSame": "{stay} (возвращение туда же)",
+      "dayTripTitlePlaceholder": "например, дворцы Синтры",
+      "submitDayTrip": "Добавить поездку",
+      "findingPlace": "Ищем место…"
+    },
+    "timelineControls": {
+      "horizontalDirection": "Горизонтальный таймлайн",
+      "verticalDirection": "Вертикальный таймлайн",
+      "zoomOut": "Уменьшить масштаб таймлайна",
+      "zoomIn": "Увеличить масштаб таймлайна",
+      "calendarView": "Календарь",
+      "listView": "Список"
+    },
+    "panels": {
+      "resizeDetails": "Изменить ширину панели деталей",
+      "resizeTimelineAndMap": "Изменить размер таймлайна и карты",
+      "resizeTimeline": "Изменить высоту таймлайна"
+    },
+    "mapControls": {
+      "minimizePreview": "Свернуть превью карты",
+      "maximizePreview": "Развернуть превью карты",
+      "layoutVertical": "Вертикальная раскладка",
+      "layoutHorizontal": "Горизонтальная раскладка",
+      "fitToItinerary": "Вписать маршрут в карту",
+      "shrinkMap": "Уменьшить карту",
+      "expandMap": "Увеличить карту",
+      "showLabels": "Показать названия городов",
+      "hideLabels": "Скрыть названия городов",
+      "showActivityMarkers": "Показать метки активностей",
+      "hideActivityMarkers": "Скрыть метки активностей",
+      "showMyLocation": "Показать моё местоположение",
+      "centerOnMyLocation": "Центрировать на моём местоположении",
+      "myLocationLocating": "Определяем ваше местоположение…",
+      "myLocationBlocked": "Доступ к геолокации заблокирован. Разрешите его в настройках браузера.",
+      "showIdeaMarkers": "Показать идеи на карте",
+      "hideIdeaMarkers": "Скрыть идеи на карте"
+    },
+    "floatingMap": {
+      "move": "Переместить плавающее превью карты",
+      "useCompactSize": "Компактный размер карты",
+      "useExpandedSize": "Увеличенный размер карты",
+      "switchToLandscape": "Повернуть превью карты горизонтально",
+      "switchToPortrait": "Повернуть превью карты вертикально",
+      "settling": "Превью карты занимает место"
+    },
+    "banners": {
+      "shareViewOnly": "Общая поездка · Только просмотр",
+      "shareEditable": "Общая поездка · Редактирование включено",
+      "snapshotOlder": "Вы смотрите старую версию. У этой поездки есть более новые изменения.",
+      "snapshotCurrent": "Вы смотрите сохранённую версию этой общей поездки.",
+      "openLatest": "Открыть последнюю",
+      "copyTrip": "Скопировать поездку"
+    },
+    "exampleBanner": {
+      "eyebrow": "Пример поездки для знакомства",
+      "title": "Изучайте свободно. Скопируйте, чтобы сохранить и редактировать.",
+      "body": "Этот маршрут — только пример, изменения не сохраняются.",
+      "countryFocus": "Страны: {countries}.",
+      "dismiss": "Закрыть подсказку о примере поездки"
+    },
+    "listView": {
+      "openTransfer": "Открыть детали переезда ({mode})",
+      "taskCompleted": "Выполненная задача",
+      "taskOpen": "Открытая задача",
+      "days": "Дни",
+      "daysRange": "Дни {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Добавить город в конец",
+      "addTransfer": "Добавить переезд",
+      "transportUndecided": "Транспорт не выбран",
+      "transportMode": "Транспорт: {mode}",
+      "addActivity": "Добавить занятие",
+      "occupySpace": "Занять свободное место",
+      "stretchToFill": "Растянуть до соседей",
+      "reverseSelectedCities": "Поменять выбранные города местами"
+    },
+    "ideas": {
+      "keep": "Сохранить",
+      "skip": "Пропустить",
+      "keepNamed": "Сохранить «{title}»",
+      "skipNamed": "Пропустить «{title}»",
+      "reviewHint": "Импортировано и ещё не просмотрено. Сохраните, чтобы метка была яркой на карте, или пропустите.",
+      "popupLabel": "Идея: {title}",
+      "statusToReview": "Нужно просмотреть",
+      "statusSaved": "Сохранено",
+      "unsave": "Отменить сохранение"
     }
   },
   "tripRouteShell": {
@@ -515,8 +888,45 @@
     "loadingExampleTrip": "Загрузка примерной поездки",
     "preparingExamplePlanner": "Подготовка примерного планировщика"
   },
+  "tripAgent": {
+    "title": "Планировать с ИИ",
+    "previewBanner": "Предпросмотр изменений — редактирование приостановлено",
+    "revertToast": "Поездка вернулась к состоянию до этого изменения.",
+    "revertToastTitle": "Изменение отменено",
+    "redo": "Вернуть"
+  },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",
-    "tripsPrunedDescription": "{count, plural, one {Самая старая сохраненная поездка была удалена с этого устройства, чтобы освободить место.} few {# самые старые сохраненные поездки были удалены с этого устройства, чтобы освободить место.} many {# самых старых сохраненных поездок были удалены с этого устройства, чтобы освободить место.} other {# самой старой сохраненной поездки были удалены с этого устройства, чтобы освободить место.}}"
+    "tripsPrunedDescription_one": "Удалена {count} самая старая сохранённая поездка, чтобы освободить место.",
+    "tripsPrunedDescription_few": "Удалены {count} самые старые сохранённые поездки, чтобы освободить место.",
+    "tripsPrunedDescription_many": "Удалено {count} самых старых сохранённых поездок, чтобы освободить место.",
+    "tripsPrunedDescription_other": "Удалено {count} самых старых сохранённых поездок, чтобы освободить место."
+  },
+  "trips": {
+    "pageTitle": "Мои поездки",
+    "pageSubtitle": "Всё, что вы запланировали. После загрузки доступно офлайн.",
+    "signedOut": {
+      "title": "Вы не вошли в аккаунт",
+      "body": "Войдите, чтобы увидеть поездки, сохранённые в вашем аккаунте.",
+      "action": "Войти"
+    },
+    "list": {
+      "searchLabel": "Поиск поездок или городов",
+      "searchPlaceholder": "Поиск поездок или городов...",
+      "empty": "Сохранённых поездок пока нет.",
+      "noMatches": "Ничего не найдено по запросу «{query}».",
+      "favorites": "Избранное",
+      "yourTrips": "Ваши поездки"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Поездки всегда под рукой",
+      "body": "Добавьте TravelFlow на главный экран — поездки будут открываться даже без связи.",
+      "action": "Установить",
+      "dismiss": "Не сейчас",
+      "iosStepShare": "Нажмите «Поделиться»",
+      "iosStepAdd": "затем «На экран «Домой»»"
+    }
   }
 }

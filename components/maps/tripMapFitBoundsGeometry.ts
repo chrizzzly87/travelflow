@@ -5,6 +5,7 @@ import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
 import { normalizeTransportMode } from '../../shared/transportModes';
 import { buildFlightRouteVisualPaths } from './flightRouteGeometry';
 import { resolveTripMapFlightCurveOptions } from './tripMapProviderPresentation';
+import { buildTripMapDayTripDescriptors } from './tripMapDayTripModel';
 
 export const collectTripMapFitBoundsCoordinates = ({
   cities,
@@ -20,6 +21,12 @@ export const collectTripMapFitBoundsCoordinates = ({
   cities.forEach((city) => {
     if (!isFiniteLatLngLiteral(city.coordinates)) return;
     coordinates.push(city.coordinates);
+  });
+
+  // A day trip's destination is part of the journey's shape, so the overview
+  // frames it; an ordinary activity pin never widens the frame.
+  buildTripMapDayTripDescriptors(items).forEach((dayTrip) => {
+    coordinates.push(dayTrip.destination);
   });
 
   for (let index = 0; index < cities.length - 1; index += 1) {

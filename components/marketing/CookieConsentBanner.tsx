@@ -7,6 +7,7 @@ import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { APP_NAME } from '../../config/appGlobals';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
+import { hasPreHydrationInteraction } from '../../services/bootInteractionBridge';
 
 export const CookieConsentBanner: React.FC = () => {
     const { t } = useTranslation('common');
@@ -24,23 +25,50 @@ export const CookieConsentBanner: React.FC = () => {
             return;
         }
 
-        const triggerBanner = () => {
+        // A tap or scroll that happened before this tree mounted still counts:
+        // otherwise the banner waits for a second interaction the visitor has
+        // no reason to make, and it never appears on a slow first mobile load.
+        // Read it here rather than as initial state — rendering the banner on
+        // the hydration render adds a node the prerendered DOM does not have,
+        // and preact/compat hydrates that against the wrong element.
+        if (hasPreHydrationInteraction()) {
             setShouldRender(true);
-            cleanup();
+            return;
+        }
+
+        let mountTimeoutId: number | null = null;
+
+        const triggerBanner = () => {
+            removeListeners();
+            // Render on the next macrotask rather than inside the interaction that
+            // armed the banner. Mounting on `mousedown` inserted a fixed bar over
+            // the bottom of the viewport while the pointer was still down, so a
+            // click started on a control down there resolved against the banner.
+            mountTimeoutId = window.setTimeout(() => {
+                mountTimeoutId = null;
+                setShouldRender(true);
+            }, 0);
+        };
+
+        const removeListeners = () => {
+            window.removeEventListener('scroll', triggerBanner);
+            window.removeEventListener('pointerup', triggerBanner);
+            window.removeEventListener('keyup', triggerBanner);
         };
 
         const cleanup = () => {
-            window.removeEventListener('scroll', triggerBanner);
-            window.removeEventListener('mousedown', triggerBanner);
-            window.removeEventListener('touchstart', triggerBanner);
-            window.removeEventListener('keydown', triggerBanner);
+            removeListeners();
+            if (mountTimeoutId !== null) {
+                window.clearTimeout(mountTimeoutId);
+                mountTimeoutId = null;
+            }
         };
 
-        // Trigger rendering immediately on first user interaction
+        // Arm on the first user interaction, but only once it has finished:
+        // `pointerup` covers both mouse and touch, `scroll` covers a plain swipe.
         window.addEventListener('scroll', triggerBanner, { passive: true });
-        window.addEventListener('mousedown', triggerBanner, { passive: true });
-        window.addEventListener('touchstart', triggerBanner, { passive: true });
-        window.addEventListener('keydown', triggerBanner, { passive: true });
+        window.addEventListener('pointerup', triggerBanner, { passive: true });
+        window.addEventListener('keyup', triggerBanner, { passive: true });
 
         return cleanup;
     }, []);
@@ -61,10 +89,10 @@ export const CookieConsentBanner: React.FC = () => {
 
     return (
         <div className="fixed inset-x-0 bottom-4 z-cookie-consent px-4">
-            <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-                <p className="text-sm leading-6 text-slate-700">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-border dark:bg-card/95 dark:shadow-none">
+                <p className="text-sm leading-6 text-foreground dark:text-foreground">
                     {t('cookieBanner.message', { appName: APP_NAME })}{' '}
-                    <Link to={buildLocalizedMarketingPath('cookies', locale)} className="font-semibold text-accent-700 hover:text-accent-800">
+                    <Link to={buildLocalizedMarketingPath('cookies', locale)} className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">
                         {t('cookieBanner.policyLinkLabel')}
                     </Link>
                     .
@@ -73,7 +101,7 @@ export const CookieConsentBanner: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => handleConsent('essential')}
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+                        className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:border-slate-400 dark:border-border dark:text-foreground dark:hover:border-border"
                         {...getAnalyticsDebugAttributes('consent__banner--reject', { source: 'cookie_banner' })}
                     >
                         {t('buttons.essentialOnly')}
@@ -81,7 +109,7 @@ export const CookieConsentBanner: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => handleConsent('all')}
-                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
+                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
                         {...getAnalyticsDebugAttributes('consent__banner--accept', { source: 'cookie_banner' })}
                     >
                         {t('buttons.acceptAll')}

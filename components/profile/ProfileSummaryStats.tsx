@@ -22,16 +22,16 @@ export const ProfileSummaryStats: React.FC<ProfileSummaryStatsProps> = ({
       {stats.map((stat) => (
         <article
           key={stat.id}
-          className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-right"
+          className="rounded-xl border border-border bg-secondary p-4 text-right"
         >
           <p
             className={stat.accent
-              ? 'text-3xl font-black tracking-tight text-accent-700 tabular-nums [font-variant-numeric:tabular-nums]'
-              : 'text-3xl font-black tracking-tight text-slate-900 tabular-nums [font-variant-numeric:tabular-nums]'}
+              ? 'text-3xl font-black tracking-tight text-accent-700 tabular-nums [font-variant-numeric:tabular-nums] dark:text-accent-200'
+              : 'text-3xl font-black tracking-tight text-foreground tabular-nums [font-variant-numeric:tabular-nums]'}
           >
             <ProfileStatCountUp value={stat.value} locale={locale} />
           </p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{stat.label}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{stat.label}</p>
         </article>
       ))}
     </div>

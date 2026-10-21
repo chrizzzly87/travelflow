@@ -198,7 +198,7 @@
   "notifications": {
     "prompt": {
       "title": "Ricevere una notifica quando il viaggio e pronto?",
-      "message": "La generazione del viaggio puo richiedere circa un minuto. Attiva le notifiche del browser e ti avviseremo quando il tuo itinerario sara pronto.",
+      "message": "La generazione del viaggio può richiedere circa un minuto. Attiva le notifiche del browser e ti avviseremo quando il tuo itinerario sarà pronto.",
       "enable": "Attiva notifiche",
       "notNow": "Non ora"
     },

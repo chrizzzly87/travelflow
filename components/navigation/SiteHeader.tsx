@@ -16,15 +16,18 @@ import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery
 import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
+import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootInteractionBridge';
+// Deliberately NOT lazy. The burger is the only way into navigation on a phone,
+// and a separate chunk meant the first tap opened nothing until a round trip
+// finished (Suspense rendered null meanwhile). MobileMenu adds ~11KB to the
+// header chunk, which is far cheaper than a network hop on a tap.
+import { MobileMenu } from './MobileMenu';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
-
-const MobileMenu = lazyWithRecovery('MobileMenu', () =>
-    import('./MobileMenu').then((module) => ({ default: module.MobileMenu }))
-);
 
 const AccountMenu = lazyWithRecovery('AccountMenu', () =>
     import('./AccountMenu').then((module) => ({ default: module.AccountMenu }))
@@ -43,8 +46,8 @@ interface SiteHeaderProps {
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const baseClass = 'relative inline-flex min-h-10 items-center font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
-    if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
+    const baseClass = 'relative inline-flex min-h-10 items-center font-semibold text-muted-foreground transition-colors hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground after:pointer-events-none after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
+    if (isActive) return `${baseClass} text-foreground dark:text-foreground after:scale-x-100`;
     return baseClass;
 };
 
@@ -64,6 +67,19 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     hideCreateTrip = false,
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // A tap on the burger can land seconds before this chunk exists — the
+    // prerendered header is painted long before it is interactive. The inline
+    // boot script records that tap here; open the menu once we are mounted.
+    //
+    // This has to be an effect, not lazy initial state: opening during the
+    // hydration render adds a sibling the prerendered DOM does not have, and
+    // preact/compat hydrates it against whatever node follows the header
+    // without applying attributes — the drawer came out inline in the page
+    // flow, with no role="dialog". Reconciling after mount renders it properly.
+    useEffect(() => {
+        if (consumeBootIntent(BOOT_INTENT_MOBILE_MENU)) setIsMobileMenuOpen(true);
+    }, []);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     // The active-nav underline is derived after mount, not on the first render.
     // The prerendered markup has no active link, and preact/compat does NOT
@@ -160,16 +176,16 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
-        ? 'sticky top-0 z-[1600] isolate border-b border-white/20 bg-white/80 backdrop-blur'
-        : 'sticky top-0 z-[1600] isolate border-b border-slate-200/70 bg-white/90 backdrop-blur';
+        ? 'sticky top-0 z-[1600] isolate border-b border-white/20 bg-card/80 backdrop-blur dark:border-white/10 dark:bg-background/80'
+        : 'sticky top-0 z-[1600] isolate border-b border-border/70 bg-card/90 backdrop-blur dark:border-border dark:bg-background/90';
 
     const loginClass = isGlass
-        ? 'hidden min-h-10 items-center rounded-lg border border-slate-200/70 bg-white/60 px-3 py-2 text-sm font-medium text-slate-600 transition-[scale,border-color,color] duration-150 ease-out hover:border-slate-300 hover:text-slate-900 active:scale-[0.96] sm:inline-flex'
-        : 'hidden min-h-10 items-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-[scale,border-color,color] duration-150 ease-out hover:border-slate-300 hover:text-slate-900 active:scale-[0.96] sm:inline-flex';
+        ? 'hidden min-h-10 items-center rounded-lg border border-border/70 bg-card/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-[scale,border-color,color] duration-150 ease-out hover:border-border hover:text-foreground active:scale-[0.96] sm:inline-flex dark:border-border dark:bg-card/60 dark:text-muted-foreground dark:hover:border-border dark:hover:text-foreground'
+        : 'hidden min-h-10 items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-[scale,border-color,color] duration-150 ease-out hover:border-border hover:text-foreground active:scale-[0.96] sm:inline-flex dark:border-border dark:text-muted-foreground dark:hover:border-border dark:hover:text-foreground';
 
     const burgerClass = isGlass
-        ? 'flex size-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
-        : 'flex size-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
+        ? 'flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground lg:hidden dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground'
+        : 'flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:hidden dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground';
 
     return (
         <>
@@ -219,14 +235,14 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 ariaLabel={t('language.label')}
                                 value={selectedLocale}
                                 onChange={handleLocaleChange}
-                                triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300"
+                                triggerClassName="h-9 rounded-lg border-border bg-card py-2 pl-3 pr-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border dark:border-border dark:bg-card dark:text-foreground dark:shadow-none"
                             />
                         </div>
                         {isAuthenticated ? (
                             <Suspense
                                 fallback={(
                                     <span
-                                        className="hidden size-10 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
+                                        className="hidden size-10 rounded-full border border-border bg-secondary lg:inline-flex"
                                         aria-hidden="true"
                                     />
                                 )}
@@ -267,14 +283,16 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 onMouseEnter={prewarmCreateTripRoute}
                                 onFocus={prewarmCreateTripRoute}
                                 onTouchStart={prewarmCreateTripRoute}
-                                className="inline-flex min-h-10 items-center rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96]"
+                                className="inline-flex min-h-10 items-center rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300"
                                 {...navDebugAttributes('create_trip')}
                             >
                                 {t('nav.createTrip')}
                             </NavLink>
                         )}
+                        <ThemeToggle analyticsSurface="nav" className="hidden lg:inline-flex" />
                         <button type="button"
                             onClick={() => setIsMobileMenuOpen(true)}
+                            data-tf-boot-intent={BOOT_INTENT_MOBILE_MENU}
                             className={burgerClass}
                             aria-label={t('nav.openMenu')}
                             {...getAnalyticsDebugAttributes('mobile_nav__menu--open')}
@@ -286,14 +304,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
             </header>
 
             {isMobileMenuOpen && (
-                <Suspense fallback={null}>
-                    <MobileMenu
-                        isOpen={isMobileMenuOpen}
-                        onClose={() => setIsMobileMenuOpen(false)}
-                        onMyTripsClick={onMyTripsClick}
-                        onMyTripsIntent={onMyTripsIntent}
-                    />
-                </Suspense>
+                <MobileMenu
+                    isOpen={isMobileMenuOpen}
+                    onClose={() => setIsMobileMenuOpen(false)}
+                    onMyTripsClick={onMyTripsClick}
+                    onMyTripsIntent={onMyTripsIntent}
+                />
             )}
         </>
     );

@@ -9,9 +9,9 @@ import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-        <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">{title}</h2>
-        <div className="mt-4 text-sm leading-6 text-slate-700">
+    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
+        <h2 className="text-xl font-semibold text-foreground md:text-2xl">{title}</h2>
+        <div className="mt-4 text-sm leading-6 text-foreground">
             {children}
         </div>
     </section>
@@ -41,12 +41,12 @@ export const ImprintPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="space-y-6">
-                <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('imprint.heroEyebrow')}</p>
-                    <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600 dark:text-accent-300">{t('imprint.heroEyebrow')}</p>
+                    <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl">
                         {t('imprint.title')}
                     </h1>
-                    <p className="mt-4 text-base text-slate-700 md:text-lg">
+                    <p className="mt-4 text-base text-foreground md:text-lg">
                         {t('imprint.heroIntro', {
                             appName: APP_NAME,
                             representativeName: entity.representativeName,
@@ -58,15 +58,15 @@ export const ImprintPage: React.FC = () => {
                 <Section title={t('imprint.providerSectionTitle')}>
                     <dl className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <dt className="font-semibold text-slate-900">{t('imprint.providerNameLabel')}</dt>
+                            <dt className="font-semibold text-foreground">{t('imprint.providerNameLabel')}</dt>
                             <dd>{entity.representativeName}</dd>
                         </div>
                         <div>
-                            <dt className="font-semibold text-slate-900">{t('imprint.businessDesignationLabel')}</dt>
+                            <dt className="font-semibold text-foreground">{t('imprint.businessDesignationLabel')}</dt>
                             <dd translate="no">{entity.businessName}</dd>
                         </div>
                         <div className="md:col-span-2">
-                            <dt className="font-semibold text-slate-900">{t('imprint.addressLabel')}</dt>
+                            <dt className="font-semibold text-foreground">{t('imprint.addressLabel')}</dt>
                             <dd>
                                 <address className="not-italic">
                                     {entity.addressLines.map((line) => (
@@ -76,25 +76,25 @@ export const ImprintPage: React.FC = () => {
                             </dd>
                         </div>
                         <div>
-                            <dt className="font-semibold text-slate-900">{t('imprint.contactLabel')}</dt>
+                            <dt className="font-semibold text-foreground">{t('imprint.contactLabel')}</dt>
                             <dd className="space-y-1">
                                 <div>
-                                    <span className="font-semibold text-slate-900">{t('imprint.emailLabel')}</span>{' '}
-                                    <a className="text-accent-700 hover:underline" href={`mailto:${entity.contactEmail}`}>
+                                    <span className="font-semibold text-foreground">{t('imprint.emailLabel')}</span>{' '}
+                                    <a className="text-accent-700 hover:underline dark:text-accent-200" href={`mailto:${entity.contactEmail}`}>
                                         {entity.contactEmail}
                                     </a>
                                 </div>
                                 {additionalContactEmails.map((email) => (
                                     <div key={email}>
-                                        <a className="text-accent-700 hover:underline" href={`mailto:${email}`}>
+                                        <a className="text-accent-700 hover:underline dark:text-accent-200" href={`mailto:${email}`}>
                                             {email}
                                         </a>
                                     </div>
                                 ))}
                                 <div>
-                                    <span className="font-semibold text-slate-900">{t('imprint.contactFormLabel')}</span>{' '}
+                                    <span className="font-semibold text-foreground">{t('imprint.contactFormLabel')}</span>{' '}
                                     <Link
-                                        className="text-accent-700 hover:underline"
+                                        className="text-accent-700 hover:underline dark:text-accent-200"
                                         to={contactPath}
                                         onClick={handleContactFormClick}
                                         {...getAnalyticsDebugAttributes('imprint__contact--form')}
@@ -104,7 +104,7 @@ export const ImprintPage: React.FC = () => {
                                 </div>
                                 {shouldShowPhone && (
                                     <div>
-                                        <span className="font-semibold text-slate-900">{t('imprint.phoneLabel')}</span>{' '}
+                                        <span className="font-semibold text-foreground">{t('imprint.phoneLabel')}</span>{' '}
                                         <span>{entity.phone}</span>
                                     </div>
                                 )}
@@ -112,25 +112,25 @@ export const ImprintPage: React.FC = () => {
                         </div>
                         {shouldShowVat && (
                             <div>
-                                <dt className="font-semibold text-slate-900">{t('imprint.vatLabel')}</dt>
+                                <dt className="font-semibold text-foreground">{t('imprint.vatLabel')}</dt>
                                 <dd translate="no">{entity.vatId}</dd>
                             </div>
                         )}
                         {shouldShowRegisterCourt && (
                             <div>
-                                <dt className="font-semibold text-slate-900">{t('imprint.registerCourtLabel')}</dt>
+                                <dt className="font-semibold text-foreground">{t('imprint.registerCourtLabel')}</dt>
                                 <dd>{entity.registerCourt}</dd>
                             </div>
                         )}
                         {shouldShowRegisterNumber && (
                             <div>
-                                <dt className="font-semibold text-slate-900">{t('imprint.registerNumberLabel')}</dt>
+                                <dt className="font-semibold text-foreground">{t('imprint.registerNumberLabel')}</dt>
                                 <dd>{entity.registerNumber}</dd>
                             </div>
                         )}
                         {shouldShowSupervisoryAuthority && (
                             <div className="md:col-span-2">
-                                <dt className="font-semibold text-slate-900">{t('imprint.additionalSupervisoryAuthorityLabel')}</dt>
+                                <dt className="font-semibold text-foreground">{t('imprint.additionalSupervisoryAuthorityLabel')}</dt>
                                 <dd>{entity.supervisoryAuthority}</dd>
                             </div>
                         )}
@@ -138,8 +138,8 @@ export const ImprintPage: React.FC = () => {
                 </Section>
 
                 <Section title={t('imprint.contentResponsibleSectionTitle')}>
-                    <p className="font-semibold text-slate-900">{entity.responsibleForContent}</p>
-                    <div className="mt-2 text-slate-700">
+                    <p className="font-semibold text-foreground">{entity.responsibleForContent}</p>
+                    <div className="mt-2 text-foreground">
                         <address className="not-italic">
                             {entity.addressLines.map((line) => (
                                 <span key={line} className="block">{line}</span>
@@ -163,7 +163,7 @@ export const ImprintPage: React.FC = () => {
                     <p className="mt-2 font-semibold">{supervision.authorityName}</p>
                     <p>
                         {t('imprint.supervisionWebsiteLabel')}{' '}
-                        <a className="text-accent-700 hover:underline" href={supervision.authorityWebsite} target="_blank" rel="noreferrer">
+                        <a className="text-accent-700 hover:underline dark:text-accent-200" href={supervision.authorityWebsite} target="_blank" rel="noreferrer">
                             {supervision.authorityWebsite}
                         </a>
                     </p>

@@ -8,6 +8,28 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     window.localStorage.clear();
   });
 
+  it('leaves city names off until they are asked for', () => {
+    const { result } = renderHook(() =>
+      useTripLayoutControlsState({
+        defaultDetailsWidth: 500,
+      }),
+    );
+
+    expect(result.current.showCityNames).toBe(false);
+  });
+
+  it('still honours city names a traveller turned on', () => {
+    window.localStorage.setItem('tf_city_names', 'true');
+
+    const { result } = renderHook(() =>
+      useTripLayoutControlsState({
+        defaultDetailsWidth: 500,
+      }),
+    );
+
+    expect(result.current.showCityNames).toBe(true);
+  });
+
   it('hydrates layout controls from persisted storage keys', () => {
     window.localStorage.setItem('tf_map_style', 'dark');
     window.localStorage.setItem('tf_route_mode', 'realistic');

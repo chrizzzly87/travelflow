@@ -153,7 +153,7 @@ export const AdminDashboardPage: React.FC = () => {
             )}
         >
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             )}
@@ -166,7 +166,7 @@ export const AdminDashboardPage: React.FC = () => {
                         {userLevelBreakdown.map((level) => (
                             <Flex
                                 key={`total-users-level-${level.key}`}
-                                className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5"
+                                className="rounded-md border border-border bg-secondary px-2 py-1.5"
                                 data-tooltip={level.tooltip}
                             >
                                 <Text>{level.label}</Text>
@@ -243,32 +243,32 @@ export const AdminDashboardPage: React.FC = () => {
                 <Card>
                     <div className="flex flex-col gap-y-1.5 pb-4">
                         <h3 className="font-semibold leading-none tracking-tight">Recent Users</h3>
-                        <p className="text-sm text-slate-500">Most recently created accounts with identity and sign-in context.</p>
+                        <p className="text-sm text-muted-foreground">Most recently created accounts with identity and sign-in context.</p>
                     </div>
                     <div className="space-y-6 mt-4">
                         {(scopedUsers.slice(0, 6)).map((user) => (
                             <a 
                                 key={user.user_id} 
                                 href={`/admin/users?user=${encodeURIComponent(user.user_id)}&drawer=user`}
-                                className="flex items-center group hover:bg-slate-50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer"
+                                className="flex items-center group hover:bg-secondary p-2 -mx-2 rounded-lg transition-colors cursor-pointer"
                             >
-                                <span className="relative flex shrink-0 overflow-hidden rounded-full size-9 border border-transparent group-hover:border-slate-200 group-hover:shadow-sm transition-all">
-                                    <span className="flex size-full items-center justify-center rounded-full bg-slate-100 text-slate-500 font-semibold uppercase group-hover:bg-white transition-colors">
+                                <span className="relative flex shrink-0 overflow-hidden rounded-full size-9 border border-transparent group-hover:border-border group-hover:shadow-sm transition-all">
+                                    <span className="flex size-full items-center justify-center rounded-full bg-secondary text-muted-foreground font-semibold uppercase group-hover:bg-card transition-colors dark:text-foreground">
                                         {getUserName(user).charAt(0)}
                                     </span>
                                 </span>
                                 <div className="ml-4 space-y-1 w-full max-w-[200px] sm:max-w-none">
-                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors">{getUserName(user)}</p>
-                                    <p className="text-sm text-slate-500 truncate">{user.email || 'No email'}</p>
+                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{getUserName(user)}</p>
+                                    <p className="text-sm text-muted-foreground truncate">{user.email || 'No email'}</p>
                                 </div>
                                 <div className="ml-auto flex items-end flex-col gap-1 shrink-0 text-right font-medium">
-                                    <span className="text-sm font-medium text-slate-700">{getLoginLabel(user)}</span>
-                                    <span className="text-xs text-slate-500 hidden sm:inline-block">{formatLastVisitDate(user.last_sign_in_at)}</span>
+                                    <span className="text-sm font-medium text-foreground">{getLoginLabel(user)}</span>
+                                    <span className="text-xs text-muted-foreground hidden sm:inline-block">{formatLastVisitDate(user.last_sign_in_at)}</span>
                                 </div>
                             </a>
                         ))}
                         {scopedUsers.length === 0 && !isLoading && (
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm text-slate-500">
+                            <div className="rounded-xl border border-border bg-secondary p-3 text-sm text-muted-foreground">
                                 No users found for this filter.
                             </div>
                         )}

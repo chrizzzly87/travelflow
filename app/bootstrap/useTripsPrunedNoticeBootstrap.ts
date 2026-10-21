@@ -23,6 +23,8 @@ export const useTripsPrunedNoticeBootstrap = (): void => {
                 id: TRIPS_PRUNED_TOAST_ID,
                 tone: 'warning',
                 title: t('storageNotice.tripsPrunedTitle'),
+                // i18next picks the plural form via Intl.PluralRules, so ru/pl
+                // get their few/many categories instead of a two-way split.
                 description: t('storageNotice.tripsPrunedDescription', { count: prunedCount }),
             });
         };

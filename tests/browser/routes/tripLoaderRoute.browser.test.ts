@@ -220,6 +220,46 @@ describe('routes/TripLoaderRoute', () => {
     });
   });
 
+  it('uses the prompt-derived country while generation runs, then the generated route', async () => {
+    const runningTrip = makeTrip({
+      id: 'trip-map-focus',
+      title: 'Bali trip',
+      items: [
+        { ...makeTravelItem('bali', 0, 'Bali'), type: 'city', location: 'Bali' },
+      ],
+    });
+    runningTrip.aiMeta = {
+      provider: 'openai', model: 'gpt-5.4', generatedAt: '2026-09-02T12:00:00.000Z',
+      generation: {
+        state: 'running',
+        inputSnapshot: {
+          flow: 'wizard', destinationLabel: 'Bali', createdAt: '2026-09-02T12:00:00.000Z',
+          payload: { initialMapCountryFocus: 'Indonesia' },
+        },
+      },
+    };
+    const props = { ...makeRouteProps(), trip: runningTrip };
+    const view = render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps?.initialMapFocusQuery).toBe('Indonesia');
+    });
+
+    const completedTrip = {
+      ...runningTrip,
+      items: [
+        { ...runningTrip.items[0], location: 'Ubud, Indonesia' },
+        { ...runningTrip.items[0], id: 'canggu', location: 'Canggu, Indonesia' },
+      ],
+      aiMeta: { ...runningTrip.aiMeta, generation: { ...runningTrip.aiMeta.generation, state: 'succeeded' as const } },
+    };
+    view.rerender(React.createElement(TripLoaderRoute, { ...props, trip: completedTrip }));
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps?.initialMapFocusQuery).toBe('Ubud, Indonesia || Canggu, Indonesia');
+    });
+  });
+
   it('renders a route loading shell while the trip loader is still resolving', () => {
     mocks.dbEnabled = true;
     mocks.auth.isAuthenticated = true;

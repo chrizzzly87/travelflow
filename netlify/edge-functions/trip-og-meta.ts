@@ -17,7 +17,7 @@ import {
   type OgRouteMode,
   parseRouteTarget,
 } from "../edge-lib/trip-og-data.ts";
-import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
+import { resolveEdgeMapRuntimeAsync } from "../edge-lib/map-runtime.ts";
 import { APP_NAME, APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
 
 const SITE_NAME = APP_NAME;
@@ -111,7 +111,7 @@ const buildFallbackMetadata = (
   routeTarget: NonNullable<ReturnType<typeof parseRouteTarget>>,
   pathname: string,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Metadata => {
   const pageTitle = `${SITE_NAME} Trip Planner`;
   const description = DEFAULT_DESCRIPTION;
@@ -140,7 +140,7 @@ const buildShareMetadata = async (
   origin: string,
   routeTarget: ParsedRouteTarget,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Promise<Metadata> => {
   if (!routeTarget.token) {
     return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
@@ -162,7 +162,7 @@ const buildShareBackedMetadata = async (
   token: string,
   sharedTrip: Awaited<ReturnType<typeof fetchSharedTrip>>,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Promise<Metadata> => {
   const mapsApiKey = getMapsApiKeyFromEnv();
   const mapboxAccessToken = getMapboxAccessTokenFromEnv();
@@ -219,7 +219,7 @@ const buildTripRouteMetadata = async (
   origin: string,
   routeTarget: ParsedRouteTarget,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Promise<Metadata> => {
   if (!routeTarget.tripId) {
     return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
@@ -243,7 +243,7 @@ const buildTripRouteMetadata = async (
 export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
   const url = new URL(request.url);
   const routeTarget = parseRouteTarget(url);
-  const mapRuntime = resolveEdgeMapRuntime(request);
+  const mapRuntime = await resolveEdgeMapRuntimeAsync(request);
   const mapStyleQuery = url.searchParams.get("mapStyle")?.trim() || "";
   const routeModeQuery = url.searchParams.get("routeMode")?.trim() || "";
   const mapColorModeQuery = url.searchParams.get("mapColorMode")?.trim() || "";

@@ -15,15 +15,15 @@ export const useReleaseNoticeReady = ({
 
         let resolved = false;
         let timeoutId: number | null = null;
+        let mountTimeoutId: number | null = null;
         let idleId: number | null = null;
 
-        const onTrigger = () => {
-            if (resolved) return;
-            resolved = true;
-            setIsReleaseNoticeReady(true);
-            window.removeEventListener('pointerdown', onTrigger, true);
-            window.removeEventListener('keydown', onTrigger, true);
-            window.removeEventListener('touchstart', onTrigger, true);
+        const removeListeners = () => {
+            window.removeEventListener('pointerup', onTrigger, true);
+            window.removeEventListener('keyup', onTrigger, true);
+        };
+
+        const clearPendingTimers = () => {
             if (timeoutId !== null) {
                 window.clearTimeout(timeoutId);
                 timeoutId = null;
@@ -34,9 +34,27 @@ export const useReleaseNoticeReady = ({
             }
         };
 
-        window.addEventListener('pointerdown', onTrigger, true);
-        window.addEventListener('keydown', onTrigger, true);
-        window.addEventListener('touchstart', onTrigger, true);
+        function onTrigger() {
+            if (resolved) return;
+            resolved = true;
+            removeListeners();
+            clearPendingTimers();
+
+            // Mount on the next macrotask, never inside the interaction that armed
+            // this. The notice is a `fixed inset-0` modal: flipping the flag while
+            // the visitor's pointer was still down dropped a full-screen backdrop
+            // under the cursor, so their click resolved against the backdrop
+            // instead of the control they pressed and appeared to do nothing.
+            mountTimeoutId = window.setTimeout(() => {
+                mountTimeoutId = null;
+                setIsReleaseNoticeReady(true);
+            }, 0);
+        }
+
+        // Interaction triggers fire on release, not on press, so the notice can
+        // never appear between a visitor's pointerdown and their click.
+        window.addEventListener('pointerup', onTrigger, true);
+        window.addEventListener('keyup', onTrigger, true);
 
         timeoutId = window.setTimeout(onTrigger, 5000);
 
@@ -50,16 +68,11 @@ export const useReleaseNoticeReady = ({
 
         return () => {
             resolved = true;
-            window.removeEventListener('pointerdown', onTrigger, true);
-            window.removeEventListener('keydown', onTrigger, true);
-            window.removeEventListener('touchstart', onTrigger, true);
-            if (timeoutId !== null) {
-                window.clearTimeout(timeoutId);
-                timeoutId = null;
-            }
-            if (idleId !== null && 'cancelIdleCallback' in window) {
-                (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
-                idleId = null;
+            removeListeners();
+            clearPendingTimers();
+            if (mountTimeoutId !== null) {
+                window.clearTimeout(mountTimeoutId);
+                mountTimeoutId = null;
             }
         };
     }, [suppressReleaseNotice]);

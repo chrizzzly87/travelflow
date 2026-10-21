@@ -1,6 +1,5 @@
 import {
   ensureModelAllowed,
-  GEMINI_DEFAULT_MODEL,
   readEnv,
 } from "./ai-provider-runtime.ts";
 
@@ -74,10 +73,10 @@ export const validateGenerateInput = (
 
   const provider = typeof body?.target?.provider === "string" && body.target.provider.trim()
     ? body.target.provider.trim().toLowerCase()
-    : "gemini";
+    : "openai";
   const model = typeof body?.target?.model === "string" && body.target.model.trim()
     ? body.target.model.trim()
-    : GEMINI_DEFAULT_MODEL;
+    : "gpt-5.4";
 
   const allowlistError = ensureModelAllowed(provider, model);
   if (allowlistError) {

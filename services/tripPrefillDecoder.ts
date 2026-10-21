@@ -5,6 +5,18 @@ const VALID_BUDGETS = ['Low', 'Medium', 'High', 'Luxury'];
 const VALID_PACES = ['Relaxed', 'Balanced', 'Fast'];
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Upper bound for structured prefill city lists, to keep encoded links small. */
+export const MAX_PREFILL_CITY_LIST = 24;
+
+const normalizeCityList = (value: unknown): string[] | null => {
+    if (!Array.isArray(value)) return null;
+    const cities = value
+        .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+        .filter((entry) => entry.length > 0)
+        .slice(0, MAX_PREFILL_CITY_LIST);
+    return cities.length > 0 ? cities : null;
+};
+
 const LEGACY_BUDGET_MAP: Record<string, string> = {
     Budget: 'Low',
     Medium: 'Medium',
@@ -69,7 +81,14 @@ export const decodeTripPrefill = (encoded: string): TripPrefillData | null => {
         if (normalizedBudget) result.budget = normalizedBudget;
         const normalizedPace = normalizePace(parsed.pace);
         if (normalizedPace) result.pace = normalizedPace;
-        if (typeof parsed.cities === 'string') result.cities = parsed.cities;
+        const cityList = normalizeCityList(parsed.cityList);
+        if (cityList) result.cityList = cityList;
+        if (typeof parsed.cities === 'string') {
+            result.cities = parsed.cities;
+        } else if (cityList) {
+            // Legacy consumers only read `cities`, so always keep the string mirror populated.
+            result.cities = cityList.join(', ');
+        }
         if (typeof parsed.notes === 'string') result.notes = parsed.notes;
         if (typeof parsed.roundTrip === 'boolean') result.roundTrip = parsed.roundTrip;
         if (parsed.mode === 'classic' || parsed.mode === 'wizard') result.mode = parsed.mode;

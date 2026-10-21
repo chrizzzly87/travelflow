@@ -86,10 +86,10 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
 
   return (
     <section className={`grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] ${className}`} data-passport-open={isPassportOpen}>
-      <article className="relative flex h-full min-h-[540px] flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
+      <article className="relative flex h-full min-h-[540px] flex-col rounded-2xl border border-border bg-card px-6 pb-6 pt-16 text-center shadow-sm dark:shadow-none">
         <div className="absolute inset-x-0 top-0 -translate-y-1/2">
           <div className={`relative mx-auto size-24 ${status.ringClassName}`}>
-            <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-semibold text-accent-800 shadow-md ring-2 ring-current">
+            <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-semibold text-accent-800 shadow-md ring-2 ring-current dark:bg-accent-400/12 dark:text-accent-200">
               {initials}
             </span>
             {showAvatarOrbitText && (
@@ -97,27 +97,27 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             )}
           </div>
         </div>
-        <h2 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">{displayName}</h2>
-        <p className="mt-1 text-sm font-semibold text-slate-600">
+        <h2 className="mt-6 text-3xl font-semibold tracking-tight text-foreground">{displayName}</h2>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">
           {labels.usernamePrefix}
           {username || 'traveler'}
         </p>
         <p className={`mt-2 text-xs font-semibold uppercase tracking-[0.16em] ${status.ringClassName}`}>{status.label}</p>
-        <p className="mt-1 text-xs text-slate-500">
-          {labels.memberSinceLabel}: <span className="font-semibold text-slate-700">{memberSince}</span>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {labels.memberSinceLabel}: <span className="font-semibold text-foreground">{memberSince}</span>
         </p>
 
         <div className="mt-4 space-y-3 text-left">
           {(resolvedBio || fallbackBio) ? (
-            <p className="text-sm leading-6 text-slate-700">{resolvedBio || fallbackBio}</p>
+            <p className="text-sm leading-6 text-foreground">{resolvedBio || fallbackBio}</p>
           ) : null}
           <div className="flex flex-col gap-2">
-            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
-              <MapPin size={15} weight="duotone" className="text-accent-600" />
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-foreground">
+              <MapPin size={15} weight="duotone" className="text-accent-600 dark:text-accent-300" />
               <span>{location}</span>
             </p>
-            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
-              <Mountains size={15} weight="duotone" className="text-accent-600" />
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-foreground">
+              <Mountains size={15} weight="duotone" className="text-accent-600 dark:text-accent-300" />
               <span>{distanceLabel}</span>
             </p>
           </div>
@@ -127,7 +127,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
           <a
             href={editProfileHref}
             onClick={onEditProfileClick}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
           >
             <PencilSimpleLine size={15} weight="duotone" />
             {labels.editProfile}
@@ -135,7 +135,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
           <a
             href={viewPublicProfileHref}
             onClick={onViewPublicProfileClick}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
           >
             <GlobeHemisphereWest size={15} weight="duotone" />
             {labels.viewPublicProfile}
@@ -144,7 +144,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             type="button"
             onClick={onShareProfile}
             disabled={!canShareProfile}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.985] active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-all duration-150 hover:border-border hover:bg-secondary active:scale-[0.985] active:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
           >
             <ShareNetwork size={15} weight="duotone" />
             {labels.shareProfile}
@@ -152,7 +152,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
         </div>
       </article>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6 dark:shadow-none">
         <ProfileSummaryStats stats={stats} locale={locale} />
         <div className="mt-6">
           <ProfileMetaPanel

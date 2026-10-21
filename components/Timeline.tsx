@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
 import {
   buildApprovedCityRoute,
@@ -18,6 +19,9 @@ import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNa
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
 import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 import { findPreviousCity } from '../utils/timelineNeighbors';
+import { TodayBadge } from './ui/today-badge';
+import { isDayTrip, resolveActivityStay, resolveDefaultActivityDayOffset } from '../shared/activityStay';
+import { buildDayTripCalendarConnectors, DayTripCalendarConnectors } from './tripview/DayTripCalendarConnectors';
 
 interface TimelineProps {
   trip: ITrip;
@@ -41,6 +45,11 @@ interface TimelineProps {
 }
 
 const EMPTY_SELECTED_CITY_IDS: string[] = [];
+// Shared by the city, transfer and activity lane "+" buttons so both sit beside their
+// label and look the same in either theme. Revealed on lane hover, and on
+// keyboard focus so it is reachable without a mouse; the ::after extends the
+// 28px circle to a 40px hit area without growing the label row.
+const laneAddButtonClassName = 'relative inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-[opacity,color,border-color,background-color] after:absolute after:-inset-1.5 hover:border-accent-300 hover:bg-accent-50 hover:text-accent-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 group-hover/cities:opacity-100 group-hover/travel:opacity-100 group-hover/activities:opacity-100 dark:bg-secondary dark:text-foreground dark:shadow-none dark:hover:border-accent-400/50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200';
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 // Set to >0 if you want a visible gap below city cards before connectors start.
 const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
@@ -127,10 +136,12 @@ export const Timeline: React.FC<TimelineProps> = ({
   onNavigateNextCity,
   onToggleDetailsPanel,
 }) => {
+  const { t } = useTranslation('common');
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
   const cityCardsRowRef = useRef<HTMLDivElement>(null);
   const travelLaneRef = useRef<HTMLDivElement>(null);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
   const ignoreClickRef = useRef<boolean>(false);
   const dragStartItemsRef = useRef<ITimelineItem[] | null>(null);
   const latestDragItemsRef = useRef<ITimelineItem[] | null>(null);
@@ -187,6 +198,15 @@ export const Timeline: React.FC<TimelineProps> = ({
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const activities = trip.items.filter(i => i.type === 'activity');
+  const defaultActivityDayOffset = resolveDefaultActivityDayOffset({ items: trip.items, selectedItemId, selectedCityIds });
+  const stayColorHex = (stay: ITimelineItem): string => getHexFromColorClass(stay.color || '');
+  const dayTripConnectors = buildDayTripCalendarConnectors({
+    items: trip.items,
+    selectedItemId,
+    selectedCityIds,
+    resolveColor: stayColorHex,
+  });
+  const dayTripLayoutKey = `${pixelsPerDay}:${visualStartOffset}:${trip.items.map((item) => `${item.id}@${item.startDateOffset}/${item.duration}`).join(',')}`;
   const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
   const maxCityStackCount = React.useMemo(() => {
       let maxCount = 1;
@@ -704,7 +724,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   return (
     <div
-      className="size-full overflow-auto bg-white relative timeline-scroll"
+      className="size-full overflow-auto bg-card relative timeline-scroll"
       ref={containerRef}
       role="presentation"
       onClick={() => handleBlockSelect(null)}
@@ -712,16 +732,17 @@ export const Timeline: React.FC<TimelineProps> = ({
         <div className="relative min-h-full" style={{ minWidth: '100%', width: `${totalWidth}px` }}>
             {todaySlot && (
                 <>
+                    {/* One flat tint, not a gradient of `red-50`: that colour is
+                      * all but white, so in dark mode the "highlight" came out
+                      * as a pale slab down the middle of the timeline. */}
                     <div
-                        className="absolute top-0 bottom-0 pointer-events-none z-[2]"
+                        className="absolute top-0 bottom-0 pointer-events-none z-[2] bg-[var(--tf-today-wash)]"
                         style={{
                             left: `${32 + todaySlot.start}px`,
                             width: `${todaySlot.size}px`,
                         }}
                         aria-hidden="true"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-r from-red-50/40 via-red-50/15 to-red-50/40" />
-                    </div>
+                    />
                     <div
                         className="absolute top-0 bottom-0 pointer-events-none z-[25]"
                         style={{
@@ -730,16 +751,22 @@ export const Timeline: React.FC<TimelineProps> = ({
                         }}
                         aria-hidden="true"
                     >
-                        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-red-400/60" />
-                        <span className="absolute top-1 left-1/2 -translate-x-1/2 rounded-full border border-red-200/90 bg-white/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm">
-                            Today
-                        </span>
+                        {/* The line starts below the sticky header. Run full
+                          * height it crossed the date the badge is about, and
+                          * the badge then sat on top of that same date. */}
+                        <div
+                            className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-px bg-[var(--tf-today-line)] ${isZoomedOut ? 'top-20' : 'top-16'}`}
+                        />
+                        <TodayBadge
+                            size="sm"
+                            className={`absolute left-1/2 -translate-x-1/2 ${isZoomedOut ? 'top-[5.25rem]' : 'top-[4.25rem]'}`}
+                        />
                     </div>
                 </>
             )}
 
             {/* Header (Adaptive) */}
-            <div className={`border-b border-gray-200 flex flex-col sticky top-0 bg-white/95 backdrop-blur z-20 shadow-sm pl-8 transition-[height] duration-200 ${isZoomedOut ? 'h-20' : 'h-16'}`}>
+            <div className={`border-b border-border flex flex-col sticky top-0 bg-card/95 backdrop-blur z-20 shadow-sm pl-8 transition-[height] duration-200 ${isZoomedOut ? 'h-20' : 'h-16'}`}>
 
                 {dateHeaders.view === 'detailed' ? (
                     // Detailed View: Single Row per Day
@@ -747,15 +774,15 @@ export const Timeline: React.FC<TimelineProps> = ({
                         {dateHeaders.days.map((day) => (
                             <div
                                 key={day.index}
-                                className={`flex-shrink-0 border-r border-gray-100 flex flex-col justify-center px-2 select-none relative
-                                    ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                className={`flex-shrink-0 border-r border-border flex flex-col justify-center px-2 select-none relative
+                                    ${day.isToday ? 'bg-[var(--tf-today-cell)]' : day.isWeekend ? 'bg-secondary' : 'bg-card'}
                                 `}
                                 style={{ width: `${day.size}px` }}
                             >
-                                <span className={`text-xs font-bold ${day.isToday ? 'text-red-500' : day.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                <span className={`text-xs font-bold ${day.isToday ? 'text-[var(--tf-today-text)]' : day.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                     {day.dayName}
                                 </span>
-                                <span className={`text-sm font-semibold whitespace-nowrap ${day.isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                <span className={`text-sm font-semibold whitespace-nowrap ${day.isToday ? 'text-[var(--tf-today-text-strong)]' : 'text-foreground'}`}>
                                     {day.dayNum} {day.monthShort}
                                 </span>
                             </div>
@@ -765,11 +792,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                     // Grouped View: Month Row + Day Row
                     <div className="flex flex-col h-full">
                         {/* Month Row */}
-                        <div className="flex border-b border-gray-100 h-8 overflow-hidden bg-accent-50">
+                        <div className="flex border-b border-border h-8 overflow-hidden bg-accent-50 dark:bg-accent-400/12">
                             {dateHeaders.months?.map((month) => (
                                 <div
                                     key={`${month.name}-${month.startIndex}`}
-                                    className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0"
+                                    className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/25"
                                     style={{ width: `${month.widthPx}px` }}
                                 >
                                     {month.name}
@@ -781,12 +808,12 @@ export const Timeline: React.FC<TimelineProps> = ({
                             {dateHeaders.days.map((day) => (
                                 <div
                                     key={day.index}
-                                    className={`flex-shrink-0 border-r border-gray-100 flex items-center justify-center select-none relative
-                                        ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                    className={`flex-shrink-0 border-r border-border flex items-center justify-center select-none relative
+                                        ${day.isToday ? 'bg-[var(--tf-today-cell)]' : day.isWeekend ? 'bg-secondary' : 'bg-card'}
                                     `}
                                     style={{ width: `${day.size}px` }}
                                 >
-                                    <span className={`text-xs font-semibold ${day.isToday ? 'text-red-600' : day.isWeekend ? 'text-red-500' : 'text-gray-600'}`}>
+                                    <span className={`text-xs font-semibold ${day.isToday ? 'text-[var(--tf-today-text)]' : day.isWeekend ? 'text-red-500' : 'text-muted-foreground'}`}>
                                         {day.dayNum}
                                     </span>
                                 </div>
@@ -801,30 +828,38 @@ export const Timeline: React.FC<TimelineProps> = ({
                 {renderedDaySlots.map((slot) => (
                     <div
                         key={slot.index}
-                        className="flex-shrink-0 border-r border-dashed border-gray-100 h-full"
+                        className="flex-shrink-0 border-r border-dashed border-border h-full"
                         style={{ width: `${slot.size}px` }}
                     />
                 ))}
             </div>
 
             {/* Content Area with PADDING */}
-            <div className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
+            <div ref={contentAreaRef} className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
+                <DayTripCalendarConnectors
+                    containerRef={contentAreaRef}
+                    connectors={dayTripConnectors}
+                    layoutKey={dayTripLayoutKey}
+                />
 
                 {/* Cities Lane */}
                 <div className="relative w-full group/cities z-20">
                     {/* Lane Label */}
-                    <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
-                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
+                    <div className="sticky left-0 mb-1 flex h-7 w-fit items-center gap-2 z-20 pointer-events-auto">
+                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-card/80 pr-2 backdrop-blur-sm rounded">
                              Cities & Stays
                          </span>
-                         <button type="button"
-                            onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
-                            disabled={!canEdit}
-                            className={`inline-flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-700 opacity-0 transition-opacity group-hover/cities:opacity-100 ${canEdit ? 'hover:bg-accent-200' : 'cursor-not-allowed opacity-50'}`}
-                            aria-label="Add city to end"
-                        >
-                             <Plus size={14} />
-                        </button>
+                         {/* Not rendered at all without edit rights: a disabled "+" on a view-only trip only suggests something the viewer cannot do. */}
+                         {canEdit && (
+                             <button type="button"
+                                onClick={(e) => { e.stopPropagation(); onAddCity(); }}
+                                className={laneAddButtonClassName}
+                                aria-label={t('tripView.timeline.addCityToEnd')}
+                                title={t('tripView.timeline.addCityToEnd')}
+                            >
+                                 <Plus size={14} />
+                            </button>
+                         )}
                     </div>
                     <div
                         ref={cityCardsRowRef}
@@ -864,7 +899,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const overlapAfter = nextStart !== null ? currentEnd > nextStart + 0.05 : false;
                             const shouldShowForceFill = hasGapOrOverlap || overlapBefore || overlapAfter || gapBefore || gapAfter;
                             const forceFillMode = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'shrink' : 'stretch') : undefined;
-                            const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'Occupy available space' : 'Stretch to fill space') : undefined;
+                            const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? t('tripView.timeline.occupySpace') : t('tripView.timeline.stretchToFill')) : undefined;
 
                             return (
                                 <TimelineBlock
@@ -881,7 +916,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     forceFillMode={forceFillMode}
                                     forceFillLabel={forceFillLabel}
                                     showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
-                                    swapSelectedLabel="Reverse selected cities"
+                                    swapSelectedLabel={t('tripView.timeline.reverseSelectedCities')}
                                     pixelsPerDay={pixelsPerDay}
                                     timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
@@ -901,19 +936,20 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                 {/* Travel Lane */}
                 <div className="relative w-full group/travel z-10">
-                    <div className="sticky left-0 mb-0.5 flex items-center justify-between z-20 w-64 pointer-events-auto">
-                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
+                    <div className="sticky left-0 mb-0.5 flex h-7 w-fit items-center gap-2 z-20 pointer-events-auto">
+                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-card/80 pr-2 backdrop-blur-sm rounded">
                              Transfer
                          </span>
-                         <button type="button"
-                            onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
-                            disabled={!canEdit}
-                            className={`inline-flex size-10 items-center justify-center rounded-full bg-stone-100 text-stone-700 opacity-0 transition-opacity group-hover/travel:opacity-100 ${canEdit ? 'hover:bg-stone-200' : 'cursor-not-allowed opacity-50'}`}
-                            aria-label="Add transfer"
-                            title="Add transfer"
-                        >
-                             <Plus size={14} />
-                        </button>
+                         {canEdit && (
+                             <button type="button"
+                                onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
+                                className={laneAddButtonClassName}
+                                aria-label={t('tripView.timeline.addTransfer')}
+                                title={t('tripView.timeline.addTransfer')}
+                            >
+                                 <Plus size={14} />
+                            </button>
+                         )}
                     </div>
 
                     <div
@@ -957,7 +993,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const routeStatus = travel ? routeStatusById?.[travel.id] : undefined;
                             const isUndefinedTransfer = !travel || travel.type === 'travel-empty' || isUnsetTransport;
                             const shouldDashConnector = !travel || travel.type === 'travel-empty' || isUnsetTransport || routeStatus === 'failed';
-                            const connectorOpacity = isUndefinedTransfer ? 0.45 : 1;
+                            const connectorOpacity = isUndefinedTransfer ? 0.7 : 1;
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
                             const showTransportIcon = !isUnsetTransport && chipWidth >= 14;
                             const showTransportText = !showIconOnly || (isUnsetTransport && chipWidth >= 26);
@@ -983,7 +1019,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         <path
                                             d={fromPath}
                                             fill="none"
-                                            stroke="var(--color-gray-300)"
+                                            stroke="var(--tf-transfer-line)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -993,7 +1029,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         <path
                                             d={toPath}
                                             fill="none"
-                                            stroke="var(--color-gray-300)"
+                                            stroke="var(--tf-transfer-line)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -1004,22 +1040,22 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button type="button"
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 flex min-h-10 -translate-y-1/2 items-center rounded-full border text-[11px] font-semibold transition-colors pointer-events-auto
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUndefinedTransfer ? 'bg-secondary border-transfer-line border-dashed text-muted-foreground opacity-65 shadow-none justify-center' : 'bg-card border-transfer-line text-muted-foreground shadow-sm dark:shadow-none')}
                                             ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
-                                            ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
+                                            ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: TRANSFER_CHIP_HEIGHT_PX }}
-                                        title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+                                        title={mode === 'na' ? t('tripView.timeline.transportUndecided') : t('tripView.timeline.transportMode', { mode })}
                                         disabled={!travel && !canEdit}
                                     >
                                         {showTransportIcon && (
-                                            <span className="text-gray-500">{getTransportIcon(mode)}</span>
+                                            <span className="text-muted-foreground">{getTransportIcon(mode)}</span>
                                         )}
                                         {showTransportText && (
                                             <span className={`uppercase tracking-wider min-w-0 ${isUnsetTransport ? 'w-full text-center truncate' : 'truncate'}`}>{mode === 'na' ? 'N/A' : mode}</span>
                                         )}
                                         {!showIconOnly && !isUndefinedTransfer && durationHours !== null && chipWidth >= 100 && pixelsPerDay >= 95 && (
-                                            <span className="text-[10px] font-normal text-gray-400 ml-auto shrink-0">{durationHours}h</span>
+                                            <span className="text-[10px] font-normal text-muted-foreground ml-auto shrink-0">{durationHours}h</span>
                                         )}
                                     </button>
                                 </div>
@@ -1029,35 +1065,24 @@ export const Timeline: React.FC<TimelineProps> = ({
                 </div>
 
                 {/* Divider */}
-                <div className="w-full border-t border-gray-100" />
+                <div className="w-full border-t border-border" />
 
                 {/* Activities Lanes */}
-                <div className="relative pt-2">
-                    <div className="sticky left-0 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded z-20 pointer-events-none w-fit">
-                        Activities
-                    </div>
-
-                    {/* Day Column Add Buttons */}
-                    <div className="relative mb-2 flex h-10 w-full pointer-events-none">
-                         {dateHeaders.days.map((day) => (
-                             <div
-                                key={day.index}
-                                className="absolute top-0 bottom-0 flex justify-center items-center pointer-events-auto group"
-                                style={{
-                                    left: `${day.start}px`,
-                                    width: `${day.size}px`
-                                }}
-                             >
-                                 <button type="button"
-                                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(day.dayOffset); }}
-                                     disabled={!canEdit}
-                                     className={`mx-1 flex size-full min-h-10 items-center justify-center rounded-md border border-dashed border-transparent text-gray-300 transition-[border-color,background-color,color] ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
-                                     aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
-                                 >
-                                     <Plus size={16} />
-                                 </button>
-                             </div>
-                         ))}
+                <div className="relative pt-2 group/activities">
+                    <div className="sticky left-0 mb-2 flex h-7 w-fit items-center gap-2 z-20 pointer-events-auto">
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-card/80 pr-2 backdrop-blur-sm rounded">
+                            Activities
+                        </span>
+                        {canEdit && (
+                            <button type="button"
+                                onClick={(e) => { e.stopPropagation(); onAddActivity(defaultActivityDayOffset); }}
+                                className={laneAddButtonClassName}
+                                aria-label={t('tripView.timeline.addActivity')}
+                                title={t('tripView.timeline.addActivity')}
+                            >
+                                <Plus size={14} />
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -1079,6 +1104,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         pixelsPerDay={pixelsPerDay}
                                         timelineStartOffset={visualStartOffset}
                                         canEdit={canEdit}
+                                        stayAccentColorHex={isDayTrip(item) ? (() => {
+                                            const stay = resolveActivityStay(item, cities);
+                                            return stay ? stayColorHex(stay) : undefined;
+                                        })() : undefined}
                                     />
                                 ))}
                              </div>

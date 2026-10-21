@@ -376,31 +376,31 @@ const CARD_LOCALIZATIONS: Record<string, Partial<Record<AppLanguage, ExampleTrip
   'portugal-coast': {
     es: {
       title: 'Ruta por la costa atlántica',
-      cities: ['Lisboa', 'Sintra', 'Oporto', 'Algarve (Lagos)'],
+      cities: ['Lisboa', 'Oporto', 'Algarve (Lagos)'],
     },
     de: {
       title: 'Atlantik-Küsten-Roadtrip',
-      cities: ['Lissabon', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lissabon', 'Porto', 'Algarve (Lagos)'],
     },
     fr: {
       title: 'Road trip sur la côte atlantique',
-      cities: ['Lisbonne', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lisbonne', 'Porto', 'Algarve (Lagos)'],
     },
     it: {
       title: 'Road trip sulla costa atlantica',
-      cities: ['Lisbona', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lisbona', 'Porto', 'Algarve (Lagos)'],
     },
     pt: {
       title: 'Road trip pela costa atlântica',
-      cities: ['Lisboa', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lisboa', 'Porto', 'Algarve (Lagos)'],
     },
     ru: {
       title: 'Роуд-трип по атлантическому побережью',
-      cities: ['Лиссабон', 'Синтра', 'Порту', 'Алгарви (Лагуш)'],
+      cities: ['Лиссабон', 'Порту', 'Алгарви (Лагуш)'],
     },
     pl: {
       title: 'Road trip po atlantyckim wybrzeżu',
-      cities: ['Lizbona', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lizbona', 'Porto', 'Algarve (Lagos)'],
     },
   },
   'italy-classic': {
@@ -677,6 +677,9 @@ const getLocalizedTag = (tag: string, locale: AppLanguage): string => {
   return localeMap?.[tag] || englishMap[tag] || tag;
 };
 
+/** Canonical example-card tag vocabulary. Any tag outside this set renders untranslated. */
+export const EXAMPLE_TRIP_TAG_VOCABULARY: string[] = Object.keys(TAG_TRANSLATIONS.en || {});
+
 export const getExampleTripUiCopy = (locale?: string): ExampleTripUiCopy =>
   EXAMPLE_TRIP_UI_COPY[normalizeLocale(locale)] || DEFAULT_UI_COPY;
 
@@ -720,8 +723,8 @@ export const exampleTripCards: ExampleTripCard[] = [
     title: 'Atlantic Coast Road Trip',
     countries: [{ name: 'Portugal', flag: '🇵🇹' }],
     durationDays: 10,
-    cityCount: 4,
-    mapColor: 'bg-sky-100',
+    cityCount: 3,
+    mapColor: 'bg-sky-100 dark:bg-sky-400/15',
     mapAccent: 'bg-sky-400',
     username: 'surf_nomad',
     avatarColor: 'bg-sky-600',
@@ -736,7 +739,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     countries: [{ name: 'Italy', flag: '🇮🇹' }],
     durationDays: 18,
     cityCount: 6,
-    mapColor: 'bg-amber-100',
+    mapColor: 'bg-amber-100 dark:bg-amber-400/15',
     mapAccent: 'bg-amber-500',
     username: 'dolce_vita',
     avatarColor: 'bg-amber-600',
@@ -751,7 +754,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     countries: [{ name: 'Thailand', flag: '🇹🇭' }],
     durationDays: 26,
     cityCount: 7,
-    mapColor: 'bg-emerald-100',
+    mapColor: 'bg-emerald-100 dark:bg-emerald-400/15',
     mapAccent: 'bg-emerald-400',
     username: 'island_hopper',
     avatarColor: 'bg-emerald-500',
@@ -772,7 +775,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     ],
     durationDays: 37,
     cityCount: 13,
-    mapColor: 'bg-indigo-100',
+    mapColor: 'bg-indigo-100 dark:bg-indigo-400/15',
     mapAccent: 'bg-indigo-400',
     username: 'hostel_hopper',
     avatarColor: 'bg-indigo-600',
@@ -786,9 +789,9 @@ export const exampleTripCards: ExampleTripCard[] = [
     id: 'japan-spring',
     title: 'Cherry Blossom Trail',
     countries: [{ name: 'Japan', flag: '🇯🇵' }],
-    durationDays: 14,
+    durationDays: 16,
     cityCount: 5,
-    mapColor: 'bg-rose-100',
+    mapColor: 'bg-rose-100 dark:bg-rose-400/15',
     mapAccent: 'bg-rose-400',
     username: 'sakura_wanderer',
     avatarColor: 'bg-rose-500',
@@ -803,7 +806,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     countries: [{ name: 'Peru', flag: '🇵🇪' }],
     durationDays: 16,
     cityCount: 6,
-    mapColor: 'bg-orange-100',
+    mapColor: 'bg-orange-100 dark:bg-orange-400/15',
     mapAccent: 'bg-orange-400',
     username: 'altitude_addict',
     avatarColor: 'bg-orange-600',
@@ -819,7 +822,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     countries: [{ name: 'New Zealand', flag: '🇳🇿' }],
     durationDays: 21,
     cityCount: 8,
-    mapColor: 'bg-teal-100',
+    mapColor: 'bg-teal-100 dark:bg-teal-400/15',
     mapAccent: 'bg-teal-400',
     username: 'kiwi_trails',
     avatarColor: 'bg-teal-600',
@@ -834,7 +837,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     countries: [{ name: 'Morocco', flag: '🇲🇦' }],
     durationDays: 9,
     cityCount: 4,
-    mapColor: 'bg-yellow-100',
+    mapColor: 'bg-yellow-100 dark:bg-yellow-400/15',
     mapAccent: 'bg-yellow-500',
     username: 'desert_dreamer',
     avatarColor: 'bg-yellow-700',
@@ -849,7 +852,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     countries: [{ name: 'Iceland', flag: '🇮🇸' }],
     durationDays: 7,
     cityCount: 4,
-    mapColor: 'bg-indigo-100',
+    mapColor: 'bg-indigo-100 dark:bg-indigo-400/15',
     mapAccent: 'bg-indigo-400',
     username: 'arctic_rover',
     avatarColor: 'bg-indigo-600',

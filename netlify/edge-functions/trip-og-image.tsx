@@ -312,6 +312,10 @@ const METRIC_ROUTE_ICON_URI = svgToDataUri(
   `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#312e81' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='19' r='3'/><path d='M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15'/><circle cx='18' cy='5' r='3'/></svg>`,
 );
 
+const METRIC_DAY_TRIP_ICON_URI = svgToDataUri(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#312e81' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z'/></svg>`,
+);
+
 const FOOTER_PLANE_ICON_URI = svgToDataUri(
   `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#ffffff' stroke='none'><path d='M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z'/></svg>`,
 );
@@ -617,12 +621,16 @@ export default async (request: Request): Promise<Response> => {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: 14,
+                // A third row still has to fit under a three-line title.
+                gap: summary.dayTripsLabel ? 10 : 14,
                 marginTop: 26,
               }}
             >
               {metricRow(iconImage(METRIC_CALENDAR_ICON_URI, "Calendar"), durationAndMonths)}
               {metricRow(iconImage(METRIC_ROUTE_ICON_URI, "Route"), distanceLabel)}
+              {summary.dayTripsLabel
+                ? metricRow(iconImage(METRIC_DAY_TRIP_ICON_URI, "Day trips"), truncateText(summary.dayTripsLabel, 40))
+                : null}
             </div>
 
             <div

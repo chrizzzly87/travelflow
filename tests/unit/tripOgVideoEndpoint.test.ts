@@ -62,6 +62,12 @@ describe('trip video API regression coverage', () => {
     expect((await handler(req('', { method: 'POST', body: '{"style":"dark"}' }))).status).toBe(202);
     expect(fetchMock).toHaveBeenCalledWith(new URL('https://example.com/.netlify/functions/trip-og-video-background'), expect.objectContaining({ headers: expect.objectContaining({ 'x-tf-admin-key': 'internal-key' }), body: JSON.stringify({ tripId: id, jobId: 'job' }) }));
   });
+  it.each(['queued', 'rendering', 'failed'])('keeps the last good video and poster accessible while replacement is %s', async status => {
+    mocks.get.mockResolvedValue({ status, revision: 'new', style: 'standard', previousReady: { ...ready, assetKey: 'old-job', mediaRevision: 'b'.repeat(24) } });
+    expect((await handler(req('&r=' + 'b'.repeat(24)))).status).toBe(200);
+    expect(mocks.getWithMetadata).toHaveBeenCalledWith(`${id}/media/old-job/video`, { type: 'arrayBuffer' });
+    expect((await handler(req('&asset=poster&r=' + 'b'.repeat(24)))).status).toBe(200);
+  });
   it('passes selected map and route settings to the atomic render claim', async () => {
     mocks.manage.mockResolvedValue(true); mocks.claim.mockResolvedValue({ claimed: false, state: { status: 'queued' } });
     await handler(req('', { method: 'POST', body: '{"style":"satellite","routeMode":"realistic","force":true}' }));

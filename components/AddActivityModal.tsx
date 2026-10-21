@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityType, ITimelineItem, ITrip } from '../types';
+import { ActivityKind, ActivityType, ITimelineItem, ITrip } from '../types';
 import { Sparkles, Check, AlertTriangle } from 'lucide-react';
-import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
+import { clampDayOffsetToStay, resolveStayForOffset } from '../shared/activityStay';
+import { resolveItemCoordinates } from '../services/activityLocationResolver';
+import { ActivityPlanFields } from './tripview/ActivityPlanFields';
+import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, getStoredAppLanguage, normalizeActivityTypes } from '../utils';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisualsUtils';
 import { AppModal } from './ui/app-modal';
@@ -33,6 +36,21 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const [title, setTitle] = useState('');
     const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>(['general']);
     const [description, setDescription] = useState('');
+    const stays = useMemo(
+        () => (trip?.items || [])
+            .filter((item) => item.type === 'city')
+            .sort((a, b) => a.startDateOffset - b.startDateOffset),
+        [trip?.items],
+    );
+    const initialStay = useMemo(() => resolveStayForOffset(dayOffset, stays), [dayOffset, stays]);
+    const [kind, setKind] = useState<ActivityKind>('activity');
+    const [stayId, setStayId] = useState<string | null>(initialStay?.id ?? null);
+    const [selectedDayOffset, setSelectedDayOffset] = useState<number>(() => Math.max(0, Math.floor(dayOffset)));
+    const [destination, setDestination] = useState('');
+    const [returnStayId, setReturnStayId] = useState<string | null>(null);
+    const [isResolvingDestination, setIsResolvingDestination] = useState(false);
+    const stay = stays.find((entry) => entry.id === stayId) ?? null;
+    const stayLocation = stay?.title || location;
     
     // AI State
     const [prompt, setPrompt] = useState('');
@@ -51,18 +69,56 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         };
     }, [isOpen, mode]);
 
-    const handleManualAdd = () => {
-        if (!title) return;
-        onAdd({
-            title,
+    const handleStayChange = (nextStayId: string) => {
+        const nextStay = stays.find((entry) => entry.id === nextStayId);
+        setStayId(nextStayId);
+        if (nextStay) setSelectedDayOffset(clampDayOffsetToStay(selectedDayOffset, nextStay));
+        if (returnStayId === nextStayId) setReturnStayId(null);
+    };
+
+    const placementFields = (): Partial<ITimelineItem> => ({
+        // On an arrival day the stay only begins in the afternoon; never place
+        // the activity before the traveller is there.
+        startDateOffset: stay ? Math.max(selectedDayOffset, stay.startDateOffset) : selectedDayOffset,
+        ...(stayId ? { stayCityId: stayId } : {}),
+    });
+
+    const isDayTripKind = kind === 'day-trip';
+    const canSubmitManual = Boolean(title.trim()) && (!isDayTripKind || Boolean(destination.trim()));
+
+    const handleManualAdd = async () => {
+        if (!canSubmitManual || isResolvingDestination) return;
+        const base: Partial<ITimelineItem> = {
+            title: title.trim(),
             type: 'activity',
             activityType: normalizeActivityTypes(selectedTypes),
             description,
             color: getActivityColorByTypes(selectedTypes),
-            startDateOffset: dayOffset,
-            duration: 1,
-            location
-        });
+            duration: isDayTripKind ? 0.5 : 1,
+            location: isDayTripKind ? destination.trim() : stayLocation,
+            ...placementFields(),
+        };
+        if (isDayTripKind) {
+            base.activityKind = 'day-trip';
+            if (returnStayId && returnStayId !== stayId) base.dayTripReturnCityId = returnStayId;
+            // A day trip is only drawn on the map once its destination has a
+            // position, so look it up now rather than on the next panel open.
+            setIsResolvingDestination(true);
+            try {
+                const update = await resolveItemCoordinates({
+                    item: { title: destination.trim(), location: destination.trim() },
+                    contextLabel: stay?.countryName || undefined,
+                    bias: stay?.coordinates ?? null,
+                    language: getStoredAppLanguage(),
+                });
+                if (update) Object.assign(base, update);
+            } catch {
+                // Added without a position; the details panel retries the lookup.
+            } finally {
+                setIsResolvingDestination(false);
+            }
+        }
+        onAdd(base);
         onClose();
         reset();
     };
@@ -76,7 +132,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         const context = {
             tripTitle: trip?.title || "My Trip",
             preferences: notes || "",
-            dayNumber: Math.floor(dayOffset),
+            dayNumber: Math.floor(selectedDayOffset),
             cities: trip?.items.flatMap((item) => (
                 item.type === 'city'
                     ? [{
@@ -99,7 +155,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
 
         try {
             const aiService = await loadAiService();
-            const results = await aiService.generateActivityProposals(prompt, location, context);
+            const results = await aiService.generateActivityProposals(prompt, stayLocation, context);
             if (Array.isArray(results) && results.length > 0) {
                 setProposals(results);
             } else {
@@ -123,9 +179,9 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             activityType: activityTypes,
             description: proposal.description,
             color: getActivityColorByTypes(activityTypes),
-            startDateOffset: dayOffset,
             duration: 1,
-            location,
+            location: stayLocation,
+            ...placementFields(),
             aiInsights: {
                 cost: proposal.cost,
                 bestTime: proposal.bestTime,
@@ -155,6 +211,9 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         setProposals([]);
         setGenerationFailed(false);
         setMode('manual');
+        setKind('activity');
+        setDestination('');
+        setReturnStayId(null);
     };
 
     const titleInputId = 'add-activity-title-input';
@@ -165,13 +224,13 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         <AppModal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Add Activity for Day ${Math.floor(dayOffset) + 1}`}
+            title={t('tripView.activityPlan.dialogTitle')}
             closeLabel="Close add activity dialog"
             size="lg"
             mobileSheet={false}
             contentClassName="max-h-[90vh] sm:w-[min(94vw,860px)]"
             bodyClassName="flex-1 overflow-y-auto p-0"
-            headerClassName="bg-gray-50 p-4"
+            headerClassName="bg-secondary p-4"
             onOpenAutoFocus={(event) => {
                 event.preventDefault();
                 if (mode === 'manual') {
@@ -179,28 +238,45 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                 }
             }}
         >
-                <div className="flex gap-2 border-b border-gray-100 p-4">
+                <div className="flex gap-2 border-b border-border p-4">
                     <button 
                         type="button"
                         onClick={() => setMode('manual')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
                     >
                         Manual Entry
                     </button>
                     <button 
                         type="button"
                         onClick={() => setMode('ai')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
                     >
                         <Sparkles size={14} /> AI Suggestion
                     </button>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-6">
+                    <div className="mb-6 border-b border-border pb-6">
+                        <ActivityPlanFields
+                            stays={stays}
+                            tripStartDate={trip?.startDate}
+                            kind={mode === 'manual' ? kind : 'activity'}
+                            showKindSwitch={mode === 'manual'}
+                            stayId={stayId}
+                            dayOffset={selectedDayOffset}
+                            destination={destination}
+                            returnStayId={returnStayId}
+                            onKindChange={setKind}
+                            onStayChange={handleStayChange}
+                            onDayChange={setSelectedDayOffset}
+                            onDestinationChange={setDestination}
+                            onReturnStayChange={setReturnStayId}
+                        />
+                    </div>
                     {mode === 'manual' ? (
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor={titleInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                                <label htmlFor={titleInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">Title</label>
                                 <input 
                                     id={titleInputId}
                                     ref={manualTitleInputRef}
@@ -208,12 +284,12 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     aria-label="Title"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-                                    placeholder="e.g. Visit Louvre Museum"
+                                    className="w-full p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
+                                    placeholder={isDayTripKind ? t('tripView.activityPlan.dayTripTitlePlaceholder') : 'e.g. Visit Louvre Museum'}
                                 />
                             </div>
                             <fieldset>
-                                <legend className="block text-xs font-bold text-gray-500 uppercase mb-1">Types (Multi-select)</legend>
+                                <legend className="block text-xs font-bold text-muted-foreground uppercase mb-1">Types (Multi-select)</legend>
                                 <div className="flex flex-wrap gap-2">
                                     {ALL_ACTIVITY_TYPES.map(type => (
                                         <button
@@ -230,29 +306,31 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                 </div>
                             </fieldset>
                             <div>
-                                <label htmlFor={descriptionInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                                <label htmlFor={descriptionInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">Description</label>
                                 <textarea 
                                     id={descriptionInputId}
                                     aria-label="Description"
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
-                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
+                                    className="w-full p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
                                     placeholder="Notes..."
                                 />
                             </div>
                             <button 
                                 type="button"
-                                onClick={handleManualAdd}
-                                disabled={!title}
+                                onClick={() => { void handleManualAdd(); }}
+                                disabled={!canSubmitManual || isResolvingDestination}
                                 className="w-full py-3 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors disabled:opacity-50"
                             >
-                                Add Activity
+                                {isResolvingDestination
+                                    ? t('tripView.activityPlan.findingPlace')
+                                    : (isDayTripKind ? t('tripView.activityPlan.submitDayTrip') : 'Add Activity')}
                             </button>
                         </div>
                     ) : (
                         <div className="space-y-6">
                             <div className="relative">
-                                <label htmlFor={promptInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">What are you looking for?</label>
+                                <label htmlFor={promptInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">What are you looking for?</label>
                                 <div className="flex gap-2">
                                     <input 
                                         id={promptInputId}
@@ -260,7 +338,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         aria-label="What are you looking for?"
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
-                                        className="flex-1 p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
+                                        className="flex-1 p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
                                         placeholder="e.g. Something romantic for dinner, or kid-friendly park"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && !isGenerating) {
@@ -280,7 +358,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             </div>
 
                             {generationFailed && !isGenerating && (
-                                <div role="alert" className="flex items-start justify-between gap-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                                <div role="alert" className="flex items-start justify-between gap-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12 dark:border-red-400/25">
                                     <div className="flex items-start gap-2">
                                         <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                                         <span>{t('tripView.addActivity.aiError')}</span>
@@ -288,7 +366,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     <button
                                         type="button"
                                         onClick={handleGenerate}
-                                        className="font-semibold text-red-700 underline underline-offset-2 hover:text-red-800 whitespace-nowrap"
+                                        className="font-semibold text-red-700 underline underline-offset-2 hover:text-red-800 whitespace-nowrap dark:text-red-200 dark:hover:text-red-200"
                                     >
                                         {t('tripView.addActivity.aiRetry')}
                                     </button>
@@ -301,7 +379,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         <button
                                             type="button"
                                             key={`${p.title}-${p.description ?? ''}`}
-                                            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group"
+                                            className="w-full text-left bg-card border border-border rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30"
                                             onClick={() => handleSelectProposal(p)}
                                         >
                                             {(() => {
@@ -321,15 +399,15 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                                 );
                                             })()}
                                             <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-semibold text-gray-900">{p.title}</h4>
-                                                <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded-full uppercase font-bold text-gray-500">AI</span>
+                                                <h4 className="font-semibold text-foreground">{p.title}</h4>
+                                                <span className="text-xs bg-card border border-border px-2 py-1 rounded-full uppercase font-bold text-muted-foreground">AI</span>
                                             </div>
-                                            <p className="text-sm text-gray-600 mb-3">{p.description}</p>
-                                            <div className="flex gap-3 text-xs text-gray-500">
+                                            <p className="text-sm text-muted-foreground mb-3">{p.description}</p>
+                                            <div className="flex gap-3 text-xs text-muted-foreground">
                                                 <span>💰 {p.cost}</span>
                                                 <span>🕒 {p.bestTime}</span>
                                             </div>
-                                            <div className="mt-2 text-xs text-accent-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                            <div className="mt-2 text-xs text-accent-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 dark:text-accent-300">
                                                 Click to add <Check size={12} />
                                             </div>
                                         </button>
@@ -338,7 +416,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             )}
                             
                             {proposals.length === 0 && !isGenerating && !generationFailed && (
-                                <div className="text-center py-10 text-gray-400">
+                                <div className="text-center py-10 text-muted-foreground">
                                     <Sparkles size={40} className="mx-auto mb-3 opacity-20" />
                                     <p>Enter a wish above to get AI suggestions.</p>
                                 </div>

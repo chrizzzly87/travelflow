@@ -23,14 +23,18 @@ jobs:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
+          # setup-node v6 dropped automatic cache detection for everything but
+          # npm, so `cache: pnpm` has to stay explicit here. It also has to run
+          # after `pnpm/action-setup`, which is what puts pnpm on PATH for the
+          # cache probe.
           node-version: 24
           cache: pnpm
 
@@ -47,7 +51,7 @@ jobs:
 
       - name: Upload Promptfoo artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: promptfoo-ai-trip-evals-${{ inputs.pack }}
           path: artifacts/promptfoo/

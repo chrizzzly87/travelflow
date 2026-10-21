@@ -171,6 +171,29 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__calendar_export--activities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--all` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__my_maps_export` | — | `{ trip_id, place_count, skipped_count }` | `useGoogleMyMapsActions.ts` |
+| `trip_view__my_maps_import--load` | — | `{ trip_id, origin, place_count }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--add` | — | `{ trip_id, origin, place_count, added_count, unlocated_count }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--error` | — | `{ trip_id, origin, code }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--open_ideas` | — | `{ trip_id }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__map_idea_markers--toggle` | — | `{ trip_id, active }` | `TripView.tsx` |
+| `trip_view__idea_review--keep` | — | `{ trip_id, recommendation_id }` | `TripDiscoverOverlay.tsx` |
+| `trip_view__idea_review--skip` | — | `{ trip_id, recommendation_id }` | `TripDiscoverOverlay.tsx` |
+
+### Trip Agent
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_agent__launcher--open` | — | `{ trip_id, locked, context_count }` | `TripView.tsx` |
+| `trip_agent__panel--close` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__prompt--submit` | — | `{ trip_id, thread_id, context_count }` | `TripAgentPanel.tsx` |
+| `trip_agent__thread--create` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__thread--archive` | — | `{ trip_id, thread_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__proposal--apply` | — | `{ trip_id, change_set_id, operation_count }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__proposal--reject` | — | `{ trip_id, change_set_id }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__proposal--revert` | — | `{ trip_id, change_set_id }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__context--add` | — | `{ trip_id, context_kind }` | `TripAgentPanel.tsx` |
+| `trip_agent__preset--select` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__message--retry` | — | `{ trip_id, thread_id, context_count }` | `TripAgentPanel.tsx` |
 
 ### Profile
 | Event | Detail | Payload | File |
@@ -262,8 +285,20 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Inspirations
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `inspirations__destination_card` | — | `{ title, country }` | `InspirationsPage.tsx` |
+| `inspirations__destination_card` | — | `{ title?, country, destination?, kind?, month?, season? }` | `InspirationsPage.tsx`, `CountryExplorerCard.tsx`, `DestinationGuideView.tsx` |
+| `inspirations__country_search` | — | `{ query_length, result_count }` | `CountryExplorerControls.tsx` |
+| `inspirations__country_month` | — | `{ month }` (`0` = any month) | `CountryExplorerControls.tsx` |
+| `inspirations__country_filter` | — | `{ facet, value }` | `CountryExplorerControls.tsx` |
+| `inspirations__country_filter--reset` | — | — | `CountryExplorerControls.tsx` |
+| `inspirations__country_sort` | — | `{ sort }` | `CountryExplorerControls.tsx` |
+| `inspirations__destination_plan` | — | `{ country, destination, kind }` | `DestinationGuideView.tsx` |
+| `inspirations__country_route` | — | `{ route_id, country, style, duration_days, stop_count }` | `CountryRouteCards.tsx` |
 | `inspirations__festival_card` | — | `{ name, country }` | `InspirationsPage.tsx` |
+| `inspirations__festival_card--guide` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_plan` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_source` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_filter--region` | — | `{ region }` | `FestivalsPage.tsx` |
+| `inspirations__festival_filter--month` | — | `{ month }` | `FestivalsPage.tsx` |
 | `inspirations__getaway_card` | — | `{ title, destination }` | `InspirationsPage.tsx` |
 | `inspirations__country_pill` | — | `{ country }` | `InspirationsPage.tsx` |
 | `inspirations__quick_pill` | — | `{ label }` | `InspirationsPage.tsx` |

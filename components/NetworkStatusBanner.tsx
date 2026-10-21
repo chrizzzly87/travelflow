@@ -19,12 +19,12 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({
             <div
                 role="status"
                 aria-live="polite"
-                className="pointer-events-auto w-full max-w-3xl rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 shadow-lg"
+                className="pointer-events-auto w-full max-w-3xl rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 shadow-lg dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
             >
                 <p className="text-sm font-semibold">{t('networkStatus.offlineTitle')}</p>
                 <p className="mt-1 text-sm">{t('networkStatus.offlineDescription')}</p>
                 {isProbePending && (
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200">
                         {t('networkStatus.offlineChecking')}
                     </p>
                 )}

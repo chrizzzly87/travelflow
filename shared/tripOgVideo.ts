@@ -1,13 +1,13 @@
 export const TRIP_VIDEO = {
   width: 1200, height: 630, fps: 12, seconds: 6, maxBytes: 2 * 1024 * 1024,
   maxStops: 30, cooldownMs: 60 * 60 * 1000, refreshCooldownMs: 5 * 60_000, renderTimeoutMs: 90_000,
-  leaseMs: 5 * 60_000, hourlyRenderLimit: 20, rendererVersion: 2,
+  leaseMs: 5 * 60_000, hourlyRenderLimit: 20, rendererVersion: 3,
 } as const;
 
 export type TripVideoStyle = 'clean' | 'minimal' | 'standard' | 'dark' | 'satellite';
 export type TripVideoRouteMode = 'simple' | 'realistic';
 export const normalizeTripVideoRouteMode = (value: unknown): TripVideoRouteMode => value === 'realistic' ? 'realistic' : 'simple';
-export const normalizeTripVideoStyle = (style: unknown): TripVideoStyle => ['clean', 'minimal', 'standard', 'dark', 'satellite'].includes(String(style)) ? style as TripVideoStyle : 'clean';
+export const normalizeTripVideoStyle = (style: unknown): TripVideoStyle => ['clean', 'minimal', 'standard', 'dark', 'satellite'].includes(String(style)) ? style as TripVideoStyle : 'standard';
 export const isTripVideoId = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -22,7 +22,19 @@ export interface TripVideoState {
   bytes?: number;
   posterAsImage?: boolean;
   error?: string;
+  assetKey?: string;
+  previousReady?: TripVideoAttachment;
 }
+
+export type TripVideoAttachment = Pick<TripVideoState, 'revision' | 'style' | 'routeMode' | 'requestedAt' | 'bytes' | 'posterAsImage' | 'mediaRevision' | 'assetKey'>;
+export const tripVideoAttachment = (state: TripVideoState | null | undefined): TripVideoAttachment | null => {
+  if (!state) return null;
+  if (state.status !== 'ready') return state.previousReady || null;
+  const { revision, style, routeMode, requestedAt, bytes, posterAsImage, mediaRevision, assetKey } = state;
+  return { revision, style, routeMode, requestedAt, bytes, posterAsImage, mediaRevision, assetKey };
+};
+export const tripVideoAssetPath = (tripId: string, media: TripVideoAttachment, asset: 'video' | 'poster') =>
+  media.assetKey ? `${tripId}/media/${media.assetKey}/${asset}` : `${tripId}/${asset}`;
 
 // Single ranges only; never allocate an attacker-controlled buffer or serve beyond EOF.
 export const parseVideoRange = (header: string | null, size: number): { start: number; end: number } | null | 'invalid' => {

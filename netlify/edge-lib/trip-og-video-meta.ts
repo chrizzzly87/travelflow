@@ -18,7 +18,8 @@ export const resolveReadyTripVideoMedia = async (origin: string, target: { token
     url.searchParams.set('status', '1');
     const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) return undefined;
-    const state = await response.json();
+    const result = await response.json();
+    const state = result.status === 'ready' ? result : result.attached ? { ...result.attached, status: 'ready' } : result;
     if (state.status !== 'ready' || state.stale || !/^[a-f0-9]{24}$/.test(state.revision)) return undefined;
     url.searchParams.delete('status');
     const mediaRevision = state.mediaRevision || state.revision;

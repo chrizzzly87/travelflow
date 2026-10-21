@@ -57,7 +57,8 @@ export const resolveTripMapCityLabelTheme = (style: MapStyle): {
 
   return {
     textColor: '#0f172a',
-    subTextColor: 'var(--tf-primary)',
+    // Pinned to 600: the chip is always white, and --tf-primary lightens in dark mode.
+    subTextColor: 'var(--tf-accent-600)',
     textShadow: '0 1px 2px rgba(255,255,255,0.68)',
     background: 'rgba(255,255,255,0.84)',
     borderColor: 'rgba(148,163,184,0.28)',

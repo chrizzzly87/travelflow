@@ -2,17 +2,26 @@ name: PR Quality
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    # No `edited`: nothing below reads the PR description, so retitling a PR
+    # should not cost a full pipeline. The checklist gate that *does* read it
+    # lives in pr-checklist.yml and runs on `edited` by itself.
+    types: [opened, synchronize, reopened]
+
+# A PR that is pushed to (or edited) several times in a row should only keep the
+# newest run. Without this, three edits 20 seconds apart cost three full
+# ~14-minute pipelines and queue behind each other.
+concurrency:
+  group: pr-quality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   pr-quality:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # Validate exactly what Netlify deploys for preview checks (PR head commit),
@@ -20,11 +29,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
+          # setup-node v6 dropped automatic cache detection for everything but
+          # npm, so `cache: pnpm` has to stay explicit here. It also has to run
+          # after `pnpm/action-setup`, which is what puts pnpm on PATH for the
+          # cache probe.
           node-version: 22
           cache: pnpm
 
@@ -37,41 +50,43 @@ jobs:
       - name: Validate toast usage conventions
         run: pnpm toasts:validate
 
-      - name: New module guard (services/config => tests checklist entry)
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          PR_BODY: ${{ github.event.pull_request.body || '' }}
-        run: |
-          set -euo pipefail
-
-          git fetch --no-tags --prune --depth=1 origin "${BASE_REF}"
-
-          added_modules="$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" | grep -E '^(services|config)/' || true)"
-          if [ -z "${added_modules}" ]; then
-            echo "No new files added in services/ or config/."
-            exit 0
-          fi
-
-          echo "New services/config files detected:"
-          echo "${added_modules}"
-
-          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- '- \[[xX]\] New module guard completed'; then
-            echo "PR checklist requirement missing: check '- [x] New module guard completed'."
-            exit 1
-          fi
-
-          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- 'tests/'; then
-            echo "PR description must include at least one corresponding tests/** path."
-            exit 1
-          fi
-
-          echo "New module guard checklist entry verified."
-
       - name: Run core regression tests
         run: pnpm test:core
 
+      # `pnpm build` re-runs `pnpm test:core` internally, which the step above has
+      # already done — that duplicate cost ~4.5 minutes of every run. `build:netlify`
+      # is byte-for-byte `build` minus `test:core`, and it is also what Netlify
+      # actually runs, so the gate now validates the real deploy command.
       - name: Run build gate
-        run: pnpm build
+        run: pnpm build:netlify
         env:
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+      # The offline suite needs a real production build, which the step above
+      # has just produced in dist/ — including dist/sw.js, which only exists
+      # after prerendering. Running it here costs one browser download rather
+      # than a second full build.
+      #
+      # It earns its place: the service worker's failure modes are invisible to
+      # unit tests. A worker that ships with unsubstituted placeholders, or a
+      # precache entry that 404s, installs fine in CI logs and only surfaces
+      # when a real user is already offline.
+      - name: Install Playwright Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run production route and first-interaction suite
+        run: pnpm test:e2e:production
+
+      - name: Run offline/PWA end-to-end suite
+        run: pnpm test:e2e:pwa
+
+      - name: Upload offline suite report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pwa-e2e-report
+          path: |
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

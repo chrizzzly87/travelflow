@@ -1,5 +1,6 @@
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
-import { getCountrySearchAliasesFromData, getLocalizedCountryNameFromData } from '../data/countryTravelData';
+import { getCountrySearchAliasesFromData } from '../data/countrySearchMetadata';
+import { getLocalizedCountryNameFromData } from '../data/countryLocalizedNames';
 import type { AppLanguage } from '../types';
 import { COUNTRIES } from '../utils';
 import { buildCountrySearchKeys } from './countryAliasService';

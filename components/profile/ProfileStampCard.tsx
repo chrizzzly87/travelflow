@@ -78,10 +78,10 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         }
       }}
       className={[
-        "profile-stamp-card group relative flex aspect-square flex-col overflow-hidden rounded-xl border bg-white p-3 text-left shadow-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-md",
+        "profile-stamp-card group relative flex aspect-square flex-col overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-md dark:shadow-none",
         selected
-          ? "border-accent-300 shadow-md shadow-accent-100/60"
-          : "border-slate-200 hover:border-slate-300",
+          ? "border-accent-300 shadow-md shadow-accent-100/60 dark:border-accent-400/30"
+          : "border-border hover:border-border",
         stamp.achieved
           ? ""
           : "opacity-85 saturate-50 hover:saturate-100 hover:opacity-100",
@@ -96,7 +96,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
       aria-pressed={selected}
     >
       <div
-        className={`relative flex-1 w-full flex items-center justify-center overflow-hidden rounded-lg bg-slate-50 transition-colors group-hover:bg-slate-100`}
+        className={`relative flex-1 w-full flex items-center justify-center overflow-hidden rounded-lg bg-secondary transition-colors group-hover:bg-secondary`}
       >
         <div className="relative size-4/5">
           <img
@@ -109,10 +109,10 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
       </div>
 
       <div className="mt-3 flex flex-col items-center gap-y-0.5 text-center">
-        <p className="line-clamp-1 text-xs font-bold text-slate-800">
+        <p className="line-clamp-1 text-xs font-bold text-foreground">
           {stamp.definition.title}
         </p>
-        <span className="text-[10px] font-medium text-slate-500">
+        <span className="text-[10px] font-medium text-muted-foreground">
           {stamp.definition.rarityPercent}% Rarity
         </span>
       </div>
@@ -137,7 +137,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
                 <LockSimple
                   size={14}
                   weight="duotone"
-                  className="text-slate-400"
+                  className="text-muted-foreground"
                 />
               )}
               {stamp.achieved ? "Unlocked" : "Locked"}

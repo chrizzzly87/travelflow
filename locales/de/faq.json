@@ -1,0 +1,87 @@
+{
+  "hero": {
+    "title": "Häufige Fragen.",
+    "description": "Schnelle Antworten zu Support, Abrechnung, Datenschutz und Reiseplanung."
+  },
+  "help": {
+    "title": "Brauchst du noch Hilfe?",
+    "description": "Schreib uns deine Frage – wir leiten sie an das richtige Team weiter.",
+    "cta": "Kontakt öffnen"
+  },
+  "contactExcerpt": {
+    "title": "Häufige Fragen",
+    "description": "Hier sind schnelle Antworten auf häufige Kontakt- und Supportthemen."
+  },
+  "sections": {
+    "general": "Allgemein",
+    "billing": "Abrechnung",
+    "privacy": "Datenschutz & Daten",
+    "product": "Produkt & Planung"
+  },
+  "items": {
+    "general-what-include-bug-report": {
+      "question": "Was sollte ich angeben, wenn ich ein Problem mit der Website oder App melde?",
+      "answer": "Beschreibe, was du erwartet hast, was stattdessen passiert ist und auf welcher Seite du warst. Nenne wenn möglich den genauen Text, den Button-Namen oder die Funktion, die du genutzt hast, damit wir das Problem schnell nachstellen können."
+    },
+    "general-report-translation-issue": {
+      "question": "Wie melde ich Übersetzungsfehler?",
+      "answer": "Nutze die Kontaktseite und wähle „{reasonBugReport}“, dann „{subTranslationWrongMisleading}“. So landet deine Meldung sofort in der richtigen Warteschlange."
+    },
+    "general-support-response-time": {
+      "question": "Wie schnell antwortet der Support?",
+      "answer": "Wir antworten in der Regel innerhalb von 2 bis 3 Werktagen. Bei komplexen Fällen kann es länger dauern, wenn wir technische Logs prüfen oder uns mit Partnern abstimmen müssen."
+    },
+    "general-need-account-for-contact": {
+      "question": "Brauche ich ein Konto, um den Support zu kontaktieren?",
+      "answer": "Nein. Du kannst uns auch ohne Konto schreiben. Wenn du angemeldet bist, übermitteln wir deinen Kontokontext automatisch mit, damit die Fehlersuche schneller geht."
+    },
+    "billing-change-plan": {
+      "question": "Wie ändere ich mein Abo?",
+      "answer": "Schreib uns über das Kontaktformular und wähle „{reasonBillingAccount}“ mit „{subSubscriptionChange}“. Wir führen dich durch die verfügbaren Optionen."
+    },
+    "billing-update-payment-method": {
+      "question": "Wie aktualisiere ich meine Zahlungsmethode?",
+      "answer": "Wähle „{reasonBillingAccount}“ und je nach Fall „{subPaymentFailed}“ oder „{subInvoiceReceipt}“. Gib wenn möglich die letzten 4 Ziffern und das Datum an."
+    },
+    "billing-cancel-subscription": {
+      "question": "Wie kündige ich mein Abo?",
+      "answer": "Öffne das Kontaktformular, wähle „{reasonBillingAccount}“ und dann „{subSubscriptionChange}“. Wir bestätigen dir den Zeitpunkt und den verbleibenden Zugriffszeitraum."
+    },
+    "billing-refund-policy": {
+      "question": "Wie laufen Rückerstattungsanfragen ab?",
+      "answer": "Wähle im Kontaktformular „{reasonBillingAccount}“ und „{subRefundQuestion}“. Gib das Datum der Transaktion und die beim Kauf verwendete E-Mail-Adresse an."
+    },
+    "privacy-request-export-delete": {
+      "question": "Wie fordere ich einen Datenexport oder eine Datenlöschung an?",
+      "answer": "Wähle im Kontaktformular „{reasonDataPrivacy}“ und dann entweder „{subDataExport}“ oder „{subDataDeletion}“. Wir bitten dich unter Umständen, dein Konto zu verifizieren."
+    },
+    "privacy-cookie-consent": {
+      "question": "Wo verwalte ich Cookie- und Einwilligungseinstellungen?",
+      "answer": "Du kannst deine Einwilligung in den Cookie-Einstellungen anpassen und alle Details in der Cookie-Richtlinie nachlesen."
+    },
+    "privacy-contact-data-usage": {
+      "question": "Wie nutzt ihr die Daten aus dem Kontaktformular?",
+      "answer": "Wir nutzen die Daten aus dem Kontaktformular ausschließlich, um deine Anfrage zu bearbeiten und zu beantworten. Für Marketingzwecke verwenden wir sie nicht."
+    },
+    "privacy-security-concern": {
+      "question": "Wie melde ich ein Sicherheitsproblem?",
+      "answer": "Wähle im Kontaktformular „{reasonDataPrivacy}“ mit „{subSecurityConcern}“ oder „{reasonOther}“ mit „{subResponsibleDisclosure}“. Beschreibe die Schritte zum Nachstellen, sofern das gefahrlos möglich ist."
+    },
+    "product-map-route-different": {
+      "question": "Warum sehen Routen auf der Karte manchmal anders aus als erwartet?",
+      "answer": "Routen hängen von der Verfügbarkeit des Anbieters, der Qualität der Kartendaten und temporären Einschränkungen im Verkehr ab. Wenn eine Route falsch aussieht, melde sie unter „{reasonBugReport}“ und wähle „{subMapRoutingIssue}“."
+    },
+    "product-feature-suggestions": {
+      "question": "Wo schlage ich Verbesserungen am Produkt vor?",
+      "answer": "Nutze das Kontaktformular mit „{reasonFeatureRequest}“ und wähle das Thema, das am besten zu deiner Idee passt. So können wir die Roadmap schneller priorisieren."
+    },
+    "product-slow-performance": {
+      "question": "Was tue ich, wenn die App langsam oder instabil wirkt?",
+      "answer": "Melde das Problem als „{reasonBugReport}“ und wähle „{subPerformanceIssue}“. Nenne Browser, Gerätetyp und die Seite, auf der dir die Verlangsamung aufgefallen ist."
+    },
+    "product-share-trip": {
+      "question": "Wie teile ich eine Reise mit anderen?",
+      "answer": "Öffne deine Reise und erstelle über die Teilen-Aktionen einen Link. Wenn das Teilen fehlschlägt, melde es unter „{reasonBugReport}“ und gib den Pfad der Reiseseite an."
+    }
+  }
+}

@@ -18,6 +18,7 @@ export interface PageTitleLabels {
     shareUnavailable: string;
     createTrip: string;
     createTripLab: string;
+    trips: string;
     profile: string;
     profileSettings: string;
     profileOnboarding: string;
@@ -100,6 +101,9 @@ export const resolvePageTitle = ({
     if (normalizedPath === '/share-unavailable') return titleWithAppName(labels.shareUnavailable, appName);
     if (normalizedPath === '/login') return titleWithAppName(labels.login, appName);
     if (normalizedPath === '/auth/reset-password') return titleWithAppName(labels.resetPassword, appName);
+
+    // Must come before the '/trip/' prefix check below; they are different routes.
+    if (normalizedPath === '/trips') return titleWithAppName(labels.trips, appName);
 
     if (normalizedPath === '/create-trip') return titleWithAppName(labels.createTrip, appName);
     if (normalizedPath === '/create-trip/wizard') return titleWithAppName(labels.createTrip, appName);

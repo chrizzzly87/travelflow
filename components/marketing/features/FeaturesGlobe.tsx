@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../../lib/utils';
+import { isPrerenderCapture } from '../../../services/prerenderHydrationState';
+import { useTheme } from '../../../contexts/theme/useTheme';
 import {
     ensureRuntimeLocationLoaded,
     getRuntimeLocationSnapshot,
@@ -146,6 +148,21 @@ export const FeaturesGlobe: React.FC = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [isFallback, setIsFallback] = useState(false);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+    // Everything below the container is WebGL-dependent, and /features is
+    // prerendered. The prerender browser has no WebGL, so the capture froze the
+    // fallback markup into features.html — and preact/compat's hydrate() does not
+    // patch attributes on DOM it reuses. The client (which DOES have WebGL)
+    // rendered isFallback=false against that markup and the corrections were
+    // silently dropped: the canvas kept `opacity-0`, and the overlay layer kept
+    // the fallback card's `inset-x-6 bottom-6 p-5` classes, which is why the Paris
+    // panel sat below the globe and the other panels were clipped out of sight. A
+    // client-side navigation re-rendered from scratch and looked fine.
+    //
+    // Rendering nothing until mounted — and holding that empty state through the
+    // capture — makes the prerendered HTML and the client's first render identical
+    // (an empty box of the right size), so the globe, the canvas and the panels
+    // all arrive through a real post-hydration diff that preact does apply.
+    const [mounted, setMounted] = useState(false);
 
     const cardMap = useMemo(() => {
         const cards = t('globe.cards', { returnObjects: true }) as GlobeCardCopy[];
@@ -156,6 +173,11 @@ export const FeaturesGlobe: React.FC = () => {
     const phoneLayout = displaySize.width < 440;
     const compactLayout = displaySize.width < 560;
     const globeRenderConfig = useMemo(() => getGlobeRenderConfig(displaySize.width), [displaySize.width]);
+
+    // cobe bakes its palette in when the globe is created, so a theme change has
+    // to rebuild it — hence isDarkTheme in the effect's dependencies below.
+    const { resolvedTheme } = useTheme();
+    const isDarkTheme = resolvedTheme === 'dark';
     const originLocation = getRuntimeCoordinates(runtimeLocation) ?? DEFAULT_ORIGIN_LOCATION;
 
     const markerConfigs = useMemo<MarkerConfig[]>(() => ([
@@ -234,6 +256,11 @@ export const FeaturesGlobe: React.FC = () => {
             rotateDeg: -5,
         },
     ], [compactLayout, phoneLayout]);
+
+    useEffect(() => {
+        if (isPrerenderCapture()) return;
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const unsubscribe = subscribeRuntimeLocation((snapshot) => {
@@ -387,15 +414,19 @@ export const FeaturesGlobe: React.FC = () => {
                     height: canvasSize.height,
                     phi: rotationRef.current.phi,
                     theta: rotationRef.current.theta,
-                    dark: 0,
-                    diffuse: 1.3,
+                    // cobe bakes its palette in at creation, so the globe has to
+                    // be told which theme it is being drawn for. Left at dark: 0
+                    // with a near-white base and glow it renders as a bright disc
+                    // on a dark page.
+                    dark: isDarkTheme ? 1 : 0,
+                    diffuse: isDarkTheme ? 1.1 : 1.3,
                     mapSamples: canvasSize.width > 900 ? 26000 : 19000,
-                    mapBrightness: 6.1,
-                    mapBaseBrightness: 0.06,
-                    baseColor: [0.975, 0.978, 0.986],
-                    markerColor: [0.38, 0.31, 0.9],
-                    glowColor: [0.995, 0.995, 0.995],
-                    arcColor: [0.38, 0.31, 0.9],
+                    mapBrightness: isDarkTheme ? 3.4 : 6.1,
+                    mapBaseBrightness: isDarkTheme ? 0.02 : 0.06,
+                    baseColor: isDarkTheme ? [0.22, 0.22, 0.26] : [0.975, 0.978, 0.986],
+                    markerColor: [0.48, 0.51, 1.0],
+                    glowColor: isDarkTheme ? [0.16, 0.16, 0.2] : [0.995, 0.995, 0.995],
+                    arcColor: isDarkTheme ? [0.55, 0.58, 1.0] : [0.38, 0.31, 0.9],
                     arcWidth: globeRenderConfig.arcWidth,
                     arcHeight: globeRenderConfig.arcHeight,
                     markerElevation: globeRenderConfig.markerElevation,
@@ -439,14 +470,14 @@ export const FeaturesGlobe: React.FC = () => {
             }
         };
 
-        void initialize();
+        if (mounted) void initialize();
 
         return () => {
             isCancelled = true;
             cancelAnimationFrame(animationFrameId);
             globe?.destroy?.();
         };
-    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, globeRenderConfig.arcHeight, globeRenderConfig.arcWidth, globeRenderConfig.markerElevation, globeRenderConfig.offset, globeRenderConfig.scale, overlayConfigs, phoneLayout, prefersReducedMotion]);
+    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, globeRenderConfig.arcHeight, globeRenderConfig.arcWidth, globeRenderConfig.markerElevation, globeRenderConfig.offset, globeRenderConfig.scale, isDarkTheme, mounted, overlayConfigs, phoneLayout, prefersReducedMotion]);
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         dragRef.current = {
@@ -500,133 +531,137 @@ export const FeaturesGlobe: React.FC = () => {
             onPointerCancel={handlePointerUp}
             style={{ touchAction: 'none' }}
         >
-            <div className="pointer-events-none absolute inset-0 z-20">
-                <div
-                    ref={(node) => {
-                        if (node) overlayRefs.current.set('origin-marker', node);
-                        else overlayRefs.current.delete('origin-marker');
-                    }}
-                    className="absolute left-0 top-0 will-change-transform"
-                >
-                    <span className="relative block size-11">
-                        <span
-                            className="absolute inset-[-8px] rounded-full border-2 border-[#f39a3d]/65 animate-ping"
-                            style={{ animationDuration: '900ms' }}
-                        />
-                        <span
-                            className="absolute inset-[-18px] rounded-full border border-[#f39a3d]/42 animate-ping"
-                            style={{ animationDelay: '0.28s', animationDuration: '950ms' }}
-                        />
-                        <span className="absolute inset-[-2px] rounded-full bg-[#f7a454]/28 blur-lg" />
-                    </span>
-                </div>
-            </div>
-
-            <canvas
-                ref={canvasRef}
-                className={cn(
-                    'absolute inset-0 z-10 size-full select-none transition-opacity duration-500',
-                    isFallback ? 'opacity-0' : 'opacity-100',
-                )}
-                aria-hidden="true"
-            />
-
-            {!isFallback ? (
+            {mounted ? (
+                <>
                 <div className="pointer-events-none absolute inset-0 z-20">
-                    {parisCard ? (
-                        <div
-                            ref={(node) => {
-                                if (node) overlayRefs.current.set('paris-panel', node);
-                                else overlayRefs.current.delete('paris-panel');
-                            }}
-                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#ddd1ff] bg-[#f7f3ff]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
-                        >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
-                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{parisCard.emoji}</span>
-                                <span>{parisCard.title}</span>
-                            </p>
-                        </div>
-                    ) : null}
-
-                    {fijiCard ? (
-                        <div
-                            ref={(node) => {
-                                if (node) overlayRefs.current.set('fiji-panel', node);
-                                else overlayRefs.current.delete('fiji-panel');
-                            }}
-                            className="absolute left-0 top-0 w-[6.9rem] rounded-[11px] border border-[#cbe9d7] bg-[#eef9f1]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.2rem]"
-                        >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
-                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{fijiCard.emoji}</span>
-                                <span>{fijiCard.title}</span>
-                            </p>
-                        </div>
-                    ) : null}
-
-                    {southAfricaCard ? (
-                        <div
-                            ref={(node) => {
-                                if (node) overlayRefs.current.set('south-africa-panel', node);
-                                else overlayRefs.current.delete('south-africa-panel');
-                            }}
-                            className="absolute left-0 top-0 w-[7.1rem] rounded-[11px] border border-[#cfe8ee] bg-[#eef8fb]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.5rem]"
-                        >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
-                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{southAfricaCard.emoji}</span>
-                                <span>{southAfricaCard.title}</span>
-                            </p>
-                        </div>
-                    ) : null}
-
-                    {route66Card ? (
-                        <div
-                            ref={(node) => {
-                                if (node) overlayRefs.current.set('route66-panel', node);
-                                else overlayRefs.current.delete('route66-panel');
-                            }}
-                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#f0d5bf] bg-[#fff4e9]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
-                        >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
-                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{route66Card.emoji}</span>
-                                <span>{route66Card.title}</span>
-                            </p>
-                        </div>
-                    ) : null}
-
                     <div
                         ref={(node) => {
-                            if (node) overlayRefs.current.set('trip-preview', node);
-                            else overlayRefs.current.delete('trip-preview');
+                            if (node) overlayRefs.current.set('origin-marker', node);
+                            else overlayRefs.current.delete('origin-marker');
                         }}
-                        className="absolute left-0 top-0 w-[8.45rem] border border-slate-200 bg-white p-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] will-change-transform sm:w-[9rem]"
-                        style={{ borderRadius: '14px 14px 18px 18px' }}
-                        >
-                            <div className="overflow-hidden rounded-[10px] border border-slate-100">
-                                <img
-                                    src="/images/trip-maps/thailand-islands.png"
-                                    alt={preview.alt}
-                                    className="h-16 w-full object-cover sm:h-18"
-                                    loading="lazy"
-                                />
-                            </div>
-                            <div className="pt-2">
-                                <p className="text-[0.68rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.72rem]">
-                                    {preview.title}
+                        className="absolute left-0 top-0 will-change-transform"
+                    >
+                        <span className="relative block size-11">
+                            <span
+                                className="absolute inset-[-8px] rounded-full border-2 border-[#f39a3d]/65 animate-ping"
+                                style={{ animationDuration: '900ms' }}
+                            />
+                            <span
+                                className="absolute inset-[-18px] rounded-full border border-[#f39a3d]/42 animate-ping"
+                                style={{ animationDelay: '0.28s', animationDuration: '950ms' }}
+                            />
+                            <span className="absolute inset-[-2px] rounded-full bg-[#f7a454]/28 blur-lg" />
+                        </span>
+                    </div>
+                </div>
+
+                <canvas
+                    ref={canvasRef}
+                    className={cn(
+                        'absolute inset-0 z-10 size-full select-none transition-opacity duration-500',
+                        isFallback ? 'opacity-0' : 'opacity-100',
+                    )}
+                    aria-hidden="true"
+                />
+
+                {!isFallback ? (
+                    <div className="pointer-events-none absolute inset-0 z-20">
+                        {parisCard ? (
+                            <div
+                                ref={(node) => {
+                                    if (node) overlayRefs.current.set('paris-panel', node);
+                                    else overlayRefs.current.delete('paris-panel');
+                                }}
+                                className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#ddd1ff] bg-[#f7f3ff]/96 dark:border-violet-400/30 dark:bg-violet-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.1rem] dark:text-foreground"
+                            >
+                                <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
+                                    <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{parisCard.emoji}</span>
+                                    <span>{parisCard.title}</span>
                                 </p>
                             </div>
-                        </div>
-                </div>
-            ) : null}
+                        ) : null}
 
-            {isFallback ? (
-                <div className="pointer-events-none absolute inset-x-6 bottom-6 rounded-[16px] border border-slate-200 bg-white p-5 shadow-[0_14px_28px_rgba(15,23,42,0.08)]">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                        {t('globe.fallbackTitle')}
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                        {t('globe.fallbackDescription')}
-                    </p>
-                </div>
+                        {fijiCard ? (
+                            <div
+                                ref={(node) => {
+                                    if (node) overlayRefs.current.set('fiji-panel', node);
+                                    else overlayRefs.current.delete('fiji-panel');
+                                }}
+                                className="absolute left-0 top-0 w-[6.9rem] rounded-[11px] border border-[#cbe9d7] bg-[#eef9f1]/96 dark:border-emerald-400/30 dark:bg-emerald-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.2rem] dark:text-foreground"
+                            >
+                                <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
+                                    <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{fijiCard.emoji}</span>
+                                    <span>{fijiCard.title}</span>
+                                </p>
+                            </div>
+                        ) : null}
+
+                        {southAfricaCard ? (
+                            <div
+                                ref={(node) => {
+                                    if (node) overlayRefs.current.set('south-africa-panel', node);
+                                    else overlayRefs.current.delete('south-africa-panel');
+                                }}
+                                className="absolute left-0 top-0 w-[7.1rem] rounded-[11px] border border-[#cfe8ee] bg-[#eef8fb]/96 dark:border-sky-400/30 dark:bg-sky-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.5rem] dark:text-foreground"
+                            >
+                                <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
+                                    <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{southAfricaCard.emoji}</span>
+                                    <span>{southAfricaCard.title}</span>
+                                </p>
+                            </div>
+                        ) : null}
+
+                        {route66Card ? (
+                            <div
+                                ref={(node) => {
+                                    if (node) overlayRefs.current.set('route66-panel', node);
+                                    else overlayRefs.current.delete('route66-panel');
+                                }}
+                                className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#f0d5bf] bg-[#fff4e9]/96 dark:border-amber-400/30 dark:bg-amber-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.1rem] dark:text-foreground"
+                            >
+                                <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
+                                    <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{route66Card.emoji}</span>
+                                    <span>{route66Card.title}</span>
+                                </p>
+                            </div>
+                        ) : null}
+
+                        <div
+                            ref={(node) => {
+                                if (node) overlayRefs.current.set('trip-preview', node);
+                                else overlayRefs.current.delete('trip-preview');
+                            }}
+                            className="absolute left-0 top-0 w-[8.45rem] border border-border bg-card p-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] dark:shadow-[0_20px_34px_rgba(0,0,0,0.5)] will-change-transform sm:w-[9rem] dark:border-border dark:bg-card"
+                            style={{ borderRadius: '14px 14px 18px 18px' }}
+                            >
+                                <div className="overflow-hidden rounded-[10px] border border-border dark:border-border">
+                                    <img
+                                        src="/images/trip-maps/thailand-islands.png"
+                                        alt={preview.alt}
+                                        className="h-16 w-full object-cover sm:h-18"
+                                        loading="lazy"
+                                    />
+                                </div>
+                                <div className="pt-2">
+                                    <p className="text-[0.68rem] font-semibold leading-[1.15] text-foreground sm:text-[0.72rem] dark:text-foreground">
+                                        {preview.title}
+                                    </p>
+                                </div>
+                            </div>
+                    </div>
+                ) : null}
+
+                {isFallback ? (
+                    <div className="pointer-events-none absolute inset-x-6 bottom-6 rounded-[16px] border border-border bg-card p-5 shadow-[0_14px_28px_rgba(15,23,42,0.08)] dark:shadow-[0_14px_28px_rgba(0,0,0,0.45)] dark:border-border dark:bg-card">
+                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">
+                            {t('globe.fallbackTitle')}
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-muted-foreground">
+                            {t('globe.fallbackDescription')}
+                        </p>
+                    </div>
+                ) : null}
+                </>
             ) : null}
         </div>
     );

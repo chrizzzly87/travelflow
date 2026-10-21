@@ -21,6 +21,11 @@ export const useTripOgPreview = (tripId: string, revision: number) => {
     useEffect(() => {
         let disposed = false, loading = false, checks = 0, finished = false;
         setState(null); setBlob(null); setImageUrl(null); setLoadError(null);
+        let loadedMediaKey: string | null = null;
+        const loadImage = async (key: string | number) => {
+            const result = await inspectOgUrl(`/trip/${tripId}?og_preview=${key}`, { origin: window.location.origin });
+            if (!disposed) setImageUrl(result.resolvedOgImageUrl);
+        };
         const load = async () => {
             if (loading || finished || disposed) return;
             loading = true;
@@ -29,9 +34,13 @@ export const useTripOgPreview = (tripId: string, revision: number) => {
                 if (disposed) return;
                 setState(result);
                 finished = !['queued', 'rendering'].includes(result.status) || ++checks >= 60;
-                if (result.status === 'ready') {
+                const media = result.status === 'ready' ? result : result.attached;
+                const mediaKey = media?.mediaRevision || media?.revision;
+                if (media && mediaKey !== loadedMediaKey) {
+                    loadedMediaKey = mediaKey || null;
                     const next = await getTripVideoAsset(tripId, 'video');
                     if (!disposed) setBlob(next);
+                    if (result.status === 'ready') void loadImage(mediaKey || revision).catch(() => {});
                 }
             } catch (issue) {
                 finished = true;
@@ -40,9 +49,7 @@ export const useTripOgPreview = (tripId: string, revision: number) => {
         };
         void load();
         const timer = setInterval(() => { if (finished) clearInterval(timer); else void load(); }, 3000);
-        void inspectOgUrl(`/trip/${tripId}?og_preview=${revision}`, { origin: window.location.origin }).then(result => {
-            if (!disposed) setImageUrl(result.resolvedOgImageUrl);
-        }).catch(() => {});
+        void loadImage(revision).catch(() => {});
         return () => { disposed = true; clearInterval(timer); };
     }, [tripId, revision]);
     const videoUrl = useBlobUrl(blob);

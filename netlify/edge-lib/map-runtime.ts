@@ -70,6 +70,67 @@ export const readMapRuntimeOverrideFromRequest = (
   };
 };
 
+/**
+ * The administrator's map-provider setting, cached per isolate. Generated
+ * preview images are produced here, so they have to follow the same switch the
+ * browser does — otherwise the planner renders Mapbox while every shared image
+ * still carries a Google basemap.
+ */
+let cachedAdminPreset: { preset: MapRuntimePreset | null; readAt: number } | null = null;
+const ADMIN_PRESET_TTL_MS = 60_000;
+
+const readAdminMapRuntimePreset = async (): Promise<MapRuntimePreset | null> => {
+  const now = Date.now();
+  if (cachedAdminPreset && now - cachedAdminPreset.readAt < ADMIN_PRESET_TTL_MS) {
+    return cachedAdminPreset.preset;
+  }
+
+  const supabaseUrl = readEdgeEnv('VITE_SUPABASE_URL').replace(/\/+$/, '');
+  const anonKey = readEdgeEnv('VITE_SUPABASE_ANON_KEY');
+  if (!supabaseUrl || !anonKey) return null;
+
+  let preset: MapRuntimePreset | null = null;
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_public_runtime_settings`, {
+      method: 'POST',
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+        'content-type': 'application/json',
+      },
+      body: '{}',
+    });
+    if (response.ok) {
+      const rows = await response.json() as Array<{ map_runtime_preset?: unknown }>;
+      const value = rows?.[0]?.map_runtime_preset;
+      if (value === 'google_all' || value === 'mapbox_all' || value === 'mapbox_visual_google_services') {
+        preset = value;
+      }
+    }
+  } catch {
+    // A settings lookup must never fail an image request; the environment
+    // default stands in.
+    preset = null;
+  }
+
+  cachedAdminPreset = { preset, readAt: now };
+  return preset;
+};
+
+export const resolveEdgeMapRuntimeAsync = async (request: Request): Promise<MapRuntimeResolution> => {
+  const adminPreset = await readAdminMapRuntimePreset();
+  const { override, overrideSource } = readMapRuntimeOverrideFromRequest(request);
+  return resolveMapRuntime({
+    defaultPreset: adminPreset || getEdgeDefaultMapRuntimePreset(),
+    override,
+    overrideSource: override ? overrideSource : 'default',
+    availability: {
+      googleMapsKeyAvailable: Boolean(getEdgeGoogleMapsApiKey().trim()),
+      mapboxAccessTokenAvailable: Boolean(getEdgeMapboxAccessToken().trim()),
+    },
+  });
+};
+
 export const resolveEdgeMapRuntime = (request: Request): MapRuntimeResolution => {
   const { override, overrideSource } = readMapRuntimeOverrideFromRequest(request);
   return resolveMapRuntime({

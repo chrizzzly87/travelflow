@@ -192,7 +192,9 @@ describe('pages/FeaturesPage', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByRole('heading', { name: /ready to go/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', {
+            name: `${featuresLocale.hero.titleBefore} ${featuresLocale.hero.titleHighlight}`,
+        })).toBeInTheDocument();
 
         await waitFor(() => {
             expect(screen.getByText(featuresLocale.globe.fallbackTitle)).toBeInTheDocument();
@@ -271,7 +273,7 @@ describe('pages/FeaturesPage', () => {
         );
         const airportCard = screen.getByTestId('features-airport-card');
 
-        expect(airportCard.className).toContain('md:col-span-6');
+        expect(airportCard.className).toContain('animate-scroll-fade-up');
         expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
         expect(screen.getByRole('img', { name: 'CDG' })).toBeInTheDocument();
         expect(screen.getByTestId('features-airport-route').className).toContain('justify-between');

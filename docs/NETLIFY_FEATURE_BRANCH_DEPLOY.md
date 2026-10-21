@@ -52,6 +52,30 @@ Run these from the feature branch before pushing:
 2. `pnpm test:core`
 3. `pnpm build`
 
+## Edge functions are NOT deployed by manual CLI alias deploys
+
+**Verified 2026-08-19.** `netlify deploy --no-build --dir=dist --alias <name>` ships the static bundle but **no Netlify edge functions**. Every `/api/*` route on such a preview returns the SPA `index.html` with `content-type: text/html` instead of JSON.
+
+Confirmed failing on an alias while all three worked on production:
+
+- `/api/destinations` and `/api/destinations/<slug>`
+- `/api/runtime/location`
+- `/api/health`
+
+Linking the project first (`netlify link --id ...`) and running a full `netlify build` beforehand did **not** help; the deploy still reported `CDN requesting 0 edge functions`.
+
+### What this looks like in the product
+
+- Country guide pages render "Practical destination information is temporarily unavailable. The core guide remains available."
+- Anything depending on `runtime-location` (geolocation, nearby airports, distance sorting) silently does nothing.
+
+**This is a preview artifact, not an application bug.** Do not debug it as a code regression, and tell anyone verifying on an alias preview to expect it.
+
+### Rule
+
+- Use alias deploys only to check **static and client-side rendering**.
+- Verify anything touching `/api/*` on a real Netlify **Deploy Preview** or on production.
+
 ## Manual CLI deploy with env parity (mandatory for auth flows)
 Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.
 
@@ -82,6 +106,33 @@ Notes:
 - Avoid `netlify deploy --build` for auth-sensitive checks in this repo. The CLI build path can resolve masked `VITE_SUPABASE_*` values and produce `Supabase auth is not configured`.
 - Never commit `.env.local` or pulled env files.
 - Symptom of missing env injection: login fails, `Supabase auth is not configured`, or JS chunk errors caused by bad runtime config.
+
+## Diagnosing a Netlify-only build failure
+
+`pnpm build:netlify` uses your local env, so it can pass while Netlify fails. To reproduce Netlify's build with the **linked site's real environment**:
+
+```bash
+pnpm dlx netlify build
+```
+
+This runs the `netlify.toml` build command with Netlify's own env injection and surfaces the failing step directly, which makes the (often unreachable) Netlify build log unnecessary.
+
+### Known cause: `is_secret` on `VITE_*` variables
+
+Netlify's per-variable **secret** flag makes values resolve **masked** into the build. The `VITE_*` client variables in this project are public by design (see the comments in `netlify.toml`), so flagging them secret breaks the build at the first step:
+
+```
+> pnpm runtime-env:validate
+Production build blocked: VITE_SUPABASE_URL must be a valid HTTP(S) URL.
+```
+
+`SECRETS_SCAN_OMIT_KEYS` only exempts a key from the secrets *scanner* — it does **not** undo the `is_secret` flag. Fix by clearing "secret" on the `VITE_*` variables in Site config → Environment variables. Keep genuinely server-side keys (`SUPABASE_SERVICE_ROLE_KEY`, `TF_ADMIN_API_KEY`, provider API keys) secret.
+
+Inspect the flag without printing secrets:
+
+```bash
+pnpm dlx netlify env:list --json
+```
 
 ## Useful checks
 - PR checks:

@@ -10,6 +10,7 @@ import {
   collectModulePreloadHrefs,
   injectModulePreloadHints,
   stripBootstrapShell,
+  isPrerenderedShell,
 } from './prerender-html-utils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -55,6 +56,44 @@ const ROUTES = [
   { path: '/fa', dests: ['fa.html', 'fa/index.html'] },
   { path: '/ur', dests: ['ur.html', 'ur/index.html'] }
 ];
+
+// Destination guide country pages are data-driven, so they never appear in the
+// static route table above. Each prerendered route costs roughly 2-3s of build
+// time, so we prerender the highest-priority country guides plus the newest
+// additions instead of all 52 — the rest still render client-side and receive
+// canonical/OG metadata from the site OG edge function.
+const PRERENDERED_COUNTRY_GUIDE_LIMIT = 10;
+const ALWAYS_PRERENDERED_COUNTRY_SLUGS = ['china', 'taiwan'];
+
+function readCountryGuideRoutes() {
+  try {
+    const raw = fs.readFileSync(path.join(projectRoot, 'data', 'destinationGuides.json'), 'utf8');
+    const guides = JSON.parse(raw)?.guides;
+    if (!Array.isArray(guides)) return [];
+
+    const countries = guides
+      .filter((guide) => guide?.kind === 'country' && guide.slug)
+      .sort((left, right) => (left.priorityRank || Number.MAX_SAFE_INTEGER) - (right.priorityRank || Number.MAX_SAFE_INTEGER));
+
+    const slugs = new Set(countries.slice(0, PRERENDERED_COUNTRY_GUIDE_LIMIT).map((guide) => guide.slug));
+    for (const slug of ALWAYS_PRERENDERED_COUNTRY_SLUGS) {
+      if (countries.some((guide) => guide.slug === slug)) slugs.add(slug);
+    }
+
+    return Array.from(slugs).map((slug) => ({
+      path: `/inspirations/country/${slug}`,
+      dests: [
+        `inspirations/country/${slug}.html`,
+        `inspirations/country/${slug}/index.html`,
+      ],
+    }));
+  } catch (err) {
+    console.warn('WARNING: Could not derive destination guide prerender routes.', err.message);
+    return [];
+  }
+}
+
+ROUTES.push(...readCountryGuideRoutes());
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -264,6 +303,9 @@ async function main() {
 
   let failedRoutes = 0;
 
+  /** Held back so the clean SPA template stays the fallback for the whole run. */
+  let deferredIndexHtml = null;
+
   for (const route of ROUTES) {
     const dests = route.dests || [route.dest];
     console.log(`Pre-rendering route: ${route.path} -> ${dests.map((dest) => `dist/${dest}`).join(', ')}`);
@@ -332,6 +374,23 @@ async function main() {
       await page.addInitScript(() => { window.__TF_PRERENDER_EAGER__ = true; });
 
       await page.goto(`${BASE_URL}${route.path}`, { waitUntil: 'domcontentloaded' });
+
+      // Prove the invariant the deferred index.html write exists to protect:
+      // every route must boot from the clean shell. Deferring the homepage is
+      // easy to undo by accident, and the damage it prevents is invisible —
+      // another page's leftover markup baked into this capture, shipped, and
+      // only visible on a direct load. Fail the route instead of the visitor.
+      const servedShellHtml = await page.evaluate(async () => {
+        const response = await fetch(location.href, { cache: 'reload' });
+        return response.text();
+      });
+      if (isPrerenderedShell(servedShellHtml)) {
+        throw new Error(
+          'Capture server served already-prerendered HTML for this route. '
+          + 'A prerendered page must not be written to dist/ mid-run — it becomes '
+          + "vite preview's SPA fallback for every route captured after it."
+        );
+      }
 
       // Wait for the React handoff to complete and mark the route ready
       await page.waitForSelector('[data-tf-handoff-ready="true"]', { timeout: 10000 });
@@ -408,6 +467,21 @@ async function main() {
       console.log(`Injected ${preloadHrefs.length} modulepreload hints for ${route.path}`);
 
       for (const dest of dests) {
+        // dist/index.html is vite preview's SPA fallback for every URL that has
+        // no file yet. Writing the prerendered homepage into it mid-loop means
+        // every LATER route boots from homepage markup, and preact's hydration
+        // does not fully clear the mismatch — leftover homepage DOM ends up
+        // captured into that route's HTML. That is the same failure the host
+        // catch-all avoids in production by rewriting deep links to /spa.html;
+        // vite preview applies no such rewrite, so the prerender run hits it.
+        //
+        // Buffer the homepage and write it once the loop is done.
+        if (dest === 'index.html') {
+          deferredIndexHtml = outputHtml;
+          console.log('Buffered dist/index.html (written after all routes, so it cannot become the SPA fallback mid-run)');
+          continue;
+        }
+
         const destPath = path.join(projectRoot, 'dist', dest);
         const destDir = path.dirname(destPath);
         
@@ -422,6 +496,12 @@ async function main() {
       failedRoutes += 1;
       console.error(`Error pre-rendering route ${route.path}:`, err.message);
     }
+  }
+
+  // Now that no further route can be served the homepage as a fallback, commit it.
+  if (deferredIndexHtml) {
+    fs.writeFileSync(path.join(projectRoot, 'dist', 'index.html'), deferredIndexHtml, 'utf8');
+    console.log('Successfully pre-rendered dist/index.html');
   }
 
   console.log('Pre-rendering complete! Closing browser and server...');

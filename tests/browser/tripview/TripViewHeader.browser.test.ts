@@ -37,6 +37,17 @@ vi.mock('../../../components/navigation/AccountMenu', () => ({
   },
 }));
 
+vi.mock('../../../components/navigation/MobileMenu', () => ({
+  MobileMenu: (props: Record<string, unknown>) => React.createElement(
+    'div',
+    { 'data-testid': 'mobile-menu', role: 'dialog' },
+    React.createElement('button', {
+      type: 'button',
+      onClick: () => (props.onClose as (() => void) | undefined)?.(),
+    }, 'Close menu'),
+  ),
+}));
+
 const analyticsMocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
@@ -105,6 +116,45 @@ describe('components/tripview/TripViewHeader', () => {
     expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__trip_info--open', { source: 'header_title' });
   });
 
+  it('offers a way into site navigation, which the planner otherwise has none of', () => {
+    // The trip page is its own header: the logo goes home and nothing else in
+    // it leads anywhere, so on a phone the planner was a dead end.
+    const props = buildProps();
+    props.isMobile = true;
+
+    render(
+      React.createElement(MemoryRouter, null,
+        React.createElement(TripViewHeader, props),
+      ),
+    );
+
+    expect(screen.queryByTestId('mobile-menu')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('trip-header-menu'));
+    expect(screen.getByTestId('mobile-menu')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+    expect(screen.queryByTestId('mobile-menu')).not.toBeInTheDocument();
+  });
+
+  it('puts the burger last in the row, where every other header puts it', () => {
+    // The burger is the same control on every screen. It first landed between
+    // Share and the account avatar here, so a thumb reaching for it had to find
+    // it in a different place depending on which page was open.
+    const props = buildProps();
+    props.isMobile = true;
+
+    render(
+      React.createElement(MemoryRouter, null,
+        React.createElement(TripViewHeader, props),
+      ),
+    );
+
+    const burger = screen.getByTestId('trip-header-menu');
+    const row = burger.parentElement;
+    expect(row?.lastElementChild).toBe(burger);
+  });
+
   it('hides the account label on mobile while keeping the profile menu available', () => {
     const props = buildProps();
     props.isMobile = true;
@@ -135,5 +185,20 @@ describe('components/tripview/TripViewHeader', () => {
 
     expect(props.onHeaderAuthAction).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId('account-menu')).not.toBeInTheDocument();
+  });
+
+  it('offers the dark-mode toggle on desktop, as the site header does', () => {
+    // Below lg the burger's menu carries the toggle; above it the trip page used
+    // to have no way to switch theme at all.
+    render(
+      React.createElement(MemoryRouter, null,
+        React.createElement(TripViewHeader, buildProps()),
+      ),
+    );
+
+    const toggle = screen.getByRole('button', { name: 'nav.themeToDark' });
+    expect(toggle.className).toContain('lg:inline-flex');
+    fireEvent.click(toggle);
+    expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__theme--toggle', { to: 'dark' });
   });
 });

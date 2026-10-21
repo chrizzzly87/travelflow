@@ -18,6 +18,30 @@ export type SearchByTextResponseShape = {
   }>;
 };
 
+// Activities can be much shorter than a city stay, so they are edited in hours
+// while `ITimelineItem.duration` stays in days.
+export const ACTIVITY_MIN_DURATION_HOURS = 0.5;
+export const ACTIVITY_MAX_DURATION_HOURS = 24 * 30;
+
+export const clampActivityDurationHours = (hours: number): number => {
+  if (!Number.isFinite(hours)) return ACTIVITY_MIN_DURATION_HOURS;
+  return Math.min(ACTIVITY_MAX_DURATION_HOURS, Math.max(ACTIVITY_MIN_DURATION_HOURS, hours));
+};
+
+export const activityDurationDaysToHours = (days: number): number => (
+  Math.round(days * 24 * 10) / 10
+);
+
+export const formatActivityDuration = (days: number): string => {
+  const safeDays = Number.isFinite(days) ? Math.max(0, days) : 0;
+  if (safeDays >= 1) {
+    const rounded = Number(safeDays.toFixed(2));
+    return `${rounded} day${rounded === 1 ? '' : 's'}`;
+  }
+  const hours = Number((safeDays * 24).toFixed(1));
+  return `${hours} hour${hours === 1 ? '' : 's'}`;
+};
+
 export const getRouteDistanceText = ({
   routeDistanceLabel,
   canRoute,

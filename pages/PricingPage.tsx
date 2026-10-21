@@ -66,22 +66,22 @@ const subscriptionSummaryReducer = (
 
 const TIER_STYLE: Record<'backpacker' | 'explorer' | 'globetrotter', TierStyle> = {
     backpacker: {
-        badgeClass: 'border-slate-300 bg-slate-100 text-slate-700',
-        surfaceClass: 'border-slate-200',
-        headerClass: 'bg-slate-50',
-        featureIconClass: 'text-slate-500',
+        badgeClass: 'border-border bg-secondary text-foreground',
+        surfaceClass: 'border-border',
+        headerClass: 'bg-secondary',
+        featureIconClass: 'text-muted-foreground',
     },
     explorer: {
-        badgeClass: 'border-accent-300 bg-accent-100 text-accent-700',
-        surfaceClass: 'border-accent-200 shadow-md ring-1 ring-accent-100',
-        headerClass: 'bg-accent-50/70',
-        featureIconClass: 'text-accent-600',
+        badgeClass: 'border-accent-300 bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30',
+        surfaceClass: 'border-accent-200 shadow-md ring-1 ring-accent-100 dark:border-accent-400/30 dark:ring-0',
+        headerClass: 'bg-accent-50/70 dark:bg-accent-400/12',
+        featureIconClass: 'text-accent-600 dark:text-accent-300',
         highlighted: true,
     },
     globetrotter: {
-        badgeClass: 'border-amber-300 bg-amber-100 text-amber-700',
-        surfaceClass: 'border-amber-200',
-        headerClass: 'bg-amber-50/70',
+        badgeClass: 'border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
+        surfaceClass: 'border-amber-200 dark:border-amber-400/30',
+        headerClass: 'bg-amber-50/70 dark:bg-amber-400/12',
         featureIconClass: 'text-amber-600',
     },
 };
@@ -257,12 +257,12 @@ export const PricingPage: React.FC = () => {
             <div className="py-8 md:py-16">
                 <div className="mx-auto mb-12 max-w-3xl text-center md:mb-16">
                     <h1
-                        className="text-balance text-4xl font-semibold text-slate-900 sm:text-5xl"
+                        className="text-balance text-4xl font-semibold text-foreground sm:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('hero.title')}
                     </h1>
-                    <p className="mt-4 text-pretty text-lg text-slate-500">
+                    <p className="mt-4 text-pretty text-lg text-muted-foreground">
                         {t('hero.description')}
                     </p>
                 </div>
@@ -271,17 +271,17 @@ export const PricingPage: React.FC = () => {
                     <div className={cn(
                         'mx-auto mb-8 max-w-5xl rounded-2xl border px-6 py-5',
                         billingLifecycleState === 'canceled_grace'
-                            ? 'border-amber-200 bg-amber-50'
-                            : 'border-accent-200 bg-accent-50/70',
+                            ? 'border-amber-200 bg-amber-50 dark:bg-amber-400/12 dark:border-amber-400/30'
+                            : 'border-accent-200 bg-accent-50/70 dark:bg-accent-400/12 dark:border-accent-400/30',
                     )}>
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div className="space-y-2">
-                                <p className="text-sm font-semibold text-slate-900">
+                                <p className="text-sm font-semibold text-foreground">
                                     {billingLifecycleState === 'canceled_grace'
                                         ? t('shared.canceledGraceTitle')
                                         : t('shared.inactiveTitle')}
                                 </p>
-                                <p className="max-w-3xl text-sm leading-6 text-slate-700">
+                                <p className="max-w-3xl text-sm leading-6 text-foreground">
                                     {billingLifecycleState === 'canceled_grace'
                                         ? t('shared.canceledGraceHelper', {
                                             date: billingAccessUntilLabel,
@@ -344,7 +344,7 @@ export const PricingPage: React.FC = () => {
                                     label: t(`tiers.${tier.publicSlug}.cta`),
                                     href: freeTierTarget,
                                     disabled: false,
-                                    className: 'block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50',
+                                    className: 'block w-full rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary dark:shadow-none',
                                     analyticsId: `pricing__tier--${tier.publicSlug}`,
                                     helperText: null as string | null,
                                 };
@@ -355,7 +355,7 @@ export const PricingPage: React.FC = () => {
                                     label: t(`tiers.${tier.publicSlug}.cta`),
                                     href: checkoutTarget,
                                     disabled: true,
-                                    className: 'w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400',
+                                    className: 'w-full cursor-not-allowed rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-muted-foreground',
                                     analyticsId: `pricing__tier--${tier.publicSlug}`,
                                     helperText: t('shared.checkoutUnavailable'),
                                 };
@@ -377,7 +377,7 @@ export const PricingPage: React.FC = () => {
                                     label: t('shared.loadingPlanState'),
                                     href: checkoutTarget,
                                     disabled: true,
-                                    className: 'w-full cursor-wait rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500',
+                                    className: 'w-full cursor-wait rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-muted-foreground',
                                     analyticsId: 'pricing__plan_cta--loading',
                                     helperText: null as string | null,
                                 };
@@ -400,7 +400,7 @@ export const PricingPage: React.FC = () => {
                                     label: t('shared.currentPlanCta'),
                                     href: checkoutTarget,
                                     disabled: true,
-                                    className: 'w-full cursor-not-allowed rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm font-semibold text-accent-700',
+                                    className: 'w-full cursor-not-allowed rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm font-semibold text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30',
                                     analyticsId: 'pricing__plan_cta--current',
                                     helperText: t('shared.currentPlanHelper'),
                                 };
@@ -434,7 +434,7 @@ export const PricingPage: React.FC = () => {
                                     label: t('shared.manageBillingCta'),
                                     href: `${buildPath('profileSettings')}#billing-management`,
                                     disabled: false,
-                                    className: 'block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50',
+                                    className: 'block w-full rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary dark:shadow-none',
                                     analyticsId: billingDecision.reason === 'downgrade_requires_management'
                                         ? 'pricing__plan_cta--downgrade_manage'
                                         : 'pricing__plan_cta--manage_billing',
@@ -458,11 +458,11 @@ export const PricingPage: React.FC = () => {
                             <article
                                 key={tier.key}
                                 className={cn(
-                                    'group flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg',
+                                    'group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg dark:shadow-none',
                                     style.surfaceClass,
                                 )}
                             >
-                                <div className={cn('border-b border-slate-200 p-6', style.headerClass)}>
+                                <div className={cn('border-b border-border p-6', style.headerClass)}>
                                     <div className="flex items-start justify-between gap-3">
                                         {(isPaidTier || isCurrentTier) ? (
                                             <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
@@ -471,18 +471,18 @@ export const PricingPage: React.FC = () => {
                                         ) : <span />}
                                         <div className="text-right">
                                             <div
-                                                className="text-4xl font-extrabold tabular-nums text-slate-900"
+                                                className="text-4xl font-extrabold tabular-nums text-foreground"
                                                 style={{ fontFamily: 'var(--tf-font-heading)' }}
                                             >
                                                 {`$${tier.monthlyPriceUsd}`}
                                             </div>
-                                            <div className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</div>
+                                            <div className="text-sm font-medium text-muted-foreground">{t('shared.perMonth')}</div>
                                         </div>
                                     </div>
-                                    <h2 className="mt-5 text-balance text-2xl font-semibold text-slate-900">
+                                    <h2 className="mt-5 text-balance text-2xl font-semibold text-foreground">
                                         {t(`tiers.${tier.publicSlug}.name`)}
                                     </h2>
-                                    <p className="mt-2 max-w-[24rem] text-pretty text-sm leading-6 text-slate-600">
+                                    <p className="mt-2 max-w-[24rem] text-pretty text-sm leading-6 text-muted-foreground">
                                         {t(`tiers.${tier.publicSlug}.description`)}
                                     </p>
                                 </div>
@@ -490,14 +490,14 @@ export const PricingPage: React.FC = () => {
                                 <div className="flex flex-1 flex-col p-6">
                                 <ul className="space-y-3">
                                     {featureList.map((feature) => (
-                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-foreground">
                                             <Check size={16} weight="bold" className={cn('mt-1 shrink-0', style.featureIconClass)} />
                                             {feature}
                                         </li>
                                     ))}
                                 </ul>
 
-                                <div className="mt-8 border-t border-slate-200 pt-5">
+                                <div className="mt-8 border-t border-border pt-5">
                                     {isPaidTier ? (
                                         ctaState.disabled ? (
                                             <button
@@ -531,7 +531,7 @@ export const PricingPage: React.FC = () => {
                                         </Link>
                                     )}
                                     {ctaState.helperText ? (
-                                        <p className="mt-3 text-xs leading-5 text-slate-500">{ctaState.helperText}</p>
+                                        <p className="mt-3 text-xs leading-5 text-muted-foreground">{ctaState.helperText}</p>
                                     ) : null}
                                 </div>
                                 </div>
@@ -541,8 +541,8 @@ export const PricingPage: React.FC = () => {
                 </div>
 
                 <div className="mx-auto mt-16 max-w-2xl text-center">
-                    <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">
-                        <p className="font-semibold text-slate-800">{t('anonymousLimits.title')}</p>
+                    <div className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-left text-sm text-muted-foreground">
+                        <p className="font-semibold text-foreground">{t('anonymousLimits.title')}</p>
                         <p className="mt-1">
                             <Trans
                                 i18nKey="anonymousLimits.description"
@@ -552,7 +552,7 @@ export const PricingPage: React.FC = () => {
                             />
                         </p>
                     </div>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                         {t('anonymousLimits.footer')}
                     </p>
                 </div>

@@ -1,0 +1,47 @@
+{
+  "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
+  "release": {
+    "id": "rel-2026-10-09-openrouter-model-refresh",
+    "version": "v0.205.0",
+    "title": "A faster, fresher AI benchmark lineup",
+    "date": "2026-10-09",
+    "summary": "The benchmark dashboard now starts with a smaller, faster set of current AI models while keeping premium alternatives available.",
+    "status": "published",
+    "publishedAt": "2026-10-09T01:52:52Z",
+    "notifyInApp": true,
+    "inAppHours": 24,
+    "items": [
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🧠 New OpenAI, Claude, Gemini, Grok, DeepSeek, GLM, Qwen, and Mistral models are available with model-specific reasoning choices where supported."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "⚡ The default benchmark lineup is now limited to eight current models chosen for speed, provider coverage, and structured trip output."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "🧹 Three discontinued model options no longer appear or fail when selected."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "🔎 Added a repeatable authenticated catalog audit that reports compatible, unavailable, and stale model identifiers without exposing credentials."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "🧪 Verified every newly approved model with a live schema-constrained OpenRouter request and expanded catalog, runtime, and preference migration coverage."
+      }
+    ],
+    "sourcePath": "../content/updates/2026-10-09-openrouter-model-refresh.md"
+  }
+}

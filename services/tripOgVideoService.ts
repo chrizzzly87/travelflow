@@ -1,9 +1,10 @@
 import { supabase } from './supabaseClient';
-import type { TripVideoState, TripVideoStyle, TripVideoRouteMode } from '../shared/tripOgVideo';
+import type { TripVideoState, TripVideoAttachment, TripVideoStyle, TripVideoRouteMode } from '../shared/tripOgVideo';
 
 export interface TripVideoPreviewState extends Omit<TripVideoState, 'status'> {
   status: TripVideoState['status'] | 'missing';
   stale?: boolean;
+  attached?: TripVideoAttachment & { stale?: boolean };
   limited?: boolean;
 }
 

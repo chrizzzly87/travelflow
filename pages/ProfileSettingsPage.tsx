@@ -416,13 +416,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     }, [appLocale, isUsernameLocked, t, usernameCheck]);
 
     const usernameStatusTone = useMemo(() => {
-        if (usernameCheck.loading) return 'text-slate-500';
+        if (usernameCheck.loading) return 'text-muted-foreground';
         const availability = usernameCheck.result?.availability;
-        if (availability === 'available' || availability === 'unchanged') return 'text-emerald-700';
-        if (availability === 'cooldown') return 'text-amber-700';
-        if (availability === 'taken' || availability === 'invalid' || availability === 'reserved') return 'text-rose-700';
-        if (usernameCheck.error) return 'text-rose-700';
-        return 'text-slate-500';
+        if (availability === 'available' || availability === 'unchanged') return 'text-emerald-700 dark:text-emerald-200';
+        if (availability === 'cooldown') return 'text-amber-700 dark:text-amber-200';
+        if (availability === 'taken' || availability === 'invalid' || availability === 'reserved') return 'text-rose-700 dark:text-rose-200';
+        if (usernameCheck.error) return 'text-rose-700 dark:text-rose-200';
+        return 'text-muted-foreground';
     }, [usernameCheck]);
 
     if (!isLoading && !isAuthenticated) {
@@ -861,44 +861,44 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     };
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-secondary">
             <SiteHeader hideCreateTrip />
             <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
                 <section className="space-y-2">
-                    <nav className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700">
+                    <nav className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700 dark:hover:text-accent-200">
                             {t('settings.breadcrumb.profile')}
                         </NavLink>
                         <CaretRight size={12} weight="bold" aria-hidden="true" />
-                        <span className="text-slate-600">{t('settings.breadcrumb.settings')}</span>
+                        <span className="text-muted-foreground">{t('settings.breadcrumb.settings')}</span>
                     </nav>
-                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{heading}</h1>
-                    <p className="max-w-3xl text-sm leading-6 text-slate-600">{description}</p>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{heading}</h1>
+                    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
                     {isProfileLoading ? (
                         <div className="space-y-2" aria-hidden="true">
-                            <div className="h-10 w-full rounded-lg bg-slate-100" />
-                            <div className="h-10 w-full rounded-lg bg-slate-100" />
-                            <div className="h-20 w-full rounded-lg bg-slate-100" />
+                            <div className="h-10 w-full rounded-lg bg-secondary" />
+                            <div className="h-10 w-full rounded-lg bg-secondary" />
+                            <div className="h-20 w-full rounded-lg bg-secondary" />
                         </div>
                     ) : (
                         <>
                             {errorMessage && (
-                                <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+                                <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                     {errorMessage}
                                 </div>
                             )}
                             <form className="space-y-4" onSubmit={handleProfileFormSubmit} onKeyDown={handleProfileFormKeyDown}>
                                 <div className="grid gap-4 md:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)_minmax(0,1fr)]">
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.gender')}</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.gender')}</span>
                                         <Select
                                             value={toProfileGenderSelectValue(form.gender)}
                                             onValueChange={(value) => updateField('gender', fromProfileGenderSelectValue(value as ProfileGenderSelectValue))}
                                         >
-                                            <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                            <SelectTrigger className="h-10 w-full rounded-lg border-border text-sm focus:border-accent-400 focus:ring-accent-200">
                                                 <span>{
                                                     form.gender
                                                         ? PROFILE_GENDER_OPTIONS.find((option) => option.value === form.gender)?.label || t('settings.fields.unspecified')
@@ -916,7 +916,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         </Select>
                                     </label>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.firstName')}</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.firstName')}</span>
 	                                        <input
 	                                            ref={firstNameInputRef}
 	                                            aria-label={t('settings.fields.firstName')}
@@ -926,12 +926,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
                                                 requiredFieldErrors.firstName
                                                     ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                                                    : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                                    : 'border-border focus:border-accent-400 focus:ring-accent-200'
                                             }`}
                                         />
                                     </label>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.lastName')}</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.lastName')}</span>
 	                                        <input
 	                                            ref={lastNameInputRef}
 	                                            aria-label={t('settings.fields.lastName')}
@@ -941,14 +941,14 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
                                                 requiredFieldErrors.lastName
                                                     ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                                                    : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                                    : 'border-border focus:border-accent-400 focus:ring-accent-200'
                                             }`}
                                         />
                                     </label>
                                 </div>
 
                                 <label className="max-w-xl space-y-1">
-                                    <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         <span>{t('settings.fields.username')}</span>
                                         {hasUsernameLock && isUsernameLocked && (
                                             <button
@@ -960,7 +960,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 className={`text-[11px] font-semibold normal-case tracking-normal text-accent-700 transition-colors ${
                                                     isUsernameEditBlocked
                                                         ? 'cursor-not-allowed opacity-50'
-                                                        : 'hover:text-accent-800'
+                                                        : 'hover:text-accent-800 dark:hover:text-accent-200'
                                                 } disabled:cursor-not-allowed disabled:opacity-50`}
                                                 {...getAnalyticsDebugAttributes('profile_settings__username_edit--open')}
                                             >
@@ -1004,14 +1004,14 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         readOnly={isUsernameLocked}
                                         className={`h-9 w-full rounded-lg border px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 ${
                                             isUsernameLocked
-                                                ? 'border-slate-200 bg-slate-100 text-slate-600'
-                                            : 'border-slate-300 bg-white text-slate-900'
+                                                ? 'border-border bg-secondary text-muted-foreground'
+                                            : 'border-border bg-card text-foreground'
                                         }`}
                                     />
                                     <p className={`text-xs font-medium ${usernameStatusTone}`}>{usernameStatus}</p>
                                     {usernameSuggestions.length > 0 && (
                                         <div className="space-y-1">
-                                            <p className="text-xs text-slate-500">{t('settings.usernameSuggestionsTitle')}</p>
+                                            <p className="text-xs text-muted-foreground">{t('settings.usernameSuggestionsTitle')}</p>
                                             <div className="flex flex-wrap gap-1.5">
                                                 {usernameSuggestions.map((suggestion) => (
                                                     <button
@@ -1027,7 +1027,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                                 error: null,
                                                             });
                                                         }}
-                                                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                                        className="rounded-md border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
                                                     >
                                                         {suggestion}
                                                     </button>
@@ -1038,21 +1038,21 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </label>
 
                                 <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.bio')}</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.bio')}</span>
 	                                    <textarea
 	                                        aria-label={t('settings.fields.bio')}
 	                                        value={form.bio}
                                         onChange={(event) => updateField('bio', clampBio(event.target.value))}
                                         rows={3}
-                                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                        className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                                         maxLength={160}
                                     />
-                                    <p className="text-xs text-slate-500">{t('settings.bioHelp')}</p>
-                                    <p className="text-xs text-slate-400">{form.bio.length}/160</p>
+                                    <p className="text-xs text-muted-foreground">{t('settings.bioHelp')}</p>
+                                    <p className="text-xs text-muted-foreground">{form.bio.length}/160</p>
                                 </label>
                                 <div className="grid gap-3 md:grid-cols-3">
                                     <div ref={countryFieldRef} className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.country')}</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.country')}</span>
                                         <ProfileCountryRegionSelect
                                             value={form.country}
                                             locale={appLocale}
@@ -1072,7 +1072,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         />
                                     </div>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.city')}</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.city')}</span>
 	                                        <input
 	                                            ref={cityInputRef}
 	                                            aria-label={t('settings.fields.city')}
@@ -1082,12 +1082,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             className={`h-9 w-full rounded-md border px-2.5 text-xs outline-none focus:ring-2 ${
                                                 requiredFieldErrors.city
                                                     ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                                                    : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                                    : 'border-border focus:border-accent-400 focus:ring-accent-200'
                                             }`}
                                         />
                                     </label>
                                     <label htmlFor="profile-language-select" className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.preferredLanguage')}</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.preferredLanguage')}</span>
                                         <Select
                                             value={form.preferredLanguage}
                                             onValueChange={(value) => updateField('preferredLanguage', value as AppLanguage)}
@@ -1099,7 +1099,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 className={`h-9 w-full rounded-md text-xs ${
                                                     requiredFieldErrors.preferredLanguage
                                                         ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                                                        : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                                        : 'border-border focus:border-accent-400 focus:ring-accent-200'
                                                 }`}
                                             >
                                                 <span className="inline-flex items-center gap-2">
@@ -1122,11 +1122,11 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </div>
 
                             <div className="mt-5 grid gap-3 md:grid-cols-2">
-                                <article className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <article className="rounded-xl border border-border bg-secondary px-4 py-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
-                                            <p className="text-sm font-semibold text-slate-900">{t('settings.publicProfileToggleTitle')}</p>
-                                            <p className="text-xs text-slate-600">{t('settings.publicProfileToggleDescription')}</p>
+                                            <p className="text-sm font-semibold text-foreground">{t('settings.publicProfileToggleTitle')}</p>
+                                            <p className="text-xs text-muted-foreground">{t('settings.publicProfileToggleDescription')}</p>
                                         </div>
                                         <Switch
                                             checked={form.publicProfileEnabled}
@@ -1139,11 +1139,11 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </div>
                                 </article>
 
-                                <article className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <article className="rounded-xl border border-border bg-secondary px-4 py-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
-                                            <p className="text-sm font-semibold text-slate-900">{t('settings.defaultVisibilityToggleTitle')}</p>
-                                            <p className="text-xs text-slate-600">{t('settings.defaultVisibilityToggleDescription')}</p>
+                                            <p className="text-sm font-semibold text-foreground">{t('settings.defaultVisibilityToggleTitle')}</p>
+                                            <p className="text-xs text-muted-foreground">{t('settings.defaultVisibilityToggleDescription')}</p>
                                         </div>
                                         <Switch
                                             checked={form.defaultPublicTripVisibility}
@@ -1157,13 +1157,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </article>
                             </div>
 
-                            <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.publicUrlLabel')}</p>
-                                <p className="mt-1 break-all text-sm font-medium text-slate-700">{publicProfileUrlPreview}</p>
+                            <div className="mt-4 rounded-xl border border-border bg-card px-4 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.publicUrlLabel')}</p>
+                                <p className="mt-1 break-all text-sm font-medium text-foreground">{publicProfileUrlPreview}</p>
                                 {publicProfilePath && (
                                     <NavLink
                                         to={publicProfilePath}
-                                        className="mt-2 inline-flex text-sm font-semibold text-accent-700 hover:underline"
+                                        className="mt-2 inline-flex text-sm font-semibold text-accent-700 hover:underline dark:text-accent-200"
                                         onClick={() => trackEvent('profile_settings__public_url--open')}
                                         {...getAnalyticsDebugAttributes('profile_settings__public_url--open')}
                                     >
@@ -1172,27 +1172,27 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
                             </div>
 
-                            <section id="billing-management" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <section id="billing-management" className="mt-4 rounded-xl border border-border bg-secondary p-4">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div className="space-y-1">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.eyebrow')}</p>
-                                        <h2 className="text-base font-semibold text-slate-900">{t('settings.billing.title')}</h2>
-                                        <p className="max-w-2xl text-sm leading-6 text-slate-600">{t('settings.billing.description')}</p>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.billing.eyebrow')}</p>
+                                        <h2 className="text-base font-semibold text-foreground">{t('settings.billing.title')}</h2>
+                                        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('settings.billing.description')}</p>
                                     </div>
-                                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                                    <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground">
                                         {currentTierLabel}
                                     </span>
                                 </div>
 
                                 {billingLifecycleState === 'canceled_grace' && (
-                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:bg-amber-400/12 dark:border-amber-400/30">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
-                                                <p className="text-sm font-semibold text-amber-900">{t('settings.billing.canceledGrace.title')}</p>
+                                                <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">{t('settings.billing.canceledGrace.title')}</p>
                                                 <p className="max-w-2xl text-sm leading-6 text-amber-900/90">
                                                     {t('settings.billing.canceledGrace.description', { date: billingAccessDateLabel })}
                                                 </p>
-                                                <p className="text-xs font-medium text-amber-800">
+                                                <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
                                                     {t('settings.billing.canceledGrace.impact')}
                                                 </p>
                                             </div>
@@ -1209,7 +1209,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                     type="button"
                                                     onClick={() => void openBillingManagement('manage')}
                                                     disabled={isBillingLoading || isManageBillingSubmitting}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 bg-card px-4 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                 >
                                                     {t('settings.billing.manageCta')}
                                                 </button>
@@ -1219,14 +1219,14 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
 
                                 {billingLifecycleState === 'inactive' && hasPaidTier && (
-                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 p-4">
+                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 p-4 dark:bg-accent-400/12 dark:border-accent-400/30">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
-                                                <p className="text-sm font-semibold text-slate-900">{t('settings.billing.inactive.title')}</p>
-                                                <p className="max-w-2xl text-sm leading-6 text-slate-700">
+                                                <p className="text-sm font-semibold text-foreground">{t('settings.billing.inactive.title')}</p>
+                                                <p className="max-w-2xl text-sm leading-6 text-foreground">
                                                     {t('settings.billing.inactive.description')}
                                                 </p>
-                                                <p className="text-xs font-medium text-slate-600">
+                                                <p className="text-xs font-medium text-muted-foreground">
                                                     {activeDiscountCode
                                                         ? t('settings.billing.inactive.promoHint', { code: activeDiscountCode })
                                                         : t('settings.billing.inactive.impact')}
@@ -1245,7 +1245,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                     type="button"
                                                     onClick={() => void openBillingManagement('manage')}
                                                     disabled={isBillingLoading || isManageBillingSubmitting}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                                 >
                                                     {t('settings.billing.manageCta')}
                                                 </button>
@@ -1255,27 +1255,27 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
 
                                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.currentPlanLabel')}</p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">{currentTierLabel}</p>
+                                    <div className="rounded-lg border border-border bg-card p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.billing.currentPlanLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-foreground">{currentTierLabel}</p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.statusLabel')}</p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                    <div className="rounded-lg border border-border bg-card p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.billing.statusLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {billingStatusLabel}
                                         </p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.renewalLabel')}</p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                    <div className="rounded-lg border border-border bg-card p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.billing.renewalLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {billingState.currentPeriodEnd
                                                 ? formatDateLabel(billingState.currentPeriodEnd, appLocale)
                                                 : '—'}
                                         </p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.subscriptionIdLabel')}</p>
-                                        <p className="mt-1 truncate font-mono text-xs text-slate-700" title={billingState.providerSubscriptionId || ''}>
+                                    <div className="rounded-lg border border-border bg-card p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.billing.subscriptionIdLabel')}</p>
+                                        <p className="mt-1 truncate font-mono text-xs text-foreground" title={billingState.providerSubscriptionId || ''}>
                                             {billingState.providerSubscriptionId || '—'}
                                         </p>
                                     </div>
@@ -1296,7 +1296,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         type="button"
                                         onClick={() => void openBillingManagement('cancel')}
                                         disabled={isBillingLoading || isCancelBillingSubmitting || !hasPaidTier}
-                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                         {...getAnalyticsDebugAttributes('profile_settings__billing--cancel')}
                                     >
                                         {isCancelBillingSubmitting ? <SpinnerGap size={15} className="animate-spin" /> : null}
@@ -1316,7 +1316,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     {mode === 'onboarding' ? t('settings.actions.saveAndContinue') : t('settings.actions.save')}
                                 </button>
                                 {Object.values(requiredFieldErrors).some(Boolean) && (
-                                    <span className="text-xs font-semibold text-amber-700">
+                                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-200">
                                         {t('settings.requiredHint')}
                                     </span>
                                 )}

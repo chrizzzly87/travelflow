@@ -1,0 +1,102 @@
+import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Apple, MapPin } from 'lucide-react';
+
+import { buildMapDeepLinks, type MapDeepLinkTarget } from '../../services/mapDeepLinkService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+
+/**
+ * "Open in Google Maps / Apple Maps" for one place.
+ *
+ * Rendered as plain anchors rather than buttons so the links keep their native
+ * affordances — long-press, open in a new tab, share. Both apps are always
+ * offered: an iPhone that prefers Google Maps is common enough that picking one
+ * for the traveller would be wrong as often as it is right.
+ */
+
+export interface MapAppLinksProps extends MapDeepLinkTarget {
+  /** Where the links are rendered, sent as an analytics payload property. */
+  source: 'map_popup' | 'idea_popup' | 'details_panel' | 'stay';
+  size?: 'sm' | 'md';
+  className?: string;
+  /**
+   * The traveller's chosen maps app, which puts that link first. It reorders
+   * rather than hides: an iPhone that prefers Google Maps is common enough that
+   * dropping either one would be wrong as often as it is right.
+   */
+  preferredTarget?: 'google' | 'apple';
+}
+
+const BASE_LINK_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium '
+  + 'transition-colors border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50  dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30'
+  + 'hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:text-accent-200';
+
+const SIZE_CLASS: Record<'sm' | 'md', string> = {
+  sm: 'px-2.5 py-1 text-[11px]',
+  md: 'px-3 py-1.5 text-xs',
+};
+
+export const MapAppLinks: React.FC<MapAppLinksProps> = ({
+  title,
+  location,
+  coordinates,
+  placeId,
+  source,
+  size = 'md',
+  className = '',
+  preferredTarget = 'google',
+}) => {
+  const { t } = useTranslation('common');
+  const links = useMemo(
+    () => buildMapDeepLinks({ title, location, coordinates, placeId }),
+    [title, location, coordinates, placeId],
+  );
+
+  const handleClick = useCallback((provider: 'google' | 'apple') => {
+    trackEvent(
+      provider === 'google' ? 'trip_view__map_link--google' : 'trip_view__map_link--apple',
+      { source, precise: links?.isPrecise ?? false },
+    );
+  }, [links?.isPrecise, source]);
+
+  if (!links) return null;
+
+  const linkClass = `${BASE_LINK_CLASS} ${SIZE_CLASS[size]}`;
+  const iconSize = size === 'sm' ? 12 : 14;
+
+  const googleLink = (
+    <a
+      key="google"
+      href={links.google}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={linkClass}
+      onClick={() => handleClick('google')}
+      {...getAnalyticsDebugAttributes('trip_view__map_link--google', { source })}
+    >
+      <MapPin size={iconSize} aria-hidden="true" />
+      {t('tripView.mapLinks.google')}
+    </a>
+  );
+
+  const appleLink = (
+    <a
+      key="apple"
+      href={links.apple}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={linkClass}
+      onClick={() => handleClick('apple')}
+      {...getAnalyticsDebugAttributes('trip_view__map_link--apple', { source })}
+    >
+      <Apple size={iconSize} aria-hidden="true" />
+      {t('tripView.mapLinks.apple')}
+    </a>
+  );
+
+  return (
+    <div className={`flex flex-wrap items-center gap-2 ${className}`.trim()}>
+      {preferredTarget === 'apple' ? [appleLink, googleLink] : [googleLink, appleLink]}
+    </div>
+  );
+};

@@ -1,35 +1,35 @@
-import { computeMapViewport, getWorldPixel, getMapboxAccessTokenFromEnv, getTripPrimaryCityColorHex, type TripPayload } from '../edge-lib/trip-og-data.ts';
+import { computeMapViewport, getWorldPixel, getMapboxAccessTokenFromEnv, getTripPrimaryCityColorHex, findTravelBetweenCities, resolveColorHex, type TripPayload } from '../edge-lib/trip-og-data.ts';
 import { TRIP_VIDEO, type TripVideoStyle, type TripVideoRouteMode } from '../../shared/tripOgVideo.ts';
+
+import { resolvePreviewDayTrips } from '../../shared/dayTripPreview.ts';
+import { normalizeTransportMode } from '../../shared/transportModes.ts';
+import { buildRouteCacheKey } from '../../shared/routeCacheKey.ts';
+
+export interface TripVideoRouteCacheEntry { key: string; expiresAt: number; coordinates: { lat: number; lng: number }[] }
+export type TripVideoRouteCache = TripVideoRouteCacheEntry[];
+const ROUTE_CACHE_LIMIT = 16;
+const ROUTE_POINT_LIMIT = 256;
 
 type Stop = NonNullable<TripPayload['items']>[number] & { coordinates: { lat: number; lng: number } };
 const mapped = (item: NonNullable<TripPayload['items']>[number]): item is Stop => Boolean(item.coordinates
   && Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng)
   && Math.abs(item.coordinates.lat) <= 85 && Math.abs(item.coordinates.lng) <= 180);
-const distanceKm = (a: Stop, b: Stop) => {
-  const rad = Math.PI / 180;
-  const lat = (a.coordinates.lat - b.coordinates.lat) * rad;
-  const lng = (a.coordinates.lng - b.coordinates.lng) * rad;
-  return 12742 * Math.asin(Math.min(1, Math.sqrt(Math.sin(lat / 2) ** 2
-    + Math.cos(a.coordinates.lat * rad) * Math.cos(b.coordinates.lat * rad) * Math.sin(lng / 2) ** 2)));
-};
-
-// A mapped activity outside its city's local area is an excursion, not the next
-// overnight stop. Insert its return to base before continuing the main itinerary.
+// Use the same explicit day-trip ownership and return-stay model as planner
+// and image previews. Older named day trips remain compatible without promoting
+// ordinary activities merely because they are far away.
 export const buildTripVideoStops = (trip: TripPayload) => {
-  const cities = (trip.items || []).filter(item => item.type === 'city' && mapped(item)).sort((a, b) => (a.startDateOffset || 0) - (b.startDateOffset || 0)) as Stop[];
-  const activities = (trip.items || []).filter(item => item.type === 'activity' && mapped(item)) as Stop[];
+  const items = (trip.items || []).map(item => item.type === 'activity' && !item.activityKind && /day[ -]?trip/i.test(item.title || '')
+    ? { ...item, activityKind: 'day-trip' } : item);
+  const cities = items.filter(item => item.type === 'city' && mapped(item)).sort((a, b) => (a.startDateOffset || 0) - (b.startDateOffset || 0)) as Stop[];
+  const excursions = resolvePreviewDayTrips(items);
   const stops: (Stop & { excursion?: boolean; returnToBase?: boolean })[] = [];
   for (const city of cities) {
     if (stops.length >= TRIP_VIDEO.maxStops) break;
     stops.push(city);
-    const excursions = activities.filter(item => {
-      const day = item.startDateOffset || 0;
-      return day >= (city.startDateOffset || 0) && day < (city.startDateOffset || 0) + (city.duration || 0)
-        && distanceKm(city, item) >= 10;
-    }).sort((a, b) => (a.startDateOffset || 0) - (b.startDateOffset || 0));
-    for (const activity of excursions) {
-      if (stops.length + 2 > TRIP_VIDEO.maxStops) break;
-      stops.push({ ...activity, excursion: true }, { ...city, returnToBase: true });
+    for (const dayTrip of excursions.filter(entry => entry.stay === city)) {
+      if (stops.length + 2 > TRIP_VIDEO.maxStops || !mapped(dayTrip.item) || !mapped(dayTrip.returnStay)) break;
+      stops.push({ ...dayTrip.item, title: dayTrip.destinationLabel, color: city.color, excursion: true },
+        { ...dayTrip.returnStay, color: city.color, returnToBase: true });
     }
   }
   return stops;
@@ -42,7 +42,7 @@ export const tripVideoStopLabel = (title: string) => {
 
 const styles: Record<TripVideoStyle, string> = { clean: 'light-v11', minimal: 'light-v11', standard: 'streets-v12', dark: 'dark-v11', satellite: 'satellite-streets-v12' };
 
-export const buildTripVideoMap = async (trip: TripPayload, style: TripVideoStyle = 'clean', routeMode: TripVideoRouteMode = 'simple') => {
+export const buildTripVideoMap = async (trip: TripPayload, style: TripVideoStyle = 'standard', routeMode: TripVideoRouteMode = 'simple', routeCache: TripVideoRouteCache = []) => {
   const token = getMapboxAccessTokenFromEnv();
   if (!token) throw new Error('Mapbox token is required for trip video previews.');
   const stops = buildTripVideoStops(trip);
@@ -56,19 +56,30 @@ export const buildTripVideoMap = async (trip: TripPayload, style: TripVideoStyle
     if (dx < -worldWidth / 2) dx += worldWidth;
     return { x: (426 / 2 + dx) / 426, y: (574 / 2 + pixel.y - center.y) / 574 };
   };
-  const points = stops.map(stop => ({ ...project(stop.coordinates), label: stop.returnToBase ? '' : tripVideoStopLabel(stop.title || stop.location || ''), excursion: Boolean(stop.excursion), hidden: Boolean(stop.returnToBase) }));
+  const colorFor = (stop: Stop) => `#${resolveColorHex(stop.color) || getTripPrimaryCityColorHex(trip)}`;
+  // Expiring, bounded per-trip geometry cache, independent of the basemap style.
+  const now = Date.now();
+  routeCache.splice(0, routeCache.length, ...routeCache.filter(entry => entry.expiresAt > now && entry.coordinates.length <= ROUTE_POINT_LIMIT).slice(-ROUTE_CACHE_LIMIT));
+  const points = stops.map(stop => ({ ...project(stop.coordinates), label: stop.returnToBase ? '' : tripVideoStopLabel(stop.title || stop.location || ''), color: colorFor(stop), excursion: Boolean(stop.excursion), hidden: Boolean(stop.returnToBase) }));
   const legs: { x: number; y: number }[][] = [];
+  const legStyles: { color: string; dashed: boolean }[] = [];
   let requests = 0;
   for (let index = 1; index < stops.length; index++) {
     const from = stops[index - 1], to = stops[index];
     let coordinates = [from.coordinates, to.coordinates];
-    const travel = (trip.items || []).find(item => item.type === 'travel' && Math.abs((item.startDateOffset || 0) - (to.startDateOffset || 0)) < 0.5);
-    const mode = to.excursion || to.returnToBase ? 'car' : travel?.transportMode;
-    // At most eight bounded requests per render, never one per frame. Unsupported
-    // transport and failed/missing routes retain an honest straight-line fallback.
-    if (routeMode === 'realistic' && requests < 8 && !['plane', 'boat', 'train', 'na'].includes(mode || '')) {
+    const travel = findTravelBetweenCities(trip.items || [], from, to);
+    const mode = travel?.transportMode ? normalizeTransportMode(travel.transportMode) : 'car';
+    const dayTripLeg = Boolean(to.excursion || to.returnToBase);
+    legStyles.push({ color: colorFor(from), dashed: dayTripLeg });
+    const profile = mode === 'walk' ? 'walking' : mode === 'bicycle' ? 'cycling' : 'driving';
+    const cacheKey = `mapbox-v1/${profile}/${buildRouteCacheKey(from.coordinates, to.coordinates, mode)}`;
+    const cached = routeCache.find(entry => entry.key === cacheKey);
+    const routable = routeMode === 'realistic' && !dayTripLeg && !['plane', 'boat', 'train', 'na'].includes(mode)
+      && (from.coordinates.lat !== to.coordinates.lat || from.coordinates.lng !== to.coordinates.lng);
+    if (routable && cached) coordinates = cached.coordinates;
+    // Day trips use the planner's dashed straight spokes: no paid route lookups.
+    if (routable && !cached && requests < 8) {
       requests++;
-      const profile = mode === 'walk' ? 'walking' : mode === 'bicycle' ? 'cycling' : 'driving';
       const url = new URL(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${from.coordinates.lng},${from.coordinates.lat};${to.coordinates.lng},${to.coordinates.lat}`);
       url.searchParams.set('access_token', token);
       url.searchParams.set('geometries', 'geojson'); url.searchParams.set('overview', 'simplified');
@@ -79,15 +90,18 @@ export const buildTripVideoMap = async (trip: TripPayload, style: TripVideoStyle
           const path = data.routes?.[0]?.geometry?.coordinates;
           if (Array.isArray(path) && path.length >= 2 && path.length <= 2000
             && path.every((p: unknown) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]))) {
-            coordinates = path.map(([lng, lat]: number[]) => ({ lat, lng }));
+            const stride = Math.max(1, Math.ceil((path.length - 1) / (ROUTE_POINT_LIMIT - 1)));
+            coordinates = path.filter((_: unknown, n: number) => n % stride === 0 || n === path.length - 1).map(([lng, lat]: number[]) => ({ lat, lng }));
           }
         }
-      } catch { /* A failed directions lookup must not trigger render retries. */ }
+      } catch { /* Cache fallback briefly; never automatically retry a render. */ }
+      routeCache.push({ key: cacheKey, expiresAt: now + (coordinates.length > 2 ? 30 * 24 * 60 * 60_000 : 15 * 60_000), coordinates });
+      if (routeCache.length > ROUTE_CACHE_LIMIT) routeCache.shift();
     }
     legs.push(coordinates.map(project));
   }
   // Mapbox uses a 512px world at zoom zero; the shared viewport uses 256px.
   const mapUrl = new URL(`https://api.mapbox.com/styles/v1/mapbox/${styles[style]}/static/${viewport.center.lng.toFixed(6)},${viewport.center.lat.toFixed(6)},${Math.max(0, viewport.zoom - 1)},0/426x574@2x`);
   mapUrl.searchParams.set('access_token', token);
-  return { points, legs, mapUrl: mapUrl.toString(), color: trip.mapColorMode === 'brand' ? '#4f46e5' : `#${getTripPrimaryCityColorHex(trip)}` };
+  return { points, legs, legStyles, mapUrl: mapUrl.toString(), color: trip.mapColorMode === 'brand' ? '#4f46e5' : `#${getTripPrimaryCityColorHex(trip)}` };
 };

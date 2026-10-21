@@ -21,8 +21,8 @@ export const AdminReloadButton: React.FC<AdminReloadButtonProps> = ({
         onClick={onClick}
         disabled={disabled || isLoading}
         className={[
-            'inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors',
-            'hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60',
+            'inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors',
+            'hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60',
             className ?? '',
         ].join(' ')}
     >

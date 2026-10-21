@@ -1,5 +1,17 @@
 import { normalizeProfileCountryCode } from './profileCountryService';
 
+/**
+ * Master switch for the profile passport (the stamps section and the passport
+ * book dialog on both the owner and the public profile).
+ *
+ * Turned off deliberately: the feature shipped but never reached the shape it
+ * was meant to have, so it is hidden from users until it is redesigned. Nothing
+ * below it was deleted — the components, this service, the stored sticker
+ * selections and the locale keys are all intact, so re-enabling is this one
+ * constant plus nothing else.
+ */
+export const PASSPORT_FEATURE_ENABLED = false;
+
 export type PassportCoverTone = 'blue' | 'red' | 'green' | 'black';
 
 export interface PassportCoverTheme {

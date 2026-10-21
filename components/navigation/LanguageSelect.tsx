@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { activateBootControls } from '../../services/bootInteractionBridge';
 import { AppLanguage } from '../../types';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../../config/locales';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../ui/select';
@@ -19,12 +20,15 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
     triggerClassName,
     contentAlign = 'end',
 }) => {
+    useEffect(() => activateBootControls('language-select'), []);
     return (
         <Select
             value={value}
             onValueChange={(nextValue) => onChange(normalizeLocale(nextValue))}
         >
-            <SelectTrigger aria-label={ariaLabel} className={triggerClassName}>
+            <SelectTrigger aria-label={ariaLabel} className={triggerClassName}
+                data-tf-boot-replay={`language:${ariaLabel}`}
+                data-tf-boot-scope="language-select" data-tf-boot-event="pointerdown">
                 <span className="inline-flex items-center gap-2 truncate">
                     <FlagIcon code={LOCALE_FLAGS[value]} size="sm" />
                     <span>{LOCALE_LABELS[value]}</span>
@@ -34,7 +38,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
                 side="bottom"
                 align={contentAlign}
                 sideOffset={8}
-                className="rounded-xl border-slate-200 bg-white p-1 shadow-xl"
+                className="rounded-xl border-border bg-card p-1 shadow-xl dark:border-border dark:bg-card dark:shadow-none"
             >
                 {LOCALE_DROPDOWN_ORDER.map((locale) => (
                     <SelectItem key={locale} value={locale} indicatorPosition="right" className="rounded-lg py-2.5">

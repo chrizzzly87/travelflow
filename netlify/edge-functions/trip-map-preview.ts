@@ -1,11 +1,22 @@
 /**
- * Edge function that proxies Google Static Maps API requests.
- * Returns a 302 redirect to a styled map image.
+ * Edge function that renders a trip's static map preview.
+ *
+ * The rendered image is fetched here and returned as bytes, not handed to the
+ * browser as a redirect. Every parameter that changes the picture is part of
+ * the URL, so the response is a pure function of that URL and Netlify's durable
+ * CDN cache can hold it: one render per trip state, shared by every viewer,
+ * regenerated only when the trip itself changes. The redirect this replaced put
+ * the image on the provider's origin instead, which meant a fresh billed static
+ * render — and, in "realistic" mode, a fresh fan-out of Directions calls — for
+ * every visitor whose browser cache was cold.
  *
  * Query params:
  *   coords     — pipe-separated lat,lng pairs (e.g. "35.68,139.65|34.69,135.50")
  *   style      — "clean" (default) | "minimal" | "standard" | "dark" | "satellite"
  *   routeMode  — "simple" (default) | "realistic"
+ *   legModes   — optional pipe-separated transport mode per leg (e.g. "plane|car")
+ *   dayTrips   — optional pipe-separated day trips, "stayIndex,lat,lng,color[,returnIndex]"
+ *                (see shared/dayTripPreview.ts); drawn as straight dashed spokes, never routed
  *   colorMode  — "brand" (default) | "trip"
  *   pathColor  — optional hex/rgb color (used when colorMode=trip)
  *   legColors  — optional pipe/comma-separated hex/rgb colors (used per route leg when colorMode=trip)
@@ -19,7 +30,17 @@
  */
 
 import { getMapboxAccessTokenFromEnv, getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
-import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
+import { resolveEdgeMapRuntimeAsync } from "../edge-lib/map-runtime.ts";
+import { buildFlightPreviewCurvePath } from "../../shared/flightRouteCurve.ts";
+import { parseMapPreviewLegModes } from "../../shared/mapPreviewLegModes.ts";
+import {
+  buildGoogleDayTripParams,
+  buildMapboxDayTripOverlays,
+  MAP_PREVIEW_DAY_TRIPS_PARAM,
+  parseMapPreviewDayTrips,
+  type MapPreviewDayTrip,
+} from "../../shared/dayTripPreview.ts";
+import type { TransportMode } from "../../shared/transportModes.ts";
 import {
   buildPreviewNetlifyVaryValue,
   createTokenBucketLimiter,
@@ -34,6 +55,10 @@ type MapPreviewColorMode = "brand" | "trip";
 const BRAND_ROUTE_COLOR = "4f46e5";
 const MAX_REALISTIC_DIRECTION_LEGS = 8;
 const STATIC_MAP_SATELLITE_FALLBACK: MapPreviewStyle = "clean";
+// Mapbox Static Images caps the whole request URL at 8192 characters.
+const MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH = 7000;
+// Google Static Maps rejects URLs longer than this with a 400.
+const GOOGLE_MAX_STATIC_URL_LENGTH = 16384;
 
 const CLEAN_STYLE = [
   "element:geometry|color:0xf9f9f9",
@@ -154,6 +179,39 @@ const encodePolyline = (coords: Array<{ lat: number; lng: number }>): string => 
   return encoded;
 };
 
+/**
+ * Upstream budgets. A synchronous Netlify function is terminated at 60s, and a
+ * slow third-party upstream held open at the edge is how this site has taken
+ * outages before (docs/incidents/2026-02-24-edge-timeout-site-outage.md), so
+ * every call out of this function is bounded.
+ */
+const DIRECTIONS_TIMEOUT_MS = 2500;
+const UPSTREAM_IMAGE_TIMEOUT_MS = 6000;
+
+const fetchWithTimeout = async (url: string, timeoutMs: number): Promise<Response> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const isFlightLeg = (legModes: TransportMode[], index: number): boolean => legModes[index] === "plane";
+
+/**
+ * A plane leg is drawn as the same arc the planner map draws. Anything else
+ * keeps its straight two-point geometry until a routing provider replaces it.
+ */
+const buildLegGeometry = (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  isFlight: boolean,
+): Array<{ lat: number; lng: number }> => (
+  isFlight ? buildFlightPreviewCurvePath(from, to) : [from, to]
+);
+
 const normalizeColor = (value: string | null): string | null => {
   if (!value) return null;
   const trimmed = value.trim().toLowerCase();
@@ -227,10 +285,34 @@ const fetchDirectionsPolyline = async (
   directionsUrl.searchParams.set("key", apiKey);
 
   try {
-    const response = await fetch(directionsUrl.toString());
+    const response = await fetchWithTimeout(directionsUrl.toString(), DIRECTIONS_TIMEOUT_MS);
     if (!response.ok) return null;
     const data = await response.json();
     const encoded = data?.routes?.[0]?.overview_polyline?.points;
+    return typeof encoded === "string" && encoded.length > 0 ? encoded : null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchMapboxDirectionsPolyline = async (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  mapboxToken: string,
+): Promise<string | null> => {
+  const coordinatePair = `${from.lng.toFixed(6)},${from.lat.toFixed(6)};${to.lng.toFixed(6)},${to.lat.toFixed(6)}`;
+  const directionsUrl = new URL(`https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatePair}`);
+  directionsUrl.searchParams.set("geometries", "polyline");
+  directionsUrl.searchParams.set("overview", "simplified");
+  directionsUrl.searchParams.set("alternatives", "false");
+  directionsUrl.searchParams.set("steps", "false");
+  directionsUrl.searchParams.set("access_token", mapboxToken);
+
+  try {
+    const response = await fetchWithTimeout(directionsUrl.toString(), DIRECTIONS_TIMEOUT_MS);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const encoded = data?.routes?.[0]?.geometry;
     return typeof encoded === "string" && encoded.length > 0 ? encoded : null;
   } catch {
     return null;
@@ -257,12 +339,18 @@ const buildSimpleSegmentPaths = (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
+  legModes: TransportMode[] = [],
 ): string[] => {
   if (coords.length < 2) return [];
   const paths: string[] = [];
 
   for (let index = 0; index < coords.length - 1; index += 1) {
     const color = resolveLegColor(legColors, index, fallbackColor);
+    if (isFlightLeg(legModes, index)) {
+      const curve = buildLegGeometry(coords[index], coords[index + 1], true);
+      paths.push(`color:0x${color}|weight:4|enc:${encodePolyline(curve)}`);
+      continue;
+    }
     const segment = buildSimplePath([coords[index], coords[index + 1]], color);
     if (segment) paths.push(segment);
   }
@@ -270,78 +358,129 @@ const buildSimpleSegmentPaths = (
   return paths;
 };
 
+interface RealisticLegPlan {
+  from: { lat: number; lng: number };
+  to: { lat: number; lng: number };
+  isFlight: boolean;
+  /** True when this leg gets one of the limited Directions calls. */
+  routable: boolean;
+}
+
+/**
+ * Assigns the Directions budget before any request goes out.
+ *
+ * The budget used to be spent inside the request loop, which forced the calls
+ * to run one after another: a five-stop card waited for four sequential round
+ * trips to the routing provider, and a cold render took seconds. Deciding up
+ * front keeps the same deterministic cap (the first
+ * MAX_REALISTIC_DIRECTION_LEGS routable legs, flights never spending one) while
+ * letting the fan-out happen in parallel.
+ */
+const planRealisticLegs = (
+  coords: Array<{ lat: number; lng: number }>,
+  legModes: TransportMode[],
+): RealisticLegPlan[] => {
+  let budget = MAX_REALISTIC_DIRECTION_LEGS;
+  return coords.slice(0, -1).map((from, index) => {
+    // Directions have no answer for a flight, so asking would only buy a
+    // straight-line fallback. Draw the arc and keep the paid call for a leg
+    // that can actually be routed.
+    const isFlight = isFlightLeg(legModes, index);
+    const routable = !isFlight && budget > 0;
+    if (routable) budget -= 1;
+    return { from, to: coords[index + 1], isFlight, routable };
+  });
+};
+
 const buildRealisticPaths = async (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
   apiKey: string,
+  legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
-  const paths: string[] = [];
-  let calls = 0;
 
-  for (let index = 0; index < coords.length - 1; index += 1) {
-    const from = coords[index];
-    const to = coords[index + 1];
+  const plans = planRealisticLegs(coords, legModes);
+  const geometries = await Promise.all(plans.map(async (plan) => {
+    if (plan.isFlight) {
+      return { encoded: encodePolyline(buildLegGeometry(plan.from, plan.to, true)), routed: true };
+    }
+    const encodedPolyline = plan.routable
+      ? await fetchDirectionsPolyline(plan.from, plan.to, apiKey)
+      : null;
+    return encodedPolyline ? { encoded: encodedPolyline, routed: true } : { encoded: null, routed: false };
+  }));
+
+  return geometries.flatMap((geometry, index) => {
     const color = resolveLegColor(legColors, index, fallbackColor);
-
-    let encodedPolyline: string | null = null;
-    if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
-      encodedPolyline = await fetchDirectionsPolyline(from, to, apiKey);
-      calls += 1;
+    if (geometry.routed && geometry.encoded) {
+      return [`color:0x${color}|weight:4|enc:${geometry.encoded}`];
     }
-
-    if (encodedPolyline) {
-      paths.push(`color:0x${color}|weight:4|enc:${encodedPolyline}`);
-      continue;
-    }
-
-    const fallbackSegment = buildSimplePath([from, to], color);
-    if (fallbackSegment) paths.push(fallbackSegment);
-  }
-
-  return paths;
+    const fallbackSegment = buildSimplePath([plans[index].from, plans[index].to], color);
+    return fallbackSegment ? [fallbackSegment] : [];
+  });
 };
 
 const buildMapboxSimpleSegmentOverlays = (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
+  legModes: TransportMode[] = [],
 ): string[] => {
   if (coords.length < 2) return [];
   const overlays: string[] = [];
   for (let index = 0; index < coords.length - 1; index += 1) {
     const color = resolveLegColor(legColors, index, fallbackColor);
-    overlays.push(buildMapboxPathOverlay(encodePolyline([coords[index], coords[index + 1]]), color));
+    const geometry = buildLegGeometry(coords[index], coords[index + 1], isFlightLeg(legModes, index));
+    overlays.push(buildMapboxPathOverlay(encodePolyline(geometry), color));
   }
   return overlays;
 };
 
+/** Last-resort overlays: straight lines everywhere, used only past the URL cap. */
+const buildMapboxStraightSegmentOverlays = (
+  coords: Array<{ lat: number; lng: number }>,
+  legColors: string[],
+  fallbackColor: string,
+): string[] => buildMapboxSimpleSegmentOverlays(coords, legColors, fallbackColor, []);
+
+/**
+ * Mapbox previews draw the same realistic geometry as the Google ones.
+ * Directions come from Mapbox first (the provider whose token is guaranteed to
+ * be present on a Mapbox preview), and only fall back to Google Directions when
+ * Mapbox has no route for a leg. Without this the Mapbox branch silently drew
+ * straight lines on every deployment that has no Google key.
+ */
 const buildMapboxRealisticOverlays = async (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
-  apiKey: string,
+  mapboxToken: string,
+  googleApiKey: string,
+  legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
-  const overlays: string[] = [];
-  let calls = 0;
 
-  for (let index = 0; index < coords.length - 1; index += 1) {
-    const from = coords[index];
-    const to = coords[index + 1];
-    const color = resolveLegColor(legColors, index, fallbackColor);
+  const plans = planRealisticLegs(coords, legModes);
+  const geometries = await Promise.all(plans.map(async (plan) => {
+    if (plan.isFlight) return encodePolyline(buildLegGeometry(plan.from, plan.to, true));
+    if (!plan.routable) return encodePolyline([plan.from, plan.to]);
 
     let encodedPolyline: string | null = null;
-    if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
-      encodedPolyline = await fetchDirectionsPolyline(from, to, apiKey);
-      calls += 1;
+    if (mapboxToken) {
+      encodedPolyline = await fetchMapboxDirectionsPolyline(plan.from, plan.to, mapboxToken);
     }
+    if (!encodedPolyline && googleApiKey) {
+      encodedPolyline = await fetchDirectionsPolyline(plan.from, plan.to, googleApiKey);
+    }
+    return encodedPolyline || encodePolyline([plan.from, plan.to]);
+  }));
 
-    overlays.push(buildMapboxPathOverlay(encodedPolyline || encodePolyline([from, to]), color));
-  }
-
-  return overlays;
+  return geometries.map((geometry, index) => buildMapboxPathOverlay(
+    geometry,
+    resolveLegColor(legColors, index, fallbackColor),
+  ));
 };
 
 const buildMapboxMarkerOverlays = (
@@ -376,6 +515,8 @@ const buildMapboxStaticPreviewUrl = async ({
   style,
   routeMode,
   legColors,
+  legModes,
+  dayTrips,
   pathColor,
   startMarkerColor,
   endMarkerColor,
@@ -383,6 +524,7 @@ const buildMapboxStaticPreviewUrl = async ({
   width,
   height,
   scale,
+  zoom,
   mapboxToken,
   googleApiKey,
 }: {
@@ -390,6 +532,8 @@ const buildMapboxStaticPreviewUrl = async ({
   style: MapPreviewStyle;
   routeMode: RoutePreviewMode;
   legColors: string[];
+  legModes: TransportMode[];
+  dayTrips: MapPreviewDayTrip[];
   pathColor: string;
   startMarkerColor: string;
   endMarkerColor: string;
@@ -397,40 +541,97 @@ const buildMapboxStaticPreviewUrl = async ({
   width: number;
   height: number;
   scale: number;
+  zoom: number | null;
   mapboxToken: string;
   googleApiKey: string;
 }): Promise<string> => {
   const styleDescriptor = MAPBOX_STYLE_IDS[style] || MAPBOX_STYLE_IDS.standard;
-  const pathOverlays = routeMode === "realistic" && googleApiKey
-    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, googleApiKey)
-    : buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor);
-  const overlays = [
-    ...pathOverlays,
-    ...buildMapboxMarkerOverlays(coords, legColors, pathColor, startMarkerColor, endMarkerColor, waypointColor),
-  ];
-  const overlaySegment = overlays.map((overlay) => encodeURIComponent(overlay)).join(",");
+  const simpleOverlays = buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor, legModes);
+  const straightOverlays = buildMapboxStraightSegmentOverlays(coords, legColors, pathColor);
+  const pathOverlays = routeMode === "realistic" && (mapboxToken || googleApiKey)
+    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, mapboxToken, googleApiKey, legModes)
+    : simpleOverlays;
+  const markerOverlays = buildMapboxMarkerOverlays(
+    coords,
+    legColors,
+    pathColor,
+    startMarkerColor,
+    endMarkerColor,
+    waypointColor,
+  );
+  const dayTripOverlays = buildMapboxDayTripOverlays(dayTrips, coords, pathColor);
+  const encodeOverlays = (entries: string[]): string =>
+    entries.map((overlay) => encodeURIComponent(overlay)).join(",");
+  // Day-trip spokes sit above the route; every pin sits above both.
+  const withMarkers = (paths: string[], dayTripPaths = dayTripOverlays.paths): string[] =>
+    [...paths, ...dayTripPaths, ...markerOverlays, ...dayTripOverlays.pins];
+  // Mapbox rejects requests past its URL limit, and realistic geometry is what
+  // pushes a long itinerary over it. Degrade that request to the straight-line
+  // overlays rather than serving a broken image.
+  let overlaySegment = encodeOverlays(withMarkers(pathOverlays));
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    // Drop routed geometry first, flight arcs only if the request is still too long.
+    overlaySegment = encodeOverlays(withMarkers(simpleOverlays));
+  }
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    overlaySegment = encodeOverlays(withMarkers(straightOverlays));
+  }
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    // Day-trip destinations keep their pins; only the dashes go.
+    overlaySegment = encodeOverlays(withMarkers(straightOverlays, []));
+  }
   const scaleSuffix = scale === 2 ? "@2x" : "";
-  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/auto/${width}x${height}${scaleSuffix}`);
-  url.searchParams.set("padding", "32,32,32,32");
+  // WebP is ~35% smaller than the PNG Mapbox returns by default, at the same
+  // pixel density: ~146 KB in place of ~256 KB for a 640x360@2x card. Mapbox
+  // static renders come in PNG or WebP only; the .jpg variants 404.
+  const formatSuffix = ".webp";
+  // `auto` fits the overlays, which for a single pin means the tightest frame
+  // Mapbox can draw — a rooftop with no surroundings. An explicit camera is
+  // what lets one place be shown in its neighbourhood.
+  const camera = zoom !== null && coords.length === 1
+    ? `${coords[0].lng.toFixed(6)},${coords[0].lat.toFixed(6)},${zoom},0`
+    : "auto";
+  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/${camera}/${width}x${height}${scaleSuffix}${formatSuffix}`);
+  if (camera === "auto") url.searchParams.set("padding", "32,32,32,32");
   url.searchParams.set("access_token", mapboxToken);
   return url.toString();
 };
 
 // One request costs 1 token; a "realistic" route request costs more because it
 // can fan out to up to MAX_REALISTIC_DIRECTION_LEGS paid Directions API calls.
-const RATE_LIMIT_BUCKET_CAPACITY = 40;
+// The bucket has to absorb a whole card grid at once: trip cards now request
+// realistic routes, and a profile or manager page renders a dozen of them in a
+// single paint, so a capacity that only covered a handful returned 429s as
+// broken card images.
+const RATE_LIMIT_BUCKET_CAPACITY = 90;
 const RATE_LIMIT_REFILL_PER_SECOND = 0.5; // ≈30 simple previews per minute per IP
-const REALISTIC_ROUTE_REQUEST_COST = 5;
+const REALISTIC_ROUTE_REQUEST_COST = 3;
 
 const previewRateLimiter = createTokenBucketLimiter({
   capacity: RATE_LIMIT_BUCKET_CAPACITY,
   refillPerSecond: RATE_LIMIT_REFILL_PER_SECOND,
 });
 
+/**
+ * A preview URL describes one picture and nothing else, so a hit stays fresh
+ * for a month at the CDN and is then served stale while it re-renders in the
+ * background. A trip edit produces a different URL rather than invalidating
+ * this one, so nothing here has to be purged.
+ */
 const SUCCESS_CACHE_HEADERS: Record<string, string> = {
-  "Cache-Control": "public, max-age=86400, s-maxage=86400",
-  "Netlify-CDN-Cache-Control": "public, durable, s-maxage=604800",
+  "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+  "Netlify-CDN-Cache-Control": "public, durable, s-maxage=2592000, stale-while-revalidate=31536000",
   "Netlify-Vary": buildPreviewNetlifyVaryValue(),
+};
+
+/**
+ * The redirect the proxy replaced, kept as the degraded path. When the render
+ * cannot be fetched here the browser can still load it from the provider, so a
+ * slow upstream costs the card its cache entry rather than its image. It is
+ * deliberately uncacheable: the next request should try the proxy again.
+ */
+const UNCACHED_REDIRECT_HEADERS: Record<string, string> = {
+  "Cache-Control": "no-store",
 };
 
 const badRequest = (message: string): Response =>
@@ -439,39 +640,43 @@ const badRequest = (message: string): Response =>
     headers: { "Cache-Control": "no-store" },
   });
 
-export default async (request: Request, context?: { ip?: string }) => {
+export type PreviewUpstreamResolution =
+  | { ok: true; url: string }
+  | { ok: false; status: number; message: string };
+
+/**
+ * Resolves the provider URL for a preview request: everything the picture
+ * depends on, and nothing about how the response is delivered. Exported so the
+ * geometry can be asserted without going through the image fetch.
+ */
+export const resolvePreviewUpstreamUrl = async (
+  request: Request,
+): Promise<PreviewUpstreamResolution> => {
   const url = new URL(request.url);
-  const mapRuntime = resolveEdgeMapRuntime(request);
+  const mapRuntime = await resolveEdgeMapRuntimeAsync(request);
   const coordsParam = url.searchParams.get("coords");
 
   if (!coordsParam) {
-    return badRequest("Missing 'coords' query parameter");
+    return { ok: false, status: 400, message: "Missing 'coords' query parameter" };
   }
 
   const parsedCoords = parsePreviewCoords(coordsParam);
   if (!parsedCoords.ok) {
-    return badRequest(parsedCoords.error);
+    return { ok: false, status: 400, message: parsedCoords.error };
   }
   const coords = parsedCoords.coords;
 
   const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
-
-  const clientIp = resolvePreviewClientIp(request, context);
-  const requestCost = routeMode === "realistic" ? REALISTIC_ROUTE_REQUEST_COST : 1;
-  const rateDecision = previewRateLimiter.consume(clientIp, requestCost);
-  if (!rateDecision.allowed) {
-    return new Response("Too many map preview requests, slow down", {
-      status: 429,
-      headers: {
-        "Cache-Control": "no-store",
-        "Retry-After": String(rateDecision.retryAfterSeconds),
-      },
-    });
-  }
+  const legModes = parseMapPreviewLegModes(url.searchParams.get("legModes"));
+  const requestedDayTrips = parseMapPreviewDayTrips(url.searchParams.get(MAP_PREVIEW_DAY_TRIPS_PARAM), coords.length);
 
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
   const h = clampInt(Number.parseInt(url.searchParams.get("h") || "288", 10), 160, 960);
   const scale = clampInt(Number.parseInt(url.searchParams.get("scale") || "2", 10), 1, 2);
+  const zoomParam = url.searchParams.get("zoom");
+  const zoom = zoomParam === null || zoomParam.trim() === ""
+    ? null
+    : clampInt(Number.parseInt(zoomParam, 10), 1, 20);
   const requestedStyle = parseStyle(url.searchParams.get("style"));
   const style = getEffectiveStaticMapStyle(requestedStyle);
   const colorMode = parseColorMode(url.searchParams.get("colorMode"));
@@ -493,6 +698,9 @@ export default async (request: Request, context?: { ip?: string }) => {
   const endMarkerColor = requestedEndMarkerColor || shiftColor(legColors[legColors.length - 1] || pathColor, 38);
   const waypointColor = requestedWaypointColor || pathColor;
   const mapLanguage = parseMapLanguage(url.searchParams.get("language"));
+  const dayTrips = colorMode === "trip"
+    ? requestedDayTrips
+    : requestedDayTrips.map((dayTrip) => ({ ...dayTrip, color: BRAND_ROUTE_COLOR }));
 
   if (mapRuntime.effectiveSelection.staticMaps === "mapbox" && mapboxToken) {
     const mapUrl = await buildMapboxStaticPreviewUrl({
@@ -500,6 +708,8 @@ export default async (request: Request, context?: { ip?: string }) => {
       style: requestedStyle,
       routeMode,
       legColors,
+      legModes,
+      dayTrips,
       pathColor,
       startMarkerColor,
       endMarkerColor,
@@ -507,27 +717,26 @@ export default async (request: Request, context?: { ip?: string }) => {
       width: w,
       height: h,
       scale,
+      zoom,
       mapboxToken,
       googleApiKey,
     });
 
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: mapUrl,
-        ...SUCCESS_CACHE_HEADERS,
-      },
-    });
+    return { ok: true, url: mapUrl };
   }
 
   if (!googleApiKey) {
-    return new Response("Maps API key not configured", { status: 500 });
+    return { ok: false, status: 500, message: "Maps API key not configured" };
   }
 
   const params = new URLSearchParams();
   params.set("size", `${w}x${h}`);
   params.set("scale", String(scale));
   params.set("maptype", getMapType(style));
+  if (zoom !== null && coords.length === 1) {
+    params.set("zoom", String(zoom));
+    params.set("center", formatCoord(coords[0]));
+  }
   if (mapLanguage) {
     params.set("language", mapLanguage);
   }
@@ -536,9 +745,9 @@ export default async (request: Request, context?: { ip?: string }) => {
     params.append("style", token);
   });
 
-  const simplePathParams = buildSimpleSegmentPaths(coords, legColors, pathColor);
+  const simplePathParams = buildSimpleSegmentPaths(coords, legColors, pathColor, legModes);
   const pathParams = routeMode === "realistic"
-    ? await buildRealisticPaths(coords, legColors, pathColor, googleApiKey)
+    ? await buildRealisticPaths(coords, legColors, pathColor, googleApiKey, legModes)
     : simplePathParams;
 
   if (pathParams.length === 0) {
@@ -552,6 +761,9 @@ export default async (request: Request, context?: { ip?: string }) => {
 
   pathParams.forEach((path) => params.append("path", path));
 
+  const dayTripParams = buildGoogleDayTripParams(dayTrips, coords, pathColor);
+  dayTripParams.paths.forEach((path) => params.append("path", path));
+
   const start = coords[0];
   const end = coords[coords.length - 1];
 
@@ -564,16 +776,93 @@ export default async (request: Request, context?: { ip?: string }) => {
     const legWaypointColor = legColors[Math.min(index + 1, legColors.length - 1)] || waypointColor;
     params.append("markers", `size:tiny|color:0x${legWaypointColor}|${formatCoord(coord)}`);
   });
+  dayTripParams.markers.forEach((marker) => params.append("markers", marker));
 
   params.set("key", googleApiKey);
 
-  const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  const googleUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  if (googleUrl.length <= GOOGLE_MAX_STATIC_URL_LENGTH) return { ok: true, url: googleUrl };
+  // Routed geometry plus day-trip dashes can outgrow the limit on a long
+  // itinerary: fall back to the straight legs, then drop the dashes too.
+  params.delete("path");
+  simplePathParams.forEach((path) => params.append("path", path));
+  dayTripParams.paths.forEach((path) => params.append("path", path));
+  const straightUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  if (straightUrl.length <= GOOGLE_MAX_STATIC_URL_LENGTH) return { ok: true, url: straightUrl };
+  params.delete("path");
+  simplePathParams.forEach((path) => params.append("path", path));
+  return { ok: true, url: `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}` };
+};
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: mapUrl,
-      ...SUCCESS_CACHE_HEADERS,
-    },
-  });
+/**
+ * Streams the rendered image back under our own origin. The bytes become a CDN
+ * object instead of a per-visitor call to the provider, the browser saves a
+ * redirect round trip, and the provider token stays server-side — except on the
+ * degraded path, where handing the browser the URL is the only way to show the
+ * card at all.
+ */
+const proxyPreviewImage = async (upstreamUrl: string): Promise<Response> => {
+  let upstream: Response;
+  try {
+    upstream = await fetchWithTimeout(upstreamUrl, UPSTREAM_IMAGE_TIMEOUT_MS);
+  } catch {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: upstreamUrl, ...UNCACHED_REDIRECT_HEADERS },
+    });
+  }
+
+  if (!upstream.ok || !upstream.body) {
+    // A provider error must not be cached as if it were the trip's picture.
+    return new Response(null, {
+      status: 302,
+      headers: { Location: upstreamUrl, ...UNCACHED_REDIRECT_HEADERS },
+    });
+  }
+
+  const headers = new Headers(SUCCESS_CACHE_HEADERS);
+  headers.set("Content-Type", upstream.headers.get("Content-Type") || "image/png");
+  const etag = upstream.headers.get("ETag");
+  if (etag) headers.set("ETag", etag);
+
+  return new Response(upstream.body, { status: 200, headers });
+};
+
+export default async (request: Request, context?: { ip?: string }) => {
+  const url = new URL(request.url);
+  const coordsParam = url.searchParams.get("coords");
+
+  if (!coordsParam) {
+    return badRequest("Missing 'coords' query parameter");
+  }
+
+  const parsedCoords = parsePreviewCoords(coordsParam);
+  if (!parsedCoords.ok) {
+    return badRequest(parsedCoords.error);
+  }
+
+  const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
+
+  const clientIp = resolvePreviewClientIp(request, context);
+  const requestCost = routeMode === "realistic" ? REALISTIC_ROUTE_REQUEST_COST : 1;
+  const rateDecision = previewRateLimiter.consume(clientIp, requestCost);
+  if (!rateDecision.allowed) {
+    return new Response("Too many map preview requests, slow down", {
+      status: 429,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": String(rateDecision.retryAfterSeconds),
+      },
+    });
+  }
+
+  const upstream = await resolvePreviewUpstreamUrl(request);
+  if (!upstream.ok) {
+    return new Response(upstream.message, {
+      status: upstream.status,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
+  return proxyPreviewImage(upstream.url);
 };
