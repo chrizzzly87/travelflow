@@ -1,3 +1,4 @@
+import { loadVideoOutlineFonts, outlineVideoSvgText } from './trip-video-font-outlines.ts';
 import sharp from 'sharp';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -5,7 +6,6 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-process.env.FONTCONFIG_FILE ||= join(process.cwd(), 'netlify/assets/trip-video-fonts.conf');
 import { once } from 'node:events';
 import { buildTripOgSummary, buildTripVideoMap, escapeHtml, type TripPayload } from '../edge-lib/trip-og-data.ts';
 import { TRIP_VIDEO, type TripVideoStyle } from '../../shared/tripOgVideo.ts';
@@ -55,6 +55,9 @@ export const buildVideoFrameSvg = (data: {
 };
 
 export const renderTripVideo = async (trip: TripPayload, style: TripVideoStyle) => {
+  const fonts = await loadVideoOutlineFonts();
+  const textCache = new Map<string, string>();
+  const outlinedFrame = (progress: number) => outlineVideoSvgText(buildVideoFrameSvg(frameData, progress), fonts, textCache);
   const map = await buildTripVideoMap(trip, style);
   if (!map.mapUrl || map.points.length === 0) throw new Error('Trip has no renderable map.');
   const response = await fetch(map.mapUrl, { signal: AbortSignal.timeout(12_000) });
@@ -81,14 +84,14 @@ export const renderTripVideo = async (trip: TripPayload, style: TripVideoStyle) 
   try {
     for (let frame = 0; frame < TRIP_VIDEO.fps * TRIP_VIDEO.seconds; frame++) {
       if (Date.now() >= deadline || child.exitCode !== null || child.killed) throw new Error('Video render timed out or encoder stopped.');
-      const png = await sharp(Buffer.from(buildVideoFrameSvg(frameData, frame / (TRIP_VIDEO.fps * TRIP_VIDEO.seconds - 1)))).png().toBuffer();
+      const png = await sharp(Buffer.from(outlinedFrame(frame / (TRIP_VIDEO.fps * TRIP_VIDEO.seconds - 1)))).png().toBuffer();
       if (!child.stdin.write(png)) await Promise.race([once(child.stdin, 'drain'), completion.then(() => { throw new Error('Encoder stopped early.'); })]);
     }
     child.stdin.end();
     await completion;
     const video = await readFile(output);
     if (video.length > TRIP_VIDEO.maxBytes) throw new Error('Video exceeds the 2 MB limit.');
-    const poster = await sharp(Buffer.from(buildVideoFrameSvg(frameData, 1))).jpeg({ quality: 82 }).toBuffer();
+    const poster = await sharp(Buffer.from(outlinedFrame(1))).jpeg({ quality: 82 }).toBuffer();
     return { video, poster };
   } finally {
     clearTimeout(timer);

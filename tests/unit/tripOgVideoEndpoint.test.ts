@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ manage: vi.fn(), load: vi.fn(), publicTrip: vi.fn(), get: vi.fn(), getWithMetadata: vi.fn(), setJSON: vi.fn(), claim: vi.fn(), budget: vi.fn() }));
+const mocks = vi.hoisted(() => ({ manage: vi.fn(), load: vi.fn(), publicTrip: vi.fn(), get: vi.fn(), getWithMetadata: vi.fn(), setJSON: vi.fn(), claim: vi.fn(), budget: vi.fn(), store: vi.fn() }));
 vi.mock('../../netlify/lib/trip-video-access.ts', () => ({ canManageTripVideo: mocks.manage, loadTripForVideo: mocks.load, resolvePublicVideoTrip: mocks.publicTrip }));
-vi.mock('../../netlify/lib/trip-video-store.ts', () => ({ videoStore: () => ({ get: mocks.get, getWithMetadata: mocks.getWithMetadata, setJSON: mocks.setJSON }), videoRevision: () => 'a'.repeat(24), claimVideo: mocks.claim, claimRenderBudget: mocks.budget }));
+vi.mock('../../netlify/lib/trip-video-store.ts', () => ({ videoStore: (deploy: unknown) => { mocks.store(deploy); return { get: mocks.get, getWithMetadata: mocks.getWithMetadata, setJSON: mocks.setJSON }; }, videoRevision: () => 'a'.repeat(24), claimVideo: mocks.claim, claimRenderBudget: mocks.budget }));
 import handler from '../../netlify/functions/trip-og-video.mts';
 const id = '4fee56dd-a79a-4130-bef0-cc7ffb552ea5';
 const trip = { id, title: 'Taiwan', items: [{ type: 'city', coordinates: { lat: 25, lng: 121 } }] };
@@ -14,6 +14,10 @@ describe('trip video API regression coverage', () => {
     mocks.manage.mockResolvedValue(false); mocks.load.mockResolvedValue(trip); mocks.publicTrip.mockResolvedValue(trip);
     mocks.get.mockResolvedValue(ready); mocks.getWithMetadata.mockResolvedValue({ data: new Uint8Array(10).buffer, etag: 'video' });
     mocks.setJSON.mockResolvedValue({ modified: true });
+  });
+  it('uses the handler context for isolated stores even without SDK globals', async () => {
+    await handler(req('&status=1'), { deploy: { context: 'branch-deploy', id: 'cli-preview' } } as any);
+    expect(mocks.store).toHaveBeenCalledWith({ context: 'branch-deploy', id: 'cli-preview' });
   });
   it('rejects public render attempts without dispatching expensive work', async () => {
     expect((await handler(req('', { method: 'POST', body: '{}' }))).status).toBe(403);

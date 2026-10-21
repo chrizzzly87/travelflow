@@ -1,5 +1,4 @@
 import { getStore } from '@netlify/blobs';
-import { getContext } from '@netlify/functions';
 import { createHash, randomUUID } from 'node:crypto';
 import { TRIP_VIDEO, type TripVideoState, type TripVideoStyle } from '../../shared/tripOgVideo.ts';
 import type { TripPayload } from '../edge-lib/trip-og-data.ts';
@@ -7,16 +6,13 @@ import type { TripPayload } from '../edge-lib/trip-og-data.ts';
 // Deploy previews and branches must never overwrite production's media or quotas.
 export const tripVideoStoreName = (deploy: { context: string; id: string }) =>
   deploy.context === 'production' ? 'trip-og-video-production' : `trip-og-video-preview-${deploy.id.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 100)}`;
-export const videoStore = () => {
-  let deploy: { context: string; id: string };
-  try { deploy = getContext().deploy; }
-  catch {
-    if (process.env.SITE_ID) throw new Error('Missing Netlify deploy context.');
-    deploy = { context: 'dev', id: 'local' };
-  }
-  // Runtime context is authoritative: CONTEXT/BRANCH are build-only variables.
-  return getStore({ name: tripVideoStoreName(deploy), consistency: 'strong' });
+export const videoStore = (deploy?: { context: string; id: string }) => {
+  if (!deploy && process.env.SITE_ID) throw new Error('Missing Netlify deploy context.');
+  // Use the handler's runtime context directly: build env vars and SDK globals
+  // are not guaranteed across Git, CLI, and background deployments.
+  return getStore({ name: tripVideoStoreName(deploy || { context: 'dev', id: 'local' }), consistency: 'strong' });
 };
+
 export const videoRevision = (trip: TripPayload, style: TripVideoStyle) => createHash('sha256')
   .update(JSON.stringify([TRIP_VIDEO.rendererVersion, style, trip.title, trip.startDate,
     trip.items?.filter(item => item.type === 'city').map(item => [item.title, item.location, item.coordinates, item.color, item.startDateOffset, item.duration])]))

@@ -1,14 +1,14 @@
-import type { Config } from '@netlify/functions';
+import type { Config, Context } from '@netlify/functions';
 import { loadTripForVideo } from '../lib/trip-video-access.ts';
 import { videoRevision, videoStore } from '../lib/trip-video-store.ts';
 import { renderTripVideo } from '../lib/trip-video-renderer.ts';
 import { isTripVideoId, type TripVideoState } from '../../shared/tripOgVideo.ts';
 
-export default async (request: Request) => {
+export default async (request: Request, context?: Context) => {
   if (request.method !== 'POST' || !process.env.TF_ADMIN_API_KEY || request.headers.get('x-tf-admin-key') !== process.env.TF_ADMIN_API_KEY) return;
   const { tripId, jobId } = await request.json();
   if (!isTripVideoId(tripId) || typeof jobId !== 'string') return;
-  const store = videoStore();
+  const store = videoStore(context?.deploy);
   const previous = await store.getWithMetadata(`${tripId}/state`, { type: 'json' });
   // Atomic lease also makes Netlify background retries and duplicated deliveries harmless.
   if (!previous || previous.data.jobId !== jobId || previous.data.status !== 'queued') return;

@@ -74,6 +74,7 @@
     "clsx": "^2.1.1",
     "cobe": "2.0.0",
     "flagpack": "^1.0.5",
+    "fontkit": "2.0.4",
     "framer-motion": "^12.34.3",
     "gradient-shimmer": "0.1.1",
     "i18next": "^25.8.13",

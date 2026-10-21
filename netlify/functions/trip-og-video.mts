@@ -1,11 +1,11 @@
-import type { Config } from '@netlify/functions';
+import type { Config, Context } from '@netlify/functions';
 import { claimRenderBudget, claimVideo, videoRevision, videoStore } from '../lib/trip-video-store.ts';
 import { canManageTripVideo, loadTripForVideo, resolvePublicVideoTrip } from '../lib/trip-video-access.ts';
 import { isTripVideoId, normalizeTripVideoStyle, parseVideoRange, tripVideoLeaseExpired, TRIP_VIDEO, type TripVideoState } from '../../shared/tripOgVideo.ts';
 
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'cache-control': 'no-store' } });
 
-export default async (request: Request) => {
+export default async (request: Request, context?: Context) => {
   try {
     const url = new URL(request.url);
     const tripId = url.searchParams.get('trip');
@@ -17,7 +17,7 @@ export default async (request: Request) => {
     if (['POST', 'PATCH'].includes(request.method) && !manager) return json({ error: 'Trip owner or admin access required.' }, 403);
     const trip = manager && tripId ? await loadTripForVideo(tripId) : await resolvePublicVideoTrip(url);
     if (!trip?.id || !isTripVideoId(trip.id)) return json({ error: 'Trip preview unavailable.' }, 404);
-    const store = videoStore();
+    const store = videoStore(context?.deploy);
     let state = await store.get(`${trip.id}/state`, { type: 'json' });
     if (request.method === 'PATCH') {
       const text = await request.text();

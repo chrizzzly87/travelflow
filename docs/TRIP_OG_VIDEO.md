@@ -7,6 +7,7 @@ Trip OG images still use the existing edge renderer. Video adds a small, silent 
 - MP4 / H.264 / yuv420p, 1200 × 630, 12 fps, six seconds, faststart, no audio.
 - Hard output cap: 2 MiB. Oversized outputs fail closed and are never advertised.
 - One static basemap fetch per render using the existing OG viewport and styling. Route lines and city markers animate locally; no per-frame map requests, directions calls, browser sessions, or AI generation.
+- Text is shaped from the existing bundled fonts into reusable SVG outlines; server fonts and Fontconfig are not required.
 - Encoder uses one thread and a 90-second deadline. Frame buffers are streamed sequentially, temporary files are removed, and only one video, poster, and state file are kept per trip.
 - Atomic claims deduplicate simultaneous requests and background retries. One generation attempt per trip per hour, including forced renders and failures; at most 20 attempts per hour per context across all callers. Fixed quota slots avoid accumulating hourly records.
 - Failed/stalled jobs require a later authenticated request after cooldown. There is no polling cron and no automatic paid retry loop.
