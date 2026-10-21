@@ -55,7 +55,7 @@ export const outlineVideoSvgText = (svg: string, fonts: VideoOutlineFonts, cache
     const shaped = runs.map(run => ({ font: run.font, layout: run.font.layout(run.text), scale: size / run.font.unitsPerEm }));
     const width = shaped.reduce((sum, run) => sum + run.layout.positions.reduce((advance, position) => advance + position.xAdvance * run.scale, 0), 0);
     const stretch = attrs.textLength && width > 0 ? Number(attrs.textLength) / width : 1;
-    let cursor = Number(attrs.x || 0) - (attrs['text-anchor'] === 'middle' ? width * stretch / 2 : 0);
+    let cursor = Number(attrs.x || 0) - (attrs['text-anchor'] === 'middle' ? width * stretch / 2 : attrs['text-anchor'] === 'end' ? width * stretch : 0);
     const baseline = Number(attrs.y || 0);
     const paths: string[] = [];
     for (const run of shaped) {

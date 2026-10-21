@@ -3,6 +3,13 @@ import sharp from 'sharp';
 import { loadVideoOutlineFonts, outlineVideoSvgText } from '../../netlify/lib/trip-video-font-outlines';
 
 describe('serverless video text rendering', () => {
+  it('keeps right-aligned labels inside the narrower map pane after outlining', async () => {
+    const fonts = await loadVideoOutlineFonts();
+    const start = outlineVideoSvgText('<text x="200" y="60" font-size="20" textLength="100">Taipei</text>', fonts);
+    const end = outlineVideoSvgText('<text x="200" y="60" font-size="20" textLength="100" text-anchor="end">Taipei</text>', fonts);
+    const firstX = (value: string) => Number(value.match(/translate\(([-\d.]+)/)?.[1]);
+    expect(firstX(start) - firstX(end)).toBeCloseTo(100, 2);
+  });
   it('uses bundled glyph paths for titles and markers without relying on installed fonts', async () => {
     const fonts = await loadVideoOutlineFonts();
     const cache = new Map<string, string>();
