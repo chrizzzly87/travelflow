@@ -6,7 +6,7 @@ import { TRIP_VIDEO } from '../../shared/tripOgVideo';
 
 const trip = { title: 'Taiwan', items: [
   { type: 'city', title: 'Tainan', startDateOffset: 3, duration: 4, coordinates: { lat: 22.9999, lng: 120.2269 } },
-  { type: 'activity', title: 'Alishan day trip', startDateOffset: 6, duration: .5, coordinates: { lat: 23.519, lng: 120.809 } },
+  { type: 'activity', activityKind: 'day-trip', title: 'Alishan day trip', startDateOffset: 6, duration: .5, coordinates: { lat: 23.519, lng: 120.809 } },
   { type: 'activity', title: 'Night market', startDateOffset: 6, duration: .1, coordinates: { lat: 23.011, lng: 120.2015 } },
   { type: 'city', title: 'Kaohsiung', startDateOffset: 7, duration: 3, coordinates: { lat: 22.6273, lng: 120.3014 } },
 ] };
@@ -95,6 +95,12 @@ describe('video rendering preferences and excursions', () => {
       mapRuntimeSelection: { renderer: provider, routes: provider, locationSearch: provider, staticMaps: provider } });
     const url = decodeURIComponent(summary.mapImageUrl || '');
     expect(url).toContain('ff0000'); expect(url).toContain('00ff00');
+  });
+  it('respects an explicit brand-color mode for markers and legs', async () => {
+    vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'test-token');
+    const map = await buildTripVideoMap({ ...trip, mapColorMode: 'brand' }, 'standard', 'simple');
+    expect(map.points.every(point => point.color === '#4f46e5')).toBe(true);
+    expect(map.legStyles.every(leg => leg.color === '#4f46e5')).toBe(true);
   });
   it('invalidates video content when routes, activity coordinates, or styles change', () => {
     expect(videoRevision(trip, 'clean')).not.toBe(videoRevision(trip, 'clean', 'realistic'));

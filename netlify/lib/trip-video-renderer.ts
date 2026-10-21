@@ -52,7 +52,8 @@ export const buildVideoFrameSvg = (data: {
     const labelX = Math.min(1045, Math.max(653, point.x + 15));
     const labelY = Math.max(56, Math.min(554, point.y - 14));
     const markerColor = point.color || data.color;
-    return `<g opacity="${reveal.toFixed(3)}"><circle cx="${point.x}" cy="${point.y}" r="${(point.excursion ? 6 : 13 - 5 * reveal).toFixed(1)}" fill="${markerColor}" stroke="white" stroke-width="3"/><circle cx="${point.x}" cy="${point.y}" r="2.5" fill="white"/><text x="${labelX}" y="${labelY}" font-size="15" font-weight="700" fill="${dark ? '#fff' : '#0f172a'}" stroke="${dark ? '#111827' : '#fff'}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${escape(point.label)}</text></g>`;
+    const symbol = point.excursion ? `<path data-role="day-trip-compass" d="M${point.x + 3} ${point.y - 5}L${point.x + 1} ${point.y + 1}L${point.x - 3} ${point.y + 5}L${point.x - 1} ${point.y - 1}Z" fill="white"/>` : `<circle cx="${point.x}" cy="${point.y}" r="2.5" fill="white"/>`;
+    return `<g opacity="${reveal.toFixed(3)}"><circle cx="${point.x}" cy="${point.y}" r="${(point.excursion ? 8 : 13 - 5 * reveal).toFixed(1)}" fill="${markerColor}" stroke="white" stroke-width="3"/>${symbol}<text x="${labelX}" y="${labelY}" font-size="15" font-weight="700" fill="${dark ? '#fff' : '#0f172a'}" stroke="${dark ? '#111827' : '#fff'}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${escape(point.label)}</text></g>`;
   }).join('');
   const legIndex = Math.min(points.length - 2, Math.floor(travel));
   const cursorLeg = legs[Math.max(0, legIndex)] || [];
@@ -79,7 +80,7 @@ export const renderTripVideo = async (trip: TripPayload, style: TripVideoStyle, 
   const mapBytes = Buffer.from(await response.arrayBuffer());
   if (mapBytes.length > 4 * 1024 * 1024) throw new Error('Basemap exceeds input limit.');
   const summary = await buildTripOgSummary(trip, { includeMapImage: false });
-  const frameData = { title: summary.title, description: summary.monthsLabel, badge: summary.weeksLabel, mapDataUri: `data:image/png;base64,${mapBytes.toString('base64')}`, style, points: map.points, legs: map.legs, legStyles: map.legStyles, color: map.color };
+  const frameData = { title: summary.title, description: [summary.monthsLabel, summary.dayTripsLabel?.split(' · ')[0]].filter(Boolean).join(' · '), badge: summary.weeksLabel, mapDataUri: `data:image/png;base64,${mapBytes.toString('base64')}`, style, points: map.points, legs: map.legs, legStyles: map.legStyles, color: map.color };
   const directory = await mkdtemp(join(tmpdir(), 'trip-video-'));
   const output = join(directory, 'preview.mp4');
   const binary = getVideoEncoderPath();

@@ -14,12 +14,9 @@ type Stop = NonNullable<TripPayload['items']>[number] & { coordinates: { lat: nu
 const mapped = (item: NonNullable<TripPayload['items']>[number]): item is Stop => Boolean(item.coordinates
   && Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng)
   && Math.abs(item.coordinates.lat) <= 85 && Math.abs(item.coordinates.lng) <= 180);
-// Use the same explicit day-trip ownership and return-stay model as planner
-// and image previews. Older named day trips remain compatible without promoting
-// ordinary activities merely because they are far away.
+// Same explicit day-trip ownership and return-stay model as planner and images.
 export const buildTripVideoStops = (trip: TripPayload) => {
-  const items = (trip.items || []).map(item => item.type === 'activity' && !item.activityKind && /day[ -]?trip/i.test(item.title || '')
-    ? { ...item, activityKind: 'day-trip' } : item);
+  const items = trip.items || [];
   const cities = items.filter(item => item.type === 'city' && mapped(item)).sort((a, b) => (a.startDateOffset || 0) - (b.startDateOffset || 0)) as Stop[];
   const excursions = resolvePreviewDayTrips(items);
   const stops: (Stop & { excursion?: boolean; returnToBase?: boolean })[] = [];
@@ -56,7 +53,7 @@ export const buildTripVideoMap = async (trip: TripPayload, style: TripVideoStyle
     if (dx < -worldWidth / 2) dx += worldWidth;
     return { x: (426 / 2 + dx) / 426, y: (574 / 2 + pixel.y - center.y) / 574 };
   };
-  const colorFor = (stop: Stop) => `#${resolveColorHex(stop.color) || getTripPrimaryCityColorHex(trip)}`;
+  const colorFor = (stop: Stop) => trip.mapColorMode === 'brand' ? '#4f46e5' : `#${resolveColorHex(stop.color) || getTripPrimaryCityColorHex(trip)}`;
   // Expiring, bounded per-trip geometry cache, independent of the basemap style.
   const now = Date.now();
   routeCache.splice(0, routeCache.length, ...routeCache.filter(entry => entry.expiresAt > now && entry.coordinates.length <= ROUTE_POINT_LIMIT).slice(-ROUTE_CACHE_LIMIT));
@@ -83,6 +80,7 @@ export const buildTripVideoMap = async (trip: TripPayload, style: TripVideoStyle
       const url = new URL(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${from.coordinates.lng},${from.coordinates.lat};${to.coordinates.lng},${to.coordinates.lat}`);
       url.searchParams.set('access_token', token);
       url.searchParams.set('geometries', 'geojson'); url.searchParams.set('overview', 'simplified');
+      let routeResolved = false;
       try {
         const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
         if (response.ok) {
@@ -90,12 +88,13 @@ export const buildTripVideoMap = async (trip: TripPayload, style: TripVideoStyle
           const path = data.routes?.[0]?.geometry?.coordinates;
           if (Array.isArray(path) && path.length >= 2 && path.length <= 2000
             && path.every((p: unknown) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]))) {
+            routeResolved = true;
             const stride = Math.max(1, Math.ceil((path.length - 1) / (ROUTE_POINT_LIMIT - 1)));
             coordinates = path.filter((_: unknown, n: number) => n % stride === 0 || n === path.length - 1).map(([lng, lat]: number[]) => ({ lat, lng }));
           }
         }
       } catch { /* Cache fallback briefly; never automatically retry a render. */ }
-      routeCache.push({ key: cacheKey, expiresAt: now + (coordinates.length > 2 ? 30 * 24 * 60 * 60_000 : 15 * 60_000), coordinates });
+      routeCache.push({ key: cacheKey, expiresAt: now + (routeResolved ? 30 * 24 * 60 * 60_000 : 15 * 60_000), coordinates });
       if (routeCache.length > ROUTE_CACHE_LIMIT) routeCache.shift();
     }
     legs.push(coordinates.map(project));
