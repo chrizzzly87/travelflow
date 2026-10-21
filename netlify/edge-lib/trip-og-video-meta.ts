@@ -21,7 +21,9 @@ export const resolveReadyTripVideoMedia = async (origin: string, target: { token
     const state = await response.json();
     if (state.status !== 'ready' || state.stale || !/^[a-f0-9]{24}$/.test(state.revision)) return undefined;
     url.searchParams.delete('status');
-    url.searchParams.set('r', state.revision);
+    const mediaRevision = state.mediaRevision || state.revision;
+    if (!/^[a-f0-9]{24}$/.test(mediaRevision)) return undefined;
+    url.searchParams.set('r', mediaRevision);
     const videoUrl = url.toString();
     url.searchParams.set('asset', 'poster');
     return { videoUrl, posterUrl: state.posterAsImage ? url.toString() : undefined };

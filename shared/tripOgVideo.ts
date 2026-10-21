@@ -1,11 +1,13 @@
 export const TRIP_VIDEO = {
   width: 1200, height: 630, fps: 12, seconds: 6, maxBytes: 2 * 1024 * 1024,
-  maxStops: 30, cooldownMs: 60 * 60 * 1000, renderTimeoutMs: 90_000,
-  leaseMs: 5 * 60_000, hourlyRenderLimit: 20, rendererVersion: 1,
+  maxStops: 30, cooldownMs: 60 * 60 * 1000, refreshCooldownMs: 5 * 60_000, renderTimeoutMs: 90_000,
+  leaseMs: 5 * 60_000, hourlyRenderLimit: 20, rendererVersion: 2,
 } as const;
 
-export type TripVideoStyle = 'clean' | 'dark';
-export const normalizeTripVideoStyle = (style: unknown): TripVideoStyle => style === 'dark' ? 'dark' : 'clean';
+export type TripVideoStyle = 'clean' | 'minimal' | 'standard' | 'dark' | 'satellite';
+export type TripVideoRouteMode = 'simple' | 'realistic';
+export const normalizeTripVideoRouteMode = (value: unknown): TripVideoRouteMode => value === 'realistic' ? 'realistic' : 'simple';
+export const normalizeTripVideoStyle = (style: unknown): TripVideoStyle => ['clean', 'minimal', 'standard', 'dark', 'satellite'].includes(String(style)) ? style as TripVideoStyle : 'clean';
 export const isTripVideoId = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -14,6 +16,8 @@ export interface TripVideoState {
   jobId: string;
   revision: string;
   style: TripVideoStyle;
+  routeMode?: TripVideoRouteMode;
+  mediaRevision?: string;
   requestedAt: number;
   bytes?: number;
   posterAsImage?: boolean;

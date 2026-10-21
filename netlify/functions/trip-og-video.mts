@@ -1,7 +1,8 @@
+import { refreshTripVideoMetadata } from '../lib/trip-video-cache.ts';
 import type { Config, Context } from '@netlify/functions';
 import { claimRenderBudget, claimVideo, videoRevision, videoStore } from '../lib/trip-video-store.ts';
 import { canManageTripVideo, loadTripForVideo, resolvePublicVideoTrip } from '../lib/trip-video-access.ts';
-import { isTripVideoId, normalizeTripVideoStyle, parseVideoRange, tripVideoLeaseExpired, TRIP_VIDEO, type TripVideoState } from '../../shared/tripOgVideo.ts';
+import { isTripVideoId, normalizeTripVideoStyle, normalizeTripVideoRouteMode, parseVideoRange, tripVideoLeaseExpired, TRIP_VIDEO, type TripVideoState } from '../../shared/tripOgVideo.ts';
 
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'cache-control': 'no-store' } });
 
@@ -25,9 +26,10 @@ export default async (request: Request, context?: Context) => {
       const options = JSON.parse(text);
       if (typeof options.posterAsImage !== 'boolean') return json({ error: 'Choose an image source.' }, 400);
       const current = await store.getWithMetadata(`${trip.id}/state`, { type: 'json' });
-      if (!current || current.data.status !== 'ready' || current.data.revision !== videoRevision(trip, current.data.style)) return json({ error: 'Generate an up-to-date video before changing the image source.' }, 409);
+      if (!current || current.data.status !== 'ready' || current.data.revision !== videoRevision(trip, current.data.style, current.data.routeMode)) return json({ error: 'Generate an up-to-date video before changing the image source.' }, 409);
       const next = { ...current.data, posterAsImage: options.posterAsImage };
       if (!(await store.setJSON(`${trip.id}/state`, next, { onlyIfMatch: current.etag })).modified) return json({ error: 'Preview changed. Refresh and try again.' }, 409);
+      await refreshTripVideoMetadata(trip.id, request.url);
       return json(next);
     }
     if (request.method === 'POST') {
@@ -36,11 +38,12 @@ export default async (request: Request, context?: Context) => {
       const body = await request.text();
       if (body.length > 2048) return json({ error: 'Request too large.' }, 413);
       const options = body ? JSON.parse(body) : {};
+      const routeMode = normalizeTripVideoRouteMode(options.routeMode ?? state?.routeMode);
       const style = normalizeTripVideoStyle(options.style ?? state?.style);
       if (!trip.items?.some(item => item.type === 'city' && item.coordinates)) return json({ error: 'Trip needs mapped cities before rendering.' }, 422);
-      const result = await claimVideo(store, trip.id, videoRevision(trip, style), style, options.force === true);
+      const result = await claimVideo(store, trip.id, videoRevision(trip, style, routeMode), style, options.force === true, Date.now(), routeMode);
       state = result.state || null;
-      if (!result.claimed) return json({ ...state, limited: result.limited || false, ...(result.limited ? { error: 'A video can be generated once per trip per hour. Try again after the cooldown.' } : {}) }, result.limited ? 429 : 200);
+      if (!result.claimed) return json({ ...state, limited: result.limited || false, ...(result.limited ? { error: 'Automatic generation is limited to once per hour. Explicit re-renders need five minutes between attempts.' } : {}) }, result.limited ? 429 : 200);
       if (!await claimRenderBudget(store)) {
         state = { ...state!, status: 'failed', error: 'Hourly render budget reached. Try again next hour.' };
         await store.setJSON(`${trip.id}/state`, state);
@@ -58,9 +61,9 @@ export default async (request: Request, context?: Context) => {
       }
       return json(state, 202);
     }
-    const stale = Boolean(state && state.revision !== videoRevision(trip, state.style));
-    if (url.searchParams.get('status') === '1') return json({ ...state, status: state && tripVideoLeaseExpired(state) ? 'failed' : state?.status || 'missing', ...(state && tripVideoLeaseExpired(state) ? { error: 'The video worker did not finish. Retry after the one-hour cooldown.' } : {}), stale, spec: TRIP_VIDEO });
-    if (state?.status !== 'ready' || (!manager && stale) || (url.searchParams.has('r') && url.searchParams.get('r') !== state.revision)) return json({ error: 'Video preview is not ready.' }, 404);
+    const stale = Boolean(state && state.revision !== videoRevision(trip, state.style, state.routeMode));
+    if (url.searchParams.get('status') === '1') return json({ ...state, status: state && tripVideoLeaseExpired(state) ? 'failed' : state?.status || 'missing', ...(state && tripVideoLeaseExpired(state) ? { error: 'The video worker did not finish. Retry after the cooldown.' } : {}), stale, settingsMatch: (!url.searchParams.has('mapStyle') || normalizeTripVideoStyle(url.searchParams.get('mapStyle')) === state?.style) && (!url.searchParams.has('routeMode') || normalizeTripVideoRouteMode(url.searchParams.get('routeMode')) === (state?.routeMode || 'simple')), spec: TRIP_VIDEO });
+    if (state?.status !== 'ready' || (!manager && stale) || (url.searchParams.has('r') && url.searchParams.get('r') !== (state.mediaRevision || state.revision))) return json({ error: 'Video preview is not ready.' }, 404);
     const poster = url.searchParams.get('asset') === 'poster';
     const entry = await store.getWithMetadata(`${trip.id}/${poster ? 'poster' : 'video'}`, { type: 'arrayBuffer' });
     if (!entry) return json({ error: 'Video preview unavailable.' }, 404);

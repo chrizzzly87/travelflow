@@ -1,3 +1,4 @@
+import { refreshTripVideoMetadata } from '../lib/trip-video-cache.ts';
 import type { Config, Context } from '@netlify/functions';
 import { loadTripForVideo } from '../lib/trip-video-access.ts';
 import { videoRevision, videoStore } from '../lib/trip-video-store.ts';
@@ -16,14 +17,15 @@ export default async (request: Request, context?: Context) => {
   if (!(await store.setJSON(`${tripId}/state`, state, { onlyIfMatch: previous.etag })).modified) return;
   try {
     const trip = await loadTripForVideo(tripId);
-    if (!trip || videoRevision(trip, state.style) !== state.revision) throw new Error('Trip changed before rendering.');
-    const { video, poster } = await renderTripVideo(trip, state.style);
+    if (!trip || videoRevision(trip, state.style, state.routeMode) !== state.revision) throw new Error('Trip changed before rendering.');
+    const { video, poster } = await renderTripVideo(trip, state.style, state.routeMode);
     // A timed-out job must never overwrite a newer lease.
     const current = await store.get(`${tripId}/state`, { type: 'json' });
     if (current?.jobId !== jobId) return;
     await store.set(`${tripId}/video`, new Uint8Array(video).buffer);
     await store.set(`${tripId}/poster`, new Uint8Array(poster).buffer);
-    await store.setJSON(`${tripId}/state`, { ...state, status: 'ready', bytes: video.length });
+    await store.setJSON(`${tripId}/state`, { ...state, status: 'ready', mediaRevision: jobId.replaceAll('-', '').slice(0, 24), bytes: video.length });
+    await refreshTripVideoMetadata(tripId, request.url);
   } catch (error) {
     console.error('[trip-og-video] render failed', { tripId, message: error instanceof Error ? error.message : 'unknown' });
     const current = await store.get(`${tripId}/state`, { type: 'json' });

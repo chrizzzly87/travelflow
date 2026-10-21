@@ -552,6 +552,7 @@ export default async (request: Request): Promise<Response> => {
           }
         }
 
+        if (mode === 'trip') params.set('mr', 'mmmm');
         return params;
       }
 
@@ -601,20 +602,22 @@ export default async (request: Request): Promise<Response> => {
         video.hidden = true;
         panel.hidden = mode !== 'trip' || (!params.has('trip') && !params.has('s'));
         if (panel.hidden) return;
-        admin.href = '/admin/og-tools' + (params.has('trip') ? '?trip=' + encodeURIComponent(params.get('trip')) : '');
+        const adminQuery = new URLSearchParams();
+        for (const key of ['trip', 'mapStyle', 'routeMode']) if (params.has(key)) adminQuery.set(key, params.get(key));
+        admin.href = '/admin/og-tools?' + adminQuery;
         status.textContent = 'Checking attached video…';
         const query = new URLSearchParams();
-        for (const key of ['trip', 's', 'v']) if (params.has(key)) query.set(key, params.get(key));
+        for (const key of ['trip', 's', 'v', 'mapStyle', 'routeMode']) if (params.has(key)) query.set(key, params.get(key));
         query.set('status', '1');
         try {
           const response = await fetch('/api/og/trip-video?' + query, { signal: AbortSignal.timeout(8000) });
           if (!response.ok) throw new Error('unavailable');
           const state = await response.json();
           if (requestId !== videoRequestId) return;
-          status.textContent = state.stale ? 'The trip changed. Regenerate its video in admin.' : state.status === 'ready' ? 'Attached video · ' + Math.round(state.bytes / 1024) + ' KB' : 'Video: ' + state.status + '. Generate and manage previews in admin.';
-          if (state.status === 'ready' && !state.stale) {
+          status.textContent = state.settingsMatch === false ? 'Selected settings differ from the cached video. Open admin to apply them; no render starts automatically.' : state.stale ? 'The trip changed. Regenerate its video in admin.' : state.status === 'ready' ? 'Attached video · ' + Math.round(state.bytes / 1024) + ' KB' : 'Video: ' + state.status + '. Generate and manage previews in admin.';
+          if (state.status === 'ready' && !state.stale && state.settingsMatch !== false) {
             query.delete('status');
-            query.set('r', state.revision);
+            query.set('r', state.mediaRevision || state.revision);
             video.src = '/api/og/trip-video?' + query;
             video.hidden = false;
           }

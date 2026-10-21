@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ manage: vi.fn(), load: vi.fn(), publicTrip: vi.fn(), get: vi.fn(), getWithMetadata: vi.fn(), setJSON: vi.fn(), claim: vi.fn(), budget: vi.fn(), store: vi.fn() }));
 vi.mock('../../netlify/lib/trip-video-access.ts', () => ({ canManageTripVideo: mocks.manage, loadTripForVideo: mocks.load, resolvePublicVideoTrip: mocks.publicTrip }));
 vi.mock('../../netlify/lib/trip-video-store.ts', () => ({ videoStore: (deploy: unknown) => { mocks.store(deploy); return { get: mocks.get, getWithMetadata: mocks.getWithMetadata, setJSON: mocks.setJSON }; }, videoRevision: () => 'a'.repeat(24), claimVideo: mocks.claim, claimRenderBudget: mocks.budget }));
+vi.mock('../../netlify/lib/trip-video-cache.ts', () => ({ refreshTripVideoMetadata: vi.fn() }));
 import handler from '../../netlify/functions/trip-og-video.mts';
 const id = '4fee56dd-a79a-4130-bef0-cc7ffb552ea5';
 const trip = { id, title: 'Taiwan', items: [{ type: 'city', coordinates: { lat: 25, lng: 121 } }] };
@@ -60,6 +61,18 @@ describe('trip video API regression coverage', () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 202 })); vi.stubGlobal('fetch', fetchMock);
     expect((await handler(req('', { method: 'POST', body: '{"style":"dark"}' }))).status).toBe(202);
     expect(fetchMock).toHaveBeenCalledWith(new URL('https://example.com/.netlify/functions/trip-og-video-background'), expect.objectContaining({ headers: expect.objectContaining({ 'x-tf-admin-key': 'internal-key' }), body: JSON.stringify({ tripId: id, jobId: 'job' }) }));
+  });
+  it('passes selected map and route settings to the atomic render claim', async () => {
+    mocks.manage.mockResolvedValue(true); mocks.claim.mockResolvedValue({ claimed: false, state: { status: 'queued' } });
+    await handler(req('', { method: 'POST', body: '{"style":"satellite","routeMode":"realistic","force":true}' }));
+    expect(mocks.claim).toHaveBeenCalledWith(expect.anything(), id, expect.any(String), 'satellite', true, expect.any(Number), 'realistic');
+  });
+  it('detects playground settings mismatch without generating and versions refreshed media independently of content', async () => {
+    mocks.get.mockResolvedValue({ ...ready, mediaRevision: 'b'.repeat(24), routeMode: 'realistic' });
+    expect(await (await handler(req('&status=1&mapStyle=dark&routeMode=simple'))).json()).toMatchObject({ settingsMatch: false });
+    expect((await handler(req('&r=' + 'b'.repeat(24)))).status).toBe(200);
+    expect((await handler(req('&r=' + ready.revision))).status).toBe(404);
+    expect(mocks.claim).not.toHaveBeenCalled();
   });
   it('changes poster attachment atomically without claiming a render', async () => {
     mocks.manage.mockResolvedValue(true); mocks.getWithMetadata.mockResolvedValue({ data: ready, etag: 'state' });

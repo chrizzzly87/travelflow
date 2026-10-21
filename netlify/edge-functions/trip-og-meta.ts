@@ -31,6 +31,7 @@ interface Metadata {
   canonicalUrl: string;
   ogImageUrl: string;
   ogVideoUrl?: string;
+  tripCacheId?: string;
   robots: string;
 }
 
@@ -206,6 +207,7 @@ const buildShareBackedMetadata = async (
   return {
     pageTitle: title,
     ogVideoUrl: videoMedia?.videoUrl,
+    tripCacheId: sharedTrip?.trip.id || routeTarget.tripId,
     description: summary.description,
     canonicalUrl,
     ogImageUrl: videoMedia?.posterUrl || ogImageUrl,
@@ -280,6 +282,7 @@ export default async (request: Request, context: { next: () => Promise<Response>
       "cache-control",
       routeTarget.token ? SHARE_CACHE_CONTROL : TRIP_CACHE_CONTROL,
     );
+    if (metadata.tripCacheId) headers.set("Netlify-Cache-Tag", `trip-og-${metadata.tripCacheId}`);
     headers.delete("content-length");
     headers.delete("etag");
 

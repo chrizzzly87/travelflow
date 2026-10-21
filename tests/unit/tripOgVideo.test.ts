@@ -35,7 +35,7 @@ describe('trip video bounds and byte ranges', () => {
   });
   it('sets a small, even-dimension, browser-compatible budget', () => {
     expect(TRIP_VIDEO).toMatchObject({ width: 1200, height: 630, seconds: 6, fps: 12, maxBytes: 2097152 });
-    expect(normalizeTripVideoStyle('satellite')).toBe('clean');
+    expect(normalizeTripVideoStyle('satellite')).toBe('satellite');
   });
   it.each([
     ['bytes=0-99', { start: 0, end: 99 }], ['bytes=900-', { start: 900, end: 999 }],
@@ -98,6 +98,11 @@ describe('ready-only OG video metadata', () => {
     expect(html).toContain('og:video:width');
     expect(html).toContain('1200');
     expect(html).toContain('630');
+  });
+  it('publishes a new media URL on explicit refresh even with unchanged trip content', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ status: 'ready', revision: 'a'.repeat(24), mediaRevision: 'b'.repeat(24) })));
+    const media = await resolveReadyTripVideoMedia('https://example.com', { tripId: 'trip', versionId: null });
+    expect(media?.videoUrl).toContain('r=' + 'b'.repeat(24));
   });
   it('leaves version links image-only and does not request current video', async () => {
     const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);

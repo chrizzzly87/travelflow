@@ -1433,25 +1433,6 @@ export const fallbackSummary = (): TripOgSummary => ({
   mapLabels: [],
 });
 
-// The video shares the image viewport and basemap, but draws routes locally: one
-// static-map request per render, with no Routes API requests or per-frame API calls.
-export const buildTripVideoMap = async (trip: TripPayload, mapStyle: OgMapStyle = "clean") => {
-  const cities = getRouteCities(trip).filter(city =>
-    Math.abs(city.coordinates!.lat) <= 85 && Math.abs(city.coordinates!.lng) <= 180);
-  const viewport = computeMapViewport(cities.map(city => city.coordinates!));
-  const center = getWorldPixel(viewport.center, viewport.zoom);
-  const worldWidth = 256 * 2 ** viewport.zoom;
-  const points = cities.map(city => {
-    const pixel = getWorldPixel(city.coordinates!, viewport.zoom);
-    let dx = pixel.x - center.x;
-    if (dx > worldWidth / 2) dx -= worldWidth;
-    if (dx < -worldWidth / 2) dx += worldWidth;
-    return { x: (OG_MAP_WIDTH / 2 + dx) / OG_MAP_WIDTH,
-      y: (OG_MAP_HEIGHT / 2 + pixel.y - center.y) / OG_MAP_HEIGHT,
-      label: (city.title || city.location || "").split(",")[0].slice(0, 32) };
-  });
-  const { mapUrl } = await buildMapPreviewUrl({ ...trip, items: cities },
-    getMapsApiKeyFromEnv(), undefined, "en",
-    { mapStyle, routeMode: "simple", hideRoutes: true, showStops: false, showCities: false });
-  return { points, mapUrl, color: `#${getTripPrimaryCityColorHex(trip)}` };
-};
+// Reused by the bounded video renderer; coordinates stay geographic, not direction-aware UI.
+export { computeMapViewport, getWorldPixel, getTripPrimaryCityColorHex };
+export { buildTripVideoMap } from '../lib/trip-video-map.ts';
