@@ -96,9 +96,6 @@ const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
         if (node.naturalWidth > 0) setIsLoaded(true);
         else handleImageError();
     }, [handleImageError]);
-    const fetchPriorityAttr = fetchPriority
-        ? ({ fetchpriority: fetchPriority } as { fetchpriority: 'high' | 'low' | 'auto' })
-        : undefined;
 
     return (
         <div className="relative size-full overflow-hidden">
@@ -122,7 +119,7 @@ const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
                     alt={alt}
                     loading={loading}
                     decoding="async"
-                    {...fetchPriorityAttr}
+                    fetchPriority={fetchPriority}
                     width={resolvedWidth}
                     height={resolvedHeight}
                     className={cn(

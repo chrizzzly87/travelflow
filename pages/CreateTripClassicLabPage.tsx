@@ -161,7 +161,7 @@ type SnapshotRouteGeometry = {
 type ChoiceOption<TId extends string> = {
     id: TId;
     labelKey: string;
-    icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
+    icon: React.ComponentType<{ size?: number; className?: string; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
 };
 
 const formatChoiceSummary = <TId extends string>(

@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink } from '@/app/navigation';
 import { List } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
-import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath } from '../../config/routes';
+import { normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
 import { useLocaleNavigation } from '../../hooks/useLocaleNavigation';
 import { AppBrand } from './AppBrand';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootInteractionBridge';
 // Deliberately NOT lazy. The burger is the only way into navigation on a phone,
@@ -58,11 +59,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const changeLocale = useLocaleNavigation();
     const { t, i18n } = useTranslation('common');
 
-    const activeLocale = useMemo<AppLanguage>(() => {
-        const routeLocale = extractLocaleFromPath(routeLocation.pathname);
-        if (routeLocale) return routeLocale;
-        return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
-    }, [i18n.language, i18n.resolvedLanguage, routeLocation.pathname]);
+    const activeLocale = usePresentationLocale(routeLocation.pathname, i18n.resolvedLanguage ?? i18n.language);
     const selectedLocale = pendingLocale ?? activeLocale;
 
     useEffect(() => {

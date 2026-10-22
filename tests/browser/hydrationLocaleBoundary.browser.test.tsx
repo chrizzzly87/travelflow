@@ -7,6 +7,7 @@ import { createInstance } from 'i18next';
 import { I18nextProvider, initReactI18next, useTranslation } from 'react-i18next';
 import { createMemoryHistory, createRootRouteWithContext, createRouter, RouterProvider } from '@tanstack/react-router';
 import { afterEach, expect, it } from 'vitest';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { HydrationLocaleBoundary } from '../../components/bootstrap/HydrationLocaleBoundary';
 
 let mounted: Root | undefined;
@@ -19,7 +20,8 @@ it('hydrates pending chrome with the delivered language after the live preferenc
         en: { common: { account: 'Account' } }, de: { common: { account: 'Konto' } },
     } });
     const delivered = live.cloneInstance({ lng: 'en' });
-    function Chrome() { const { t } = useTranslation('common'); return <button>{t('account')}</button>; }
+    let requestedPath = '/__offline-shell';
+    function Chrome() { const { t } = useTranslation('common'); const locale = usePresentationLocale(requestedPath, 'en'); return <button>{t('account')} ({locale})</button>; }
     const root = createRootRouteWithContext<{ i18n: typeof live; hydrationI18n: typeof live }>()({
         component: function Presentation() {
             const [pending, setPending] = useState(true);
@@ -32,6 +34,7 @@ it('hydrates pending chrome with the delivered language after the live preferenc
     await router.load();
     const html = renderToString(<RouterProvider router={router} />);
     expect(html).toContain('Account');
+    requestedPath = '/de/create-trip';
     await live.changeLanguage('de');
     expect(delivered.language).toBe('en');
     container = document.createElement('div');

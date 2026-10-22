@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { I18nextProvider } from 'react-i18next';
+import { normalizeLocale } from '../../config/locales';
+import { PendingDocumentLocaleContext } from '../../hooks/usePresentationLocale';
 import { useHydrated } from '../../hooks/useHydrated';
 
 /** Pending SSR chrome must hydrate with its delivered translation snapshot,
@@ -10,5 +12,6 @@ export function HydrationLocaleBoundary({ children }: { children: React.ReactNod
     const { context } = useRouter().options;
     const hydrated = useHydrated();
     const [instance] = useState(() => hydrated ? context.i18n : context.hydrationI18n ?? context.i18n);
-    return <I18nextProvider i18n={instance}>{children}</I18nextProvider>;
+    const [locale] = useState(() => hydrated ? null : normalizeLocale(instance.resolvedLanguage ?? instance.language));
+    return <PendingDocumentLocaleContext.Provider value={locale}><I18nextProvider i18n={instance}>{children}</I18nextProvider></PendingDocumentLocaleContext.Provider>;
 }

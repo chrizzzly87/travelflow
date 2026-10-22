@@ -16,6 +16,7 @@ import '../document/consent.css';
 import { ContactFormRegistration } from '../document/ContactFormRegistration';
 import { getDocumentHints } from '../document/headAssets';
 import { useDocumentLocale } from '../document/useDocumentLocale';
+import { ThemeColor } from '../document/ThemeColor';
 
 export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI18n?: typeof i18n }>()({
     // Native context is reconstructed on hydration but cached when the root is
@@ -42,17 +43,17 @@ export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI1
         return { routeDocument, tripMetadata: null };
     },
     head: ({ match }) => {
-        // The first hydration head must match its transported document. React 18
-        // does not patch suppressed attribute mismatches; native invalidation
+        // The first hydration head must match its transported document. React
+        // does not guarantee suppressed attribute patches; native invalidation
         // below resolves the actual URL after the neutral shell has hydrated.
-        const { metadata, locale } = match.context.routeDocument ?? match.context.hydrationDocument;
+        const { metadata, locale, pathname } = match.context.routeDocument ?? match.context.hydrationDocument;
         const { tripMetadata } = match.context;
         const meta = tripMetadata
             ? { ...metadata, ...tripMetadata, ogTitle: tripMetadata.pageTitle, ogDescription: tripMetadata.description }
             : metadata;
         return {
             meta: [{ title: meta.pageTitle }, { name: 'content-language', content: locale }, { name: 'description', content: meta.description }, { name: 'robots', content: meta.robots }, { property: 'og:title', content: meta.ogTitle }, { property: 'og:description', content: meta.ogDescription }, { property: 'og:image', content: meta.ogImageUrl }, { property: 'og:url', content: meta.canonicalUrl }, { name: 'twitter:card', content: 'summary_large_image' }, { name: 'apple-mobile-web-app-capable', content: 'yes' }, { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }, { name: 'apple-mobile-web-app-title', content: 'TravelFlow' }],
-            links: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }, { rel: 'manifest', href: '/manifest.webmanifest' }, { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }, { rel: 'canonical', href: meta.canonicalUrl }, ...meta.alternateLinks.map(link => ({ rel: 'alternate', hrefLang: link.hreflang, href: link.href })), ...getDocumentHints(match.pathname)],
+            links: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }, { rel: 'manifest', href: '/manifest.webmanifest' }, { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }, { rel: 'canonical', href: meta.canonicalUrl }, ...meta.alternateLinks.map(link => ({ rel: 'alternate', hrefLang: link.hreflang, href: link.href })), ...getDocumentHints(pathname)],
         };
     },
     headers: () => ({ 'x-tf-renderer': 'tanstack-start', 'cache-control': 'no-store' }),
@@ -74,7 +75,7 @@ function RootDocument() {
         <head>
             <meta charSet="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta name="theme-color" content="#ffffff" data-tf-theme-color="" />
+            <ThemeColor />
             {bootScripts.map(({ id, code, attributes }) => <script {...attributes} key={id} dangerouslySetInnerHTML={{ __html: code }} />)}
             <HeadContent />
         </head>

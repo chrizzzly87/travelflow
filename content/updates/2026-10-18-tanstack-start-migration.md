@@ -26,7 +26,8 @@ summary: "Framework migration under development and validation on an isolated pr
 - [x] [Fixed] 📅 Keep publication dates consistent as pages load in different languages and time zones.
 - [x] [Fixed] 📶 Keep page titles correct when a slow connection or offline visit follows another page.
 - [x] [Fixed] 🗓️ Round trips no longer gain an extra night at their final return stop.
-- [ ] [Internal] 🧭 Use native TanStack Start routing, document/head ownership, selective SSR and separate public, account, creation, trip and admin boundaries.
+- [ ] [Internal] 🧭 Use native TanStack Start client hydration, routing and document/head ownership, selective SSR and separate public, account, creation, trip and admin boundaries.
+- [ ] [Internal] ⚛️ Run native selective SSR on React 19, update drawer compatibility and verify real admin charts without replacing library code in tests.
 - [ ] [Internal] 🧪 Record critical-flow regressions, hosted acceptance and equivalent before/after benchmarks with exact revisions and limitations.
 - [ ] [Internal] 🔐 Isolate request i18n, session-bound caches and permission checks; preserve identity-switch and pending-navigation invalidation.
 - [ ] [Internal] 🧩 Keep optional generation, authoring and claim recovery outside ordinary trip viewing, with native required-view preloading and the shared cancellation registry.

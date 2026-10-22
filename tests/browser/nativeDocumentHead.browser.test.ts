@@ -40,9 +40,10 @@ async function hydrateRoute(pathname: string) {
     const router = createRouter({ routeTree: root.addChildren([leaf]), history: createMemoryHistory({ initialEntries: [pathname] }), context: { i18n: mocks.instance } });
     (window as any).$_TSR = { buffer: [], router: { manifest: undefined, matches: [{ i: router.matchRoutes(pathname)[0]!.id.replaceAll('/', '#'), s: 'success', ssr: true, u: 0, b: await maskTransport() }] } };
     await hydrate(router);
-    // Match the installed React 18 hydration contract: first the transported
+    // Match the document hydration contract: first the transported
     // neutral head, then the root's native recovery load updates its attributes.
     expect(router.state.matches[0]?.links).toContainEqual({ rel: 'canonical', href: `https://travelflowapp.netlify.app${offlineShellMaskPath}` });
+    expect(router.state.matches[0]?.links?.some(link => link?.href?.includes('vazirmatn'))).toBe(false);
     await router.invalidate({ filter: match => match.routeId === '__root__' });
     return router.state.matches[0];
 }
@@ -55,6 +56,7 @@ describe('native masked document head ownership', () => {
         expect(match?.meta).toContainEqual({ name: 'content-language', content: pathname.startsWith('/fa/') ? 'fa' : 'en' });
         expect(match?.links).toContainEqual({ rel: 'canonical', href: expected.canonicalUrl });
         expect(resolveRouteDocument(match!.context as any).locale).toBe(pathname.startsWith('/fa/') ? 'fa' : 'en');
+        expect(match?.links?.some(link => link?.href?.includes('vazirmatn'))).toBe(pathname.startsWith('/fa/'));
         expect(match?.meta).toContainEqual({ property: 'og:title', content: expected.ogTitle });
         expect(match?.meta).toContainEqual({ name: 'description', content: expected.description });
     });

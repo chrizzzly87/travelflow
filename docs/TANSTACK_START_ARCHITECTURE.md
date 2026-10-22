@@ -5,6 +5,34 @@ migration has reached production. Track acceptance, preview and benchmark eviden
 [the migration plan](architecture/TANSTACK_START_MIGRATION.md) and GitHub issue #559.
 The earlier Preact reports describe historical releases.
 
+## Runtime and compatibility
+
+Production and component tests use React/React DOM 19.3.1, matching React type
+definitions, Start 1.169.2 and Router 1.170.44. These are the newest compatible
+releases admitted by the repository's seven-day dependency release-age policy
+on 2026-10-22; do not bypass that policy for newer patch releases.
+The native `StartClient` owns hydration; do not manually hydrate a
+second router or patch React/TanStack internals. React 18 produced intermittent
+recoverable errors during selective-SSR startup. The React 19 candidate passes
+the unchanged seven affected WebKit scenarios repeated three times.
+Use the supported `fetchPriority` image prop and nullable ref types. Keep existing
+ref forwarding where Radix or measured elements require it. Testing Library's
+`reactStrictMode: true` exercises effect replay at the root, matching the app.
+
+Vaul uses its React-19-compatible release. The existing admin chart package still
+declares a React-18-only peer range; its actual bar, area, donut and interactive
+list components have an unmocked React 19 compatibility test. This bounded evidence
+does not constitute upstream React 19 support. Replacing that dependency is a
+separate follow-up ([#584](https://github.com/chrizzzly87/travelflow/issues/584));
+do not hide the peer warning with an override.
+
+The synchronous boot script sets the initial theme before paint. `ThemeColor`
+claims its immutable document snapshot during hydration, then subscribes to the
+shared theme store. React exclusively owns later theme-color metadata changes;
+the store owns the document class and browser listeners. Do not mutate a
+React-owned meta element from the store: React 19 metadata hoisting can otherwise
+retain a stale element alongside the replacement during navigation.
+
 ## Ownership, from document to feature
 
 | Layer | Owns | Keep out |
@@ -49,8 +77,8 @@ shell. Stable charset, viewport, theme colour and pre-paint scripts precede
 `HeadContent`; native route metadata remains in `head`. Keep the first hydration
 head identical to the transported document. A masked offline entry invalidates
 only the native root after hydration to resolve the actual URL through `beforeLoad`.
-React 18 suppresses attribute mismatches without patching them, so substituting
-actual metadata before the first hydration can leave stale canonical links.
+React does not guarantee that suppressed attribute mismatches will be patched;
+substituting actual metadata before the first hydration can leave stale canonical links.
 Authentication may clear an already presented private workspace during session
 replacement, but must not replace pending native route boundaries during hydration.
 Use the match's presentation status and an established auth result rather than
@@ -58,7 +86,11 @@ the requested URL alone. Initial session discovery must retain the native bounda
 Pending marketing chrome uses `HydrationLocaleBoundary`: a request-scoped,
 immutable delivered i18n instance for that initial pending presentation. The
 actual route uses the live instance. A later browser-only pending presentation
-starts with the live instance. react-i18next's external-store hydration snapshot reads the current
+starts with the live instance. `PendingDocumentLocaleContext` also supplies the
+same display locale to navigation, footer and language notices: reading a localized
+requested URL while hydrating the English neutral shell would otherwise change
+text and insert a notice before hydration finishes. It does not change native route
+matching, the actual location or login/action destinations. react-i18next's external-store hydration snapshot reads the current
 language, so `startTransition(changeLanguage)` alone cannot prevent a still
 pending English document from reading a newly restored German preference.
 
@@ -67,6 +99,12 @@ Do not enable private SSR simply to eliminate a client loading state: first defi
 server session validation, authorization, cache policy and hydration data boundaries.
 
 ## Navigation and loading
+
+The client entry renders native `StartClient` inside the React hydration root.
+Let its native Await boundary own asynchronous router restoration. Do not await
+`hydrateStart` before creating the React root: its completion signal then runs
+outside React's document hydration lifetime. Service-worker registration retains
+its separate after-paint/idle scheduling.
 
 Use TanStack route `beforeLoad`, `loader`, `head`, error/not-found handling and layouts
 at the layer that owns the behavior. Keep page modules small and delegate domain work
@@ -123,7 +161,7 @@ Account/admin route guards return native redirects with a safe, localized return
 routing, and revokes disabled accounts. Account-specific capabilities load only when
 needed. Backend RLS, RPC permission checks and endpoint authorization remain authoritative.
 
-Public navigation uses the same translated Account entry before and after hydration. Browser hints must never fabricate a Session, authenticated status, role or access capabilities. Verified auth updates use transitions where needed to preserve unfinished React 18 hydration; keep production browser tests sensitive to recoverable hydration errors. Static public HTML contains no personalized identity.
+Public navigation uses the same translated Account entry before and after hydration. Browser hints must never fabricate a Session, authenticated status, role or access capabilities. Verified auth updates use transitions where needed to preserve unfinished hydration; keep production browser tests sensitive to recoverable hydration errors. Static public HTML contains no personalized identity.
 
 Async account/profile responses are generation-checked across logout, account changes
 and unmount. Never let an old request restore an earlier account's access. Persist

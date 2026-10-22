@@ -1,12 +1,11 @@
 import React, { StrictMode, startTransition } from 'react';
 import { hydrateRoot } from 'react-dom/client';
-import { hydrateStart } from '@tanstack/react-start/client';
-import { RouterProvider } from '@tanstack/react-router';
+import { StartClient } from '@tanstack/react-start/client';
 import { registerServiceWorker } from '../services/serviceWorkerRegistration';
 
-async function hydrateApplication() {
-    const router = await hydrateStart();
-    startTransition(() => { hydrateRoot(document, <StrictMode><RouterProvider router={router} /></StrictMode>); });
-    registerServiceWorker();
-}
-void hydrateApplication();
+// StartClient restores the router inside React's hydration lifetime. Awaiting
+// hydrateStart before creating the React root signals native completion too early.
+startTransition(() => {
+    hydrateRoot(document, <StrictMode><StartClient /></StrictMode>);
+});
+registerServiceWorker();

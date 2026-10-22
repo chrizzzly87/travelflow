@@ -4,12 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useHydrated } from '../../hooks/useHydrated';
 import { useLoginModal } from '../../hooks/useLoginModal';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { resolveAccountLoginNextPath } from '../../services/authNavigationService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { activateBootControls } from '../../services/bootInteractionBridge';
-import { extractLocaleFromPath } from '../../config/routes';
-import { DEFAULT_LOCALE, localeToDir, normalizeLocale } from '../../config/locales';
+import { localeToDir } from '../../config/locales';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { AccountMenuContent } from './AccountMenu';
 
@@ -86,7 +86,7 @@ export const AccountEntry: React.FC<AccountEntryProps> = ({ className, compact =
     const { openLoginModal } = useLoginModal();
     const location = useSafeRouteLocation();
     const [open, setOpen] = useState(false);
-    const locale = extractLocaleFromPath(location.pathname) || normalizeLocale(i18n?.resolvedLanguage || i18n?.language || DEFAULT_LOCALE);
+    const locale = usePresentationLocale(location.pathname, i18n?.resolvedLanguage ?? i18n?.language);
     const close = () => { setOpen(false); onAction?.(); };
     const nextPath = resolveAccountLoginNextPath(location);
     const login = () => {

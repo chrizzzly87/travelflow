@@ -1,15 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from '@/app/navigation';
 import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';
-import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
+import { buildLocalizedMarketingPath } from '../../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
     readSessionStorageItem,
     writeSessionStorageItem,
 } from '../../services/browserStorageService';
 import { MarketingNotice } from './MarketingNotice';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const SESSION_DISMISS_KEY = 'tf_translation_notice_dismissed_session';
@@ -49,10 +50,7 @@ const isDismissedForSession = (): boolean => {
 export const TranslationNoticeBanner: React.FC = () => {
     const { t } = useTranslation('common');
     const routeLocation = useSafeRouteLocation();
-    const activeLocale = useMemo(
-        () => extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE,
-        [routeLocation.pathname]
-    );
+    const activeLocale = usePresentationLocale(routeLocation.pathname, DEFAULT_LOCALE);
     const [dismissed, setDismissed] = useState<boolean>(false);
 
     useEffect(() => {
