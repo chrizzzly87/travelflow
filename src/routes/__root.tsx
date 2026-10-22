@@ -17,6 +17,7 @@ import { ContactFormRegistration } from '../document/ContactFormRegistration';
 import { getDocumentHints } from '../document/headAssets';
 import { useDocumentLocale } from '../document/useDocumentLocale';
 import { ThemeColor } from '../document/ThemeColor';
+import { tripVideoMetadata } from '../../shared/tripOgVideo';
 
 export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI18n?: typeof i18n }>()({
     // Native context is reconstructed on hydration but cached when the root is
@@ -51,8 +52,13 @@ export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI1
         const meta = tripMetadata
             ? { ...metadata, ...tripMetadata, ogTitle: tripMetadata.pageTitle, ogDescription: tripMetadata.description }
             : metadata;
+        const tripMediaMeta = tripMetadata ? [
+            { property: 'og:image:width', content: String(tripMetadata.imageDimensions?.width ?? 1200) },
+            { property: 'og:image:height', content: String(tripMetadata.imageDimensions?.height ?? 630) },
+            ...tripVideoMetadata(tripMetadata.ogVideoUrl, tripMetadata.videoDimensions),
+        ] : [];
         return {
-            meta: [{ title: meta.pageTitle }, { name: 'content-language', content: locale }, { name: 'description', content: meta.description }, { name: 'robots', content: meta.robots }, { property: 'og:title', content: meta.ogTitle }, { property: 'og:description', content: meta.ogDescription }, { property: 'og:image', content: meta.ogImageUrl }, { property: 'og:url', content: meta.canonicalUrl }, { name: 'twitter:card', content: 'summary_large_image' }, { name: 'apple-mobile-web-app-capable', content: 'yes' }, { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }, { name: 'apple-mobile-web-app-title', content: 'TravelFlow' }],
+            meta: [{ title: meta.pageTitle }, { name: 'content-language', content: locale }, { name: 'description', content: meta.description }, { name: 'robots', content: meta.robots }, { property: 'og:title', content: meta.ogTitle }, { property: 'og:description', content: meta.ogDescription }, { property: 'og:image', content: meta.ogImageUrl }, ...tripMediaMeta, { property: 'og:url', content: meta.canonicalUrl }, { name: 'twitter:card', content: 'summary_large_image' }, { name: 'apple-mobile-web-app-capable', content: 'yes' }, { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }, { name: 'apple-mobile-web-app-title', content: 'TravelFlow' }],
             links: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }, { rel: 'manifest', href: '/manifest.webmanifest' }, { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }, { rel: 'canonical', href: meta.canonicalUrl }, ...meta.alternateLinks.map(link => ({ rel: 'alternate', hrefLang: link.hreflang, href: link.href })), ...getDocumentHints(pathname)],
         };
     },

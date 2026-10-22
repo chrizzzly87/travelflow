@@ -1,24 +1,24 @@
 # First TanStack Start release
 
-Status: hosted acceptance of PR #571 passed; subsequent live checks found two
-focused hardening issues (#575 / #576). Their final acceptance and production
-promotion remain separate. Main remains
-unchanged. Tracking: [#559](https://github.com/chrizzzly87/travelflow/issues/559).
-Complete release draft: [PR #574](https://github.com/chrizzzly87/travelflow/pull/574).
-Previously accepted [PR #571](https://github.com/chrizzzly87/travelflow/pull/571)
-includes [banner regression #572](https://github.com/chrizzzly87/travelflow/issues/572)
-and [public date hydration #573](https://github.com/chrizzzly87/travelflow/issues/573).
-Its exact runtime evidence below is historical; #575/#576 track the next candidate.
+Status: the first native Start candidate is being finalized on
+`codex/tanstack-start-release-hardening`, [PR #579](https://github.com/chrizzzly87/travelflow/pull/579).
+Complete release review: [PR #574](https://github.com/chrizzzly87/travelflow/pull/574),
+tracking [#559](https://github.com/chrizzzly87/travelflow/issues/559).
+The current main changes through `229efdbdd` are integrated into the feature
+candidate, including animated sharing previews; this task does not promote the
+migration to main or production.
 
-Current feature preview candidate (2026-10-21): 517 core files / 3,055 passing
-assertions, one skip; production build and 77 public documents pass. Last full
-browser run: 93/94, with an intermittent WebKit hydration error in the already-claimed
-draft recovery flow. Do not promote this candidate to main until that regression
-and current hosted/offline acceptance pass. The feature preview is for parallel
-product testing, not a production-release approval. Type diagnostics remain 473
-with no new file/error-code diagnostics against the recorded baseline. React
-Doctor reports zero errors and the same eight warnings; its score service was
-unavailable in this scan.
+Local candidate acceptance (2026-10-22): **532 core files / 3,171 passing tests,
+one skip; 94 Chromium/WebKit cases; five offline/PWA cases; 77 public documents**.
+The previous intermittent React 18 selective-SSR errors are resolved by the native
+Start client on React 19.3.1, Start 1.169.2 and Router 1.170.44. Browser error
+assertions remain enabled. The initial dark theme meta is now owned by React after
+the pre-paint script, avoiding duplicate metadata on navigation. Persian offline
+chrome hydrates its immutable delivered locale before presenting the actual route.
+Exact-head GitHub, hosted and live fixed-duration acceptance are recorded on PR #579;
+do not infer those from the local result or an older preview.
+React Doctor: **61/100, zero errors, ten warnings (maintainability and a browser-only date formatter)**. There are no
+vendor patches, dependency-age bypasses or suppressed hydration errors.
 
 ## Required before the first release
 
@@ -60,7 +60,7 @@ unavailable in this scan.
   the same newly saved test trip. No credentials copied and persistent login off.
 - [x] Record the remaining Kakao coverage explicitly: its Korean surface reaches
   the official provider login, but the final sign-in/callback is not live certified.
-  On 2026-10-20 the owner chose to keep this open and documented; no credentials
+  Follow-up [#585](https://github.com/chrizzzly87/travelflow/issues/585). On 2026-10-20 the owner chose to keep this open and documented; no credentials
   were entered and the handoff tab was closed. This is an accepted coverage gap,
   not a passing-provider claim.
 - [x] Owned trip opens through the real account; details load and title editing
@@ -85,12 +85,16 @@ public homepage for members, trip persistence contracts and offline behavior hav
 regression coverage and hosted acceptance. Architecture, contributor instructions,
 Netlify operations and testing guides describe the native structure.
 
-The full-project TypeScript backlog (#556) predates this migration. Current
-navigation runtime has 473 diagnostics and zero new normalized diagnostics versus
-its preceding baseline. It remains visible debt; a successful Vite build does not
-mean a clean full-project typecheck.
+The full-project TypeScript backlog (#556) predates this migration. The previous React 18 candidate had 473 diagnostics. The React 19 candidate reduces
+that backlog; exact counts and the normalized comparison are recorded on PR #579.
+It remains visible debt; a successful Vite build does not mean a clean full-project typecheck.
 
 ## Follow-up, not a first-release requirement
+
+Admin chart dependency modernization is [#584](https://github.com/chrizzzly87/travelflow/issues/584).
+The actual bar/area/donut/list components pass an unmocked React 19 runtime test,
+but Tremor still declares a React-18-only peer range. Keep that bounded evidence
+separate from an upstream compatibility claim.
 
 Further optional TripView decomposition, unused-JavaScript investigation and more
 micro-optimizations stay under #561. Do not postpone a correct, verified first

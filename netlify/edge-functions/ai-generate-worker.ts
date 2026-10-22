@@ -1,3 +1,4 @@
+import { enqueueTripVideoFromWorker } from "../edge-lib/trip-og-video-enqueue.ts";
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { isZeroNightReturnStop } from "../../shared/aiTripStayDuration.ts";
 import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
@@ -1223,6 +1224,7 @@ const processJob = async (
   config: { url: string; serviceRoleKey: string },
   workerId: string,
   job: WorkerJobRow,
+  previewOrigin?: string,
 ): Promise<{ ok: boolean; jobId: string; tripId: string; error?: string }> => {
   const payload = parseWorkerPayload(job.payload);
   if (!payload) {
@@ -1499,6 +1501,7 @@ const processJob = async (
       persistenceError.name = "ASYNC_WORKER_TRIP_UPSERT_FAILED";
       throw persistenceError;
     }
+    if (previewOrigin) await enqueueTripVideoFromWorker(previewOrigin, job.trip_id, readEnv("TF_ADMIN_API_KEY"));
     const succeededTripVersionLogged = await insertTripVersion(config, job.trip_id, succeededTrip, "Data: Queued generation completed");
     if (!succeededTripVersionLogged) {
       const versionError = new Error("Trip version insert failed while finalizing queued generation.");
@@ -1742,7 +1745,7 @@ export const processGenerationWorkerRequest = async (request: Request): Promise<
   const results: Array<{ ok: boolean; jobId: string; tripId: string; error?: string }> = [];
   for (const job of jobs) {
     // Sequential processing keeps provider concurrency bounded and easier to reason about.
-    const result = await processJob(config, workerId, job);
+    const result = await processJob(config, workerId, job, new URL(request.url).origin);
     results.push(result);
   }
 

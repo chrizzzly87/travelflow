@@ -8,7 +8,7 @@ import { resolveRouteDocument } from '../../src/document/routeDocument';
 
 const mocks = vi.hoisted(() => ({
     instance: { resolvedLanguage: 'en', language: 'en', on: vi.fn(), off: vi.fn(), changeLanguage: vi.fn(async (_language: string) => {}) },
-    tripMetadata: vi.fn(async () => null as null | Record<string, string>),
+    tripMetadata: vi.fn(async () => null as null | { pageTitle: string; description: string; ogVideoUrl?: string; videoDimensions?: { width: number; height: number }; imageDimensions?: { width: number; height: number } }),
 }));
 vi.mock('../../i18n', () => ({ default: mocks.instance, preloadLocaleNamespaces: vi.fn(async () => {}) }));
 vi.mock('../../src/server/tripMetadata', () => ({ getTripDocumentMetadata: mocks.tripMetadata }));
@@ -82,7 +82,7 @@ describe('native masked document head ownership', () => {
     });
 
     it('retains authorized public trip metadata, then clears it for a non-trip route', async () => {
-        const trip = { pageTitle: 'Public trip | TravelFlow', description: 'Public summary' };
+        const trip = { pageTitle: 'Public trip | TravelFlow', description: 'Public summary', ogVideoUrl: 'https://feature.example.com/api/og/trip-video?trip=public-trip', videoDimensions: { width: 960, height: 720 }, imageDimensions: { width: 960, height: 720 } };
         mocks.tripMetadata.mockResolvedValueOnce(trip);
         const location = { pathname: '/trip/public-trip', href: '/trip/public-trip', searchStr: '' };
         const context = { i18n: mocks.instance, ...(Route.options.context as any)({ location }) };
@@ -90,6 +90,12 @@ describe('native masked document head ownership', () => {
         const head = await (Route.options.head as any)({ match: { context: { ...context, ...tripContext }, pathname: '/' } });
         expect(head.meta).toContainEqual({ title: trip.pageTitle });
         expect(head.meta).toContainEqual({ property: 'og:description', content: trip.description });
+        expect(head.meta).toContainEqual({ property: 'og:video', content: trip.ogVideoUrl });
+        expect(head.meta).toContainEqual({ property: 'og:video:type', content: 'video/mp4' });
+        for (const kind of ['image', 'video']) {
+            expect(head.meta).toContainEqual({ property: `og:${kind}:width`, content: '960' });
+            expect(head.meta).toContainEqual({ property: `og:${kind}:height`, content: '720' });
+        }
         expect(await maskTransport()).toMatchObject({ tripMetadata: null, routeDocument: { pathname: offlineShellMaskPath } });
     });
 });

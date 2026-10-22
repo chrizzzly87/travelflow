@@ -80,6 +80,8 @@
     "test:e2e:pwa": "playwright test --config playwright.pwa.config.ts"
   },
   "dependencies": {
+    "@netlify/blobs": "10.7.6",
+    "@netlify/functions": "6.0.2",
     "@ai-sdk/mcp": "^2.0.39",
     "@ai-sdk/openai": "^4.0.50",
     "@ai-sdk/react": "^4.0.86",
@@ -105,6 +107,7 @@
     "cmdk": "^1.1.1",
     "cobe": "2.0.0",
     "flagpack": "^1.0.5",
+    "fontkit": "2.0.4",
     "framer-motion": "^12.34.3",
     "gradient-shimmer": "0.1.1",
     "i18next": "^25.8.13",
@@ -159,5 +162,14 @@
     "typescript": "~5.8.3",
     "vite": "^8.3.4",
     "vitest": "^4.1.11"
+  },
+  "optionalDependencies": {
+    "@ffmpeg-installer/linux-x64": "4.1.0"
+  },
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": ["current", "linux"],
+      "cpu": ["current", "x64"]
+    }
   }
 }

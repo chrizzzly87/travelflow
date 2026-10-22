@@ -19,12 +19,13 @@ it('claims the pre-paint dark meta and updates its single React-owned element', 
     // The synchronous document boot script has already changed the server's
     // light meta before application hydration, as in a real dark first visit.
     document.head.innerHTML = '<meta name="theme-color" content="#242322" data-tf-theme-color="">';
+    document.documentElement.lang = 'en';
     document.body.innerHTML = '<main>TravelFlow</main>';
     const { ThemeColor } = await import('../../src/document/ThemeColor');
     const { setPreference } = await import('../../contexts/theme/themeStore');
     const recoverable = vi.fn();
     await act(async () => {
-        root = hydrateRoot(document, <html><head><ThemeColor /></head><body><main>TravelFlow</main></body></html>, { onRecoverableError: recoverable });
+        root = hydrateRoot(document, <html lang="en"><head><ThemeColor /></head><body><main>TravelFlow</main></body></html>, { onRecoverableError: recoverable });
     });
     expect(document.querySelectorAll('meta[name="theme-color"]')).toHaveLength(1);
     expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute('content', '#242322');

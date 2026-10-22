@@ -1,0 +1,60 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({ state: vi.fn(), generate: vi.fn(), asset: vi.fn(), inspect: vi.fn(), source: vi.fn() }));
+vi.mock('../../services/tripOgVideoService', () => ({ getTripVideoState: mocks.state, requestTripVideo: mocks.generate, getTripVideoAsset: mocks.asset, setTripVideoImageSource: mocks.source }));
+vi.mock('../../services/adminOgToolsService', () => ({ inspectOgUrl: mocks.inspect }));
+import { TripOgPreviewPanel } from '../../components/admin/TripOgPreviewPanel';
+import { MemoryRouter } from '../../tests/helpers/routerHarness';
+
+const renderPreview = (initial = '/admin/og-tools') => render(<MemoryRouter initialEntries={[initial]}><TripOgPreviewPanel tripId="taiwan" /></MemoryRouter>);
+
+describe('trip details OG previews', () => {
+  afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); });
+  beforeEach(() => {
+    mocks.state.mockResolvedValue({ status: 'missing' }); mocks.inspect.mockResolvedValue({ resolvedOgImageUrl: '/api/og/trip?trip=taiwan' });
+    mocks.generate.mockResolvedValue({ status: 'queued' }); mocks.asset.mockResolvedValue(new Blob(['mp4'], { type: 'video/mp4' }));
+    URL.createObjectURL = vi.fn(() => 'blob:preview'); URL.revokeObjectURL = vi.fn();
+  });
+  it('shows the actual attached image and creates video only on explicit action', async () => {
+    renderPreview();
+    expect(await screen.findByAltText('Attached trip sharing preview')).toHaveAttribute('src', '/api/og/trip?trip=taiwan');
+    expect(mocks.generate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Generate video' }));
+    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'standard', routeMode: 'simple', format: 'wide', force: false }));
+  });
+  it('uses authenticated media blobs and releases them when the drawer closes', async () => {
+    mocks.state.mockResolvedValue({ status: 'ready', style: 'dark', bytes: 29000 });
+    const { unmount } = renderPreview();
+    const video = await screen.findByLabelText('Animated trip route preview');
+    expect(video).toHaveAttribute('src', 'blob:preview'); expect(video).not.toHaveAttribute('autoplay');
+    expect(video.style.aspectRatio).toBe('1200 / 630');
+    unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+  });
+  it('forwards playground map and route settings only after applying, and explicitly refreshes a ready video', async () => {
+    mocks.state.mockResolvedValue({ status: 'ready', style: 'clean', routeMode: 'simple', bytes: 29000 });
+    renderPreview('/admin/og-tools?mapStyle=satellite&routeMode=realistic&format=classic');
+    await screen.findByLabelText('Animated trip route preview');
+    expect(mocks.generate).not.toHaveBeenCalled();
+    expect(screen.getByText(/These settings differ/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply settings' }));
+    await waitFor(() => expect(mocks.generate).toHaveBeenCalledWith('taiwan', { style: 'satellite', routeMode: 'realistic', format: 'classic', force: true }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Re-render & refresh cache' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Re-render & refresh cache' }));
+    await waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(2));
+  });
+  it('keeps the attached ratio while a different format renders', async () => {
+    mocks.state.mockResolvedValue({ status: 'rendering', format: 'classic', attached: { style: 'standard', posterAsImage: true, revision: 'old' } });
+    renderPreview();
+    const video = await screen.findByLabelText('Animated trip route preview');
+    expect(video.style.aspectRatio).toBe('1200 / 630');
+    expect(mocks.generate).not.toHaveBeenCalled();
+  });
+  it('explains failed generation and lets the admin retry', async () => {
+    mocks.state.mockResolvedValue({ status: 'failed', error: 'Map unavailable.' });
+    renderPreview();
+    expect(await screen.findByText('Map unavailable.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Generate video' })).toBeEnabled();
+  });
+});

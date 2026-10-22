@@ -1,3 +1,4 @@
+import { buildTripVideoMetaTags, resolveReadyTripVideoMedia } from "../edge-lib/trip-og-video-meta.ts";
 import {
   buildCanonicalUrl,
   buildOgImageUrl,
@@ -29,6 +30,10 @@ interface Metadata {
   description: string;
   canonicalUrl: string;
   ogImageUrl: string;
+  ogVideoUrl?: string;
+  videoDimensions?: { width: number; height: number };
+  imageDimensions?: { width: number; height: number };
+  tripCacheId?: string;
   robots: string;
 }
 
@@ -82,9 +87,10 @@ const buildMetaTags = (meta: Metadata): string => {
     `<meta property="og:description" content="${description}" />`,
     `<meta property="og:url" content="${canonicalUrl}" />`,
     `<meta property="og:image" content="${ogImageUrl}" />`,
-    `<meta property="og:image:width" content="1200" />`,
-    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:image:width" content="${meta.imageDimensions?.width || 1200}" />`,
+    `<meta property="og:image:height" content="${meta.imageDimensions?.height || 630}" />`,
     `<meta property="og:image:alt" content="${title}" />`,
+    ...buildTripVideoMetaTags(meta.ogVideoUrl, meta.videoDimensions),
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${description}" />`,
@@ -199,11 +205,16 @@ const buildShareBackedMetadata = async (
       null,
   });
 
+  const videoMedia = sharedTrip ? await resolveReadyTripVideoMedia(origin, routeTarget) : undefined;
   return {
     pageTitle: title,
+    ogVideoUrl: videoMedia?.videoUrl,
+    videoDimensions: videoMedia?.dimensions,
+    imageDimensions: videoMedia?.posterUrl ? videoMedia.dimensions : undefined,
+    tripCacheId: sharedTrip?.trip.id || routeTarget.tripId,
     description: summary.description,
     canonicalUrl,
-    ogImageUrl,
+    ogImageUrl: videoMedia?.posterUrl || ogImageUrl,
     robots: "noindex,nofollow,max-image-preview:large",
   };
 };
@@ -282,6 +293,10 @@ export default async (request: Request, context: { next: () => Promise<Response>
       "cache-control",
       routeTarget.token ? SHARE_CACHE_CONTROL : TRIP_CACHE_CONTROL,
     );
+    // The underlying prerendered shell may carry a one-year CDN policy. Dynamic
+    // sharing metadata must use its own short lifetime, including on purge failure.
+    headers.set("Netlify-CDN-Cache-Control", routeTarget.token ? SHARE_CACHE_CONTROL : TRIP_CACHE_CONTROL);
+    if (metadata.tripCacheId) headers.set("Netlify-Cache-Tag", `trip-og-${metadata.tripCacheId}`);
     headers.delete("content-length");
     headers.delete("etag");
 

@@ -1,6 +1,6 @@
 ---
 id: rel-2026-10-18-tanstack-start-migration
-version: v0.207.0
+version: v0.209.0
 title: "Application framework migration"
 date: 2026-10-18
 # Draft placeholder; replace with actual main deployment time before publication.
@@ -34,3 +34,4 @@ summary: "Framework migration under development and validation on an isolated pr
 - [ ] [Internal] 🌐 Emit and validate 77 native flat public documents with canonical English slugs and locale prefixes.
 - [ ] [Internal] ♿ Share overlay scroll-lock ownership and preserve navigation focus across Safari sign-in handoffs.
 - [ ] [Internal] 📶 Preserve the neutral install-time offline shell rather than caching another route's document as a shared fallback.
+- [ ] [Internal] 🎞️ Preserve current sharing-image/video behavior in the native document head and resolve preview media against its own deployment origin.

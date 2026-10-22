@@ -6,6 +6,9 @@ export const getTripDocumentMetadata = createServerFn({ method: 'GET' })
         return path;
     })
     .handler(async ({ data }) => {
-        const { resolveTripDocumentMetadata } = await import('../../netlify/edge-functions/trip-og-meta');
-        return resolveTripDocumentMetadata(new Request(new URL(data, 'https://travelflowapp.netlify.app')));
+        const [{ resolveTripDocumentMetadata }, { getRequestUrl }] = await Promise.all([
+            import('../../netlify/edge-functions/trip-og-meta'),
+            import('@tanstack/react-start/server'),
+        ]);
+        return resolveTripDocumentMetadata(new Request(new URL(data, getRequestUrl().origin)));
     });
