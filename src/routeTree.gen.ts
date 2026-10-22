@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as offlineShellRouteImport } from './routes/offline-shell'
 import { Route as areasAccountRouteImport } from './routes/areas/account'
 import { Route as areasAdminRouteImport } from './routes/areas/admin'
 import { Route as areasAuthRouteImport } from './routes/areas/auth'
@@ -86,6 +87,11 @@ import { Route as redirectsRedirect04RouteImport } from './routes/redirects/redi
 import { Route as publicCountryRouteImport } from './routes/public/country'
 import { Route as publicDestinationRouteImport } from './routes/public/destination'
 
+const offlineShellRoute = offlineShellRouteImport.update({
+  id: '/__offline-shell',
+  path: '/__offline-shell',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const areasAccountRoute = areasAccountRouteImport.update({
   id: '/_account',
   getParentRoute: () => rootRouteImport,
@@ -463,6 +469,7 @@ const publicDestinationRoute = publicDestinationRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/__offline-shell': typeof offlineShellRoute
   '/': typeof areasTripsRouteWithChildren
   '/profile': typeof accountProfileRoute
   '/checkout': typeof accountCheckoutRoute
@@ -533,6 +540,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/inspirations/country/$countrySlug/$destinationSlug': typeof publicDestinationRoute
 }
 export interface FileRoutesByTo {
+  '/__offline-shell': typeof offlineShellRoute
   '/': typeof areasTripsRouteWithChildren
   '/profile': typeof accountProfileRoute
   '/checkout': typeof accountCheckoutRoute
@@ -604,6 +612,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/__offline-shell': typeof offlineShellRoute
   '/_account': typeof areasAccountRouteWithChildren
   '/_admin': typeof areasAdminRouteWithChildren
   '/_auth': typeof areasAuthRouteWithChildren
@@ -684,6 +693,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/__offline-shell'
     | '/'
     | '/profile'
     | '/checkout'
@@ -754,6 +764,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/inspirations/country/$countrySlug/$destinationSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/__offline-shell'
     | '/'
     | '/profile'
     | '/checkout'
@@ -824,6 +835,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/inspirations/country/$countrySlug/$destinationSlug'
   id:
     | '__root__'
+    | '/__offline-shell'
     | '/_account'
     | '/_admin'
     | '/_auth'
@@ -903,6 +915,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  offlineShellRoute: typeof offlineShellRoute
   areasAccountRoute: typeof areasAccountRouteWithChildren
   areasAdminRoute: typeof areasAdminRouteWithChildren
   areasAuthRoute: typeof areasAuthRouteWithChildren
@@ -916,6 +929,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/__offline-shell': {
+      id: '/__offline-shell'
+      path: '/__offline-shell'
+      fullPath: '/__offline-shell'
+      preLoaderRoute: typeof offlineShellRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_account': {
       id: '/_account'
       path: ''
@@ -1676,6 +1696,7 @@ const areasTripsRouteWithChildren = areasTripsRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  offlineShellRoute: offlineShellRoute,
   areasAccountRoute: areasAccountRouteWithChildren,
   areasAdminRoute: areasAdminRouteWithChildren,
   areasAuthRoute: areasAuthRouteWithChildren,

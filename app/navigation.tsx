@@ -8,11 +8,14 @@ import { Link as StartLink, Navigate as StartNavigate, useRouter, useRouterState
 export interface Location { pathname: string; search: string; hash: string; state: any; key: string }
 export type NavigateFunction = ReturnType<typeof useNavigate>;
 
-export const useLocation = () => useRouterState({ select: ({ location }) => ({
-    pathname: location.pathname, search: location.searchStr, hash: location.hash ? `#${location.hash}` : '',
-    state: (location.state as { usr?: unknown }).usr ?? null,
-    key: location.state.__TSR_key || 'default',
-}) });
+export const useLocation = (): Location => {
+    const location = useRouterState({ select: state => state.location });
+    return useMemo(() => ({
+        pathname: location.pathname, search: location.searchStr, hash: location.hash ? `#${location.hash}` : '',
+        state: (location.state as { usr?: unknown }).usr ?? null,
+        key: location.state.__TSR_key || 'default',
+    }), [location.pathname, location.searchStr, location.hash, location.state]);
+};
 
 export const useNavigate = () => {
     const router = useRouter();

@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useRouterState } from '@tanstack/react-router';
+import { useHydrated } from '../../hooks/useHydrated';
 import { isToolRoute } from '../../config/routes';
 
 /** One visual pass per foreground navigation. Intermediate progress is a visual
  * estimate, never an announced percentage; only route completion fills 100%. */
 export function RouteNavigationFeedback({ authPending = false }: { authPending?: boolean }) {
-    const pending = useRouterState({ select: state => state.status === 'pending'
+    const hydrated = useHydrated();
+    const routePending = useRouterState({ select: state => state.status === 'pending'
         || (authPending && isToolRoute(state.matches.at(-1)?.pathname ?? state.location.pathname)) });
+    // The neutral SSR shell is idle; reconcile actual browser navigation only
+    // after its first hydration render, without mismatching the cached document.
+    const pending = hydrated && routePending;
     const [progress, setProgress] = useState({ pending, visible: pending, value: 0, run: 0 });
     // A new native navigation is a new animation lifetime. Reconcile before
     // painting, so completion can never leave a half-filled bar on screen.

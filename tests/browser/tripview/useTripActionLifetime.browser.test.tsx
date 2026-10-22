@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import React, { StrictMode, useLayoutEffect } from 'react';
+import React, { useLayoutEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { useTripActionLifetime } from '../../../features/trips/useTripActionLifetime';
@@ -82,7 +82,7 @@ describe('trip action lifetime', () => {
                 captures.push(capture());
                 pending.push(action.start(capture));
             }, [capture]);
-        }, { wrapper: ({ children }) => <StrictMode>{children}</StrictMode> });
+        }, { reactStrictMode: true });
         expect(captures).toHaveLength(2);
         expect(captures[0]()).toBe(false);
         expect(captures[1]()).toBe(true);

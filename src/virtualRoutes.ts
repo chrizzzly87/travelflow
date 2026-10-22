@@ -1,7 +1,9 @@
+import { offlineShellMaskPath } from '../app/routing/publicPrerender';
 import { rootRoute, layout, route } from '@tanstack/virtual-file-routes';
 
 // Area boundaries own lifecycle, access and code splitting; leaves import their actual page.
 export const routes = rootRoute('__root.tsx', [
+  route(offlineShellMaskPath, 'offline-shell.tsx'),
   layout('_public', 'areas/public.tsx', [
     route("/{-$locale}", "public/home.tsx"),
     route("/{-$locale}/features", "public/features.tsx"),

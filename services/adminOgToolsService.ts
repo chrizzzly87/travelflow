@@ -8,6 +8,8 @@ export interface OgHeadMetadata {
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
+  ogVideo: string;
+  ogVideoType: string;
   ogType: string;
   twitterCard: string;
   twitterImage: string;
@@ -105,6 +107,8 @@ export const parseOgHeadMetadata = (html: string): OgHeadMetadata => ({
   ogTitle: readMetaValue(html, (attrs) => (attrs.property || "") === "og:title"),
   ogDescription: readMetaValue(html, (attrs) => (attrs.property || "") === "og:description"),
   ogImage: readMetaValue(html, (attrs) => (attrs.property || "") === "og:image"),
+  ogVideo: readMetaValue(html, (attrs) => (attrs.property || "") === "og:video"),
+  ogVideoType: readMetaValue(html, (attrs) => (attrs.property || "") === "og:video:type"),
   ogType: readMetaValue(html, (attrs) => (attrs.property || "") === "og:type"),
   twitterCard: readMetaValue(html, (attrs) => (attrs.name || "") === "twitter:card"),
   twitterImage: readMetaValue(html, (attrs) => (attrs.name || "") === "twitter:image"),
@@ -119,7 +123,7 @@ export const classifyOgImageKind = (ogImage: string, origin: string): OgImageKin
       return "static-generated";
     }
     if (imageUrl.pathname === "/api/og/site") return "dynamic-site";
-    if (imageUrl.pathname === "/api/og/trip") return "dynamic-trip";
+    if (imageUrl.pathname === "/api/og/trip" || imageUrl.pathname === "/api/og/trip-poster.jpg") return "dynamic-trip";
   } catch {
     return "unknown";
   }

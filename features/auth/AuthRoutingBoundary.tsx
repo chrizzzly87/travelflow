@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
@@ -16,12 +16,21 @@ const AccountTermsNotice = lazy(() => import('./AccountTermsNotice'));
 /** Session changes invalidate native route guards; no second browser router or stale role cache. */
 export function AuthRoutingBoundary({ children }: { children: React.ReactNode }) {
     const auth = useAuth();
+    // Initial discovery has no presented session to revoke. Keep the native
+    // selective-SSR boundaries intact until the first auth result settles.
+    const [hasSettledAuth, setHasSettledAuth] = useState(!auth.isLoading);
+    if (!auth.isLoading && !hasSettledAuth) setHasSettledAuth(true);
     useSessionRouteLifecycle(auth);
     useAccountLanguageSync();
     const location = useLocation();
     // Privacy/loading follows the presented workspace, not the requested URL.
     // A still-loading example click must not replace the current public page.
-    const presentedPathname = useRouterState({ select: state => state.matches.at(-1)?.pathname ?? state.location.pathname });
+    const hasPresentedTool = useRouterState({ select: state => {
+        const match = state.matches.at(-1);
+        // Pending/selective-SSR matches have not presented a workspace yet.
+        // Preserve their native hydration boundaries instead of replacing them.
+        return match?.status === 'success' && isToolRoute(match.pathname);
+    } });
     const { i18n } = useTranslation('common');
     const hasInactiveAccount = shouldRevokeInactiveAccount(auth);
     useEffect(() => {
@@ -46,7 +55,7 @@ export function AuthRoutingBoundary({ children }: { children: React.ReactNode })
         const next = `${location.pathname}${location.search}${location.hash}`;
         return <Navigate to="/{-$locale}/terms" params={{ locale: locale === 'en' ? undefined : locale }} search={previous => ({ ...previous, accept: 'required', next })} replace />;
     }
-    if (isToolRoute(presentedPathname) && auth.isLoading) return <MarketingRouteLoadingShell />;
+    if (hasSettledAuth && hasPresentedTool && auth.isLoading) return <MarketingRouteLoadingShell />;
     const hasTermsNotice = auth.isAuthenticated && !auth.access?.isAnonymous && (auth.access?.termsAcceptanceRequired || auth.access?.termsNoticeRequired);
     return <>{hasTermsNotice && <Suspense fallback={null}><AccountTermsNotice /></Suspense>}{children}</>;
 }

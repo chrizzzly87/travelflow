@@ -114,10 +114,15 @@ export const THEME_SURFACE_COLOR: Record<ResolvedTheme, string> = {
     dark: '#242322',
 };
 
-const applyThemeColorMeta = (theme: ResolvedTheme): void => {
-    const meta = document.querySelector('meta[data-tf-theme-color]');
-    if (meta) meta.setAttribute('content', THEME_SURFACE_COLOR[theme]);
+// Claim the exact pre-paint metadata, even if the OS changed while scripts were
+// downloading. The live store then reconciles the latest preference normally.
+// React 19 hoists metadata; hydrating a different content value duplicates it.
+const documentSnapshot: ThemeSnapshot = typeof document === 'undefined' ? SERVER_SNAPSHOT : {
+    ...snapshot,
+    resolvedTheme: document.querySelector('meta[data-tf-theme-color]')?.getAttribute('content') === THEME_SURFACE_COLOR.dark ? 'dark' : 'light',
 };
+const getDocumentSnapshot = (): ThemeSnapshot => documentSnapshot;
+
 
 // Elements with `transition-colors` would otherwise animate their own colours
 // for ~150ms after the flip while everything else switches at once, leaving a
@@ -144,7 +149,6 @@ export const applyTheme = (theme: ResolvedTheme, tone: DarkTone = DEFAULT_DARK_T
     root.classList.toggle(THEME_BOOT_KEYS.darkClass, theme === 'dark');
     root.setAttribute(THEME_BOOT_KEYS.toneAttribute, tone);
     root.style.colorScheme = theme;
-    applyThemeColorMeta(theme);
 
     // Hand control back to the stylesheet. Safe to do unconditionally: by the
     // time this runs index.css has loaded and defines both themes properly.
@@ -233,6 +237,7 @@ export const themeStore = {
     subscribe,
     getSnapshot,
     getServerSnapshot,
+    getDocumentSnapshot,
 };
 
 /** Test seam: reset module state between cases. */

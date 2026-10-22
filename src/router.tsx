@@ -7,14 +7,20 @@ import { configurePageTransitions } from '../app/routing/pageTransitions';
 import { MarketingRouteLoadingShell } from '../components/bootstrap/MarketingRouteLoadingShell';
 export function getRouter() {
     const requestI18n = typeof window === 'undefined' ? createRequestI18n() : i18n;
+    const context = { i18n: requestI18n, hydrationI18n: requestI18n };
     const router = createRouter({
         routeTree,
         trailingSlash: 'never',
         parseSearch: parseRouteSearch,
         stringifySearch: stringifyRouteSearch,
-        context: { i18n: requestI18n },
+        context,
         dehydrate: () => ({ i18n: getLocaleHydrationSnapshot(requestI18n) }),
-        hydrate: state => restoreLocaleHydrationSnapshot(state?.i18n, requestI18n),
+        hydrate: async state => {
+            await restoreLocaleHydrationSnapshot(state?.i18n, requestI18n);
+            // A selective-SSR fallback can hydrate after browser preferences
+            // change. Keep its delivered language immutable until it commits.
+            context.hydrationI18n = requestI18n.cloneInstance({ lng: state?.i18n?.language ?? requestI18n.language });
+        },
         scrollRestoration: true,
         defaultPreload: 'intent',
         defaultPreloadStaleTime: 0,

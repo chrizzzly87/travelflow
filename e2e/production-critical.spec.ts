@@ -313,6 +313,9 @@ for (const account of [{ path: '/features', label: 'Account' }, { path: '/de/fea
     await page.goto(account.path, { waitUntil: 'commit' });
     const trigger = page.locator('header [data-tf-boot-replay="account-entry:header"]');
     await expect(trigger).toBeVisible();
+    // DOM geometry is observable before a render-blocking stylesheet finishes.
+    // Measure the first styled presentation while application JS remains held.
+    await expect(trigger).toHaveCSS('height', '40px');
     const box = await trigger.boundingBox();
     await trigger.click();
     release();

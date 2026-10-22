@@ -2,8 +2,8 @@ import React from 'react';
 import { NavLink } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
-import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { buildLocalizedMarketingPath } from '../../config/routes';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 interface SiteFooterProps {
@@ -14,8 +14,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ className }) => {
     const year = new Date().getFullYear();
     const { t, i18n } = useTranslation('common');
     const location = useSafeRouteLocation();
-    const activeLocale = extractLocaleFromPath(location.pathname)
-        ?? normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
+    const activeLocale = usePresentationLocale(location.pathname, i18n.resolvedLanguage ?? i18n.language);
 
     const handleFooterClick = (target: string) => {
         trackEvent(`footer__${target}`);

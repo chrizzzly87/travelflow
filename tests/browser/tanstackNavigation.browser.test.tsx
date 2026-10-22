@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, Outlet, RouterProvider } from '@tanstack/react-router';
 import { Link, NavLink, useLocation, useNavigate, useParams, useSearchParams } from '../../app/navigation';
 
@@ -32,6 +32,21 @@ function setup(initial = '/pricing') {
     return { router, view };
 }
 describe('TanStack navigation migration contract', () => {
+    it('keeps the shared location stable when loaders refresh without a URL change', async () => {
+        const locations: ReturnType<typeof useLocation>[] = [];
+        function LocationProbe() {
+            const location = useLocation();
+            locations.push(location);
+            return <output>{location.pathname}</output>;
+        }
+        const root = createRootRoute({ component: LocationProbe });
+        const router = createRouter({ routeTree: root, history: createMemoryHistory({ initialEntries: ['/'] }) });
+        const view = render(<RouterProvider router={router} />);
+        await view.findByText('/');
+        const initial = locations.at(-1);
+        await act(async () => { await router.invalidate(); });
+        expect(locations.every(location => location === initial)).toBe(true);
+    });
     it('preserves encoded parameters, history state and replace/back behavior', async () => {
         const { router, view } = setup();
         fireEvent.click(await view.findByText('Trip', { selector: 'button' }));

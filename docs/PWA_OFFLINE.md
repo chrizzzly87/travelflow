@@ -47,7 +47,10 @@ one carrying unsubstituted placeholders.
 
 `scripts/build-service-worker.mjs` runs after the Start build. The native SPA-shell
 configuration in `vite.config.ts` emits `dist/client/spa.html` using the separate
-`/__offline-shell` mask. The generator derives entry scripts, stylesheet links and
+`/__offline-shell` mask, an explicit native root child with no area component.
+An unregistered mask is claimed by the optional-locale homepage and contributes
+public-area assets to the head that the actual URL cannot hydrate.
+The generator derives entry scripts, stylesheet links and
 the native module-preload graph from that document. A missing entry script fails
 the build. Precache the complete initial module graph: caching only the entry
 script breaks a cold offline boot when its static imports are separate files.
@@ -58,7 +61,7 @@ Route-specific chunks are still cached when first fetched online.
 | Request | Strategy |
 | --- | --- |
 | Precached boot shell | Cache-first |
-| Navigations | Network-first, 3s timeout, falling back to precached `/spa.html` |
+| Navigations | Network-first, 3s timeout, falling back to precached `/spa.html`; route documents are never cached |
 | `/assets/**` (`.js`, `.mjs`, `.css`) | Cache-first, written on first fetch |
 | `/fonts/**`, `/flags/**`, `/icons/**`, `/images/**` | Cache-first, LRU-capped at 200 |
 | `/api/trip-map-preview?*` | Stale-while-revalidate, LRU-capped at 60. Storable only because the endpoint returns the image bytes from our own origin: it used to redirect to the provider, and a cross-origin redirect followed from a no-cors `<img>` yields an opaque response, which `isStorableResponse` rejects. See `docs/TRIP_MAP_PREVIEW_CACHING.md`. |
@@ -69,6 +72,24 @@ The navigation timeout matters more than the plain offline case: iOS often
 reports itself online on a captive or dead Wi-Fi network, where a request
 neither fails nor completes. Without the race, launching the app there would
 hang instead of showing the cached trip list.
+
+The neutral Start SPA document is written only during worker installation. Never
+replace it with a successful navigation response: that response contains the
+original route’s title, metadata and dehydrated router state. Reusing it for
+another URL can leave the new page with a previous trip’s title. Installation
+refreshes the precache even when the asset-content hash is unchanged, repairing
+a shell overwritten by an older worker; the normal waiting-worker lifecycle
+still protects active edits. Native root `context` supplies an initial URL snapshot for masked-shell hydration.
+A fresh `beforeLoad` result owns metadata and locale on ordinary loads and warm
+navigation: native route context itself is cached while the root is reused. The
+shared document selector uses the initial snapshot only when the transported
+result belongs to `/__offline-shell`. The head initially retains the transported
+neutral metadata so React 18 hydrates matching attributes. After hydration, a
+native root-only invalidation runs `beforeLoad` for the actual URL and reconciles
+the canonical and other head tags; no head nodes are patched imperatively. Async `beforeLoad` also handles namespace
+setup and optional public trip metadata (cleared on non-trip routes). The document
+locale hook synchronizes the delivered i18n snapshot with the selected route locale
+after hydration. No custom head rewrite or client router is needed.
 
 Account API responses are never cached. The offline copy of a trip is local
 storage, which is scoped to the signed-in user by the app; an HTTP cache is not,
@@ -115,6 +136,11 @@ promotes a waiting worker on demand.
 - `pnpm test:e2e:pwa` runs the offline boot test against a **real production
   build**. Run `pnpm build` (or `pnpm build:netlify`) first — the worker does not
   exist under `vite dev`, where registration deliberately no-ops.
+
+To verify the same worker scenarios on an immutable Netlify preview, use
+`PWA_BASE_URL=https://<deploy-id>--travelflowapp.netlify.app pnpm test:e2e:pwa`.
+The suite then uses the hosted documents and worker without starting a local server.
+Each test uses an isolated browser context; it does not alter an existing user session.
 
 Before releasing a change to the worker, verify manually on a real iPhone:
 Add to Home Screen, enable airplane mode, cold launch, open a trip.

@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Translate } from '@phosphor-icons/react';
 import { useNavigate } from '@/app/navigation';
-import { extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
+import { getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, LOCALE_FLAGS, SUPPORTED_LOCALES } from '../../config/locales';
 import { APP_NAME } from '../../config/appGlobals';
@@ -16,6 +16,7 @@ import {
 import i18n, { preloadLocaleNamespaces } from '../../i18n';
 import { MarketingNotice } from '../marketing/MarketingNotice';
 import { FlagIcon } from '../flags/FlagIcon';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const SESSION_DISMISS_KEY = 'tf_locale_suggestion_dismissed_session';
@@ -132,9 +133,7 @@ export const LanguageSuggestionBanner: React.FC = () => {
     const routeLocation = useSafeRouteLocation();
     const navigate = useNavigate();
 
-    const activeLocale = useMemo<AppLanguage>(() => {
-        return extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
-    }, [routeLocation.pathname]);
+    const activeLocale = usePresentationLocale(routeLocation.pathname, DEFAULT_LOCALE);
 
     const [suggestedLocale, setSuggestedLocale] = useState<AppLanguage | null>(null);
     const [dismissed, setDismissed] = useState<boolean>(false);

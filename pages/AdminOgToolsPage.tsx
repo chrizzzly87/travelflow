@@ -1,4 +1,7 @@
+import { TripOgPreviewPanel } from '../components/admin/TripOgPreviewPanel';
+import { isTripVideoId } from '../shared/tripOgVideo';
 import React, { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from '../app/navigation';
 import {
     CheckCircle,
     ClipboardText,
@@ -48,7 +51,10 @@ const formatKindLabel = (value: OgInspectionResult['imageKind']): string => {
 };
 
 export const AdminOgToolsPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'analyzer' | 'playground'>('analyzer');
+    const [initialSettings] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<'analyzer' | 'playground' | 'video'>(() => initialSettings.has('trip') ? 'video' : 'analyzer');
+    const [videoTripInput, setVideoTripInput] = useState(() => initialSettings.get('trip') || '4fee56dd-a79a-4130-bef0-cc7ffb552ea5');
+    const [videoTripId, setVideoTripId] = useState(videoTripInput);
     const [playgroundMode, setPlaygroundMode] = useState<'trip' | 'site'>('trip');
     const [playgroundLoadIssue, setPlaygroundLoadIssue] = useState<string | null>(null);
     const playgroundFrameRef = useRef<HTMLIFrameElement | null>(null);
@@ -136,10 +142,11 @@ export const AdminOgToolsPage: React.FC = () => {
             showGlobalSearch={false}
             showDateRange={false}
         >
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'analyzer' | 'playground')}>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'analyzer' | 'playground' | 'video')}>
                 <TabsList variant="default" className="mb-3 border border-border bg-secondary p-1">
                     <TabsTrigger value="analyzer">URL Analyzer</TabsTrigger>
                     <TabsTrigger value="playground">OG Playground</TabsTrigger>
+                    <TabsTrigger value="video">Trip video</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="analyzer" className="space-y-6">
@@ -281,6 +288,11 @@ export const AdminOgToolsPage: React.FC = () => {
                                             No renderable `og:image` URL found for this page.
                                         </div>
                                     )}
+                                    {inspectResult.metadata.ogVideo && <div className="mt-4 space-y-2">
+                                        <h3 className="text-sm font-semibold text-slate-900">Attached OG video</h3>
+                                        <video src={inspectResult.metadata.ogVideo} controls muted playsInline preload="none" className="w-full rounded-xl" aria-label="Attached Open Graph video" />
+                                        <p className="break-all text-xs text-slate-500">{inspectResult.metadata.ogVideo}</p>
+                                    </div>}
                                 </aside>
                             </div>
                         )}
@@ -421,6 +433,13 @@ export const AdminOgToolsPage: React.FC = () => {
                     </section>
                 </TabsContent>
 
+                <TabsContent value="video" className="space-y-4">
+                    <form className="flex flex-wrap gap-2" onSubmit={event => { event.preventDefault(); if (isTripVideoId(videoTripInput)) setVideoTripId(videoTripInput); }}>
+                        <input aria-label="Trip ID for video preview" value={videoTripInput} onChange={event => setVideoTripInput(event.target.value.trim())} className={fieldClassName} placeholder="Trip UUID" />
+                        <button type="submit" disabled={!isTripVideoId(videoTripInput)} className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Load trip previews</button>
+                    </form>
+                    {isTripVideoId(videoTripId) && <TripOgPreviewPanel key={videoTripId} tripId={videoTripId} />}
+                </TabsContent>
                 <TabsContent value="playground">
                     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                         <header className="mb-3 flex items-center justify-between gap-3">

@@ -1,6 +1,6 @@
 # TravelFlow
 
-TravelFlow generates and manages travel itineraries. This integration branch migrates the app to TanStack Start with React, TypeScript and native TanStack routing. Production rollout and performance acceptance are tracked separately in [the migration plan](docs/architecture/TANSTACK_START_MIGRATION.md) and [issue #559](https://github.com/chrizzzly87/travelflow/issues/559).
+TravelFlow generates and manages travel itineraries. This integration branch migrates the app to TanStack Start with React 19, TypeScript and native TanStack routing. Production rollout and performance acceptance are tracked separately in [the migration plan](docs/architecture/TANSTACK_START_MIGRATION.md) and [issue #559](https://github.com/chrizzzly87/travelflow/issues/559).
 
 For the remaining first-release gates, see [the release checklist](docs/TANSTACK_START_RELEASE_CHECKLIST.md).
 

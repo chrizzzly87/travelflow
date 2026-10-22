@@ -2,6 +2,7 @@
 import React, { Suspense } from 'react';
 import { renderToString } from 'react-dom/server';
 import { hydrateRoot, type Root } from 'react-dom/client';
+import { ClientOnly } from '@tanstack/react-router';
 import { act, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -30,7 +31,9 @@ describe('initial verified session during document hydration', () => {
             const auth = useAuthContext();
             return <output data-loading={String(auth.isLoading)} />;
         }
-        const tree = <AuthProvider><Probe /><Suspense fallback={<p>Loading</p>}><PendingPage /></Suspense></AuthProvider>;
+        // Session-owned pages use native selective SSR. Their server document
+        // contains public pending chrome, never a rendered private auth consumer.
+        const tree = <AuthProvider><Probe /><Suspense fallback={<p>Loading</p>}><ClientOnly fallback={<p>public</p>}><PendingPage /></ClientOnly></Suspense></AuthProvider>;
         const container = document.createElement('div');
         container.innerHTML = renderToString(tree);
         document.body.appendChild(container);

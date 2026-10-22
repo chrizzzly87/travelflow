@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ThemeColor } from '../../src/document/ThemeColor';
 
 import { THEME_BOOT_KEYS, THEME_SURFACE_COLOR } from '../../contexts/theme/themeStore';
 
@@ -34,8 +37,12 @@ describe('native document theme boot script', () => {
         // seam across the top of the app; a value set only from the bundle
         // arrived a paint late. The literals are duplicated from the store, and
         // nothing else stops the two drifting apart.
-        expect(html).toContain("name: 'theme-color'");
-        expect(html).toContain("'data-tf-theme-color'");
+        const metadata = renderToStaticMarkup(createElement(ThemeColor));
+        expect(metadata).toContain('name="theme-color"');
+        expect(metadata).toContain('data-tf-theme-color=""');
+        expect(metadata).toContain(`content="${THEME_SURFACE_COLOR.light}"`);
+        expect(html.indexOf('<ThemeColor />')).toBeLessThan(html.indexOf('{bootScripts.map'));
+        expect(html.indexOf('{bootScripts.map')).toBeLessThan(html.indexOf('<HeadContent />'));
         expect(bootScript).toContain('meta[data-tf-theme-color]');
         expect(bootScript).toContain(THEME_SURFACE_COLOR.dark);
         expect(bootScript).toContain(THEME_SURFACE_COLOR.light);
