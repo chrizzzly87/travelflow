@@ -15,15 +15,31 @@ Start client on React 19.3.1, Start 1.169.2 and Router 1.170.44. Browser error
 assertions remain enabled. The initial dark theme meta is now owned by React after
 the pre-paint script, avoiding duplicate metadata on navigation. Persian offline
 chrome hydrates its immutable delivered locale before presenting the actual route.
-Exact-head GitHub, hosted and live fixed-duration acceptance are recorded on PR #579;
-do not infer those from the local result or an older preview.
+Runtime `e399ab1f` passed [GitHub Quality run 39743544622](https://github.com/chrizzzly87/travelflow/actions/runs/39743544622).
+Ready immutable deploy: `6ad9c0a72a2e9ba6c92de714`; the branch alias also has an
+equivalent ready deployment `6ad9c0a869c836e1f354c598`. All five hosted PWA checks
+pass. All 94 hosted browser scenarios pass: the first run completed 93; the final
+French article encountered a TCP-connect outage and passed its targeted recheck
+after connectivity returned. No application error was ignored.
+
+Real account acceptance on this runtime: a new synthetic Japan round trip,
+2026-11-12 through 2026-11-21, generated Tokyo → Kyoto → Tokyo with exactly
+10 days / 9 nights. The initial network-interrupted enqueue failed visibly;
+Retry generation succeeded in 19.8 seconds using the default GPT-5.4 model.
+Rename, saved profile card, reopen and full reload preserve title, dates and
+activities. No existing trip or admin record was changed. The real admin overview
+and data-backed charts also render. This verifies that particular generation,
+not arbitrary model output meeting every requested budget.
+
+The following documentation-only commit records that accepted runtime; verify
+its diff before reusing runtime evidence and require green exact-head GitHub checks.
 React Doctor: **61/100, zero errors, ten warnings (maintainability and a browser-only date formatter)**. There are no
 vendor patches, dependency-age bypasses or suppressed hydration errors.
 
 ## Required before the first release
 
-- [ ] Fix neutral offline-shell contamination ([#575](https://github.com/chrizzzly87/travelflow/issues/575)) and validate cross-route offline metadata on the new deploy.
-- [ ] Preserve zero-night return stops through generation mapping ([#576](https://github.com/chrizzzly87/travelflow/issues/576)); verify the actual requested period after a real round-trip generation on the fixed deploy.
+- [x] Fix neutral offline-shell contamination ([#575](https://github.com/chrizzzly87/travelflow/issues/575)) and validate cross-route offline metadata on the new deploy.
+- [x] Preserve zero-night return stops through generation mapping ([#576](https://github.com/chrizzzly87/travelflow/issues/576)); verify the actual requested period after a real round-trip generation on the fixed deploy.
 
 - [x] Deploy the localized-banner fix and verify actual heading/action geometry in
   Chromium/WebKit, French and RTL, narrow widths, resize and dismissal.
@@ -85,8 +101,8 @@ public homepage for members, trip persistence contracts and offline behavior hav
 regression coverage and hosted acceptance. Architecture, contributor instructions,
 Netlify operations and testing guides describe the native structure.
 
-The full-project TypeScript backlog (#556) predates this migration. The previous React 18 candidate had 473 diagnostics. The React 19 candidate reduces
-that backlog; exact counts and the normalized comparison are recorded on PR #579.
+The full-project TypeScript backlog (#556) predates this migration. The previous React 18 candidate had 473 diagnostics. The accepted React 19 runtime has 351 diagnostics and zero new normalized
+file/error-code diagnostics against that baseline, recorded on PR #579.
 It remains visible debt; a successful Vite build does not mean a clean full-project typecheck.
 
 ## Follow-up, not a first-release requirement
@@ -95,6 +111,11 @@ Admin chart dependency modernization is [#584](https://github.com/chrizzzly87/tr
 The actual bar/area/donut/list components pass an unmocked React 19 runtime test,
 but Tremor still declares a React-18-only peer range. Keep that bounded evidence
 separate from an upstream compatibility claim.
+
+Native route-search ownership polish is [#586](https://github.com/chrizzzly87/travelflow/issues/586):
+profile-list search parameters currently survive on trip links without affecting
+trip loading or persistence. Keep explicit versions, shares and prefills intact
+when addressing this separately.
 
 Further optional TripView decomposition, unused-JavaScript investigation and more
 micro-optimizations stay under #561. Do not postpone a correct, verified first
