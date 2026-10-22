@@ -16,3 +16,4 @@ summary: "Sharing images load reliably and stay separate from animated videos."
 - [ ] [Fixed] 🔗 Normalize copied HTML-escaped media links, preserve media-revision checks, and classify poster images correctly in admin.
 - [ ] [Improved] 💾 Reuse image cache URLs in the OG playground and show loading failures explicitly without starting video renders.
 - [x] [Fixed] 📐 Long trip titles keep their sharing card’s statistics and footer readable.
+- [ ] [Improved] 🖼️ Keep playground preview panels at their natural height so loaded images remain visible.
