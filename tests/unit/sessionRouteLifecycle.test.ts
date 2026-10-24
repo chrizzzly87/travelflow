@@ -7,7 +7,9 @@ function fixture(initial = '/pricing') {
     let role = 'admin';
     const rootLoad = vi.fn();
     const publicLoad = vi.fn(() => ({ label: 'Pricing' }));
-    const privateLoad = vi.fn(() => ({ role }));
+    type PrivateLoaderData = { role: string };
+    // Typed with the loader context it reads so tests can swap in an abortable implementation.
+    const privateLoad = vi.fn((_ctx: { abortController: AbortController }): PrivateLoaderData | Promise<PrivateLoaderData> => ({ role }));
     const root = createRootRoute({ beforeLoad: rootLoad });
     const pricing = createRoute({ getParentRoute: () => root, path: '/pricing', loader: publicLoad });
     const admin = createRoute({ getParentRoute: () => root, id: '_admin', staticData: { sessionBound: true } });
@@ -50,10 +52,10 @@ describe('session-owned native route lifecycle', () => {
         let started!: () => void;
         const ready = new Promise<void>(resolve => { started = resolve; });
         const aborted = vi.fn();
-        f.privateRoute.update({ loader: ({ abortController }) => new Promise(resolve => {
+        f.privateLoad.mockImplementation(({ abortController }) => new Promise(resolve => {
             started();
             abortController.signal.addEventListener('abort', () => { aborted(); resolve({ role: 'discarded' }); }, { once: true });
-        }) });
+        }));
         const preload = f.router.preloadRoute({ to: '/admin/users' });
         await ready;
         const rootCalls = f.rootLoad.mock.calls.length;
@@ -67,10 +69,10 @@ describe('session-owned native route lifecycle', () => {
         const f = fixture(); await f.router.load();
         let started!: () => void;
         const ready = new Promise<void>(resolve => { started = resolve; });
-        f.privateRoute.update({ loader: vi.fn().mockImplementationOnce(({ abortController }) => new Promise(resolve => {
+        f.privateLoad.mockImplementationOnce(({ abortController }) => new Promise(resolve => {
             started();
             abortController.signal.addEventListener('abort', () => resolve({ role: 'discarded' }), { once: true });
-        })).mockImplementation(() => ({ role: 'member' })) });
+        })).mockImplementation(() => ({ role: 'member' }));
         const navigation = f.router.navigate({ to: '/admin/users' });
         await ready;
         await refreshSessionRoutes(f.router);

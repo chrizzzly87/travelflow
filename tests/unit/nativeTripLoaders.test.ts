@@ -26,7 +26,8 @@ const versionId = '12345678-abcd-abcd-abcd-123456789012';
 const signal = () => new AbortController().signal;
 const owned = (extra: Partial<Parameters<typeof loadOwnedTrip>[0]> = {}) => loadOwnedTrip({ tripId: 'trip-a', href: '/trip/trip-a', signal: signal(), ...extra });
 const shared = (extra: Partial<Parameters<typeof loadSharedTrip>[0]> = {}) => loadSharedTrip({ token: 'token', signal: signal(), ...extra });
-const target = async (promise: Promise<unknown>) => (await promise.catch(error => error)).options?.href;
+// Loaders reject with a redirect whose `options.href` is the destination under test.
+const target = async (promise: Promise<unknown>) => ((await promise.catch((error: unknown) => error)) as { options?: { href?: string } } | undefined)?.options?.href;
 
 beforeEach(() => {
     vi.clearAllMocks(); mocks.db = true; mocks.state = 'online';
