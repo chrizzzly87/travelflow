@@ -73,7 +73,6 @@ import {
     resolveEffectiveLightPreset,
     resolveMapStyleFromAxes,
 } from '../shared/mapPreferences';
-import { MapCustomizeModal } from './maps/MapCustomizeModal';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
 import { useGoogleMyMapsActions } from './tripview/useGoogleMyMapsActions';
@@ -141,7 +140,7 @@ import { registerTripGenerationCompletionWatch } from '../services/tripGeneratio
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 import { toggleMarkdownTaskByLine } from './markdownPresentation';
-import { buildTripAgentContextRefs } from '../shared/tripAgent';
+import { buildTripAgentContextRefs } from '../shared/tripAgentContextRefs';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -179,6 +178,10 @@ const TripShareModal = lazyWithRecovery('TripShareModal', () =>
 
 const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
+);
+
+const MapCustomizeModal = lazyWithRecovery('MapCustomizeModal', () =>
+    import('./maps/MapCustomizeModal').then((module) => ({ default: module.MapCustomizeModal }))
 );
 
 import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
@@ -2742,6 +2745,10 @@ const useTripViewRender = ({
         customization: mapCustomization,
         setCustomization: setMapCustomization,
     });
+    // The customize panel loads on its first open and then stays mounted, so
+    // its tab and drawer state survive closing exactly as before.
+    const [hasOpenedMapCustomize, setHasOpenedMapCustomize] = useState(isMapCustomizeOpen);
+    if (isMapCustomizeOpen && !hasOpenedMapCustomize) setHasOpenedMapCustomize(true);
 
     // Every customize change is a deliberate one, so it counts as a manual view
     // change and is what makes the look stick to the trip.
@@ -3863,21 +3870,25 @@ const useTripViewRender = ({
                         floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                         floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                     />
-                    <MapCustomizeModal
-                        isOpen={isMapCustomizeOpen}
-                        onClose={closeMapCustomize}
-                        preferences={mapPreferences}
-                        onChange={handleMapPreferenceChange}
-                        onReset={handleMapPreferenceReset}
-                        onSaveAsDefault={saveMapPreferencesAsDefault}
-                        hasSavedPreset={hasSavedMapPreset}
-                        onApplySavedPreset={applySavedMapPreset}
-                        isSavedPresetActive={isSavedMapPresetActive}
-                        isMobile={isMobile}
-                        activeRenderer={activeMapRenderer}
-                        isMapboxAvailable={isMapboxRendererAvailable}
-                        tripId={trip.id}
-                    />
+                    {hasOpenedMapCustomize && (
+                        <Suspense fallback={null}>
+                            <MapCustomizeModal
+                                isOpen={isMapCustomizeOpen}
+                                onClose={closeMapCustomize}
+                                preferences={mapPreferences}
+                                onChange={handleMapPreferenceChange}
+                                onReset={handleMapPreferenceReset}
+                                onSaveAsDefault={saveMapPreferencesAsDefault}
+                                hasSavedPreset={hasSavedMapPreset}
+                                onApplySavedPreset={applySavedMapPreset}
+                                isSavedPresetActive={isSavedMapPresetActive}
+                                isMobile={isMobile}
+                                activeRenderer={activeMapRenderer}
+                                isMapboxAvailable={isMapboxRendererAvailable}
+                                tripId={trip.id}
+                            />
+                        </Suspense>
+                    )}
                     {isTripAgentRolledOut && !isTripAgentOpen && (
                         <button
                             type="button"
