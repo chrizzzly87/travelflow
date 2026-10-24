@@ -91,6 +91,8 @@ describe('AddCityModal', () => {
   });
 
   it('ignores stale manual resolution results after the input changes', async () => {
+    // This case exercises free-form resolution, not selecting an autocomplete hit.
+    locationSearchMocks.searchCitySuggestions.mockResolvedValue([]);
     const onAdd = vi.fn();
     let resolveManualLookup: ((value: unknown) => void) | null = null;
     locationSearchMocks.resolveCitySuggestion.mockReturnValue(new Promise((resolve) => {

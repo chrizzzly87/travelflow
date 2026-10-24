@@ -3,6 +3,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
+import { preloadTripClaimConflictDialog } from '../../components/tripview/tripClaimRecoveryBoundary';
 import { TripViewHudOverlays } from '../../components/tripview/TripViewHudOverlays';
 
 const trackEventMock = vi.fn();
@@ -12,7 +13,7 @@ vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),
@@ -123,14 +124,16 @@ describe('TripViewHudOverlays pending auth modal', () => {
     expect(trackEventMock).toHaveBeenCalled();
   });
 
-  it('shows the claimed-by-another-user modal with a create-similar action', () => {
+  it('shows the claimed-by-another-user modal with a complete create-similar action', async () => {
+    await preloadTripClaimConflictDialog();
     const onClaimConflictLogin = vi.fn();
     render(
       <TripViewHudOverlays
         {...makeProps({
           claimConflictModalVisible: true,
           claimConflictShowLoginCta: true,
-          claimConflictCreateSimilarPath: '/create-trip/wizard?prefill=abc',
+          claimConflictTrip: { title: 'Claimed trip' },
+          claimConflictPathname: '/trip/trip-1',
           onClaimConflictLogin,
         })}
       />,
@@ -138,7 +141,7 @@ describe('TripViewHudOverlays pending auth modal', () => {
 
     expect(screen.getByText('This trip draft was already claimed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign in with the original account' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Create similar trip' })).toHaveAttribute('href', '/create-trip/wizard?prefill=abc');
+    expect(screen.getByRole('link', { name: 'Create similar trip' })).toHaveAttribute('href', '/create-trip');
     fireEvent.click(screen.getByRole('button', { name: 'Sign in with the original account' }));
     expect(onClaimConflictLogin).toHaveBeenCalledTimes(1);
   });

@@ -1,458 +1,52 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, waitFor } from '@testing-library/react';
-
-import type { IViewSettings } from '../../../types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeTrip } from '../../helpers/tripFixtures';
-
+import type { IViewSettings } from '../../../types';
 const mocks = vi.hoisted(() => ({
-  navigate: vi.fn(),
-  confirmDialog: vi.fn().mockResolvedValue(true),
-  route: {
-    token: 'share-token',
-    pathname: '/s/share-token',
-    search: '',
-    hash: '',
-  },
-  auth: {
-    access: {
-      entitlements: {
-        tripExpirationDays: 14,
-      },
-    },
-  },
-  connectivityState: 'online' as 'online' | 'degraded' | 'offline',
-  useDbSync: vi.fn(),
-  ensureDbSession: vi.fn(),
-  dbGetSharedTrip: vi.fn(),
-  dbGetSharedTripVersion: vi.fn(),
-  dbGetTripVersion: vi.fn(),
-  dbCanCreateTrip: vi.fn(),
-  dbCreateTripVersion: vi.fn(),
-  dbUpdateSharedTrip: vi.fn(),
-  dbUpsertTrip: vi.fn(),
-  createTripHistorySnapshotEntry: vi.fn(),
-  findHistoryEntryByUrl: vi.fn(),
-  saveTrip: vi.fn(),
-  tripViewProps: [] as any[],
+    location: { pathname: '/trip/trip-a', search: '', hash: '', state: null },
+    params: { tripId: 'trip-a', token: 'token' }, navigate: vi.fn(), props: null as any,
+    limit: vi.fn(), upsert: vi.fn(), version: vi.fn(), sharedUpdate: vi.fn(), save: vi.fn(), history: vi.fn(), shared: vi.fn(), view: vi.fn(), confirm: vi.fn(), track: vi.fn(),
 }));
-
-vi.mock('react-router-dom', () => ({
-  useParams: () => ({ token: mocks.route.token }),
-  useLocation: () => ({
-    pathname: mocks.route.pathname,
-    search: mocks.route.search,
-    hash: mocks.route.hash,
-  }),
-  useNavigate: () => mocks.navigate,
-}));
-
-vi.mock('../../../hooks/useAuth', () => ({
-  useAuth: () => ({ access: mocks.auth.access }),
-}));
-
-vi.mock('../../../components/AppDialogProvider', () => ({
-  useAppDialog: () => ({
-    confirm: mocks.confirmDialog,
-  }),
-}));
-
-vi.mock('../../../hooks/useDbSync', () => ({
-  useDbSync: mocks.useDbSync,
-}));
-
-vi.mock('../../../hooks/useConnectivityStatus', () => ({
-  useConnectivityStatus: () => ({
-    snapshot: {
-      state: mocks.connectivityState,
-      reason: null,
-      lastSuccessAt: null,
-      lastFailureAt: null,
-      consecutiveFailures: 0,
-      isForced: false,
-      forcedState: null,
-    },
-  }),
-}));
-
-vi.mock('../../../config/db', () => ({
-  DB_ENABLED: true,
-}));
-
-vi.mock('../../../services/dbApi', () => ({
-  ensureDbSession: mocks.ensureDbSession,
-  dbGetSharedTrip: mocks.dbGetSharedTrip,
-  dbGetSharedTripVersion: mocks.dbGetSharedTripVersion,
-  dbGetTripVersion: mocks.dbGetTripVersion,
-  dbCanCreateTrip: mocks.dbCanCreateTrip,
-  dbCreateTripVersion: mocks.dbCreateTripVersion,
-  dbUpdateSharedTrip: mocks.dbUpdateSharedTrip,
-  dbUpsertTrip: mocks.dbUpsertTrip,
-}));
-
-vi.mock('../../../services/historyService', () => ({
-  createTripHistorySnapshotEntry: mocks.createTripHistorySnapshotEntry,
-  findHistoryEntryByUrl: mocks.findHistoryEntryByUrl,
-}));
-
-vi.mock('../../../services/storageService', () => ({
-  saveTrip: mocks.saveTrip,
-}));
-
-vi.mock('../../../utils', () => ({
-  buildShareUrl: (token: string, versionId?: string | null) => (versionId ? `/s/${token}?v=${versionId}` : `/s/${token}`),
-  buildTripUrl: (tripId: string, versionId?: string | null) => (versionId ? `/trip/${tripId}?v=${versionId}` : `/trip/${tripId}`),
-  generateTripId: () => 'generated-trip-id',
-  generateVersionId: () => 'generated-version-id',
-  isUuid: (value?: string | null) => Boolean(value && /^[0-9a-f]{8}-[0-9a-f-]+$/i.test(value)),
-}));
-
-vi.mock('../../../components/TripView', () => ({
-  TripView: (props: any) => {
-    mocks.tripViewProps.push(props);
-    return null;
-  },
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { count?: number }) => {
-      if (key === 'shared.perMonth') return '/mo';
-      if (key === 'shared.days') return `${options?.count ?? 0} days`;
-      return key;
-    },
-  }),
-}));
-
-import { SharedTripLoaderRoute } from '../../../routes/SharedTripLoaderRoute';
-
-const makeRouteProps = (overrides?: Partial<React.ComponentProps<typeof SharedTripLoaderRoute>>) => ({
-  trip: null,
-  onTripLoaded: vi.fn(),
-  onOpenManager: vi.fn(),
-  onOpenSettings: vi.fn(),
-  appLanguage: 'en' as const,
-  onViewSettingsChange: vi.fn(),
-  onLanguageLoaded: vi.fn(),
-  ...overrides,
+vi.mock('@/app/navigation', () => ({ useParams: () => mocks.params, useLocation: () => mocks.location, useNavigate: () => mocks.navigate }));
+vi.mock('../../../hooks/useAuth', () => ({ useAuth: () => ({ access: { tierKey: 'tier_free', entitlements: { tripExpirationDays: 14 } } }) }));
+vi.mock('../../../hooks/useDbSync', () => ({ useDbSync: vi.fn() }));
+vi.mock('../../../components/AppDialogProvider', () => ({ useAppDialog: () => ({ confirm: mocks.confirm }) }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('../../../config/db', () => ({ DB_ENABLED: true }));
+vi.mock('../../../services/storageService', () => ({ saveTrip: mocks.save }));
+vi.mock('../../../services/analyticsService', () => ({ trackEvent: mocks.track }));
+vi.mock('../../../services/dbApi', () => ({ dbCanCreateTrip: mocks.limit, dbUpsertTrip: mocks.upsert, dbCreateTripVersion: mocks.version, dbUpdateSharedTrip: mocks.sharedUpdate, dbGetSharedTrip: mocks.shared, dbUpdateTripShareViewSettings: mocks.view }));
+vi.mock('../../../services/historyService', () => ({ createTripHistorySnapshotEntry: mocks.history }));
+vi.mock('../../../components/TripView', () => ({ TripView: (props: any) => { mocks.props = props; return React.createElement("div", null, props.trip.title); } }));
+const view = { mapStyle: 'standard', layoutMode: 'horizontal', timelineView: 'horizontal', zoomLevel: 1 } as IViewSettings;
+const makeProps = () => ({ trip: null, onTripLoaded: vi.fn(), onUpdateTrip: vi.fn(), onCommitState: vi.fn(), onAdoptAgentTripVersion: vi.fn(), onOpenManager: vi.fn(), onOpenSettings: vi.fn(), appLanguage: 'en' as const, onViewSettingsChange: vi.fn(), onLanguageLoaded: vi.fn() });
+beforeEach(() => {
+    vi.clearAllMocks(); mocks.props = null; mocks.location.search = ''; mocks.location.pathname = '/trip/trip-a';
+    mocks.limit.mockResolvedValue({ allowCreate: true }); mocks.confirm.mockResolvedValue(true); mocks.upsert.mockResolvedValue('trip-a'); mocks.version.mockResolvedValue('version'); mocks.sharedUpdate.mockResolvedValue('version'); mocks.history.mockReturnValue({ url: '/trip/cloned?v=local' }); mocks.view.mockResolvedValue(undefined);
 });
 
-const latestTripViewProps = () => mocks.tripViewProps[mocks.tripViewProps.length - 1];
-
-describe('routes/SharedTripLoaderRoute', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.tripViewProps.length = 0;
-    mocks.route.token = 'share-token';
-    mocks.route.pathname = '/s/share-token';
-    mocks.route.search = '';
-    mocks.route.hash = '';
-    mocks.connectivityState = 'online';
-    mocks.auth.access = {
-      tierKey: 'tier_free',
-      entitlements: {
-        tripExpirationDays: 14,
-      },
-    };
-    mocks.ensureDbSession.mockResolvedValue('session-1');
-    mocks.dbGetSharedTrip.mockResolvedValue(null);
-    mocks.dbGetSharedTripVersion.mockResolvedValue(null);
-    mocks.dbGetTripVersion.mockResolvedValue(null);
-    mocks.createTripHistorySnapshotEntry.mockImplementation(({ tripId }: { tripId: string }) => ({
-      url: `/s/share-token?v=generated-version-id`,
-      persisted: true,
-    }));
-    mocks.findHistoryEntryByUrl.mockReturnValue(null);
-    mocks.dbCanCreateTrip.mockResolvedValue({ allowCreate: true, activeTripCount: 1, maxTripCount: 5 });
-  });
-
-  it('navigates to share-unavailable when no shared trip exists', async () => {
-    const props = makeRouteProps();
-
-    render(React.createElement(SharedTripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(mocks.navigate).toHaveBeenCalledWith('/share-unavailable', { replace: true });
+import { SharedTripLoaderRoute } from '../../../routes/SharedTripLoaderRoute';
+const data = (mode: 'view' | 'edit' = 'view', allowCopy = true) => ({ trip: makeTrip({ id: 'trip-a', title: 'Shared trip' }), view, access: null, shareMode: mode, allowCopy, sourceShareVersionId: 'source-version', snapshotState: { hasNewer: true, latestUrl: '/s/token' } });
+describe('shared trip presenter under native resolution', () => {
+    it('renders current token permissions and snapshot metadata immediately', async () => {
+        render(React.createElement(SharedTripLoaderRoute, { ...makeProps(), data: data('view', false) })); await waitFor(() => expect(mocks.props).not.toBeNull());
+        expect(mocks.props.readOnly).toBe(true); expect(mocks.props.canShare).toBe(false); expect(mocks.props.onCopyTrip).toBeUndefined(); expect(mocks.props.shareSnapshotMeta.hasNewer).toBe(true);
+        await act(async () => mocks.props.onCommitState(makeTrip(), view)); expect(mocks.sharedUpdate).not.toHaveBeenCalled();
     });
-    expect(props.onTripLoaded).not.toHaveBeenCalled();
-  });
-
-  it('redirects to offline fallback when connectivity is offline', async () => {
-    mocks.connectivityState = 'offline';
-    const props = makeRouteProps();
-
-    render(React.createElement(SharedTripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(mocks.navigate).toHaveBeenCalledWith('/share-unavailable?reason=offline', { replace: true });
+    it('commits editable shares through the token and records local history', async () => {
+        render(React.createElement(SharedTripLoaderRoute, { ...makeProps(), data: data('edit') })); await waitFor(() => expect(mocks.props).not.toBeNull()); const edited = makeTrip({ title: 'Edited shared trip' });
+        await act(async () => mocks.props.onCommitState(edited, view, { label: 'Changed city' }));
+        expect(mocks.sharedUpdate).toHaveBeenCalledWith('token', edited, view, 'Changed city'); expect(mocks.history).toHaveBeenCalledWith(expect.objectContaining({ trip: edited, baseUrlOverride: '/s/token' }));
     });
-    expect(mocks.ensureDbSession).not.toHaveBeenCalled();
-    expect(props.onTripLoaded).not.toHaveBeenCalled();
-  });
-
-  it('does not change hook order when the shared trip prop appears after initial null render', async () => {
-    const resolvedTrip = makeTrip({ id: 'shared-late-load', title: 'Shared late load' });
-    const props = makeRouteProps();
-    const view = render(React.createElement(SharedTripLoaderRoute, props));
-
-    expect(() => {
-      view.rerender(React.createElement(SharedTripLoaderRoute, {
-        ...props,
-        trip: resolvedTrip,
-      }));
-    }).not.toThrow();
-
-    await waitFor(() => {
-      expect(latestTripViewProps()?.trip).toEqual(resolvedTrip);
+    it('copies provenance without granting ownership to the source trip', async () => {
+        render(React.createElement(SharedTripLoaderRoute, { ...makeProps(), data: data() })); await waitFor(() => expect(mocks.props).not.toBeNull()); await act(async () => mocks.props.onCopyTrip());
+        expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ sourceKind: 'duplicate_shared', forkedFromTripId: 'trip-a', forkedFromShareToken: 'token', forkedFromShareVersionId: 'source-version', isFavorite: false })); expect(mocks.upsert).toHaveBeenCalledOnce();
     });
-  });
-
-  it('renders a route loading shell while the shared trip loader is still resolving', () => {
-    mocks.dbGetSharedTrip.mockImplementation(() => new Promise(() => {}));
-    const props = makeRouteProps();
-    const view = render(React.createElement(SharedTripLoaderRoute, props));
-
-    expect(view.queryAllByTestId('trip-route-loading-shell').length).toBeGreaterThan(0);
-    expect(latestTripViewProps()).toBeUndefined();
-  });
-
-  it('loads shared version snapshots when a valid version id exists', async () => {
-    const versionId = '123e4567-e89b-12d3-a456-426614174000';
-    mocks.route.search = `?v=${versionId}`;
-
-    const baseView: IViewSettings = {
-      layoutMode: 'horizontal',
-      timelineView: 'horizontal',
-      mapStyle: 'standard',
-      routeMode: 'simple',
-      showCityNames: true,
-      zoomLevel: 1,
-      sidebarWidth: 480,
-      timelineHeight: 320,
-    };
-    const baseTrip = makeTrip({ id: 'shared-trip', status: 'active', defaultView: baseView });
-    const versionView: IViewSettings = {
-      ...baseView,
-      mapStyle: 'dark',
-      routeMode: 'realistic',
-    };
-    const versionTrip = makeTrip({ id: 'shared-trip', title: 'Version snapshot', defaultView: versionView });
-
-    mocks.dbGetSharedTrip.mockResolvedValue({
-      trip: baseTrip,
-      view: baseView,
-      mode: 'view',
-      allowCopy: true,
-      latestVersionId: 'latest-version-id',
+    it('shows the existing upgrade dialog before creating a copy past quota', async () => {
+        mocks.limit.mockResolvedValue({ allowCreate: false, activeTripCount: 3, maxTripCount: 3 });
+        render(React.createElement(SharedTripLoaderRoute, { ...makeProps(), data: data() })); await waitFor(() => expect(mocks.props).not.toBeNull()); await act(async () => mocks.props.onCopyTrip());
+        expect(mocks.confirm).toHaveBeenCalledOnce(); expect(mocks.navigate).toHaveBeenCalledWith(expect.stringContaining('/checkout?')); expect(mocks.save).not.toHaveBeenCalled();
     });
-    mocks.dbGetSharedTripVersion.mockResolvedValue({
-      trip: versionTrip,
-      view: versionView,
-      mode: 'view',
-      allowCopy: true,
-      latestVersionId: 'latest-version-id',
-      versionId,
-    });
-
-    const props = makeRouteProps({ trip: versionTrip });
-
-    render(React.createElement(SharedTripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledWith(versionTrip, versionView);
-    });
-
-    await waitFor(() => {
-      expect(latestTripViewProps()?.shareSnapshotMeta?.hasNewer).toBe(true);
-      expect(latestTripViewProps()?.shareStatus).toBe('view');
-      expect(latestTripViewProps()?.readOnly).toBe(true);
-    });
-  });
-
-  it('falls back to local history snapshots for non-uuid version ids', async () => {
-    mocks.route.search = '?v=legacy-snapshot';
-
-    const baseView: IViewSettings = {
-      layoutMode: 'horizontal',
-      timelineView: 'horizontal',
-      mapStyle: 'standard',
-      routeMode: 'simple',
-      showCityNames: true,
-      zoomLevel: 1,
-      sidebarWidth: 480,
-      timelineHeight: 320,
-    };
-    const sharedTrip = makeTrip({ id: 'shared-trip', defaultView: baseView });
-    const historyView: IViewSettings = {
-      ...baseView,
-      timelineView: 'vertical',
-    };
-    const historyTrip = makeTrip({ id: 'shared-trip', title: 'History snapshot', defaultView: historyView });
-
-    mocks.dbGetSharedTrip.mockResolvedValue({
-      trip: sharedTrip,
-      view: baseView,
-      mode: 'view',
-      allowCopy: true,
-      latestVersionId: 'latest-version-id',
-    });
-    mocks.findHistoryEntryByUrl.mockReturnValue({
-      snapshot: {
-        trip: historyTrip,
-        view: historyView,
-      },
-    });
-
-    const props = makeRouteProps({ trip: historyTrip });
-
-    render(React.createElement(SharedTripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledWith(historyTrip, historyView);
-    });
-    expect(mocks.dbGetSharedTripVersion).not.toHaveBeenCalled();
-    expect(latestTripViewProps()?.shareSnapshotMeta?.hasNewer).toBe(true);
-  });
-
-  it('prefers share metadata view settings when loading the live shared trip', async () => {
-    const baseView: IViewSettings = {
-      layoutMode: 'horizontal',
-      timelineMode: 'calendar',
-      timelineView: 'horizontal',
-      mapStyle: 'standard',
-      routeMode: 'simple',
-      showCityNames: true,
-      zoomLevel: 1,
-      sidebarWidth: 480,
-      timelineHeight: 320,
-    };
-    const shareView: IViewSettings = {
-      ...baseView,
-      timelineMode: 'timeline',
-      timelineView: 'vertical',
-      zoomLevel: 1.75,
-    };
-    const sharedTrip = makeTrip({ id: 'shared-trip', defaultView: baseView, status: 'active' });
-
-    mocks.dbGetSharedTrip.mockResolvedValue({
-      trip: sharedTrip,
-      view: baseView,
-      shareView,
-      mode: 'view',
-      allowCopy: true,
-      latestVersionId: 'latest-version-id',
-    });
-
-    const props = makeRouteProps({ trip: sharedTrip });
-    render(React.createElement(SharedTripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledWith(sharedTrip, shareView);
-    });
-    expect(latestTripViewProps()?.initialViewSettings).toEqual(shareView);
-  });
-
-  it('opens the upgrade dialog and routes into checkout when copy hits the trip limit', async () => {
-    const baseView: IViewSettings = {
-      layoutMode: 'horizontal',
-      timelineView: 'horizontal',
-      mapStyle: 'standard',
-      routeMode: 'simple',
-      showCityNames: true,
-      zoomLevel: 1,
-      sidebarWidth: 480,
-      timelineHeight: 320,
-    };
-    const sharedTrip = makeTrip({ id: 'shared-trip', defaultView: baseView, status: 'active' });
-
-    mocks.dbGetSharedTrip.mockResolvedValue({
-      trip: sharedTrip,
-      view: baseView,
-      mode: 'view',
-      allowCopy: true,
-      latestVersionId: 'latest-version-id',
-    });
-    mocks.dbCanCreateTrip.mockResolvedValue({
-      allowCreate: false,
-      activeTripCount: 5,
-      maxTripCount: 5,
-    });
-
-    const props = makeRouteProps({ trip: sharedTrip });
-    render(React.createElement(SharedTripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(latestTripViewProps()?.onCopyTrip).toBeTypeOf('function');
-    });
-
-    await act(async () => {
-      await latestTripViewProps().onCopyTrip();
-    });
-
-    expect(mocks.confirmDialog).toHaveBeenCalledTimes(1);
-    expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=shared_trip_limit_dialog&return_to=%2Fs%2Fshare-token');
-    expect(mocks.saveTrip).not.toHaveBeenCalled();
-    expect(mocks.dbUpsertTrip).not.toHaveBeenCalled();
-    expect(mocks.dbCreateTripVersion).not.toHaveBeenCalled();
-  });
-
-  it('commits in edit mode by appending local history and updating shared db state', async () => {
-    const baseView: IViewSettings = {
-      layoutMode: 'horizontal',
-      timelineView: 'horizontal',
-      mapStyle: 'standard',
-      routeMode: 'simple',
-      showCityNames: true,
-      zoomLevel: 1,
-      sidebarWidth: 480,
-      timelineHeight: 320,
-    };
-    const sharedTrip = makeTrip({ id: 'shared-trip', defaultView: baseView, status: 'active' });
-    const updatedTrip = makeTrip({ id: 'shared-trip', title: 'Updated title', defaultView: baseView, status: 'active' });
-
-    mocks.dbGetSharedTrip.mockResolvedValue({
-      trip: sharedTrip,
-      view: baseView,
-      mode: 'edit',
-      allowCopy: true,
-      latestVersionId: 'latest-version-id',
-    });
-    mocks.dbUpdateSharedTrip.mockResolvedValue({
-      trip: updatedTrip,
-      view: baseView,
-      mode: 'edit',
-      allowCopy: true,
-      latestVersionId: 'latest-version-id',
-      versionId: 'v-new',
-    });
-
-    const props = makeRouteProps({ trip: sharedTrip });
-
-    render(React.createElement(SharedTripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(latestTripViewProps()?.shareStatus).toBe('edit');
-      expect(latestTripViewProps()?.onCommitState).toBeTypeOf('function');
-    });
-
-    await act(async () => {
-      latestTripViewProps().onCommitState(updatedTrip, baseView, {
-        label: 'Edited shared trip',
-        replace: true,
-      });
-    });
-
-    expect(mocks.navigate).toHaveBeenCalledWith('/s/share-token?v=generated-version-id', { replace: true });
-    expect(mocks.createTripHistorySnapshotEntry).toHaveBeenCalledWith(expect.objectContaining({
-      tripId: 'shared-trip',
-      trip: updatedTrip,
-      view: baseView,
-      label: 'Edited shared trip',
-      baseUrlOverride: '/s/share-token',
-    }));
-    await waitFor(() => {
-      expect(mocks.dbUpdateSharedTrip).toHaveBeenCalledWith('share-token', updatedTrip, baseView, 'Edited shared trip');
-    });
-  });
 });

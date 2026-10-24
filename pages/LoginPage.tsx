@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from '@/app/navigation';
 import { Checkbox } from '../components/ui/checkbox';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
@@ -25,9 +25,10 @@ import {
     clearRememberedAuthReturnPath,
     getRememberedAuthReturnPath,
     rememberAuthReturnPath,
+    resolveAccountLoginNextPath,
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
-import { buildTripClaimConflictPath } from '../services/tripClaimConflictService';
+import { buildTripClaimConflictPath } from '../services/tripClaimNavigation';
 import {
     isRememberLoginEnabled,
     setRememberLoginEnabled,
@@ -121,8 +122,8 @@ export const LoginPage: React.FC = () => {
     const nextPath = resolvePreferredNextPath(
         searchParams.get('next'),
         stateFrom,
-        rememberedNextPath,
-        '/create-trip'
+        rememberedNextPath ? resolveAccountLoginNextPath({ pathname: rememberedNextPath }) : null,
+        '/profile'
     );
 
     const oauthRedirectTo = useMemo(

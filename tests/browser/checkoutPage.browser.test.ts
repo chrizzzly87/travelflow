@@ -123,7 +123,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),

@@ -9,7 +9,7 @@ if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Use a simple label');
 const runs = Number(process.argv.find((arg) => arg.startsWith('--runs='))?.slice(7) || 5);
 if (!Number.isInteger(runs) || runs < 1) throw new Error('runs must be a positive integer');
 const baseURL = 'http://127.0.0.1:4185';
-const distRoot = process.env.RUNTIME_DIST_DIR || 'dist';
+const distRoot = process.env.RUNTIME_DIST_DIR || 'dist/client';
 const routes = ['/', '/features', '/pricing', '/create-trip', '/create-trip/wizard', '/example/thailand-islands'];
 const server = spawn(process.execPath, ['scripts/serve-built-site.mjs'], {
   env: { ...process.env, PORT: '4185' }, stdio: ['ignore', 'pipe', 'pipe'],
@@ -94,7 +94,7 @@ try {
   const report = {
     label, revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: sourceRoot, encoding: 'utf8' }).trim(),
     sourceDirty: Boolean(execFileSync('git', ['status', '--porcelain'], { cwd: sourceRoot, encoding: 'utf8' }).trim()),
-    preact: packageJson.dependencies.preact, browser: browser.version(), node: process.version,
+    runtime: { react: packageJson.dependencies.react, preact: packageJson.dependencies.preact, start: packageJson.dependencies['@tanstack/react-start'], router: packageJson.dependencies['@tanstack/react-router'] }, browser: browser.version(), node: process.version,
     settings: { runs, viewport: '390x844', cpuSlowdown: 4, latencyMs: 40, downloadBytesPerSecond: 500_000, settleMs: 1500, externalNetwork: 'blocked', serviceWorkers: 'blocked' },
     results,
   };

@@ -1,5 +1,8 @@
 {
   "nav": {
+    "profile": "Профиль",
+    "settings": "Настройки",
+    "account": "Аккаунт",
     "features": "Возможности",
     "inspirations": "Идеи",
     "updates": "Обновления",

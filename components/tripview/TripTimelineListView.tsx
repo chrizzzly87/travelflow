@@ -94,7 +94,7 @@ const buildMarkdownComponents = (
     const stripCheckboxChild = (children: React.ReactNode): React.ReactNode[] => (
         React.Children.toArray(children).filter((child) => {
             if (typeof child === 'string') return child.trim().length > 0;
-            return !(React.isValidElement(child) && child.props.type === 'checkbox');
+            return !(React.isValidElement<React.InputHTMLAttributes<HTMLInputElement>>(child) && child.props.type === 'checkbox');
         })
     );
 
@@ -128,10 +128,10 @@ const buildMarkdownComponents = (
         const isHeadsUpBanner = Boolean(node?.properties?.['data-heads-up-banner']);
         const isTaskItem = typeof checked === 'boolean' || hasClassName(node, 'task-list-item');
         const childArray = React.Children.toArray(children);
-        const taskCheckboxChild = childArray.find((child) => React.isValidElement(child) && child.props.type === 'checkbox');
+        const taskCheckboxChild = childArray.find((child) => React.isValidElement<React.InputHTMLAttributes<HTMLInputElement>>(child) && child.props.type === 'checkbox');
         const resolvedChecked = typeof checked === 'boolean'
             ? checked
-            : (React.isValidElement(taskCheckboxChild) ? Boolean(taskCheckboxChild.props.checked) : false);
+            : (React.isValidElement<React.InputHTMLAttributes<HTMLInputElement>>(taskCheckboxChild) ? Boolean(taskCheckboxChild.props.checked) : false);
         const contentChildren = stripCheckboxChild(childArray);
 
         if (isHeadsUpBanner) {

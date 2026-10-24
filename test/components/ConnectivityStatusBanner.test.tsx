@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 import type { ConnectivitySnapshot } from '../../services/supabaseHealthMonitor';
 import type { SyncRunSnapshot } from '../../services/tripSyncManager';
@@ -86,8 +87,8 @@ describe('ConnectivityStatusBanner', () => {
     cleanup();
   });
 
-  it('renders browser-offline copy without leaking raw ICU plural syntax', () => {
-    render(
+  it('renders browser-offline copy without leaking raw ICU plural syntax', async () => {
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
@@ -103,8 +104,8 @@ describe('ConnectivityStatusBanner', () => {
     expect(screen.queryByText(/plural/i)).not.toBeInTheDocument();
   });
 
-  it('shows service-outage message and support action when internet is up', () => {
-    render(
+  it('shows service-outage message and support action when internet is up', async () => {
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
@@ -121,8 +122,8 @@ describe('ConnectivityStatusBanner', () => {
     expect(screen.queryByRole('link', { name: 'Email support' })).not.toBeInTheDocument();
   });
 
-  it('shows degraded state copy and forced mode hint', () => {
-    render(
+  it('shows degraded state copy and forced mode hint', async () => {
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
@@ -143,8 +144,8 @@ describe('ConnectivityStatusBanner', () => {
     expect(screen.getByText('Supabase outage simulation is currently forced in debugger mode.')).toBeInTheDocument();
   });
 
-  it('hides forced-mode hint for non-developer surfaces', () => {
-    render(
+  it('hides forced-mode hint for non-developer surfaces', async () => {
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
@@ -162,8 +163,8 @@ describe('ConnectivityStatusBanner', () => {
     expect(screen.queryByText('Supabase outage simulation is currently forced in debugger mode.')).not.toBeInTheDocument();
   });
 
-  it('shows online syncing state without outage-only contact actions', () => {
-    render(
+  it('shows online syncing state without outage-only contact actions', async () => {
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
@@ -180,8 +181,8 @@ describe('ConnectivityStatusBanner', () => {
     expect(screen.queryByRole('link', { name: 'Email support' })).not.toBeInTheDocument();
   });
 
-  it('hides support actions when browser is offline', () => {
-    render(
+  it('hides support actions when browser is offline', async () => {
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
@@ -196,9 +197,9 @@ describe('ConnectivityStatusBanner', () => {
     expect(screen.queryByRole('link', { name: 'Email support' })).not.toBeInTheDocument();
   });
 
-  it('calls retry handler when failed sync retry is clicked', () => {
+  it('calls retry handler when failed sync retry is clicked', async () => {
     const onRetrySync = vi.fn();
-    render(
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
@@ -213,9 +214,9 @@ describe('ConnectivityStatusBanner', () => {
     expect(onRetrySync).toHaveBeenCalledTimes(1);
   });
 
-  it('respects dismiss state from session storage for same outage state', () => {
+  it('respects dismiss state from session storage for same outage state', async () => {
     window.sessionStorage.setItem('tf_connectivity_banner_dismissed_state_v1', 'offline');
-    render(
+    await render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute

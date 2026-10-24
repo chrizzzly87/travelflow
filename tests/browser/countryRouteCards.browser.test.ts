@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { cleanup, screen } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { CountryRouteCards } from '../../components/inspirations/CountryRouteCards';
 import { decodeTripPrefill } from '../../services/tripPrefillDecoder';
 
@@ -30,7 +31,7 @@ vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-const renderCards = (countryValue: string, countryName: string) => render(
+const renderCards = async (countryValue: string, countryName: string) => await render(
   React.createElement(
     MemoryRouter,
     null,
@@ -41,16 +42,16 @@ const renderCards = (countryValue: string, countryName: string) => render(
 describe('CountryRouteCards', () => {
   afterEach(() => cleanup());
 
-  it('renders the three featured routes for a country', () => {
-    renderCards('iceland', 'Iceland');
+  it('renders the three featured routes for a country', async () => {
+    await renderCards('iceland', 'Iceland');
 
     expect(screen.getByRole('heading', { name: 'Ring Road Full Circle' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'South Coast Short Escape' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Westfjords & Snaefellsnes' })).toBeTruthy();
   });
 
-  it('links each card to a create-trip prefill carrying the ordered stop list', () => {
-    renderCards('japan', 'Japan');
+  it('links each card to a create-trip prefill carrying the ordered stop list', async () => {
+    await renderCards('japan', 'Japan');
 
     const link = screen.getAllByRole('link').find((candidate) => (
       candidate.getAttribute('href')?.startsWith('/create-trip?prefill=')
@@ -64,8 +65,8 @@ describe('CountryRouteCards', () => {
     expect(prefill?.cityList).toEqual(['Tokyo', 'Hakone', 'Kyoto', 'Osaka']);
   });
 
-  it('renders the committed map preview on every route card', () => {
-    renderCards('japan', 'Japan');
+  it('renders the committed map preview on every route card', async () => {
+    await renderCards('japan', 'Japan');
 
     const maps = screen.getAllByRole('img')
       .map((image) => image.getAttribute('src') || '')
@@ -75,8 +76,8 @@ describe('CountryRouteCards', () => {
     expect(maps.some((src) => src.startsWith('/images/trip-maps/routes/japan-golden-route.png'))).toBe(true);
   });
 
-  it('renders nothing for a country without curated routes', () => {
-    const { container } = renderCards('germany', 'Germany');
+  it('renders nothing for a country without curated routes', async () => {
+    const { container } = await renderCards('germany', 'Germany');
     expect(container.innerHTML).toBe('');
   });
 });

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const trackEventMock = vi.fn();
 
@@ -94,7 +95,7 @@ describe('pages/FaqPage', () => {
   });
 
   it('opens and scrolls to a deep-linked FAQ item from hash', async () => {
-    render(
+    await render(
       <MemoryRouter initialEntries={['/faq#general-report-translation-issue']}>
         <FaqPage />
       </MemoryRouter>
@@ -113,8 +114,8 @@ describe('pages/FaqPage', () => {
     }));
   });
 
-  it('tracks section link clicks and FAQ item toggles', () => {
-    render(
+  it('tracks section link clicks and FAQ item toggles', async () => {
+    await render(
       <MemoryRouter initialEntries={['/faq']}>
         <FaqPage />
       </MemoryRouter>
@@ -145,8 +146,8 @@ describe('pages/FaqPage', () => {
 
   // Regression: the heading, the section titles and the answers were hardcoded
   // English literals, so every localized /faq route rendered an English h1.
-  it('renders the heading and body copy from the faq namespace, not a hardcoded literal', () => {
-    render(
+  it('renders the heading and body copy from the faq namespace, not a hardcoded literal', async () => {
+    await render(
       <MemoryRouter initialEntries={['/faq']}>
         <FaqPage />
       </MemoryRouter>
@@ -156,10 +157,10 @@ describe('pages/FaqPage', () => {
     expect(screen.getByRole('heading', { level: 2, name: enFaq.sections.billing })).toBeInTheDocument();
   });
 
-  it('translates the heading, sections and answers when the locale is German', () => {
+  it('translates the heading, sections and answers when the locale is German', async () => {
     localeState.language = 'de';
 
-    render(
+    await render(
       <MemoryRouter initialEntries={['/faq#general-report-translation-issue']}>
         <FaqPage />
       </MemoryRouter>
@@ -174,10 +175,10 @@ describe('pages/FaqPage', () => {
 
   // The answers quote Contact-form options; they must read as the labels that
   // form actually renders in the active locale.
-  it('interpolates the live Contact-form option labels into answers', () => {
+  it('interpolates the live Contact-form option labels into answers', async () => {
     localeState.language = 'de';
 
-    render(
+    await render(
       <MemoryRouter initialEntries={['/faq#general-report-translation-issue']}>
         <FaqPage />
       </MemoryRouter>

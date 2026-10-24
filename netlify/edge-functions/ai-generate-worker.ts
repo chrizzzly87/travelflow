@@ -1,5 +1,6 @@
 import { enqueueTripVideoFromWorker } from "../edge-lib/trip-og-video-enqueue.ts";
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
+import { isZeroNightReturnStop } from "../../shared/aiTripStayDuration.ts";
 import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
 import { buildModelActivityPlacementFields } from "../../shared/aiTripActivityPlacement.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
@@ -335,7 +336,7 @@ const normalizeCityColors = (items: Array<Record<string, unknown>>): Array<Recor
   });
 };
 
-const buildTripFromModelData = (
+export const buildTripFromModelData = (
   data: Record<string, unknown>,
   params: {
     tripId: string;
@@ -364,7 +365,9 @@ const buildTripFromModelData = (
     const typed = city as Record<string, unknown>;
     const location = parseAiTripCityLocation(typed, `Stop ${index + 1}`);
     const daysRaw = Number(typed.days);
-    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 1;
+    const days = isZeroNightReturnStop(rawCities, index, params.roundTrip)
+      ? 0
+      : (Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 1);
     parsedCities.push({
       name: location.name,
       days,
@@ -382,7 +385,7 @@ const buildTripFromModelData = (
     if (normalizeCityName(first.name) !== normalizeCityName(last.name)) {
       parsedCities.push({
         ...first,
-        days: 1,
+        days: 0,
         sourceIndex: -1,
       });
     }

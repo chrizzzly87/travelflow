@@ -128,20 +128,21 @@ Permission functions must prove what they claim: an editable share grants access
 to the holder of the token, not to everyone while a share exists. Include
 expiry (`trip_expires_at`) in every access check.
 
-## 10. This app renders through preact/compat
+## 10. Native Start uses the repository's React 18 runtime
 
-`vite.config.ts` aliases `react` to `preact/compat`. Consequences that have each
-cost a debugging round:
+The migration branch builds and tests with React 18.3.1 and native TanStack Start;
+`vite.config.ts` has no Preact compatibility aliases. Follow
+[TanStack application ownership](TANSTACK_START_ARCHITECTURE.md), and verify library
+requirements against the installed graph.
 
-- **A plain function component never receives `ref`.** React 19's ref-as-prop
-  does not exist here. Any component used with Radix `asChild`, or that a
-  library focuses or measures, must be a real `forwardRef`. Symptoms:
-  `e.getBoundingClientRect is not a function`, `e.focus is not a function`,
-  popovers anchored at the origin.
-- Libraries that assume React 19 (`@shadcn/react`, for example) do not belong
-  here. Vendor the markup and rebuild it on the repo's own primitives.
-- Keyboard-owning libraries that wire themselves through refs (cmdk) may not
-  work; owning the key handling is often simpler than fighting it.
+- React 19 ref-as-prop is unavailable. Keep `forwardRef` for Radix `asChild` and
+  components that a library focuses or measures. Test real keyboard/focus behavior.
+- Reuse the shared styled primitives and their compatible Radix versions. Do not
+  replace working library keyboard handling based on historical Preact workarounds.
+- Keep generation execution out of ordinary trip viewing. Synchronous capability
+  checks and the shared active-request registry are lightweight; optional prompt,
+  queue and recovery code belongs to its feature or explicit action. Keep the same
+  controller singleton for registration, abort, supersession and cleanup.
 
 ## 11. `i18next-icu` is installed but never registered
 

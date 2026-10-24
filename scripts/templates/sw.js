@@ -148,13 +148,10 @@ const staleWhileRevalidate = async (request, cacheName, maxEntries, event) => {
 const navigationWithShellFallback = async (request) => {
   const shellCache = await caches.open(SHELL_CACHE);
 
-  const networkAttempt = fetch(request)
-    .then(async (response) => {
-      if (isStorableResponse(response)) {
-        await shellCache.put(NAVIGATION_FALLBACK, response.clone());
-      }
-      return response;
-    });
+  // Only the install-time neutral Start document can serve another URL.
+  // A route response contains its own head and dehydrated router state; saving
+  // it as the shared shell leaks that route into a later slow/offline visit.
+  const networkAttempt = fetch(request);
   // The race below can leave this promise unhandled on the timeout path.
   networkAttempt.catch(() => null);
 

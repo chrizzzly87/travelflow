@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   onClose: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   NavLink: ({
     to,
     children,
@@ -152,7 +152,7 @@ describe('navigation locale switch handoff', () => {
       expect(screen.getByTestId('language-select')).toHaveAttribute('data-value', 'en');
     });
     expect(mocks.navigate).toHaveBeenCalledWith('/pricing');
-    expect(mocks.changeLanguage).toHaveBeenCalledWith('en');
+    expect(mocks.changeLanguage).not.toHaveBeenCalled(); // The matching native route owns language loading.
   });
 
   it('keeps the mobile locale selection on English while the route handoff is still pending', async () => {
@@ -172,6 +172,6 @@ describe('navigation locale switch handoff', () => {
     });
     expect(mocks.onClose).toHaveBeenCalledTimes(1);
     expect(mocks.navigate).toHaveBeenCalledWith('/pricing');
-    expect(mocks.changeLanguage).toHaveBeenCalledWith('en');
+    expect(mocks.changeLanguage).not.toHaveBeenCalled(); // The matching native route owns language loading.
   });
 });

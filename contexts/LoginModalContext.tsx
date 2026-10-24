@@ -1,10 +1,11 @@
 import React, { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/app/navigation';
 import { useAuth } from '../hooks/useAuth';
 import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 import { trackEvent } from '../services/analyticsService';
 import {
     buildPathFromLocationParts,
+    resolveAccountLoginNextPath,
     clearPendingAuthRedirect,
     getPendingAuthRedirect,
     isSafeAuthReturnPath,
@@ -37,8 +38,8 @@ interface LoginModalState {
 const DEFAULT_MODAL_STATE: LoginModalState = {
     isOpen: false,
     source: 'unknown',
-    nextPath: '/create-trip',
-    reloadOnSuccess: true,
+    nextPath: '/profile',
+    reloadOnSuccess: false,
 };
 
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
@@ -66,19 +67,14 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, []);
 
     const openLoginModal = useCallback((options?: OpenLoginModalOptions) => {
-        const currentPath = buildPathFromLocationParts({
-            pathname: routeLocation.pathname,
-            search: routeLocation.search,
-            hash: routeLocation.hash,
-        });
-        const nextPath = resolvePreferredNextPath(options?.nextPath, currentPath);
+        const nextPath = resolvePreferredNextPath(options?.nextPath, resolveAccountLoginNextPath(routeLocation));
         rememberAuthReturnPath(nextPath);
         setPendingAuthRedirect(nextPath, options?.source || 'unknown');
         setState({
             isOpen: true,
             source: options?.source || 'unknown',
             nextPath,
-            reloadOnSuccess: options?.reloadOnSuccess ?? true,
+            reloadOnSuccess: options?.reloadOnSuccess ?? false,
         });
     }, [routeLocation.hash, routeLocation.pathname, routeLocation.search]);
 
@@ -149,12 +145,7 @@ export const useLoginModalContext = (): LoginModalContextValue => {
         isLoginModalOpen: false,
         openLoginModal: (options) => {
             if (typeof window === 'undefined') return;
-            const currentPath = buildPathFromLocationParts({
-                pathname: window.location.pathname,
-                search: window.location.search,
-                hash: window.location.hash,
-            });
-            const nextPath = resolvePreferredNextPath(options?.nextPath, currentPath);
+            const nextPath = resolvePreferredNextPath(options?.nextPath, resolveAccountLoginNextPath(window.location));
             rememberAuthReturnPath(nextPath);
             const loginUrl = new URL('/login', window.location.origin);
             loginUrl.searchParams.set('next', nextPath);

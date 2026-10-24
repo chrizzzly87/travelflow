@@ -1196,6 +1196,7 @@ const fetchSupabaseRpc = async (
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) {
@@ -1225,6 +1226,7 @@ export const fetchActiveTripShareToken = async (tripId: string): Promise<string 
     endpoint.searchParams.set("limit", "8");
 
     const response = await fetch(endpoint.toString(), {
+      signal: AbortSignal.timeout(3000),
       method: "GET",
       headers: {
         "Content-Type": "application/json",

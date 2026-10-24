@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
+import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { FeaturesGlobe } from '../../components/marketing/features/FeaturesGlobe';
@@ -35,25 +36,11 @@ vi.mock('../../services/runtimeLocationService', () => ({
 
 const globeContainer = () => screen.getByRole('img', { name: 'globe.accessibility' });
 
-describe('FeaturesGlobe prerender capture', () => {
-  afterEach(() => {
-    delete (window as unknown as { __TF_PRERENDER_EAGER__?: boolean }).__TF_PRERENDER_EAGER__;
-  });
-
-  // /features is prerendered, and preact/compat's hydrate() does not patch
-  // attributes on DOM it reuses. If the capture bakes in the WebGL-dependent
-  // markup (the prerender browser has no WebGL, so it captured the fallback
-  // card), the client hydrates its own render against the wrong nodes and the
-  // corrections are dropped: the canvas keeps `opacity-0` and the overlay layer
-  // keeps the fallback card's `inset-x-6 bottom-6` classes, which parks the
-  // Paris panel below the globe and hides the rest. The capture must therefore
-  // stay empty — exactly what the client renders on its first pass.
-  it('renders an empty container while the prerender script is capturing', () => {
-    (window as unknown as { __TF_PRERENDER_EAGER__?: boolean }).__TF_PRERENDER_EAGER__ = true;
-
-    render(React.createElement(FeaturesGlobe));
-
-    const container = globeContainer();
+describe('FeaturesGlobe native SSR boundary', () => {
+  it('renders an empty deterministic globe container during server rendering', () => {
+    const html = renderToString(React.createElement(FeaturesGlobe));
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    const container = document.querySelector('[role="img"]')!;
     expect(container.children.length).toBe(0);
     expect(container.querySelector('canvas')).toBeNull();
   });
