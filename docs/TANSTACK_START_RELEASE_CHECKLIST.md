@@ -107,10 +107,14 @@ It remains visible debt; a successful Vite build does not mean a clean full-proj
 
 ## Follow-up, not a first-release requirement
 
-Admin chart dependency modernization is [#584](https://github.com/chrizzzly87/travelflow/issues/584).
-The actual bar/area/donut/list components pass an unmocked React 19 runtime test,
-but Tremor still declares a React-18-only peer range. Keep that bounded evidence
-separate from an upstream compatibility claim.
+Admin chart dependency modernization ([#584](https://github.com/chrizzzly87/travelflow/issues/584))
+replaced Tremor with shared `recharts` 3.10.1 components in `components/admin/charts`,
+whose peer ranges include React 19; Tremor and its unused date-picker and headless-UI
+dependencies are gone from the lockfile. Component tests cover data, empty states,
+theme tokens, keyboard tooltips and list selection in jsdom. Still to verify on a
+hosted preview with an admin session: the dashboard, billing and AI telemetry charts
+with real data, pointer tooltips, resize behaviour and the visual match in light and
+dark mode.
 
 Native route-search ownership polish is [#586](https://github.com/chrizzzly87/travelflow/issues/586):
 profile-list search parameters currently survive on trip links without affecting

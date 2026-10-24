@@ -365,6 +365,20 @@ middle of the timeline.
 
 ---
 
+## Admin charts (`components/admin/charts`)
+
+Not a `components/ui/` primitive, but the one chart foundation for admin pages:
+`AdminBarChart`, `AdminAreaChart`, `AdminDonutChart` and `AdminBarList`, built on `recharts`.
+They take `data` plus `index`/`categories` (or `category`), named `colors` from
+`styles/admin-charts.css`, a `valueFormatter` and a required `ariaLabel` (the figure's
+accessible name and the caption of its hidden data table). `customTooltip` receives
+`AdminChartTooltipProps`. Pair them with `AdminTitle` / `AdminSubtitle` / `AdminText` /
+`AdminMetric` / `AdminProgressBar` from `components/admin/AdminText.tsx`, and render a page-level
+empty sentence instead of a chart when there is no data. Import them only from admin route
+modules so the chart chunk stays out of public, auth and planner bundles.
+
+---
+
 ## Where to put a new shared component
 
 1. It is a generic primitive with no product knowledge → `components/ui/`, and add a section here.

@@ -19,12 +19,19 @@ Use the supported `fetchPriority` image prop and nullable ref types. Keep existi
 ref forwarding where Radix or measured elements require it. Testing Library's
 `reactStrictMode: true` exercises effect replay at the root, matching the app.
 
-Vaul uses its React-19-compatible release. The existing admin chart package still
-declares a React-18-only peer range; its actual bar, area, donut and interactive
-list components have an unmocked React 19 compatibility test. This bounded evidence
-does not constitute upstream React 19 support. Replacing that dependency is a
-separate follow-up ([#584](https://github.com/chrizzzly87/travelflow/issues/584));
-do not hide the peer warning with an override.
+Vaul uses its React-19-compatible release. Admin charts are built on `recharts`
+3.10.1, whose peer ranges include React 19 (and `react-is` 19.3.1, pinned to the
+React version), through the shared components in `components/admin/charts`
+(`AdminBarChart`, `AdminAreaChart`, `AdminDonutChart`, `AdminBarList`) and the
+metric/text primitives in `components/admin/AdminText.tsx`
+([#584](https://github.com/chrizzzly87/travelflow/issues/584) replaced the
+React-18-only Tremor package). Series colours are named tokens in
+`styles/admin-charts.css`; surfaces, grid lines, tooltips and text use the semantic
+theme tokens, so light and dark mode need no per-chart classes. Each chart is a
+labelled `figure` with a visually hidden data table, and the plot takes keyboard
+focus with arrow-key tooltip navigation; selectable bar lists render buttons. Only
+admin route modules import these components, so the chart chunk is never preloaded
+by public, auth or planner documents. Do not add package overrides for chart peers.
 
 The synchronous boot script sets the initial theme before paint. `ThemeColor`
 claims its immutable document snapshot during hydration, then subscribes to the
