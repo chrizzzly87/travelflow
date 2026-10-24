@@ -96,6 +96,7 @@ import {
     applyAiRuntimeSettings,
     type AiRuntimeSettings,
 } from '../services/aiRuntimeSettingsService';
+import { buildInitialAdminAiRuntimeSettings } from '../components/admin/adminAiRuntimeSettingsDraft';
 import {
     AI_REASONING_EFFORTS,
     resolveSupportedReasoningEffort,
@@ -638,13 +639,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [modelCapabilityFilter, setModelCapabilityFilter] = useState('all');
     const [modelPriceFilter, setModelPriceFilter] = useState('all');
     const [liveOpenRouterModels, setLiveOpenRouterModels] = useState<OpenRouterCatalogModel[]>([]);
-    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>({
-        defaultModelId: getDefaultCreateTripModel().id,
-        approvedOpenRouterModels: [],
-        modelMaxAgeMonths: 6,
-        showOlderModels: false,
-        updatedAt: null,
-    });
+    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>(
+        () => buildInitialAdminAiRuntimeSettings(getDefaultCreateTripModel().id),
+    );
     const [modelCatalogLoading, setModelCatalogLoading] = useState(false);
     const [modelCatalogLoaded, setModelCatalogLoaded] = useState(false);
     const [modelTargetIds, setModelTargetIds] = useState<string[]>(() => {
