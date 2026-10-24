@@ -233,7 +233,7 @@ export const prepareTripItineraryModelData = (
       options.roundTrip && index === rawCities.length - 1 && index > 0 && hasText(entry.name)
       && entry.name.trim().toLowerCase() === firstName && days === 0
     );
-    if (!Number.isInteger(days) || (days <= 0 && !terminalRoundTrip)) errors.push(`${path}.days must be a positive whole number`);
+    if (typeof days !== "number" || !Number.isInteger(days) || (days <= 0 && !terminalRoundTrip)) errors.push(`${path}.days must be a positive whole number`);
     if (!hasText(entry.countryCode) || !/^[A-Z]{2}$/.test(entry.countryCode)) {
       errors.push(`${path}.countryCode must be an uppercase ISO alpha-2 code`);
     }
@@ -283,7 +283,11 @@ export const prepareTripItineraryModelData = (
       errors.push(`${path}.transportMode is invalid`);
     }
     const duration = entry.duration;
-    if (!isStrictNumber(duration) || duration <= 0) errors.push(`${path}.duration must be positive hours`);
+    if (!isStrictNumber(duration) || duration <= 0) {
+      // Any error rejects the whole draft; skip building a segment from an unusable duration.
+      errors.push(`${path}.duration must be positive hours`);
+      return [];
+    }
     derivedTravelFields += 3;
     return [{
       fromCityIndex: index,
@@ -306,8 +310,8 @@ export const prepareTripItineraryModelData = (
     const cityIndex = entry.cityIndex;
     const dayOffset = entry.dayOffsetInCity;
     const duration = entry.duration;
-    if (!Number.isInteger(cityIndex) || cityIndex < 0 || cityIndex >= cities.length) errors.push(`${path}.cityIndex is invalid`);
-    const cityDays = Number.isInteger(cityIndex) && cities[cityIndex] ? Number(cities[cityIndex].days) : null;
+    if (typeof cityIndex !== "number" || !Number.isInteger(cityIndex) || cityIndex < 0 || cityIndex >= cities.length) errors.push(`${path}.cityIndex is invalid`);
+    const cityDays = typeof cityIndex === "number" && Number.isInteger(cityIndex) && cities[cityIndex] ? Number(cities[cityIndex].days) : null;
     if (!isStrictNumber(dayOffset) || dayOffset < 0 || (cityDays !== null && dayOffset >= cityDays)) {
       errors.push(`${path}.dayOffsetInCity falls outside the stop`);
     }

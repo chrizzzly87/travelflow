@@ -1341,7 +1341,7 @@ export const CheckoutPage: React.FC = () => {
                 setAuthErrorMessage(t(`errors.${errorCode}`, { ns: 'auth', defaultValue: t('errors.default', { ns: 'auth' }) }));
                 return;
             }
-            if (!response.data.session) {
+            if (!('session' in response.data) || !response.data.session) {
                 setAuthInfoMessage(t('states.emailConfirmationSent', { ns: 'auth' }));
                 return;
             }

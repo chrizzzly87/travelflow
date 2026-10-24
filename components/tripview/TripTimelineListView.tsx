@@ -259,7 +259,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     const model = useMemo(() => buildTimelineListModel(trip), [trip]);
     const sectionContainerRef = useRef<HTMLDivElement | null>(null);
     const viewportRef = useRef<HTMLDivElement | null>(null);
-    const markerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const markerRefs = useRef<Record<string, HTMLElement | null>>({});
     const transferButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
     const citySectionRefs = useRef<Record<string, HTMLElement | null>>({});
     const scrollSelectionFrameRef = useRef<number | null>(null);

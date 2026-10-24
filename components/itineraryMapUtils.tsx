@@ -300,7 +300,6 @@ const TRANSPORT_ICON_PATHS: Record<string, string> = {
 const resolveTransportIconPath = (mode?: string): string => {
     const normalized = normalizeTransportMode(mode);
     if (normalized === 'na' || !normalized) return TRANSPORT_ICON_PATHS.walk;
-    if (normalized === 'bike') return TRANSPORT_ICON_PATHS.bicycle;
     if (normalized === 'motorcycle') return TRANSPORT_ICON_PATHS.motorcycle;
     if (normalized in TRANSPORT_ICON_PATHS) {
         return TRANSPORT_ICON_PATHS[normalized as keyof typeof TRANSPORT_ICON_PATHS];

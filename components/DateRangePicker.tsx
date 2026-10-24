@@ -169,7 +169,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     const getDaysInMonth = (year: number, month: number) => {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const days = [];
+        const days: Array<{ date: Date; isCurrent: boolean }> = [];
 
         // Monday start logic (0 = Mon, 6 = Sun)
         const startPad = (firstDay.getDay() + 6) % 7;

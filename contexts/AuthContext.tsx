@@ -18,6 +18,8 @@ import type { UserProfileRecord } from '../services/profileService';
 import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 
 type AuthServiceModule = typeof import('../services/authService');
+type E2EAuthSandboxResult = Awaited<ReturnType<typeof loginWithE2EAuthSandbox>>;
+type OAuthSandboxUnavailableResult = { data: null; error: Error };
 type ProfileServiceModule = typeof import('../services/profileService');
 type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
 
@@ -105,13 +107,13 @@ interface AuthContextValue {
     isAdmin: boolean;
     refreshAccess: () => Promise<void>;
     refreshProfile: () => Promise<void>;
-    loginWithPassword: (email: string, password: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>>>;
+    loginWithPassword: (email: string, password: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>> | E2EAuthSandboxResult>;
     registerWithPassword: (
         email: string,
         password: string,
         options?: { emailRedirectTo?: string }
-    ) => Promise<Awaited<ReturnType<AuthServiceModule['signUpWithEmailPassword']>>>;
-    loginWithOAuth: (provider: OAuthProviderId, redirectTo?: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>>>;
+    ) => Promise<Awaited<ReturnType<AuthServiceModule['signUpWithEmailPassword']>> | E2EAuthSandboxResult>;
+    loginWithOAuth: (provider: OAuthProviderId, redirectTo?: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>> | OAuthSandboxUnavailableResult>;
     sendPasswordResetEmail: (
         email: string,
         options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
@@ -604,10 +606,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const loginWithOAuth = useCallback(async (provider: OAuthProviderId, redirectTo?: string) => {
         if (shouldEnableE2EAuthSandbox()) {
-            return {
+            const unavailable: OAuthSandboxUnavailableResult = {
                 data: null,
                 error: new Error('OAuth login is unavailable in the e2e auth sandbox.'),
-            } as Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>>;
+            };
+            return unavailable;
         }
 
         const authService = await loadAuthService();

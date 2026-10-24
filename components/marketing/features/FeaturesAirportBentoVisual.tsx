@@ -33,11 +33,16 @@ interface AirportVisualState {
     phase: AirportVisualPhase;
 }
 
-const hasFiniteCoordinates = (latitude: number | null, longitude: number | null): boolean => (
+const toFiniteCoordinates = (
+    latitude: number | null,
+    longitude: number | null,
+): { lat: number; lng: number } | null => (
     typeof latitude === 'number'
     && typeof longitude === 'number'
     && Number.isFinite(latitude)
     && Number.isFinite(longitude)
+        ? { lat: latitude, lng: longitude }
+        : null
 );
 
 const cleanAirportCode = (value: string | null | undefined): string | null => {
@@ -106,7 +111,8 @@ export const FeaturesAirportBentoVisual: React.FC<{
             const resolvedCity = typeof city === 'string' && city.trim() ? city.trim() : null;
             const resolvedCountry = typeof countryName === 'string' && countryName.trim() ? countryName.trim() : null;
 
-            if (!hasFiniteCoordinates(latitude, longitude)) {
+            const coordinates = toFiniteCoordinates(latitude, longitude);
+            if (!coordinates) {
                 startTransition(() => {
                     setVisualState({
                         city: resolvedCity,
@@ -120,8 +126,8 @@ export const FeaturesAirportBentoVisual: React.FC<{
 
             try {
                 let response = await fetchNearbyAirports({
-                    lat: latitude,
-                    lng: longitude,
+                    lat: coordinates.lat,
+                    lng: coordinates.lng,
                     limit: AIRPORT_LOOKUP_LIMIT,
                     minimumServiceTier: 'major',
                 });
@@ -129,8 +135,8 @@ export const FeaturesAirportBentoVisual: React.FC<{
 
                 if (response.airports.length === 0) {
                     response = await fetchNearbyAirports({
-                        lat: latitude,
-                        lng: longitude,
+                        lat: coordinates.lat,
+                        lng: coordinates.lng,
                         limit: AIRPORT_LOOKUP_LIMIT,
                         minimumServiceTier: 'regional',
                     });

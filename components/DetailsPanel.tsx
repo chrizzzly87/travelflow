@@ -245,7 +245,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const closeDurationEditor = (options?: { revertPreview?: boolean }) => {
-      if (options?.revertPreview !== false && isSchedulableDraftType(displayItem?.type) && durationBaselineRef.current) {
+      if (options?.revertPreview !== false && displayItem && isSchedulableDraftType(displayItem.type) && durationBaselineRef.current) {
           applyItemChanges(
               [{
                   id: displayItem.id,
@@ -2015,7 +2015,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
-                            onClick={closeDurationEditor}
+                            onClick={() => closeDurationEditor()}
                             className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
@@ -2084,7 +2084,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </p>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
-                            onClick={closeCityEditor}
+                            onClick={() => closeCityEditor()}
                             className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
