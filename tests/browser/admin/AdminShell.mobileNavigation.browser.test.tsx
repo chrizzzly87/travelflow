@@ -66,4 +66,21 @@ describe('components/admin/AdminShell mobile navigation', () => {
       expect(trigger).toHaveFocus();
     });
   });
+
+  it('ignores storage events for unrelated keys without a ReferenceError', () => {
+    renderShell();
+    const errors: unknown[] = [];
+    const onError = (event: ErrorEvent) => {
+      errors.push(event.error);
+      event.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    try {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'unrelated_key' }));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'tf_dev_admin_bypass_disabled' }));
+    } finally {
+      window.removeEventListener('error', onError);
+    }
+    expect(errors).toEqual([]);
+  });
 });
