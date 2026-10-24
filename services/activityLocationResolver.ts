@@ -55,7 +55,7 @@ export const normalizeLocationQuery = (query: string): string => (
 const hasFiniteCoordinates = (
   coordinates: ICoordinates | null | undefined,
 ): coordinates is ICoordinates => (
-  Boolean(coordinates)
+  coordinates != null
   && Number.isFinite(coordinates.lat)
   && Number.isFinite(coordinates.lng)
 );
