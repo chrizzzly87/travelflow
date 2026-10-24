@@ -8,15 +8,22 @@ import { MarketingRouteLoadingShell } from '../components/bootstrap/MarketingRou
 import { RouteErrorPage } from '../components/bootstrap/RouteErrorPage';
 export function getRouter() {
     const requestI18n = typeof window === 'undefined' ? createRequestI18n() : i18n;
-    const context = { i18n: requestI18n, hydrationI18n: requestI18n };
+    // The server stamps the moment it rendered; the browser takes the stamp
+    // from the transported state so date-dependent text hydrates unchanged.
+    const context: { i18n: typeof requestI18n; hydrationI18n: typeof requestI18n; renderedAt?: number } = {
+        i18n: requestI18n,
+        hydrationI18n: requestI18n,
+        renderedAt: typeof window === 'undefined' ? Date.now() : undefined,
+    };
     const router = createRouter({
         routeTree,
         trailingSlash: 'never',
         parseSearch: parseRouteSearch,
         stringifySearch: stringifyRouteSearch,
         context,
-        dehydrate: () => ({ i18n: getLocaleHydrationSnapshot(requestI18n) }),
+        dehydrate: () => ({ i18n: getLocaleHydrationSnapshot(requestI18n), renderedAt: context.renderedAt }),
         hydrate: async state => {
+            context.renderedAt = typeof state?.renderedAt === 'number' ? state.renderedAt : undefined;
             await restoreLocaleHydrationSnapshot(state?.i18n, requestI18n);
             // A selective-SSR fallback can hydrate after browser preferences
             // change. Keep its delivered language immutable until it commits.

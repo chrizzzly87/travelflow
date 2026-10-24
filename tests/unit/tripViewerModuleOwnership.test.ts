@@ -4,15 +4,19 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 const root = process.cwd();
-const forbidden = new Set([
+const authoringOnly = new Set([
     'services/aiService.ts', 'services/destinationService.ts',
     'services/countryAliasService.ts', 'services/tripGenerationRetryService.ts',
     'services/tripGenerationQueueService.ts', 'services/tripClaimConflictService.ts',
     'components/tripview/TripClaimConflictDialog.tsx',
 ]);
+// Interaction-only code the first trip view render must not pull in: the
+// agent's zod schemas (validated inside the lazy chat session) and the map
+// customize panel (loaded on its first open).
+const interactionOnly = new Set(['shared/tripAgent.ts', 'components/maps/MapCustomizeModal.tsx']);
 
 /** Follow runtime declarations, excluding type-only and optional import() edges. */
-function findAuthoringPaths(entry: string): string[][] {
+function findAuthoringPaths(entry: string, forbidden: Set<string> = authoringOnly): string[][] {
     const visited = new Set<string>();
     const violations: string[][] = [];
     function visit(file: string, chain: string[]) {
@@ -47,5 +51,9 @@ function findAuthoringPaths(entry: string): string[][] {
 describe('trip domain runtime ownership', () => {
     it('keeps optional generation and creation normalization outside ordinary viewing', () => {
         expect(findAuthoringPaths('components/TripView.tsx')).toEqual([]);
+    });
+
+    it('keeps the agent schemas and map customize panel out of the first trip view render', () => {
+        expect(findAuthoringPaths('components/TripView.tsx', interactionOnly)).toEqual([]);
     });
 });

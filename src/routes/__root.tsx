@@ -20,8 +20,9 @@ import { getDocumentHints } from '../document/headAssets';
 import { useDocumentLocale } from '../document/useDocumentLocale';
 import { ThemeColor } from '../document/ThemeColor';
 import { tripVideoMetadata } from '../../shared/tripOgVideo';
+import { RenderClockProvider } from '../../hooks/useRenderNow';
 
-export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI18n?: typeof i18n }>()({
+export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI18n?: typeof i18n; renderedAt?: number }>()({
     // Native context is reconstructed on hydration but cached when the root is
     // reused. Its URL snapshot is only for the server's neutral SPA mask.
     context: ({ location }) => ({ hydrationDocument: buildRouteDocument(location.href, readLocalStorageItem('tf_app_language')) }),
@@ -87,6 +88,6 @@ function RootDocument() {
             {bootScripts.map(({ id, code, attributes }) => <script {...attributes} key={id} dangerouslySetInnerHTML={{ __html: code }} />)}
             <HeadContent />
         </head>
-        <body><ContactFormRegistration /><I18nextProvider i18n={router.options.context.i18n}><div id="root" data-tf-prerendered-root="true"><ApplicationShell /></div></I18nextProvider><Scripts /></body>
+        <body><ContactFormRegistration /><I18nextProvider i18n={router.options.context.i18n}><RenderClockProvider renderedAt={router.options.context.renderedAt}><div id="root" data-tf-prerendered-root="true"><ApplicationShell /></div></RenderClockProvider></I18nextProvider><Scripts /></body>
     </html>;
 }
