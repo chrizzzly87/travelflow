@@ -250,15 +250,17 @@ export const generatePreparedTripItinerary = async (
       ? mergeTargetedScheduleRepair(lastDraft ?? {}, generatedData, lastErrors)
       : generatedData;
     lastDraft = candidateDraft ?? lastDraft;
+    // Carry the draft with the result so a successful preparation is typed
+    // with the (non-null) draft it was prepared from.
     const prepared = candidateDraft
-      ? prepareTripItineraryModelData(candidateDraft, preparation)
-      : { ok: false as const, errors: ["Targeted schedule repair returned an incomplete or ambiguous patch"] };
+      ? { ...prepareTripItineraryModelData(candidateDraft, preparation), draft: candidateDraft }
+      : { ok: false as const, errors: ["Targeted schedule repair returned an incomplete or ambiguous patch"], draft: null };
     if (prepared.ok === true) {
       return {
         ok: true,
         value: {
           data: prepared.value,
-          draft: candidateDraft,
+          draft: prepared.draft,
           meta: lastMeta,
           attempts,
           repaired: repairAttempt > 0,

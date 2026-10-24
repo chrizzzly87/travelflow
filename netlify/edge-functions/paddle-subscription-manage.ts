@@ -2,6 +2,7 @@ import { collectPaddleEnvironmentIssues } from '../edge-lib/paddle-billing.ts';
 import {
   resolveCurrentPaddleSubscription,
 } from '../edge-lib/paddle-current-subscription.ts';
+import type { PaddleSubscriptionRecord } from '../edge-lib/paddle-subscription-resolution.ts';
 import {
   authorizeBillingUser,
   asTrimmedString,
@@ -85,7 +86,7 @@ export default async (request: Request): Promise<Response> => {
   const summary = await getCurrentUserSubscriptionSummary(supabaseConfig, authToken);
   const baseUrl = resolvePaddleApiBaseUrl(paddleConfig.environment);
   let resolvedSummary = summary;
-  let resolvedSubscription = null;
+  let resolvedSubscription: PaddleSubscriptionRecord | null = null;
 
   try {
     const resolved = await resolveCurrentPaddleSubscription({

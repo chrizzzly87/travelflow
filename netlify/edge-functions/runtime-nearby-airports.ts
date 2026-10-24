@@ -71,16 +71,24 @@ export const parseNearbyAirportsRequest = (request: Request): {
   };
 };
 
-const isValidCoordinatePair = (lat: number | null, lng: number | null): boolean => (
-  typeof lat === 'number'
-  && typeof lng === 'number'
-  && Number.isFinite(lat)
-  && Number.isFinite(lng)
-  && lat >= -90
-  && lat <= 90
-  && lng >= -180
-  && lng <= 180
-);
+const toValidCoordinatePair = (
+  lat: number | null,
+  lng: number | null,
+): { lat: number; lng: number } | null => {
+  if (
+    typeof lat !== 'number'
+    || typeof lng !== 'number'
+    || !Number.isFinite(lat)
+    || !Number.isFinite(lng)
+    || lat < -90
+    || lat > 90
+    || lng < -180
+    || lng > 180
+  ) {
+    return null;
+  }
+  return { lat, lng };
+};
 
 const mapAirportRpcRow = (row: unknown): AirportReference | null => {
   if (!row || typeof row !== 'object') return null;
@@ -228,13 +236,16 @@ export default async (request: Request): Promise<Response> => {
     });
   }
 
-  const { lat, lng, limit, minimumServiceTier, countryCode } = parseNearbyAirportsRequest(request);
-  if (!isValidCoordinatePair(lat, lng)) {
+  const parsedRequest = parseNearbyAirportsRequest(request);
+  const { limit, minimumServiceTier, countryCode } = parsedRequest;
+  const coordinates = toValidCoordinatePair(parsedRequest.lat, parsedRequest.lng);
+  if (!coordinates) {
     return json(400, {
       ok: false,
       error: 'Valid lat and lng query parameters are required.',
     });
   }
+  const { lat, lng } = coordinates;
 
   const supabaseConfig = getSupabaseAnonConfig();
   const rpcAirports = supabaseConfig && !countryCode

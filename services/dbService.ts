@@ -537,19 +537,11 @@ const asTimelineDiffItems = (value: unknown): Array<Record<string, unknown>> => 
 const readTimelineEntryItemType = (entry: Record<string, unknown>): string | null => {
     const direct = typeof entry.item_type === 'string' ? entry.item_type.trim().toLowerCase() : '';
     if (direct) return direct;
-    const before = entry.before;
-    if (before && typeof before === 'object' && !Array.isArray(before)) {
-        const beforeType = typeof (before as Record<string, unknown>).type === 'string'
-            ? (before as Record<string, unknown>).type.trim().toLowerCase()
-            : '';
-        if (beforeType) return beforeType;
-    }
-    const after = entry.after;
-    if (after && typeof after === 'object' && !Array.isArray(after)) {
-        const afterType = typeof (after as Record<string, unknown>).type === 'string'
-            ? (after as Record<string, unknown>).type.trim().toLowerCase()
-            : '';
-        if (afterType) return afterType;
+    for (const snapshot of [entry.before, entry.after]) {
+        if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) continue;
+        const snapshotType = (snapshot as Record<string, unknown>).type;
+        const normalizedType = typeof snapshotType === 'string' ? snapshotType.trim().toLowerCase() : '';
+        if (normalizedType) return normalizedType;
     }
     return null;
 };

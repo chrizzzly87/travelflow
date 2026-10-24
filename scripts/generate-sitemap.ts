@@ -59,7 +59,7 @@ const escapeXml = (value) =>
 
 const buildAlternateLinks = ({ basePath, locales, defaultLocale }) => {
     const uniqueLocales = Array.from(new Set(locales));
-    const lines = [];
+    const lines: string[] = [];
     for (const locale of uniqueLocales) {
         const href = toAbsoluteUrl(localizePath(basePath, locale, defaultLocale));
         lines.push(`<xhtml:link rel="alternate" hreflang="${locale}" href="${escapeXml(href)}" />`);

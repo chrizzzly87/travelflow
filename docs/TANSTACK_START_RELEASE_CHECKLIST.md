@@ -103,7 +103,11 @@ Netlify operations and testing guides describe the native structure.
 
 The full-project TypeScript backlog (#556) predates this migration. The previous React 18 candidate had 473 diagnostics. The accepted React 19 runtime has 351 diagnostics and zero new normalized
 file/error-code diagnostics against that baseline, recorded on PR #579.
-It remains visible debt; a successful Vite build does not mean a clean full-project typecheck.
+The backlog is being cleared in parallel branches grouped by directory. The services/,
+netlify/, scripts/, e2e/, config/, lib/ and data/ branch fixed its 73 diagnostics (354 total
+before, 281 after on that branch). `pnpm typecheck` (`tsc --noEmit -p .`) is now a PR Quality
+step and a `ci:local` stage (`pnpm ci:local --only=typecheck`); it stays red until the remaining
+directory branches merge, and a successful Vite build still does not mean a clean typecheck.
 
 ## Follow-up, not a first-release requirement
 

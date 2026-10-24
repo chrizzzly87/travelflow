@@ -50,6 +50,9 @@ jobs:
       - name: Validate toast usage conventions
         run: pnpm toasts:validate
 
+      - name: Type-check the whole project
+        run: pnpm typecheck
+
       - name: Run core regression tests
         run: pnpm test:core
 

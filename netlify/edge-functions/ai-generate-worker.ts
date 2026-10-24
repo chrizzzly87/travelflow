@@ -624,7 +624,7 @@ const applySucceededGenerationState = (
   const generatedAiMeta = asObject(generatedTrip.aiMeta) || {};
   const preferredCityColorPaletteId = asString(previousTrip.cityColorPaletteId) || asString(generatedTrip.cityColorPaletteId);
   const preferredMapColorMode = asString(previousTrip.mapColorMode) || asString(generatedTrip.mapColorMode);
-  const mergedTrip = {
+  const mergedTrip: Record<string, unknown> = {
     ...previousTrip,
     ...generatedTrip,
     id: previousTrip.id || generatedTrip.id,
@@ -1090,12 +1090,20 @@ const claimJobs = async (
 const ensureWorkerAuthorized = async (
   request: Request,
   config: { url: string; serviceRoleKey: string },
-): Promise<{
-  authorized: boolean;
-  mode: "admin" | "user" | "none";
-  userId: string | null;
-  diagnostics: WorkerAuthorizationDiagnostics;
-}> => {
+): Promise<
+  | {
+    authorized: true;
+    mode: "admin" | "user";
+    userId: string | null;
+    diagnostics: WorkerAuthorizationDiagnostics;
+  }
+  | {
+    authorized: false;
+    mode: "none";
+    userId: null;
+    diagnostics: WorkerAuthorizationDiagnostics;
+  }
+> => {
   const expected = readEnv("TF_ADMIN_API_KEY").trim();
   const provided = request.headers.get(WORKER_HEADER)?.trim() || "";
   const diagnosticsBase = {

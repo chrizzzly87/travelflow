@@ -12,7 +12,8 @@ export interface BrowserConnectivitySnapshot {
     isOnline: boolean;
 }
 
-type NetworkConnectionLike = NetworkInformation & {
+// The Network Information API is not in TypeScript's DOM lib.
+type NetworkConnectionLike = EventTarget & {
     effectiveType?: string;
     saveData?: boolean;
     rtt?: number;

@@ -258,10 +258,8 @@ export const reverseGeocodeCountry = async (
     const components = Array.isArray(results[0]?.address_components) ? results[0].address_components : [];
     const countryComponent = components.find((component: unknown) => {
       if (!component || typeof component !== 'object') return false;
-      const types = Array.isArray((component as { types?: unknown[] }).types)
-        ? (component as { types?: unknown[] }).types
-        : [];
-      return types.includes('country');
+      const { types } = component as { types?: unknown };
+      return Array.isArray(types) && types.includes('country');
     }) as { short_name?: unknown; long_name?: unknown } | undefined;
 
     const code = normalizeText(countryComponent?.short_name).toUpperCase();

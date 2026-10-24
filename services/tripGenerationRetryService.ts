@@ -169,7 +169,7 @@ export const retryTripGenerationWithDefaultModel = async (
             const remoteLatestAttemptId = remoteLatestAttempt?.id?.trim() || null;
             let shouldReuseExistingInFlight = remoteState === 'queued' || remoteState === 'running';
 
-            if (shouldReuseExistingInFlight && remoteLatestAttemptId) {
+            if (shouldReuseExistingInFlight && remoteLatestAttempt && remoteLatestAttemptId) {
                 try {
                     const [attemptLogs, jobs] = await Promise.all([
                         listOwnerTripGenerationAttempts(remoteTrip.id, 8),
