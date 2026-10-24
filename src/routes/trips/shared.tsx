@@ -10,7 +10,8 @@ export const Route = createFileRoute('/_trips/s/$token')({
     staticData: { sessionBound: true },
     loaderDeps: tripLoaderDeps,
     loader: ({ params, deps, location, abortController }) => loadSharedTrip({ token: params.token, versionId: deps.versionId, signal: abortController.signal }),
-    staleTime: 0, preloadStaleTime: 0, gcTime: 0,
+    // A hover preload younger than 10s serves the click; any other entry refetches.
+    staleTime: 0, preloadStaleTime: 10_000, gcTime: 0,
     pendingComponent: TripRouteLoadingShell,
     errorComponent: ShareUnavailablePage,
     head: ({ loaderData }) => loaderData ? { meta: [{ title: `${loaderData.trip.title} · TravelFlow` }] } : {},
