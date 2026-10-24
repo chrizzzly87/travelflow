@@ -1,0 +1,27 @@
+/*
+ * Admin chart palette: named series colours for the shared recharts components in
+ * components/admin/charts. Solid Tailwind 500 values, identical in light and dark
+ * mode (as the retired chart library used); surfaces, grid lines and text come from
+ * the semantic theme tokens instead.
+ */
+:root {
+  --admin-chart-blue: oklch(62.3% 0.214 259.815);
+  --admin-chart-cyan: oklch(71.5% 0.143 215.221);
+  --admin-chart-sky: oklch(68.5% 0.169 237.323);
+  --admin-chart-indigo: oklch(58.5% 0.233 277.117);
+  --admin-chart-violet: oklch(60.6% 0.25 292.717);
+  --admin-chart-purple: oklch(62.7% 0.265 303.9);
+  --admin-chart-fuchsia: oklch(66.7% 0.295 322.15);
+  --admin-chart-slate: oklch(55.4% 0.046 257.417);
+  --admin-chart-gray: oklch(55.1% 0.027 264.364);
+  --admin-chart-red: oklch(63.7% 0.237 25.331);
+  --admin-chart-orange: oklch(70.5% 0.213 47.604);
+  --admin-chart-amber: oklch(76.9% 0.188 70.08);
+  --admin-chart-yellow: oklch(79.5% 0.184 86.047);
+  --admin-chart-lime: oklch(76.8% 0.233 130.85);
+  --admin-chart-green: oklch(72.3% 0.219 149.579);
+  --admin-chart-emerald: oklch(69.6% 0.17 162.48);
+  --admin-chart-teal: oklch(70.4% 0.14 182.503);
+  --admin-chart-pink: oklch(65.6% 0.241 354.308);
+  --admin-chart-rose: oklch(64.5% 0.246 16.439);
+}

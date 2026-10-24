@@ -1,16 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowClockwise, ArrowLeft } from '@phosphor-icons/react';
 import {
-    AreaChart,
-    BarChart,
-    BarList,
-    type CustomTooltipProps,
-    DonutChart,
-    Metric,
-    Subtitle,
-    Text,
-    Title,
-} from '@tremor/react';
+    AdminAreaChart,
+    AdminBarChart,
+    AdminBarList,
+    type AdminChartTooltipProps,
+    AdminDonutChart,
+} from '../components/admin/charts';
+import { AdminMetric, AdminSubtitle, AdminText, AdminTitle } from '../components/admin/AdminText';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
@@ -187,7 +184,7 @@ const toNumericTooltipValue = (value: unknown): number => {
 
 const createProviderChartTooltip = (
     formatValue: (name: string, value: number) => string,
-): React.FC<CustomTooltipProps> => {
+): React.FC<AdminChartTooltipProps> => {
     return ({ active, payload, label }) => {
         if (!active || !Array.isArray(payload) || payload.length === 0) return null;
 
@@ -682,8 +679,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
                 )}
 
                 <AdminSurfaceCard>
-                    <Title>Filters</Title>
-                    <Subtitle>Keep this compact up top, then scroll down for deeper telemetry analysis.</Subtitle>
+                    <AdminTitle>Filters</AdminTitle>
+                    <AdminSubtitle>Keep this compact up top, then scroll down for deeper telemetry analysis.</AdminSubtitle>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                         <div className="space-y-1">
@@ -770,106 +767,111 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
                 <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     <AdminSurfaceCard>
-                        <Text>Total calls</Text>
-                        <Metric>{telemetrySummary ? telemetrySummary.total : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Selected filter scope</Text>
+                        <AdminText>Total calls</AdminText>
+                        <AdminMetric>{telemetrySummary ? telemetrySummary.total : '—'}</AdminMetric>
+                        <AdminText className="mt-1 text-xs text-muted-foreground">Selected filter scope</AdminText>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Text>Success rate</Text>
-                        <Metric>{telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</Text>
+                        <AdminText>Success rate</AdminText>
+                        <AdminMetric>{telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}</AdminMetric>
+                        <AdminText className="mt-1 text-xs text-muted-foreground">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</AdminText>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Text>Failure rate</Text>
-                        <Metric>{formatPercent(failureRate)}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Quick reliability read</Text>
+                        <AdminText>Failure rate</AdminText>
+                        <AdminMetric>{formatPercent(failureRate)}</AdminMetric>
+                        <AdminText className="mt-1 text-xs text-muted-foreground">Quick reliability read</AdminText>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Text>Avg duration</Text>
-                        <Metric>{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Across all calls</Text>
+                        <AdminText>Avg duration</AdminText>
+                        <AdminMetric>{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</AdminMetric>
+                        <AdminText className="mt-1 text-xs text-muted-foreground">Across all calls</AdminText>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Text>Total cost (est.)</Text>
-                        <Metric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">
+                        <AdminText>Total cost (est.)</AdminText>
+                        <AdminMetric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</AdminMetric>
+                        <AdminText className="mt-1 text-xs text-muted-foreground">
                             Models with success: {formatPercent(successfulModelCoverage)}
-                        </Text>
+                        </AdminText>
                     </AdminSurfaceCard>
                 </section>
 
                 <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                     <AdminSurfaceCard>
-                        <Title>Top models by speed</Title>
-                        <Subtitle>Only models with successful calls are listed.</Subtitle>
+                        <AdminTitle>Top models by speed</AdminTitle>
+                        <AdminSubtitle>Only models with successful calls are listed.</AdminSubtitle>
                         {fastestBarListData.length > 0 ? (
-                            <BarList
+                            <AdminBarList
+                                ariaLabel="Top models by speed"
                                 className="mt-3"
                                 data={fastestBarListData}
                                 sortOrder="ascending"
                                 valueFormatter={(value) => formatDuration(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No successful speed data.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No successful speed data.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Top models by cost</Title>
-                        <Subtitle>Average cost per successful call.</Subtitle>
+                        <AdminTitle>Top models by cost</AdminTitle>
+                        <AdminSubtitle>Average cost per successful call.</AdminSubtitle>
                         {cheapestBarListData.length > 0 ? (
-                            <BarList
+                            <AdminBarList
+                                ariaLabel="Top models by cost"
                                 className="mt-3"
                                 data={cheapestBarListData}
                                 sortOrder="ascending"
                                 valueFormatter={(value) => formatUsd(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No successful cost data.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No successful cost data.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Top models by value</Title>
-                        <Subtitle>Lower cost/second is better.</Subtitle>
+                        <AdminTitle>Top models by value</AdminTitle>
+                        <AdminSubtitle>Lower cost/second is better.</AdminSubtitle>
                         {bestValueBarListData.length > 0 ? (
-                            <BarList
+                            <AdminBarList
+                                ariaLabel="Top models by value"
                                 className="mt-3"
                                 data={bestValueBarListData}
                                 sortOrder="ascending"
                                 valueFormatter={(value) => `${formatUsd(value)} / sec`}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No successful value data.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No successful value data.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Top models by success rate</Title>
-                        <Subtitle>Success-rate ratio leaderboard.</Subtitle>
+                        <AdminTitle>Top models by success rate</AdminTitle>
+                        <AdminSubtitle>Success-rate ratio leaderboard.</AdminSubtitle>
                         {successRateBarListData.length > 0 ? (
-                            <BarList
+                            <AdminBarList
+                                ariaLabel="Top models by success rate"
                                 className="mt-3"
                                 data={successRateBarListData}
                                 sortOrder="descending"
                                 valueFormatter={(value) => formatPercent(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No success-rate data.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No success-rate data.</AdminText>
                         )}
                     </AdminSurfaceCard>
                 </section>
 
                 <section className="grid gap-3 lg:grid-cols-2">
                     <AdminSurfaceCard>
-                        <Title>Call trend</Title>
-                        <Subtitle>Success vs failed volume across the selected window.</Subtitle>
+                        <AdminTitle>Call trend</AdminTitle>
+                        <AdminSubtitle>Success vs failed volume across the selected window.</AdminSubtitle>
                         {callsTrendChartData.length > 0 ? (
-                            <BarChart
+                            <AdminBarChart
+                                ariaLabel="Call trend"
                                 className="mt-3 h-64"
                                 data={callsTrendChartData}
                                 index="Time"
@@ -883,15 +885,16 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No time-series call data for this filter set.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No time-series call data for this filter set.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Success-rate trend</Title>
-                        <Subtitle>Ratio evolution over time (%).</Subtitle>
+                        <AdminTitle>Success-rate trend</AdminTitle>
+                        <AdminSubtitle>Ratio evolution over time (%).</AdminSubtitle>
                         {successRateTrendChartData.length > 0 ? (
-                            <AreaChart
+                            <AdminAreaChart
+                                ariaLabel="Success-rate trend"
                                 className="mt-3 h-64"
                                 data={successRateTrendChartData}
                                 index="Time"
@@ -908,17 +911,18 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No success-rate trend data for this filter set.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No success-rate trend data for this filter set.</AdminText>
                         )}
                     </AdminSurfaceCard>
                 </section>
 
                 <section className="grid gap-3 lg:grid-cols-2">
                     <AdminSurfaceCard>
-                        <Title>Latency trend</Title>
-                        <Subtitle>Average latency by bucket.</Subtitle>
+                        <AdminTitle>Latency trend</AdminTitle>
+                        <AdminSubtitle>Average latency by bucket.</AdminSubtitle>
                         {latencyTrendChartData.length > 0 ? (
-                            <AreaChart
+                            <AdminAreaChart
+                                ariaLabel="Latency trend"
                                 className="mt-3 h-56"
                                 data={latencyTrendChartData}
                                 index="Time"
@@ -933,15 +937,16 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No latency trend data for this filter set.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No latency trend data for this filter set.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Cost trend</Title>
-                        <Subtitle>Total estimated cost per bucket.</Subtitle>
+                        <AdminTitle>Cost trend</AdminTitle>
+                        <AdminSubtitle>Total estimated cost per bucket.</AdminSubtitle>
                         {costTrendChartData.length > 0 ? (
-                            <AreaChart
+                            <AdminAreaChart
+                                ariaLabel="Cost trend"
                                 className="mt-3 h-56"
                                 data={costTrendChartData}
                                 index="Time"
@@ -956,18 +961,19 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No cost trend data for this filter set.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No cost trend data for this filter set.</AdminText>
                         )}
                     </AdminSurfaceCard>
                 </section>
 
                 <section className="mt-3">
                     <AdminSurfaceCard>
-                        <Title>Total cost per day (Current Month)</Title>
-                        <Subtitle>Daily breakdown of API costs for the ongoing calendar month.</Subtitle>
-                        <Metric className="mt-2">{formatUsd(currentMonthCostTotal)}</Metric>
+                        <AdminTitle>Total cost per day (Current Month)</AdminTitle>
+                        <AdminSubtitle>Daily breakdown of API costs for the ongoing calendar month.</AdminSubtitle>
+                        <AdminMetric className="mt-2">{formatUsd(currentMonthCostTotal)}</AdminMetric>
                         {monthlyCostChartData.length > 0 ? (
-                            <BarChart
+                            <AdminBarChart
+                                ariaLabel="Total cost per day (Current Month)"
                                 className="mt-3 h-56"
                                 data={monthlyCostChartData}
                                 index="Date"
@@ -979,23 +985,23 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 showLegend={false}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No cost data available for the current month.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No cost data available for the current month.</AdminText>
                         )}
                     </AdminSurfaceCard>
                 </section>
 
                 <section className="grid gap-3 lg:grid-cols-2 mt-3">
                     <AdminSurfaceCard>
-                        <Title>Provider breakdown</Title>
-                        <Subtitle>Calls and failures by provider.</Subtitle>
+                        <AdminTitle>Provider breakdown</AdminTitle>
+                        <AdminSubtitle>Calls and failures by provider.</AdminSubtitle>
                         {providerVolumeChartData.length > 0 ? (
-                            <BarChart
+                            <AdminBarChart
+                                ariaLabel="Provider breakdown"
                                 className="mt-3 h-64"
                                 data={providerVolumeChartData}
                                 index="Provider"
                                 categories={['Calls', 'Failures']}
                                 colors={['blue', 'rose']}
-                                layout="horizontal"
                                 yAxisWidth={48}
                                 valueFormatter={(value) => formatCallCount(value)}
                                 showTooltip
@@ -1003,19 +1009,19 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 customTooltip={ProviderBreakdownTooltip}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider breakdown in this filter set.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No provider breakdown in this filter set.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
                         <div className="flex items-start justify-between gap-2">
                             <div>
-                                <Title>Provider share</Title>
-                                <Subtitle>
+                                <AdminTitle>Provider share</AdminTitle>
+                                <AdminSubtitle>
                                     {selectedProviderShare
                                         ? `Model split inside ${getAiProviderMetadata(selectedProviderShare).shortName}. Click a slice for details.`
                                         : 'Distribution of total call volume. Click a provider slice to drill down.'}
-                                </Subtitle>
+                                </AdminSubtitle>
                             </div>
 
                             {selectedProviderShare && (
@@ -1035,7 +1041,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
                         {providerShareDonutData.length > 0 ? (
                             <div className="mt-3 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,250px)]">
-                                <DonutChart
+                                <AdminDonutChart
+                                    ariaLabel="Provider share"
                                     className="h-64"
                                     data={providerShareDonutData}
                                     index="Segment"
@@ -1048,9 +1055,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 />
 
                                 <div className="space-y-2">
-                                    <Text className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
+                                    <AdminText className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
                                         {selectedProviderShare ? 'Model legend' : 'Provider legend'}
-                                    </Text>
+                                    </AdminText>
 
                                     <div className="space-y-1.5">
                                         {activeDonutEntries.map((entry) => {
@@ -1106,7 +1113,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider-share data in this filter set.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No provider-share data in this filter set.</AdminText>
                         )}
 
                         {selectedProviderStats && (
@@ -1139,10 +1146,11 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
                 <section className="grid gap-3 lg:grid-cols-3">
                     <AdminSurfaceCard>
-                        <Title>Provider success rate</Title>
-                        <Subtitle>Top providers by successful call ratio.</Subtitle>
+                        <AdminTitle>Provider success rate</AdminTitle>
+                        <AdminSubtitle>Top providers by successful call ratio.</AdminSubtitle>
                         {providerSuccessRateChartData.length > 0 ? (
-                            <BarChart
+                            <AdminBarChart
+                                ariaLabel="Provider success rate"
                                 className="mt-3 h-56"
                                 data={providerSuccessRateChartData}
                                 index="Provider"
@@ -1157,21 +1165,21 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 customTooltip={ProviderSuccessRateTooltip}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider success-rate data available.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No provider success-rate data available.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Provider cost per success</Title>
-                        <Subtitle>Average estimated cost per successful call.</Subtitle>
+                        <AdminTitle>Provider cost per success</AdminTitle>
+                        <AdminSubtitle>Average estimated cost per successful call.</AdminSubtitle>
                         {providerCostPerSuccessChartData.length > 0 ? (
-                            <BarChart
+                            <AdminBarChart
+                                ariaLabel="Provider cost per success"
                                 className="mt-3 h-56"
                                 data={providerCostPerSuccessChartData}
                                 index="Provider"
                                 categories={['Avg cost / success (USD)']}
                                 colors={['violet']}
-                                layout="horizontal"
                                 yAxisWidth={64}
                                 valueFormatter={(value) => formatUsd(value)}
                                 showTooltip
@@ -1179,45 +1187,47 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 customTooltip={ProviderCostPerSuccessTooltip}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider cost-per-success data available.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No provider cost-per-success data available.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Top failure codes</Title>
-                        <Subtitle>Most frequent recent error categories.</Subtitle>
+                        <AdminTitle>Top failure codes</AdminTitle>
+                        <AdminSubtitle>Most frequent recent error categories.</AdminSubtitle>
                         {failureCodeBarListData.length > 0 ? (
-                            <BarList
+                            <AdminBarList
+                                ariaLabel="Top failure codes"
                                 className="mt-3"
                                 data={failureCodeBarListData}
                                 sortOrder="descending"
                                 valueFormatter={(value) => formatCallCount(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No recent failures in the selected filter scope.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No recent failures in the selected filter scope.</AdminText>
                         )}
                     </AdminSurfaceCard>
                 </section>
 
                 <section className="grid gap-3 lg:grid-cols-2">
                     <AdminSurfaceCard>
-                        <Title>Model call volume</Title>
-                        <Subtitle>Most active provider/model combinations.</Subtitle>
+                        <AdminTitle>Model call volume</AdminTitle>
+                        <AdminSubtitle>Most active provider/model combinations.</AdminSubtitle>
                         {modelVolumeBarListData.length > 0 ? (
-                            <BarList
+                            <AdminBarList
+                                ariaLabel="Model call volume"
                                 className="mt-3"
                                 data={modelVolumeBarListData}
                                 sortOrder="descending"
                                 valueFormatter={(value) => formatCallCount(value)}
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No model activity data in this filter set.</Text>
+                            <AdminText className="mt-3 text-xs text-muted-foreground">No model activity data in this filter set.</AdminText>
                         )}
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Recent calls</Title>
-                        <Subtitle>Latest rows with status, duration, and error code.</Subtitle>
+                        <AdminTitle>Recent calls</AdminTitle>
+                        <AdminSubtitle>Latest rows with status, duration, and error code.</AdminSubtitle>
 
                         <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-border">
                             <table className="min-w-full border-collapse text-left text-xs">
@@ -1264,13 +1274,13 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
                 <section>
                     <AdminSurfaceCard>
-                        <Title>Benchmark run comments</Title>
-                        <Subtitle>
+                        <AdminTitle>Benchmark run comments</AdminTitle>
+                        <AdminSubtitle>
                             Qualitative notes captured per run, grouped by provider/model in the current telemetry filter window.
-                        </Subtitle>
-                        <Text className="mt-1 text-xs text-muted-foreground">
+                        </AdminSubtitle>
+                        <AdminText className="mt-1 text-xs text-muted-foreground">
                             Total comments: {telemetryCommentTotal.toLocaleString()}
-                        </Text>
+                        </AdminText>
 
                         <div className="mt-3 max-h-[500px] space-y-3 overflow-y-auto rounded-xl border border-border bg-secondary p-3">
                             {telemetryCommentGroups.length === 0 && (

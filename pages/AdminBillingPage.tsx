@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, WarningCircle } from '@phosphor-icons/react';
-import { BarChart, BarList, DonutChart, Metric, Text, Title } from '@tremor/react';
+import { AdminBarChart, AdminBarList, AdminDonutChart } from '../components/admin/charts';
+import { AdminMetric, AdminText, AdminTitle } from '../components/admin/AdminText';
 import { Link, useSearchParams } from '@/app/navigation';
 
 import { useAppDialog } from '../components/AppDialogProvider';
@@ -245,7 +246,10 @@ export const AdminBillingPage: React.FC = () => {
         [dashboard],
     );
     const dashboardAtRiskData = useMemo(
-        () => dashboard ? buildAdminBillingAtRiskChartData(dashboard) : [],
+        // The bar list reads `name`/`value`; the presentation builder returns `label`/`amount`.
+        () => dashboard
+            ? buildAdminBillingAtRiskChartData(dashboard).map((row) => ({ key: row.label, name: row.label, value: row.amount }))
+            : [],
         [dashboard],
     );
 
@@ -444,9 +448,9 @@ export const AdminBillingPage: React.FC = () => {
                     <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         {dashboardCurrentMrrCards.map((card) => (
                             <AdminSurfaceCard key={`mrr-${card.currency}`}>
-                                <Text>Current MRR ({card.currency})</Text>
-                                <Metric className="mt-2">{card.amountLabel}</Metric>
-                                <Text className="mt-2">{card.subscriptions} running subscriptions</Text>
+                                <AdminText>Current MRR ({card.currency})</AdminText>
+                                <AdminMetric className="mt-2">{card.amountLabel}</AdminMetric>
+                                <AdminText className="mt-2">{card.subscriptions} running subscriptions</AdminText>
                             </AdminSurfaceCard>
                         ))}
                     </div>
@@ -455,11 +459,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>Current MRR by tier</Title>
-                                    <Text>Current monthly recurring revenue grouped by tier and currency. Canceled access grace is excluded.</Text>
+                                    <AdminTitle>Current MRR by tier</AdminTitle>
+                                    <AdminText>Current monthly recurring revenue grouped by tier and currency. Canceled access grace is excluded.</AdminText>
                                 </div>
                                 {dashboardMrrByTierData.length > 0 ? (
-                                    <BarChart
+                                    <AdminBarChart
+                                        ariaLabel="Current MRR by tier"
                                         data={dashboardMrrByTierData}
                                         index="label"
                                         categories={['amount']}
@@ -482,11 +487,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>At-risk revenue</Title>
-                                    <Text>Revenue currently exposed to churn or collection risk, grouped by status bucket.</Text>
+                                    <AdminTitle>At-risk revenue</AdminTitle>
+                                    <AdminText>Revenue currently exposed to churn or collection risk, grouped by status bucket.</AdminText>
                                 </div>
                                 {dashboardAtRiskData.length > 0 ? (
-                                    <BarList
+                                    <AdminBarList
+                                        ariaLabel="At-risk revenue"
                                         data={dashboardAtRiskData}
                                         className="h-72"
                                         color="rose"
@@ -508,11 +514,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>Subscription mix</Title>
-                                    <Text>Paid subscription distribution by plan tier.</Text>
+                                    <AdminTitle>Subscription mix</AdminTitle>
+                                    <AdminText>Paid subscription distribution by plan tier.</AdminText>
                                 </div>
                                 {dashboardTierMixData.length > 0 ? (
-                                    <DonutChart
+                                    <AdminDonutChart
+                                        ariaLabel="Subscription mix"
                                         data={dashboardTierMixData}
                                         category="count"
                                         index="tier"
@@ -531,11 +538,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>Status mix</Title>
-                                    <Text>Billing lifecycle distribution across currently synced subscriptions.</Text>
+                                    <AdminTitle>Status mix</AdminTitle>
+                                    <AdminText>Billing lifecycle distribution across currently synced subscriptions.</AdminText>
                                 </div>
                                 {dashboardStatusMixData.length > 0 ? (
-                                    <DonutChart
+                                    <AdminDonutChart
+                                        ariaLabel="Status mix"
                                         data={dashboardStatusMixData}
                                         category="count"
                                         index="status"
