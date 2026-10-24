@@ -10,6 +10,7 @@ import {
   getMapboxAccessTokenFromEnv,
   getMapsApiKeyFromEnv,
   isMapColorMode,
+  readTripMapColorMode,
   isOgMapStyle,
   isOgRouteMode,
   type MapColorMode,
@@ -174,7 +175,7 @@ const buildShareBackedMetadata = async (
       mapboxAccessToken,
       mapStyle: overrides.mapStyle ?? sharedTrip.viewSettings?.mapStyle,
       routeMode: overrides.routeMode ?? sharedTrip.viewSettings?.routeMode,
-      mapColorMode: overrides.mapColorMode ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+      mapColorMode: overrides.mapColorMode ?? sharedTrip.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip.trip),
       mapRuntimeSelection,
       showStops: overrides.showStops ?? sharedTrip.viewSettings?.showStops,
       showCities: overrides.showCities ??
@@ -197,7 +198,7 @@ const buildShareBackedMetadata = async (
     mapRuntimeSelection,
     mapStyle: overrides.mapStyle ?? sharedTrip?.viewSettings?.mapStyle ?? null,
     routeMode: overrides.routeMode ?? sharedTrip?.viewSettings?.routeMode ?? null,
-    mapColorMode: overrides.mapColorMode ?? sharedTrip?.viewSettings?.mapColorMode ?? sharedTrip?.trip.mapColorMode ?? null,
+    mapColorMode: overrides.mapColorMode ?? sharedTrip?.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip?.trip) ?? null,
     showStops: overrides.showStops ?? sharedTrip?.viewSettings?.showStops ?? null,
     showCities: overrides.showCities ??
       sharedTrip?.viewSettings?.showCities ??

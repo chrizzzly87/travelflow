@@ -1,6 +1,31 @@
 import siteOgImage from "../netlify/edge-functions/site-og-image.tsx";
 import { dirname, fromFileUrl, join, normalize } from "https://deno.land/std@0.224.0/path/mod.ts";
 
+/**
+ * The slice of the Deno runtime this batch renderer uses. The script runs
+ * under `deno run` (see build-site-og-static-images.ts), but the project-wide
+ * Node type check also reads it, and that graph has no Deno globals. Reading
+ * the runtime through this contract keeps both checkers honest without
+ * declaring a project-wide `Deno` global that Node code could then misuse.
+ */
+interface DenoNetAddr {
+  hostname: string;
+  port: number;
+}
+
+interface DenoBatchRuntime {
+  args: string[];
+  readTextFile(path: string): Promise<string>;
+  readFile(path: string): Promise<Uint8Array<ArrayBuffer>>;
+  writeFile(path: string, data: Uint8Array): Promise<void>;
+  serve(
+    options: { hostname: string; port: number; signal: AbortSignal; onListen: () => void },
+    handler: (request: Request) => Response | Promise<Response>,
+  ): { addr: unknown; finished: Promise<void> };
+}
+
+const Deno = (globalThis as unknown as { Deno: DenoBatchRuntime }).Deno;
+
 interface SiteOgStaticRenderTask {
   routeKey: string;
   outputPath: string;
@@ -141,7 +166,7 @@ const run = async (): Promise<void> => {
       return new Response("Not Found", { status: 404 });
     }
   });
-  const serverAddress = server.addr as Deno.NetAddr;
+  const serverAddress = server.addr as DenoNetAddr;
   const origin = `http://${serverAddress.hostname}:${serverAddress.port}`;
 
   const concurrency = Math.max(1, Math.min(12, payload.concurrency ?? 6));

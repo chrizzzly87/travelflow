@@ -1489,7 +1489,7 @@ const normalizeTelemetryProvider = (value: string | null): string | null => {
 const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((row) => {
+    .map((row): AiTelemetryRow | null => {
       if (!row || typeof row !== "object") return null;
       const typed = row as Record<string, unknown>;
       const id = typeof typed.id === "string" ? typed.id : "";
@@ -1510,7 +1510,7 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
         latency_ms: Number.isFinite(Number(typed.latency_ms)) ? Number(typed.latency_ms) : null,
         estimated_cost_usd: Number.isFinite(Number(typed.estimated_cost_usd)) ? Number(typed.estimated_cost_usd) : null,
         error_code: typeof typed.error_code === "string" ? typed.error_code : null,
-      } satisfies AiTelemetryRow;
+      };
     })
     .filter((row): row is AiTelemetryRow => Boolean(row));
 };
@@ -1518,7 +1518,7 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
 const toBenchmarkRunCommentRows = (value: unknown): BenchmarkRunCommentRow[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((row) => {
+    .map((row): BenchmarkRunCommentRow | null => {
       if (!row || typeof row !== "object") return null;
       const typed = row as Record<string, unknown>;
       const id = typeof typed.id === "string" ? typed.id : "";
@@ -1543,7 +1543,7 @@ const toBenchmarkRunCommentRows = (value: unknown): BenchmarkRunCommentRow[] => 
         created_at: createdAt,
         status,
         satisfaction_rating: rating,
-      } satisfies BenchmarkRunCommentRow;
+      };
     })
     .filter((row): row is BenchmarkRunCommentRow => Boolean(row));
 };
