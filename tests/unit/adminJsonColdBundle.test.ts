@@ -23,7 +23,7 @@ describe('admin JSON cold production bundle', () => {
             },
         });
         const outputs = Array.isArray(result) ? result : [result];
-        const chunk = outputs.flatMap(output => output.output).find(output => output.type === 'chunk');
+        const chunk = outputs.flatMap(output => 'output' in output ? output.output : []).find(output => output.type === 'chunk');
         expect(chunk?.type).toBe('chunk');
         const context = { console, setTimeout, clearTimeout, TextEncoder, TextDecoder, URL };
         runInNewContext(chunk!.code, context);
