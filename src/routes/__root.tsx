@@ -11,6 +11,8 @@ import { bootScripts } from '../documentAssets';
 import { buildRouteDocument, resolveRouteDocument } from '../document/routeDocument';
 import { readLocalStorageItem } from '../../services/browserStorageService';
 import { getTripDocumentMetadata } from '../server/tripMetadata';
+import { shouldResolveTripMetadata } from '../document/tripMetadataPolicy';
+import { privateDocumentCacheHeaders } from '../../app/routing/cachePolicy';
 import '../../index.css';
 import '../document/consent.css';
 import { ContactFormRegistration } from '../document/ContactFormRegistration';
@@ -35,7 +37,7 @@ export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI1
             startTransition(() => { languageChange = context.i18n.changeLanguage(locale); });
             await languageChange;
         }
-        if (/^\/(?:trip|s)\//.test(location.pathname)) {
+        if (shouldResolveTripMetadata(location.pathname)) {
             try {
                 const trip = await getTripDocumentMetadata({ data: `${location.pathname}${location.searchStr}` });
                 if (trip) return { routeDocument, tripMetadata: trip };
@@ -62,7 +64,7 @@ export const Route = createRootRouteWithContext<{ i18n: typeof i18n; hydrationI1
             links: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }, { rel: 'manifest', href: '/manifest.webmanifest' }, { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }, { rel: 'canonical', href: meta.canonicalUrl }, ...meta.alternateLinks.map(link => ({ rel: 'alternate', hrefLang: link.hreflang, href: link.href })), ...getDocumentHints(pathname)],
         };
     },
-    headers: () => ({ 'x-tf-renderer': 'tanstack-start', 'cache-control': 'no-store' }),
+    headers: () => ({ 'x-tf-renderer': 'tanstack-start', ...privateDocumentCacheHeaders }),
     component: RootDocument,
     notFoundComponent: lazyRouteComponent(() => import('../../pages/NotFoundPage'), 'NotFoundPage'),
 });

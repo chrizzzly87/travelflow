@@ -7,11 +7,16 @@ import { offlineShellMaskPath } from '../../app/routing/publicPrerender';
 import { resolveRouteDocument } from '../../src/document/routeDocument';
 
 const mocks = vi.hoisted(() => ({
+    serverRender: true,
     instance: { resolvedLanguage: 'en', language: 'en', on: vi.fn(), off: vi.fn(), changeLanguage: vi.fn(async (_language: string) => {}) },
     tripMetadata: vi.fn(async () => null as null | { pageTitle: string; description: string; ogVideoUrl?: string; videoDimensions?: { width: number; height: number }; imageDimensions?: { width: number; height: number } }),
 }));
 vi.mock('../../i18n', () => ({ default: mocks.instance, preloadLocaleNamespaces: vi.fn(async () => {}) }));
 vi.mock('../../src/server/tripMetadata', () => ({ getTripDocumentMetadata: mocks.tripMetadata }));
+vi.mock('../../src/document/tripMetadataPolicy', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../src/document/tripMetadataPolicy')>();
+    return { ...actual, shouldResolveTripMetadata: (pathname: string) => mocks.serverRender && /^\/(?:trip|s)\//.test(pathname) };
+});
 vi.mock('../../app/shell/ApplicationShell', () => ({ default: () => null }));
 vi.mock('../../src/documentAssets', () => ({ bootScripts: [] }));
 vi.mock('../../src/document/ContactFormRegistration', () => ({ ContactFormRegistration: () => null }));
@@ -26,7 +31,7 @@ beforeEach(() => {
     });
 });
 
-afterEach(() => { delete (window as any).$_TSR; localStorage.clear(); mocks.tripMetadata.mockReset(); });
+afterEach(() => { delete (window as any).$_TSR; localStorage.clear(); mocks.tripMetadata.mockReset(); mocks.serverRender = true; });
 
 async function maskTransport() {
     const location = { pathname: offlineShellMaskPath, href: offlineShellMaskPath, searchStr: '' };
@@ -97,5 +102,14 @@ describe('native masked document head ownership', () => {
             expect(head.meta).toContainEqual({ property: `og:${kind}:height`, content: '720' });
         }
         expect(await maskTransport()).toMatchObject({ tripMetadata: null, routeDocument: { pathname: offlineShellMaskPath } });
+    });
+
+    it('does not hold a client trip navigation on the metadata server function', async () => {
+        mocks.serverRender = false;
+        const location = { pathname: '/trip/public-trip', href: '/trip/public-trip', searchStr: '' };
+        const context = { i18n: mocks.instance, ...(Route.options.context as any)({ location }) };
+        const tripContext = await (Route.options.beforeLoad as any)({ context, location, abortController: new AbortController() });
+        expect(mocks.tripMetadata).not.toHaveBeenCalled();
+        expect(tripContext.tripMetadata).toBeNull();
     });
 });
