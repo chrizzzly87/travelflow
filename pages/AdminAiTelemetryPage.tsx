@@ -1,18 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowClockwise, ArrowLeft } from '@phosphor-icons/react';
-import {
-    AreaChart,
-    BarChart,
-    BarList,
-    type CustomTooltipProps,
-    DonutChart,
-    Metric,
-    Subtitle,
-    Text,
-    Title,
-} from '@tremor/react';
+import { ArrowLeft } from '@phosphor-icons/react';
+import { Area, Bar, CartesianGrid, Cell, ComposedChart, Pie, PieChart, XAxis, YAxis } from 'recharts';
+import { AdminBarList, type AdminBarListItem } from '../components/admin/AdminBarList';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminBarChart } from '../components/admin/AdminBarChart';
+import { Button } from '../components/ui/button';
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    chartColor,
+    type ChartConfig,
+} from '../components/ui/chart';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { cn } from '../lib/utils';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProviderCatalog';
@@ -150,6 +158,23 @@ const DONUT_COLOR_DOT_CLASS: Record<TelemetryDonutColor, string> = {
     amber: 'bg-amber-500',
 };
 
+// Tremor colour names from the chart-data service, as fills. The matching `bg-*-500`
+// classes above make Tailwind emit these theme variables.
+const DONUT_COLOR_FILL: Record<TelemetryDonutColor, string> = {
+    blue: 'var(--color-blue-500)',
+    cyan: 'var(--color-cyan-500)',
+    indigo: 'var(--color-indigo-500)',
+    violet: 'var(--color-violet-500)',
+    fuchsia: 'var(--color-fuchsia-500)',
+    rose: 'var(--color-rose-500)',
+    emerald: 'var(--color-emerald-500)',
+    amber: 'var(--color-amber-500)',
+};
+
+const CALL_TREND_COLORS = { Success: 'var(--chart-2)', Failed: 'var(--chart-5)' } as const;
+const PROVIDER_VOLUME_COLORS = { Calls: 'var(--chart-1)', Failures: 'var(--chart-5)' } as const;
+const PROVIDER_SUCCESS_COLORS = { 'Success rate': 'var(--chart-2)' } as const;
+
 const formatDuration = (ms: number | null | undefined): string => {
     if (!Number.isFinite(ms)) return '—';
     const value = Number(ms);
@@ -179,49 +204,6 @@ const formatTimestamp = (value?: string | null): string => {
     if (!Number.isFinite(parsed)) return '—';
     return new Date(parsed).toLocaleString();
 };
-
-const toNumericTooltipValue = (value: unknown): number => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const createProviderChartTooltip = (
-    formatValue: (name: string, value: number) => string,
-): React.FC<CustomTooltipProps> => {
-    return ({ active, payload, label }) => {
-        if (!active || !Array.isArray(payload) || payload.length === 0) return null;
-
-        const firstPayload = payload[0]?.payload as Record<string, unknown> | undefined;
-        const providerId = typeof firstPayload?.providerId === 'string'
-            ? firstPayload.providerId
-            : (typeof label === 'string' ? label.trim().toLowerCase() : '');
-
-        if (!providerId) return null;
-
-        return (
-            <div className="rounded-md border border-border bg-card px-2 py-1.5 shadow-lg dark:shadow-none">
-                <p className="mb-1 text-[11px] font-semibold text-foreground">
-                    <ProviderLabel provider={providerId} providerClassName="text-foreground" logoSize={12} />
-                </p>
-                <div className="space-y-0.5">
-                    {payload.map((entry) => {
-                        const metricName = String(entry.name || 'Value');
-                        const metricValue = toNumericTooltipValue(entry.value);
-                        return (
-                            <p key={metricName} className="text-[11px] text-foreground">
-                                {metricName}: {formatValue(metricName, metricValue)}
-                            </p>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
-};
-
-const ProviderBreakdownTooltip = createProviderChartTooltip((_name, value) => formatCallCount(value));
-const ProviderSuccessRateTooltip = createProviderChartTooltip((_name, value) => formatPercent(value));
-const ProviderCostPerSuccessTooltip = createProviderChartTooltip((_name, value) => formatUsd(value));
 
 const ProviderLabel: React.FC<{
     provider: string;
@@ -263,6 +245,115 @@ const compactModelLabelNode = (provider: string, model: string): React.ReactNode
         </span>
     );
 };
+
+/** Short USD for a dense axis: "$0.00012", "$1.25". Tooltips keep the full `formatUsd`. */
+const formatUsdTick = (value: number): string => {
+    if (!Number.isFinite(value) || value === 0) return '$0';
+    if (Math.abs(value) < 0.01) return `$${Number(value.toPrecision(2))}`;
+    return `$${value.toFixed(2)}`;
+};
+
+/** "2026-10-12" as a local "Oct 12" (parsing the bare date as UTC shifted it a day west of UTC). */
+const formatIsoDayTick = (value: unknown): string => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return String(value ?? '');
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime())
+        ? value
+        : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+interface TelemetrySeriesChartProps<TDatum extends Record<string, unknown>> {
+    data: TDatum[];
+    index: keyof TDatum & string;
+    category: keyof TDatum & string;
+    kind: 'area' | 'bar';
+    color: string;
+    valueFormatter: (value: number) => string;
+    tickFormatter?: (value: number) => string;
+    indexFormatter?: (value: unknown) => string;
+    domain?: [number, number];
+    yAxisWidth?: number;
+    className?: string;
+    ariaLabel: string;
+}
+
+/**
+ * One series over a category axis, for values `AdminBarChart` cannot scale: its y axis
+ * only draws whole-number ticks, which flattens sub-cent costs and fractional seconds.
+ */
+const TelemetrySeriesChart = <TDatum extends Record<string, unknown>>({
+    data,
+    index,
+    category,
+    kind,
+    color,
+    valueFormatter,
+    tickFormatter,
+    indexFormatter,
+    domain,
+    yAxisWidth = 56,
+    className,
+    ariaLabel,
+}: TelemetrySeriesChartProps<TDatum>) => {
+    const config = useMemo<ChartConfig>(() => ({ [category]: { label: category, color } }), [category, color]);
+    const gradientId = `telemetry-fill-${category.replace(/[^a-zA-Z0-9]/g, '-')}`;
+    return (
+        <ChartContainer config={config} className={cn('aspect-auto h-56 w-full', className)} role="img" aria-label={ariaLabel}>
+            <ComposedChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <defs>
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={chartColor(category)} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={chartColor(category)} stopOpacity={0.02} />
+                    </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey={index} tickLine={false} axisLine={false} tickMargin={8} minTickGap={24} tickFormatter={indexFormatter} />
+                <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={6}
+                    width={yAxisWidth}
+                    domain={domain}
+                    tickFormatter={tickFormatter ?? valueFormatter}
+                />
+                <ChartTooltip
+                    cursor={kind === 'bar' ? { fillOpacity: 0.6 } : true}
+                    content={(
+                        <ChartTooltipContent
+                            labelFormatter={indexFormatter ? (label) => indexFormatter(label) : undefined}
+                            valueFormatter={(value) => valueFormatter(Number(value))}
+                        />
+                    )}
+                />
+                {kind === 'area'
+                    ? (
+                        <Area
+                            dataKey={category}
+                            type="monotone"
+                            stroke={chartColor(category)}
+                            strokeWidth={2}
+                            fill={`url(#${gradientId})`}
+                            connectNulls
+                            isAnimationActive={false}
+                        />
+                    )
+                    : (
+                        <Bar
+                            dataKey={category}
+                            fill={chartColor(category)}
+                            radius={[3, 3, 0, 0]}
+                            maxBarSize={32}
+                            isAnimationActive={false}
+                        />
+                    )}
+            </ComposedChart>
+        </ChartContainer>
+    );
+};
+
+const TelemetryEmpty: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <AdminEmptyState className="py-6" title={children} />
+);
 
 export const AdminAiTelemetryPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
@@ -513,11 +604,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
     );
 
     const monthlyCostChartData = useMemo(() => {
+        // Keep the ISO day; the axis formats it locally (see formatIsoDayTick).
         return monthlyCostHistorySeries.map((point) => ({
-            Date: new Date(point.date).toLocaleDateString([], {
-                month: 'short',
-                day: 'numeric',
-            }),
+            Date: point.date,
             'Cost (USD)': point.cost,
         }));
     }, [monthlyCostHistorySeries]);
@@ -560,6 +649,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
     const providerShareDonutData = useMemo(() => {
         return activeDonutEntries.map((entry) => ({
+            key: entry.key,
             Segment: selectedProviderShare
                 ? entry.label
                 : (entry.provider === 'other' ? entry.label : getAiProviderMetadata(entry.provider).shortName),
@@ -569,8 +659,11 @@ export const AdminAiTelemetryPage: React.FC = () => {
         }));
     }, [activeDonutEntries, selectedProviderShare]);
 
-    const providerShareDonutColors = useMemo(
-        () => activeDonutEntries.map((entry) => entry.color),
+    const providerShareChartConfig = useMemo<ChartConfig>(
+        () => Object.fromEntries(activeDonutEntries.map((entry) => [
+            entry.key,
+            { label: entry.label, color: DONUT_COLOR_FILL[entry.color] },
+        ])),
         [activeDonutEntries],
     );
 
@@ -658,38 +751,25 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
     return (
         <AdminShell
-            title="AI Telemetry"
-            description="Operational telemetry dashboard for latency, reliability, and cost across benchmark/runtime calls."
+            title="AI telemetry"
+            description="Latency, reliability and cost across benchmark and runtime AI calls."
             showGlobalSearch={false}
             showDateRange={false}
             actions={(
-                <button
-                    type="button"
-                    onClick={() => void loadTelemetry()}
-                    disabled={telemetryLoading}
-                    className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                    <ArrowClockwise size={14} className={telemetryLoading ? 'animate-spin' : ''} />
-                    Refresh
-                </button>
+                <AdminReloadButton onClick={() => void loadTelemetry()} isLoading={telemetryLoading} />
             )}
         >
-            <div className="mx-auto w-full max-w-[1600px] space-y-4">
-                {telemetryError && (
-                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                        {telemetryError}
-                    </section>
-                )}
+            <div className="flex flex-col gap-4">
+                {telemetryError && <AdminErrorAlert title="Could not load AI telemetry" message={telemetryError} />}
 
-                <AdminSurfaceCard>
-                    <Title>Filters</Title>
-                    <Subtitle>Keep this compact up top, then scroll down for deeper telemetry analysis.</Subtitle>
+                <AdminSurfaceCard className="flex flex-col gap-4">
+                    <AdminSectionHeader title="Filters" description="Scope every chart and ranking below." />
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Window</p>
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Window</span>
                             <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
-                                <SelectTrigger className="h-9 text-sm">
+                                <SelectTrigger className="h-9 text-sm" aria-label="Window">
                                     <SelectValue placeholder="Window" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -702,10 +782,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
                             </Select>
                         </div>
 
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Source</p>
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Source</span>
                             <Select value={telemetrySource} onValueChange={(value) => setTelemetrySource(value as TelemetrySourceFilter)}>
-                                <SelectTrigger className="h-9 text-sm">
+                                <SelectTrigger className="h-9 text-sm" aria-label="Source">
                                     <SelectValue placeholder="Source" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -716,10 +796,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
                             </Select>
                         </div>
 
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Provider</p>
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Provider</span>
                             <Select value={telemetryProviderFilter} onValueChange={setTelemetryProviderFilter}>
-                                <SelectTrigger className="h-9 text-sm">
+                                <SelectTrigger className="h-9 text-sm" aria-label="Provider">
                                     <SelectValue placeholder="Provider" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -737,10 +817,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
                             </Select>
                         </div>
 
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Ranking size</p>
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Ranking size</span>
                             <Select value={String(rankLimit)} onValueChange={(value) => setRankLimit(Number(value))}>
-                                <SelectTrigger className="h-9 text-sm">
+                                <SelectTrigger className="h-9 text-sm" aria-label="Ranking size">
                                     <SelectValue placeholder="Top X" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -752,307 +832,292 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Action</p>
-                            <button
-                                type="button"
-                                onClick={() => void loadTelemetry()}
-                                disabled={telemetryLoading}
-                                className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                <ArrowClockwise size={14} className={telemetryLoading ? 'animate-spin' : ''} />
-                                Refresh data
-                            </button>
-                        </div>
                     </div>
                 </AdminSurfaceCard>
 
-                <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                    <AdminSurfaceCard>
-                        <Text>Total calls</Text>
-                        <Metric>{telemetrySummary ? telemetrySummary.total : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Selected filter scope</Text>
-                    </AdminSurfaceCard>
+                {/* Five KPIs read as one row on wide screens, so this grid goes to five columns. */}
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <AdminStatCard
+                        label="Total calls"
+                        value={telemetrySummary ? telemetrySummary.total.toLocaleString() : '—'}
+                        hint="Selected filter scope"
+                        isLoading={telemetryLoading}
+                    />
+                    <AdminStatCard
+                        label="Success rate"
+                        value={telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}
+                        hint={`Failed: ${telemetrySummary ? telemetrySummary.failed.toLocaleString() : '—'}`}
+                        isLoading={telemetryLoading}
+                    />
+                    <AdminStatCard
+                        label="Failure rate"
+                        value={formatPercent(failureRate)}
+                        hint="Quick reliability read"
+                        hintTone={failureRate !== null && failureRate > 0 ? 'warning' : 'neutral'}
+                        isLoading={telemetryLoading}
+                    />
+                    <AdminStatCard
+                        label="Avg duration"
+                        value={telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}
+                        hint="Across all calls"
+                        isLoading={telemetryLoading}
+                    />
+                    <AdminStatCard
+                        label="Total cost (est.)"
+                        value={telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}
+                        hint={`Models with success: ${formatPercent(successfulModelCoverage)}`}
+                        isLoading={telemetryLoading}
+                    />
+                </div>
 
-                    <AdminSurfaceCard>
-                        <Text>Success rate</Text>
-                        <Metric>{telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</Text>
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard>
-                        <Text>Failure rate</Text>
-                        <Metric>{formatPercent(failureRate)}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Quick reliability read</Text>
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard>
-                        <Text>Avg duration</Text>
-                        <Metric>{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">Across all calls</Text>
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard>
-                        <Text>Total cost (est.)</Text>
-                        <Metric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</Metric>
-                        <Text className="mt-1 text-xs text-muted-foreground">
-                            Models with success: {formatPercent(successfulModelCoverage)}
-                        </Text>
-                    </AdminSurfaceCard>
-                </section>
-
-                <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                    <AdminSurfaceCard>
-                        <Title>Top models by speed</Title>
-                        <Subtitle>Only models with successful calls are listed.</Subtitle>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Top models by speed" description="Only models with successful calls are listed." />
                         {fastestBarListData.length > 0 ? (
-                            <BarList
-                                className="mt-3"
-                                data={fastestBarListData}
+                            <AdminBarList
+                                color="var(--chart-1)"
+                                items={fastestBarListData}
                                 sortOrder="ascending"
                                 valueFormatter={(value) => formatDuration(value)}
+                                ariaLabel="Fastest models by average duration"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No successful speed data.</Text>
+                            <TelemetryEmpty>No successful speed data</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Top models by cost</Title>
-                        <Subtitle>Average cost per successful call.</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Top models by cost" description="Average cost per successful call." />
                         {cheapestBarListData.length > 0 ? (
-                            <BarList
-                                className="mt-3"
-                                data={cheapestBarListData}
+                            <AdminBarList
+                                color="var(--chart-1)"
+                                items={cheapestBarListData}
                                 sortOrder="ascending"
                                 valueFormatter={(value) => formatUsd(value)}
+                                ariaLabel="Cheapest models by average cost"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No successful cost data.</Text>
+                            <TelemetryEmpty>No successful cost data</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Top models by value</Title>
-                        <Subtitle>Lower cost/second is better.</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Top models by value" description="Lower cost per second is better." />
                         {bestValueBarListData.length > 0 ? (
-                            <BarList
-                                className="mt-3"
-                                data={bestValueBarListData}
+                            <AdminBarList
+                                color="var(--chart-1)"
+                                items={bestValueBarListData}
                                 sortOrder="ascending"
                                 valueFormatter={(value) => `${formatUsd(value)} / sec`}
+                                ariaLabel="Best-value models by cost per second"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No successful value data.</Text>
+                            <TelemetryEmpty>No successful value data</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Top models by success rate</Title>
-                        <Subtitle>Success-rate ratio leaderboard.</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Top models by success rate" description="Success-rate leaderboard." />
                         {successRateBarListData.length > 0 ? (
-                            <BarList
-                                className="mt-3"
-                                data={successRateBarListData}
+                            <AdminBarList
+                                items={successRateBarListData}
                                 sortOrder="descending"
                                 valueFormatter={(value) => formatPercent(value)}
+                                color="var(--chart-2)"
+                                ariaLabel="Models by success rate"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No success-rate data.</Text>
+                            <TelemetryEmpty>No success-rate data</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
-                </section>
+                </div>
 
-                <section className="grid gap-3 lg:grid-cols-2">
-                    <AdminSurfaceCard>
-                        <Title>Call trend</Title>
-                        <Subtitle>Success vs failed volume across the selected window.</Subtitle>
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Call trend" description="Successful and failed calls across the selected window." />
                         {callsTrendChartData.length > 0 ? (
-                            <BarChart
-                                className="mt-3 h-64"
+                            <AdminBarChart
                                 data={callsTrendChartData}
                                 index="Time"
                                 categories={['Success', 'Failed']}
-                                colors={['emerald', 'rose']}
-                                stack
-                                yAxisWidth={56}
-                                valueFormatter={(value) => formatCallCount(value)}
-                                startEndOnly={callsTrendChartData.length > 12}
-                                showTooltip
-                                showLegend
+                                colors={CALL_TREND_COLORS}
+                                stacked
+                                ariaLabel="Stacked bar chart of successful and failed calls per time bucket"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No time-series call data for this filter set.</Text>
+                            <TelemetryEmpty>No time-series call data for this filter set</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Success-rate trend</Title>
-                        <Subtitle>Ratio evolution over time (%).</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Success-rate trend" description="Share of successful calls per bucket." />
                         {successRateTrendChartData.length > 0 ? (
-                            <AreaChart
-                                className="mt-3 h-64"
+                            <TelemetrySeriesChart
+                                kind="area"
+                                className="h-64"
                                 data={successRateTrendChartData}
                                 index="Time"
-                                categories={['Success rate']}
-                                colors={['indigo']}
-                                yAxisWidth={56}
-                                minValue={0}
-                                maxValue={100}
+                                category="Success rate"
+                                color="var(--chart-1)"
+                                domain={[0, 100]}
                                 valueFormatter={(value) => formatPercent(value)}
-                                connectNulls
-                                showGradient
-                                startEndOnly={successRateTrendChartData.length > 12}
-                                showTooltip
-                                showLegend
+                                tickFormatter={(value) => `${value}%`}
+                                yAxisWidth={44}
+                                ariaLabel="Area chart of success rate per time bucket"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No success-rate trend data for this filter set.</Text>
+                            <TelemetryEmpty>No success-rate trend data for this filter set</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
-                </section>
+                </div>
 
-                <section className="grid gap-3 lg:grid-cols-2">
-                    <AdminSurfaceCard>
-                        <Title>Latency trend</Title>
-                        <Subtitle>Average latency by bucket.</Subtitle>
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Latency trend" description="Average latency per bucket." />
                         {latencyTrendChartData.length > 0 ? (
-                            <AreaChart
-                                className="mt-3 h-56"
+                            <TelemetrySeriesChart
+                                kind="area"
                                 data={latencyTrendChartData}
                                 index="Time"
-                                categories={['Avg latency (ms)']}
-                                colors={['blue']}
-                                yAxisWidth={56}
+                                category="Avg latency (ms)"
+                                color="var(--chart-4)"
                                 valueFormatter={(value) => formatDuration(value)}
-                                connectNulls
-                                showGradient
-                                startEndOnly={latencyTrendChartData.length > 12}
-                                showTooltip
-                                showLegend
+                                ariaLabel="Area chart of average latency per time bucket"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No latency trend data for this filter set.</Text>
+                            <TelemetryEmpty>No latency trend data for this filter set</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Cost trend</Title>
-                        <Subtitle>Total estimated cost per bucket.</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Cost trend" description="Total estimated cost per bucket." />
                         {costTrendChartData.length > 0 ? (
-                            <AreaChart
-                                className="mt-3 h-56"
+                            <TelemetrySeriesChart
+                                kind="area"
                                 data={costTrendChartData}
                                 index="Time"
-                                categories={['Total cost (USD)']}
-                                colors={['violet']}
-                                yAxisWidth={56}
+                                category="Total cost (USD)"
+                                color="var(--chart-3)"
                                 valueFormatter={(value) => formatUsd(value)}
-                                connectNulls
-                                showGradient
-                                startEndOnly={costTrendChartData.length > 12}
-                                showTooltip
-                                showLegend
+                                tickFormatter={formatUsdTick}
+                                yAxisWidth={64}
+                                ariaLabel="Area chart of total estimated cost per time bucket"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No cost trend data for this filter set.</Text>
+                            <TelemetryEmpty>No cost trend data for this filter set</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
-                </section>
+                </div>
 
-                <section className="mt-3">
-                    <AdminSurfaceCard>
-                        <Title>Total cost per day (Current Month)</Title>
-                        <Subtitle>Daily breakdown of API costs for the ongoing calendar month.</Subtitle>
-                        <Metric className="mt-2">{formatUsd(currentMonthCostTotal)}</Metric>
-                        {monthlyCostChartData.length > 0 ? (
-                            <BarChart
-                                className="mt-3 h-56"
-                                data={monthlyCostChartData}
-                                index="Date"
-                                categories={['Cost (USD)']}
-                                colors={['emerald']}
-                                yAxisWidth={56}
-                                valueFormatter={(value) => formatUsd(value)}
-                                showTooltip
-                                showLegend={false}
-                            />
-                        ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No cost data available for the current month.</Text>
+                <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                    <AdminSectionHeader
+                        title="Cost per day this month"
+                        description="Daily API cost for the current calendar month."
+                        actions={(
+                            <span className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
+                                {formatUsd(currentMonthCostTotal)}
+                            </span>
                         )}
-                    </AdminSurfaceCard>
-                </section>
+                    />
+                    {monthlyCostChartData.length > 0 ? (
+                        <TelemetrySeriesChart
+                            kind="bar"
+                            data={monthlyCostChartData}
+                            index="Date"
+                            category="Cost (USD)"
+                            color="var(--chart-2)"
+                            valueFormatter={(value) => formatUsd(value)}
+                            tickFormatter={formatUsdTick}
+                            indexFormatter={formatIsoDayTick}
+                            yAxisWidth={64}
+                            ariaLabel="Bar chart of API cost per day this month"
+                        />
+                    ) : (
+                        <TelemetryEmpty>No cost data available for the current month</TelemetryEmpty>
+                    )}
+                </AdminSurfaceCard>
 
-                <section className="grid gap-3 lg:grid-cols-2 mt-3">
-                    <AdminSurfaceCard>
-                        <Title>Provider breakdown</Title>
-                        <Subtitle>Calls and failures by provider.</Subtitle>
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Provider breakdown" description="Calls and failures by provider." />
                         {providerVolumeChartData.length > 0 ? (
-                            <BarChart
-                                className="mt-3 h-64"
+                            <AdminBarChart
                                 data={providerVolumeChartData}
                                 index="Provider"
                                 categories={['Calls', 'Failures']}
-                                colors={['blue', 'rose']}
-                                layout="horizontal"
-                                yAxisWidth={48}
-                                valueFormatter={(value) => formatCallCount(value)}
-                                showTooltip
-                                showLegend
-                                customTooltip={ProviderBreakdownTooltip}
+                                colors={PROVIDER_VOLUME_COLORS}
+                                ariaLabel="Bar chart of calls and failures by provider"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider breakdown in this filter set.</Text>
+                            <TelemetryEmpty>No provider breakdown in this filter set</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <div className="flex items-start justify-between gap-2">
-                            <div>
-                                <Title>Provider share</Title>
-                                <Subtitle>
-                                    {selectedProviderShare
-                                        ? `Model split inside ${getAiProviderMetadata(selectedProviderShare).shortName}. Click a slice for details.`
-                                        : 'Distribution of total call volume. Click a provider slice to drill down.'}
-                                </Subtitle>
-                            </div>
-
-                            {selectedProviderShare && (
-                                <button
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader
+                            title="Provider share"
+                            description={selectedProviderShare
+                                ? `Model split inside ${getAiProviderMetadata(selectedProviderShare).shortName}. Pick a model for details.`
+                                : 'Share of total call volume. Pick a provider to drill down.'}
+                            actions={selectedProviderShare ? (
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                         setSelectedProviderShare(null);
                                         setSelectedModelShare(null);
                                     }}
-                                    className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                 >
-                                    <ArrowLeft size={13} />
+                                    <ArrowLeft className="rtl:rotate-180" />
                                     Providers
-                                </button>
-                            )}
-                        </div>
+                                </Button>
+                            ) : null}
+                        />
 
                         {providerShareDonutData.length > 0 ? (
-                            <div className="mt-3 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,250px)]">
-                                <DonutChart
-                                    className="h-64"
-                                    data={providerShareDonutData}
-                                    index="Segment"
-                                    category="Calls"
-                                    label={selectedProviderShare ? `${getAiProviderMetadata(selectedProviderShare).shortName} models` : 'Providers'}
-                                    valueFormatter={(value) => formatCallCount(value)}
-                                    colors={providerShareDonutColors}
-                                    showTooltip
-                                    onValueChange={handleProviderShareSliceSelect}
-                                />
+                            <div className="grid items-center gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,250px)]">
+                                <ChartContainer
+                                    config={providerShareChartConfig}
+                                    className="mx-auto aspect-square h-64 max-w-full"
+                                    role="img"
+                                    aria-label={selectedProviderShare
+                                        ? `Donut chart of call share by model inside ${getAiProviderMetadata(selectedProviderShare).shortName}`
+                                        : 'Donut chart of call share by provider'}
+                                >
+                                    <PieChart>
+                                        <ChartTooltip
+                                            content={<ChartTooltipContent hideLabel valueFormatter={(value) => formatCallCount(Number(value))} />}
+                                        />
+                                        <Pie
+                                            data={providerShareDonutData}
+                                            dataKey="Calls"
+                                            nameKey="Segment"
+                                            innerRadius="58%"
+                                            outerRadius="85%"
+                                            paddingAngle={1}
+                                            strokeWidth={0}
+                                            isAnimationActive={false}
+                                            onClick={(_, sliceIndex) => handleProviderShareSliceSelect(providerShareDonutData[sliceIndex])}
+                                        >
+                                            {providerShareDonutData.map((entry) => (
+                                                <Cell
+                                                    key={entry.key}
+                                                    fill={chartColor(entry.key)}
+                                                    fillOpacity={selectedModelShare && entry.model !== selectedModelShare ? 0.35 : 1}
+                                                    className={entry.provider === 'other' && !selectedProviderShare ? undefined : 'cursor-pointer'}
+                                                />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ChartContainer>
 
-                                <div className="space-y-2">
-                                    <Text className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
-                                        {selectedProviderShare ? 'Model legend' : 'Provider legend'}
-                                    </Text>
+                                <div className="flex flex-col gap-2">
+                                    <p className="text-xs font-medium text-muted-foreground">
+                                        {selectedProviderShare ? 'Models' : 'Providers'}
+                                    </p>
 
-                                    <div className="space-y-1.5">
+                                    <div className="flex flex-col gap-1.5">
                                         {activeDonutEntries.map((entry) => {
                                             const isSelected = Boolean(
                                                 selectedProviderShare &&
@@ -1066,10 +1131,12 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                 ? entry.label
                                                 : (entry.provider === 'other' ? entry.label : providerMetadata.shortName);
                                             return (
+                                                // A whole-row toggle, so a plain button rather than `Button`.
                                                 <button
                                                     key={entry.key}
                                                     type="button"
                                                     disabled={isDisabled}
+                                                    aria-pressed={selectedProviderShare ? isSelected : undefined}
                                                     onClick={() => {
                                                         if (!selectedProviderShare) {
                                                             if (entry.provider === 'other') return;
@@ -1083,21 +1150,23 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                         }
                                                         setSelectedModelShare((current) => (current === entry.model ? null : entry.model));
                                                     }}
-                                                    className={`flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-left text-xs transition ${
+                                                    className={cn(
+                                                        'flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-start text-xs outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
                                                         isSelected
-                                                            ? 'border-blue-300 bg-blue-50 text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30'
-                                                            : 'border-border bg-card text-foreground hover:border-border'
-                                                    } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                            ? 'border-accent-300 bg-accent-50 text-accent-900 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary',
+                                                        isDisabled && 'cursor-not-allowed opacity-60 hover:bg-card',
+                                                    )}
                                                 >
                                                     <span className="inline-flex min-w-0 items-center gap-2">
-                                                        <span className={`size-2.5 rounded-full ${dotClass}`} />
+                                                        <span className={cn('size-2.5 shrink-0 rounded-full', dotClass)} aria-hidden="true" />
                                                         {entry.provider !== 'other' && (
                                                             <AiProviderLogo provider={entry.provider} size={12} />
                                                         )}
                                                         <span className="truncate">{displayLabel}</span>
                                                     </span>
-                                                    <span className="ml-2 shrink-0 text-muted-foreground">
-                                                        {entry.calls.toLocaleString()} • {formatPercent(entry.sharePercent)}
+                                                    <span className="shrink-0 tabular-nums text-muted-foreground">
+                                                        {entry.calls.toLocaleString()} · {formatPercent(entry.sharePercent)}
                                                     </span>
                                                 </button>
                                             );
@@ -1106,199 +1175,198 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider-share data in this filter set.</Text>
+                            <TelemetryEmpty>No provider-share data in this filter set</TelemetryEmpty>
                         )}
 
                         {selectedProviderStats && (
-                            <div className="mt-3 rounded-md border border-border bg-secondary px-3 py-2 text-xs text-foreground">
-                                <p className="font-semibold text-foreground">
-                                    Provider details: <ProviderLabel provider={selectedProviderStats.provider} providerClassName="font-bold text-foreground" logoSize={12} />
+                            <div className="rounded-md border border-border bg-secondary px-3 py-2 text-xs text-foreground">
+                                <p className="font-medium text-foreground">
+                                    Provider details: <ProviderLabel provider={selectedProviderStats.provider} providerClassName="font-semibold text-foreground" logoSize={12} />
                                 </p>
-                                <p className="mt-1">
-                                    Calls {selectedProviderStats.total.toLocaleString()} • Success {formatPercent(
+                                <p className="mt-1 tabular-nums">
+                                    Calls {selectedProviderStats.total.toLocaleString()} · Success {formatPercent(
                                         selectedProviderStats.total > 0
                                             ? (selectedProviderStats.success / selectedProviderStats.total) * 100
                                             : null,
-                                    )} • Avg duration {formatDuration(selectedProviderStats.averageLatencyMs)} • Total cost {formatUsd(selectedProviderStats.totalCostUsd)}
+                                    )} · Avg duration {formatDuration(selectedProviderStats.averageLatencyMs)} · Total cost {formatUsd(selectedProviderStats.totalCostUsd)}
                                 </p>
                             </div>
                         )}
 
                         {selectedModelStats && (
-                            <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30">
-                                <p className="font-semibold">
-                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-blue-900 dark:text-blue-200" modelClassName="text-blue-800 dark:text-blue-200" logoSize={12} />
+                            <div className="rounded-md border border-accent-200 bg-accent-50 px-3 py-2 text-xs text-accent-900 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200">
+                                <p className="font-medium">
+                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-accent-900 dark:text-accent-200" modelClassName="text-accent-800 dark:text-accent-200" logoSize={12} />
                                 </p>
-                                <p className="mt-1">
-                                    Calls {selectedModelStats.total.toLocaleString()} • Success {formatPercent(selectedModelStats.successRate)} • Avg duration {formatDuration(selectedModelStats.averageLatencyMs)} • Avg cost {formatUsd(selectedModelStats.averageCostUsd)}
+                                <p className="mt-1 tabular-nums">
+                                    Calls {selectedModelStats.total.toLocaleString()} · Success {formatPercent(selectedModelStats.successRate)} · Avg duration {formatDuration(selectedModelStats.averageLatencyMs)} · Avg cost {formatUsd(selectedModelStats.averageCostUsd)}
                                 </p>
                             </div>
                         )}
                     </AdminSurfaceCard>
-                </section>
+                </div>
 
-                <section className="grid gap-3 lg:grid-cols-3">
-                    <AdminSurfaceCard>
-                        <Title>Provider success rate</Title>
-                        <Subtitle>Top providers by successful call ratio.</Subtitle>
+                <div className="grid gap-4 lg:grid-cols-3">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Provider success rate" description="Top providers by successful call ratio." />
                         {providerSuccessRateChartData.length > 0 ? (
-                            <BarChart
-                                className="mt-3 h-56"
+                            <AdminBarChart
                                 data={providerSuccessRateChartData}
                                 index="Provider"
                                 categories={['Success rate']}
-                                colors={['emerald']}
-                                yAxisWidth={56}
-                                minValue={0}
-                                maxValue={100}
+                                colors={PROVIDER_SUCCESS_COLORS}
+                                layout="vertical"
                                 valueFormatter={(value) => formatPercent(value)}
-                                showTooltip
-                                showLegend
-                                customTooltip={ProviderSuccessRateTooltip}
+                                className="h-56"
+                                ariaLabel="Bar chart of success rate by provider"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider success-rate data available.</Text>
+                            <TelemetryEmpty>No provider success-rate data available</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Provider cost per success</Title>
-                        <Subtitle>Average estimated cost per successful call.</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Provider cost per success" description="Average estimated cost per successful call." />
                         {providerCostPerSuccessChartData.length > 0 ? (
-                            <BarChart
-                                className="mt-3 h-56"
+                            <TelemetrySeriesChart
+                                kind="bar"
                                 data={providerCostPerSuccessChartData}
                                 index="Provider"
-                                categories={['Avg cost / success (USD)']}
-                                colors={['violet']}
-                                layout="horizontal"
-                                yAxisWidth={64}
+                                category="Avg cost / success (USD)"
+                                color="var(--chart-4)"
                                 valueFormatter={(value) => formatUsd(value)}
-                                showTooltip
-                                showLegend
-                                customTooltip={ProviderCostPerSuccessTooltip}
+                                tickFormatter={formatUsdTick}
+                                yAxisWidth={64}
+                                ariaLabel="Bar chart of average cost per successful call by provider"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No provider cost-per-success data available.</Text>
+                            <TelemetryEmpty>No provider cost-per-success data available</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Top failure codes</Title>
-                        <Subtitle>Most frequent recent error categories.</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Top failure codes" description="Most frequent recent error categories." />
                         {failureCodeBarListData.length > 0 ? (
-                            <BarList
-                                className="mt-3"
-                                data={failureCodeBarListData}
+                            <AdminBarList
+                                items={failureCodeBarListData.map((row) => ({
+                                    key: row.key,
+                                    label: <span className="font-mono text-xs text-foreground">{row.name}</span>,
+                                    value: row.value,
+                                }))}
                                 sortOrder="descending"
                                 valueFormatter={(value) => formatCallCount(value)}
+                                color="var(--chart-5)"
+                                ariaLabel="Recent failures by error code"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No recent failures in the selected filter scope.</Text>
+                            <TelemetryEmpty>No recent failures in the selected filter scope</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
-                </section>
+                </div>
 
-                <section className="grid gap-3 lg:grid-cols-2">
-                    <AdminSurfaceCard>
-                        <Title>Model call volume</Title>
-                        <Subtitle>Most active provider/model combinations.</Subtitle>
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader title="Model call volume" description="Most active provider and model combinations." />
                         {modelVolumeBarListData.length > 0 ? (
-                            <BarList
-                                className="mt-3"
-                                data={modelVolumeBarListData}
+                            <AdminBarList
+                                color="var(--chart-1)"
+                                items={modelVolumeBarListData}
                                 sortOrder="descending"
                                 valueFormatter={(value) => formatCallCount(value)}
+                                ariaLabel="Models by call volume"
                             />
                         ) : (
-                            <Text className="mt-3 text-xs text-muted-foreground">No model activity data in this filter set.</Text>
+                            <TelemetryEmpty>No model activity data in this filter set</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard>
-                        <Title>Recent calls</Title>
-                        <Subtitle>Latest rows with status, duration, and error code.</Subtitle>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-3 p-0">
+                        <AdminSectionHeader
+                            className="px-4 pt-4"
+                            title="Recent calls"
+                            description="Latest rows with status, duration and error code."
+                        />
 
-                        <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-border">
-                            <table className="min-w-full border-collapse text-left text-xs">
-                                <thead>
-                                    <tr className="border-b border-border bg-secondary uppercase tracking-wide text-muted-foreground">
-                                        <th className="px-2 py-1.5">Time</th>
-                                        <th className="px-2 py-1.5">Model</th>
-                                        <th className="px-2 py-1.5">Status</th>
-                                        <th className="px-2 py-1.5">Duration</th>
-                                        <th className="px-2 py-1.5">Cost</th>
-                                        <th className="px-2 py-1.5">Error</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <div className="max-h-80 overflow-y-auto border-t border-border">
+                            <Table className="text-xs">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="ps-4 text-muted-foreground">Time</TableHead>
+                                        <TableHead className="text-muted-foreground">Model</TableHead>
+                                        <TableHead className="text-muted-foreground">Status</TableHead>
+                                        <TableHead className="text-end text-muted-foreground">Duration</TableHead>
+                                        <TableHead className="text-end text-muted-foreground">Cost</TableHead>
+                                        <TableHead className="pe-4 text-muted-foreground">Error</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                     {telemetryRecent.length === 0 && (
-                                        <tr>
-                                            <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
-                                                {telemetryLoading ? 'Loading telemetry...' : 'No telemetry rows yet.'}
-                                            </td>
-                                        </tr>
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                                                {telemetryLoading ? 'Loading telemetry…' : 'No telemetry rows yet.'}
+                                            </TableCell>
+                                        </TableRow>
                                     )}
 
                                     {telemetryRecent.map((row) => (
-                                        <tr key={row.id} className="border-b border-border">
-                                            <td className="px-2 py-1.5 text-muted-foreground">{formatTimestamp(row.created_at)}</td>
-                                            <td className="px-2 py-1.5 text-foreground">
+                                        <TableRow key={row.id} className="hover:bg-muted/50">
+                                            <TableCell className="ps-4 tabular-nums text-muted-foreground">{formatTimestamp(row.created_at)}</TableCell>
+                                            <TableCell className="max-w-[220px] truncate text-foreground">
                                                 <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
-                                            </td>
-                                            <td className="px-2 py-1.5">
-                                                <span className={row.status === 'success' ? 'font-semibold text-emerald-700 dark:text-emerald-200' : 'font-semibold text-rose-700 dark:text-rose-200'}>
-                                                    {row.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-2 py-1.5 text-foreground">{formatDuration(row.latency_ms)}</td>
-                                            <td className="px-2 py-1.5 text-foreground">{formatUsd(row.estimated_cost_usd)}</td>
-                                            <td className="px-2 py-1.5 text-muted-foreground">{row.error_code || '—'}</td>
-                                        </tr>
+                                            </TableCell>
+                                            <TableCell>
+                                                <AdminStatusBadge tone={row.status === 'success' ? 'success' : 'danger'}>
+                                                    {row.status === 'success' ? 'Success' : 'Failed'}
+                                                </AdminStatusBadge>
+                                            </TableCell>
+                                            <TableCell className="text-end tabular-nums text-foreground">{formatDuration(row.latency_ms)}</TableCell>
+                                            <TableCell className="text-end tabular-nums text-foreground">{formatUsd(row.estimated_cost_usd)}</TableCell>
+                                            <TableCell className="pe-4 font-mono text-muted-foreground">{row.error_code || '—'}</TableCell>
+                                        </TableRow>
                                     ))}
-                                </tbody>
-                            </table>
+                                </TableBody>
+                            </Table>
                         </div>
                     </AdminSurfaceCard>
-                </section>
+                </div>
 
-                <section>
-                    <AdminSurfaceCard>
-                        <Title>Benchmark run comments</Title>
-                        <Subtitle>
-                            Qualitative notes captured per run, grouped by provider/model in the current telemetry filter window.
-                        </Subtitle>
-                        <Text className="mt-1 text-xs text-muted-foreground">
-                            Total comments: {telemetryCommentTotal.toLocaleString()}
-                        </Text>
+                <AdminSurfaceCard className="flex flex-col gap-4">
+                    <AdminSectionHeader
+                        title="Benchmark run comments"
+                        description="Notes captured per run, grouped by provider and model in the current window."
+                        actions={(
+                            <span className="text-sm tabular-nums text-muted-foreground">
+                                {telemetryCommentTotal.toLocaleString()} {telemetryCommentTotal === 1 ? 'comment' : 'comments'}
+                            </span>
+                        )}
+                    />
 
-                        <div className="mt-3 max-h-[500px] space-y-3 overflow-y-auto rounded-xl border border-border bg-secondary p-3">
-                            {telemetryCommentGroups.length === 0 && (
-                                <div className="rounded-md border border-border bg-card px-3 py-4 text-xs text-muted-foreground">
-                                    {telemetryLoading ? 'Loading comments...' : 'No benchmark run comments in this filter window.'}
-                                </div>
-                            )}
-
+                    {telemetryCommentGroups.length === 0 ? (
+                        <TelemetryEmpty>
+                            {telemetryLoading ? 'Loading comments…' : 'No benchmark run comments in this filter window'}
+                        </TelemetryEmpty>
+                    ) : (
+                        <div className="flex max-h-[500px] flex-col gap-3 overflow-y-auto">
                             {telemetryCommentGroups.map((group) => (
-                                <div key={group.key} className="rounded-md border border-border bg-card p-3">
+                                <div key={group.key} className="rounded-md border border-border p-3">
                                     <div className="flex items-center justify-between gap-2">
-                                        <p className="text-xs font-semibold text-foreground">
-                                            <ProviderLabel provider={group.provider} model={group.model} providerClassName="text-foreground" modelClassName="text-foreground" logoSize={12} />
+                                        <p className="min-w-0 text-sm font-medium text-foreground">
+                                            <ProviderLabel provider={group.provider} model={group.model} providerClassName="text-foreground" modelClassName="truncate text-foreground" logoSize={12} />
                                         </p>
-                                        <span className="text-[11px] text-muted-foreground">
+                                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                                             {group.total} comment{group.total === 1 ? '' : 's'}
                                         </span>
                                     </div>
-                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                    <p className="mt-0.5 text-xs text-muted-foreground">
                                         Latest: {formatTimestamp(group.latestCommentAt)}
                                     </p>
 
-                                    <div className="mt-2 space-y-2">
+                                    <div className="mt-2 flex flex-col gap-2">
                                         {group.comments.map((comment) => (
-                                            <div key={`${group.key}-${comment.runId}-${comment.updatedAt}`} className="rounded border border-border bg-secondary px-2 py-1.5 text-xs">
-                                                <p className="whitespace-pre-wrap text-foreground">{comment.comment}</p>
-                                                <p className="mt-1 text-[10px] text-muted-foreground">
-                                                    Run {comment.runId.slice(0, 8)} • {comment.status || 'unknown'} • {comment.satisfactionRating || 'unrated'} • {formatTimestamp(comment.updatedAt)}
+                                            <div key={`${group.key}-${comment.runId}-${comment.updatedAt}`} className="rounded-md bg-secondary px-2.5 py-2 text-xs">
+                                                <p className="whitespace-pre-wrap break-words text-foreground">{comment.comment}</p>
+                                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                                    Run {comment.runId.slice(0, 8)} · {comment.status || 'unknown'} · {comment.satisfactionRating || 'unrated'} · {formatTimestamp(comment.updatedAt)}
                                                 </p>
                                             </div>
                                         ))}
@@ -1306,8 +1374,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                    </AdminSurfaceCard>
-                </section>
+                    )}
+                </AdminSurfaceCard>
             </div>
         </AdminShell>
     );

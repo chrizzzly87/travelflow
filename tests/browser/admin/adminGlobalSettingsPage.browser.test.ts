@@ -124,4 +124,24 @@ describe('AdminGlobalSettingsPage', () => {
     const claude = results.find((button) => /claude/i.test(button.textContent || ''));
     expect(claude).toBeTruthy();
   });
+
+  it('replaces the loading line with an authored error when the load fails', async () => {
+    mocks.refreshPublicAiRuntimeSettings.mockRejectedValueOnce(new Error('TypeError: Failed to fetch at https://internal.example'));
+    const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
+    render(React.createElement(AdminGlobalSettingsPage));
+
+    await screen.findByText('Could not load the current settings. Reload the page to try again.');
+    expect(screen.queryByText('Loading the current settings…')).toBeNull();
+    expect(screen.queryByText(/internal\.example/)).toBeNull();
+  });
+
+  it('shows an authored sentence instead of the raw save error', async () => {
+    mocks.updateAppRuntimeSettings.mockRejectedValueOnce(new Error('permission denied for table app_runtime_settings'));
+    await renderPage();
+    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await screen.findByText('The settings were not saved. Your changes are still here; try saving again.');
+    expect(screen.queryByText(/permission denied/)).toBeNull();
+  });
 });

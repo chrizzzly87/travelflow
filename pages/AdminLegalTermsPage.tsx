@@ -1,7 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { CheckCircle, FileText } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Button } from '../components/ui/button';
+import { Checkbox } from '../components/ui/checkbox';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { cn } from '../lib/utils';
 import {
     adminListTermsVersions,
     adminPublishTermsVersion,
@@ -111,7 +124,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                 return buildDraftFromBase(current, rows);
             });
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load Terms versions.');
+            setErrorMessage('Could not load the terms versions. Reload to try again.');
         } finally {
             setIsLoading(false);
         }
@@ -149,7 +162,7 @@ export const AdminLegalTermsPage: React.FC = () => {
 
     const handleUseVersionAsBase = useCallback((version: LegalTermsVersionRecord) => {
         setDraft(buildDraftFromBase(version, versions));
-        setActionMessage(`Loaded ${version.version} as draft basis.`);
+        setActionMessage(`Loaded ${version.version} as the draft basis.`);
         setErrorMessage(null);
     }, [versions]);
 
@@ -183,10 +196,10 @@ export const AdminLegalTermsPage: React.FC = () => {
 
             await loadVersions({ keepDraft: false });
             setActionMessage(
-                `Published ${published.version} as current terms (${published.requiresReaccept ? 'force re-accept' : 'inform only'}).`
+                `Published ${published.version} as the current terms (${published.requiresReaccept ? 'force re-accept' : 'inform only'}).`
             );
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not publish terms version.');
+            setErrorMessage('Could not publish this terms version. Your draft is still here; try publishing again.');
         } finally {
             setIsPublishing(false);
         }
@@ -202,83 +215,104 @@ export const AdminLegalTermsPage: React.FC = () => {
                 requiresReaccept,
             });
             await loadVersions({ keepDraft: true });
-            setActionMessage(`Set ${updated.version} as current terms (${updated.requiresReaccept ? 'force re-accept' : 'inform only'}).`);
+            setActionMessage(`Set ${updated.version} as the current terms (${updated.requiresReaccept ? 'force re-accept' : 'inform only'}).`);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not switch current terms version.');
+            setErrorMessage(`Could not make ${version} the current terms. Try again in a moment.`);
         } finally {
             setIsPublishing(false);
         }
     }, [loadVersions]);
 
+    const fieldLabelClass = 'flex flex-col gap-1.5 text-sm font-medium text-foreground';
+    const fieldHintClass = 'text-xs font-normal text-muted-foreground';
+
     return (
         <AdminShell
-            title="Terms & Conditions"
-            description="Publish versioned DE/EN Terms text, choose force-vs-inform rollout mode, and keep an auditable history."
+            title="Legal terms"
+            description="Publish versioned DE/EN terms, choose force or inform rollout, and keep an auditable history."
             showDateRange={false}
             showGlobalSearch={false}
+            actions={(
+                <AdminReloadButton
+                    onClick={() => void loadVersions({ keepDraft: true })}
+                    isLoading={isLoading}
+                />
+            )}
         >
-            <div className="space-y-4">
-                {actionMessage && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                        {actionMessage}
-                    </div>
-                )}
-                {errorMessage && (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                        {errorMessage}
+            <div className="flex flex-col gap-6">
+                {(actionMessage || errorMessage) && (
+                    <div className="flex flex-col gap-3">
+                        {actionMessage && (
+                            <Alert variant="success">
+                                <CheckCircle weight="fill" />
+                                <AlertDescription>{actionMessage}</AlertDescription>
+                            </Alert>
+                        )}
+                        {errorMessage && <AdminErrorAlert message={errorMessage} />}
                     </div>
                 )}
 
-                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h2 className="text-base font-semibold text-foreground">Publish New Terms Version</h2>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Start from the current version, edit DE/EN text, then publish. Use <code>{'{appName}'}</code> in content to keep app naming dynamic.
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (!currentVersion) return;
-                                setDraft(buildDraftFromBase(currentVersion, versions));
-                                setActionMessage('Draft reset from current version.');
-                                setErrorMessage(null);
-                            }}
-                            className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary"
-                            disabled={!currentVersion || isLoading}
-                        >
-                            Reset Draft From Current
-                        </button>
-                    </div>
+                <AdminSurfaceCard className="flex flex-col gap-4">
+                    <AdminSectionHeader
+                        title="Publish a new version"
+                        description={(
+                            <>
+                                Start from the current version, edit the DE/EN text, then publish. Use <code className="font-mono text-xs">{'{appName}'}</code> in the content to keep the app name dynamic.
+                            </>
+                        )}
+                        actions={(
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    if (!currentVersion) return;
+                                    setDraft(buildDraftFromBase(currentVersion, versions));
+                                    setActionMessage('Draft reset from the current version.');
+                                    setErrorMessage(null);
+                                }}
+                                disabled={!currentVersion || isLoading}
+                            >
+                                Reset draft from current
+                            </Button>
+                        )}
+                    />
 
                     {!draft ? (
-                        <p className="mt-4 text-sm text-muted-foreground">{isLoading ? 'Loading terms…' : 'No terms version available.'}</p>
+                        isLoading ? (
+                            <p className="text-sm text-muted-foreground" aria-live="polite">Loading terms…</p>
+                        ) : (
+                            <AdminEmptyState
+                                icon={<FileText />}
+                                title="No terms version available"
+                                description="Publish a first version from the database seed, then reload this page."
+                            />
+                        )
                     ) : (
-                        <div className="mt-4 space-y-4">
-                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                                <label className="space-y-1 text-xs font-semibold text-foreground">
+                        <div className="flex flex-col gap-4">
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                <label className={fieldLabelClass}>
                                     Version date prefix
-	                                    <input
-	                                        type="text"
-	                                        aria-label="Version date prefix"
-	                                        value={draft.versionDate}
+                                    <Input
+                                        type="text"
+                                        aria-label="Version date prefix"
+                                        value={draft.versionDate}
                                         readOnly
-                                        className="h-10 w-full rounded-lg border border-border bg-secondary px-3 text-sm text-foreground"
+                                        className="bg-muted font-mono tabular-nums"
                                     />
-                                    <span className="block text-[11px] font-normal text-muted-foreground">
+                                    <span className={fieldHintClass}>
                                         Current: {currentVersion?.version || 'n/a'} · Suggested next: {suggestedNextVersion}
                                     </span>
-                                    <span className="block text-[11px] font-normal text-muted-foreground">
+                                    <span className={fieldHintClass}>
                                         Draft version: {buildVersionFromParts(draft.versionDate, draft.versionRevision)}
                                     </span>
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-foreground">
+                                <label className={fieldLabelClass}>
                                     Revision suffix
-	                                    <input
-	                                        type="number"
-	                                        aria-label="Revision suffix"
-	                                        min={0}
+                                    <Input
+                                        type="number"
+                                        aria-label="Revision suffix"
+                                        min={0}
                                         step={1}
                                         value={draft.versionRevision}
                                         onChange={(event) => {
@@ -291,18 +325,18 @@ export const AdminLegalTermsPage: React.FC = () => {
                                                 };
                                             });
                                         }}
-                                        className="h-10 w-full rounded-lg border border-border px-3 text-sm text-foreground outline-none ring-accent-200 focus:ring"
+                                        className="tabular-nums"
                                     />
-                                    <span className="block text-[11px] font-normal text-muted-foreground">
+                                    <span className={fieldHintClass}>
                                         0 = {draft.versionDate}; 1 = {draft.versionDate}-1
                                     </span>
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-foreground">
+                                <label className={fieldLabelClass}>
                                     Last updated
-	                                    <input
-	                                        type="date"
-	                                        aria-label="Last updated"
-	                                        value={normalizeDateInput(draft.lastUpdated)}
+                                    <Input
+                                        type="date"
+                                        aria-label="Last updated"
+                                        value={normalizeDateInput(draft.lastUpdated)}
                                         onChange={(event) => {
                                             const nextDate = normalizeDateInput(event.target.value);
                                             const nextRevision = getNextTermsRevision(nextDate, versions.map((row) => row.version));
@@ -316,74 +350,72 @@ export const AdminLegalTermsPage: React.FC = () => {
                                                 };
                                             });
                                         }}
-                                        className="h-10 w-full rounded-lg border border-border px-3 text-sm text-foreground outline-none ring-accent-200 focus:ring"
                                     />
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-foreground md:col-span-2 lg:col-span-2">
+                                <label className={cn(fieldLabelClass, 'md:col-span-2 lg:col-span-1')}>
                                     Title
-	                                    <input
-	                                        type="text"
-	                                        aria-label="Title"
-	                                        value={draft.title}
+                                    <Input
+                                        type="text"
+                                        aria-label="Title"
+                                        value={draft.title}
                                         onChange={(event) => handleDraftField('title', event.target.value)}
-                                        className="h-10 w-full rounded-lg border border-border px-3 text-sm text-foreground outline-none ring-accent-200 focus:ring"
                                         placeholder="Terms of Service / AGB"
                                     />
                                 </label>
                             </div>
 
-                            <label className="space-y-1 text-xs font-semibold text-foreground">
-                                Summary (internal/admin)
-	                                <textarea
-	                                    aria-label="Summary"
-	                                    value={draft.summary}
+                            <label className={fieldLabelClass}>
+                                Summary (internal)
+                                <Textarea
+                                    aria-label="Summary"
+                                    value={draft.summary}
                                     onChange={(event) => handleDraftField('summary', event.target.value)}
-                                    className="min-h-[72px] w-full rounded-lg border border-border px-3 py-2 text-sm text-foreground outline-none ring-accent-200 focus:ring"
+                                    className="min-h-[72px]"
                                     placeholder="What changed in this version?"
                                 />
                             </label>
 
-                            <div className="inline-flex items-start gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground">
-                                <input
-	                                    id="legal-terms-requires-reaccept"
-	                                    type="checkbox"
-	                                    aria-label="Force re-acceptance"
-	                                    className="mt-0.5 size-4 rounded border-border text-accent-600 focus:ring-accent-500 dark:text-accent-300"
+                            <div className="flex items-start gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground">
+                                <Checkbox
+                                    id="legal-terms-requires-reaccept"
+                                    aria-label="Force re-acceptance"
+                                    className="mt-0.5"
                                     checked={draft.requiresReaccept}
-                                    onChange={(event) => handleDraftField('requiresReaccept', event.target.checked)}
+                                    onCheckedChange={(checked) => handleDraftField('requiresReaccept', checked === true)}
                                 />
-                                <label htmlFor="legal-terms-requires-reaccept">
-                                    <span className="font-semibold">Force re-acceptance</span>
-                                    <span className="mt-1 block text-xs text-muted-foreground">
-                                        Enabled: users must accept before protected usage continues. Disabled: users are informed only (no block).
+                                <label htmlFor="legal-terms-requires-reaccept" className="cursor-pointer">
+                                    <span className="font-medium">Force re-acceptance</span>
+                                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                                        On: users must accept before protected usage continues. Off: users are informed only, nothing is blocked.
                                     </span>
                                 </label>
                             </div>
 
-                            <div className="grid gap-3 lg:grid-cols-2">
-                                <label className="space-y-1 text-xs font-semibold text-foreground">
+                            <div className="grid gap-4 lg:grid-cols-2">
+                                <label className={fieldLabelClass}>
                                     German binding text (Markdown)
-	                                <textarea
-	                                    aria-label="German binding text"
-	                                    value={draft.contentDe}
+                                    <Textarea
+                                        aria-label="German binding text"
+                                        value={draft.contentDe}
                                         onChange={(event) => handleDraftField('contentDe', event.target.value)}
-                                        className="min-h-[320px] w-full rounded-lg border border-border px-3 py-2 text-xs leading-5 text-foreground outline-none ring-accent-200 focus:ring"
+                                        className="min-h-[320px] font-mono text-xs leading-5 md:text-xs"
                                     />
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-foreground">
+                                <label className={fieldLabelClass}>
                                     English helper text (Markdown)
-	                                <textarea
-	                                    aria-label="English helper text"
-	                                    value={draft.contentEn}
+                                    <Textarea
+                                        aria-label="English helper text"
+                                        value={draft.contentEn}
                                         onChange={(event) => handleDraftField('contentEn', event.target.value)}
-                                        className="min-h-[320px] w-full rounded-lg border border-border px-3 py-2 text-xs leading-5 text-foreground outline-none ring-accent-200 focus:ring"
+                                        className="min-h-[320px] font-mono text-xs leading-5 md:text-xs"
                                     />
                                 </label>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <button
+                            <div className="flex flex-wrap justify-end gap-2">
+                                <Button
                                     type="button"
+                                    variant="outline"
                                     onClick={() => {
                                         setDraft((previous) => {
                                             if (!previous) return previous;
@@ -394,80 +426,85 @@ export const AdminLegalTermsPage: React.FC = () => {
                                         });
                                     }}
                                     disabled={isPublishing}
-                                    className="inline-flex h-10 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Use suggested revision
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
                                     onClick={() => void handlePublish()}
                                     disabled={isPublishing}
-                                    className="inline-flex h-10 items-center rounded-lg bg-accent-700 px-4 text-sm font-semibold text-white hover:bg-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {isPublishing ? 'Publishing…' : 'Publish as Current'}
-                                </button>
+                                    {isPublishing ? 'Publishing…' : 'Publish as current'}
+                                </Button>
                             </div>
                         </div>
                     )}
-                </section>
+                </AdminSurfaceCard>
 
                 {draft && (
-                    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
-                        <h2 className="text-base font-semibold text-foreground">Draft Preview</h2>
-                        <div className="mt-3 grid gap-4 lg:grid-cols-2">
-                            <article className="rounded-xl border border-border bg-secondary p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">German binding</h3>
-                                <div className="prose dark:prose-invert prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
+                    <AdminSurfaceCard className="flex flex-col gap-4">
+                        <AdminSectionHeader title="Draft preview" />
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <article className="min-w-0 rounded-md border border-border bg-muted/40 p-3">
+                                <h3 className="text-xs font-medium text-muted-foreground">German binding</h3>
+                                <div className="prose dark:prose-invert prose-sm mt-2 max-w-none break-words prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.contentDe}</ReactMarkdown>
                                 </div>
                             </article>
-                            <article className="rounded-xl border border-border bg-secondary p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">English helper</h3>
-                                <div className="prose dark:prose-invert prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
+                            <article className="min-w-0 rounded-md border border-border bg-muted/40 p-3">
+                                <h3 className="text-xs font-medium text-muted-foreground">English helper</h3>
+                                <div className="prose dark:prose-invert prose-sm mt-2 max-w-none break-words prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.contentEn}</ReactMarkdown>
                                 </div>
                             </article>
                         </div>
-                    </section>
+                    </AdminSurfaceCard>
                 )}
 
-                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
-                    <div className="flex items-center justify-between gap-2">
-                        <h2 className="text-base font-semibold text-foreground">Version History</h2>
-                        {currentVersion && (
-                            <div className="text-xs text-muted-foreground">
-                                Current: <span className="font-semibold text-foreground">{currentVersion.version}</span>
-                            </div>
+                <AdminSurfaceCard className="flex flex-col gap-4">
+                    <AdminSectionHeader
+                        title="Version history"
+                        actions={currentVersion && (
+                            <span className="text-xs text-muted-foreground">
+                                Current: <span className="font-medium text-foreground tabular-nums">{currentVersion.version}</span>
+                            </span>
                         )}
-                    </div>
+                    />
 
-                    {isLoading ? (
-                        <p className="mt-3 text-sm text-muted-foreground">Loading version history…</p>
+                    {isLoading && versions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground" aria-live="polite">Loading version history…</p>
                     ) : versions.length === 0 ? (
-                        <p className="mt-3 text-sm text-muted-foreground">No terms versions found.</p>
+                        <AdminEmptyState
+                            icon={<FileText />}
+                            title="No terms versions found"
+                            description="Published versions appear here with their rollout mode."
+                        />
                     ) : (
-                        <div className="mt-3 space-y-2">
+                        <ul className="flex flex-col gap-2">
                             {versions.map((version) => (
-                                <article
+                                <li
                                     key={version.version}
-                                    className={`rounded-xl border p-3 text-sm ${version.isCurrent ? 'border-accent-300 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30' : 'border-border bg-card'}`}
+                                    className={cn(
+                                        'rounded-md border p-3 text-sm',
+                                        version.isCurrent
+                                            ? 'border-accent-200 bg-accent-50/60 dark:border-accent-400/30 dark:bg-accent-400/12'
+                                            : 'border-border bg-card',
+                                    )}
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
-                                        <div>
-                                            <p className="font-semibold text-foreground">{version.version}</p>
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-foreground tabular-nums">{version.version}</p>
                                             <p className="text-xs text-muted-foreground">{version.title}</p>
                                             <p className="mt-1 text-xs text-muted-foreground">
                                                 Last updated {normalizeDateInput(version.lastUpdated)} · Effective {toDateTimeLabel(version.effectiveAt)}
                                             </p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${version.requiresReaccept ? 'border-amber-300 bg-amber-100 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' : 'border-sky-300 bg-sky-100 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'}`}>
+                                            <AdminStatusBadge tone={version.requiresReaccept ? 'warning' : 'info'}>
                                                 {version.requiresReaccept ? 'Force re-accept' : 'Inform only'}
-                                            </span>
+                                            </AdminStatusBadge>
                                             {version.isCurrent && (
-                                                <span className="rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                                                    Current
-                                                </span>
+                                                <AdminStatusBadge tone="success">Current</AdminStatusBadge>
                                             )}
                                         </div>
                                     </div>
@@ -475,39 +512,42 @@ export const AdminLegalTermsPage: React.FC = () => {
                                         <p className="mt-2 text-xs text-muted-foreground">{version.summary}</p>
                                     )}
                                     <div className="mt-3 flex flex-wrap gap-2">
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="outline"
+                                            size="xs"
                                             onClick={() => handleUseVersionAsBase(version)}
-                                            className="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                                         >
-                                            Use as Draft Basis
-                                        </button>
+                                            Use as draft basis
+                                        </Button>
                                         {!version.isCurrent && (
                                             <>
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    variant="outline"
+                                                    size="xs"
                                                     disabled={isPublishing}
                                                     onClick={() => void handleSetCurrent(version.version, true)}
-                                                    className="inline-flex h-8 items-center rounded-lg border border-amber-300 bg-amber-50 px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                 >
-                                                    Set Current (Force)
-                                                </button>
-                                                <button
+                                                    Set current (force)
+                                                </Button>
+                                                <Button
                                                     type="button"
+                                                    variant="ghost"
+                                                    size="xs"
                                                     disabled={isPublishing}
                                                     onClick={() => void handleSetCurrent(version.version, false)}
-                                                    className="inline-flex h-8 items-center rounded-lg border border-sky-300 bg-sky-50 px-3 text-xs font-semibold text-sky-900 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30"
                                                 >
-                                                    Set Current (Inform)
-                                                </button>
+                                                    Set current (inform)
+                                                </Button>
                                             </>
                                         )}
                                     </div>
-                                </article>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     )}
-                </section>
+                </AdminSurfaceCard>
             </div>
         </AdminShell>
     );

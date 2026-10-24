@@ -1,16 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
-import { BarChart, BarList, DonutChart, Metric, Text, Title } from '@tremor/react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminBarList, type AdminBarListItem } from '../components/admin/AdminBarList';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminBarChart } from '../components/admin/AdminBarChart';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Button } from '../components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { showAppToast } from '../components/ui/appToast';
 import {
     adminListBillingSubscriptions,
@@ -23,7 +32,6 @@ import {
     type AdminBillingWebhookEventRecord,
 } from '../services/adminService';
 import {
-    adminBillingStatusClassName,
     buildAdminBillingAtRiskChartData,
     buildAdminBillingCurrentMrrCards,
     buildAdminBillingMrrByTierChartData,
@@ -78,26 +86,39 @@ const formatPayloadJson = (value: Record<string, unknown> | null | undefined): s
     }
 };
 
-const statusPill = (value: string | null | undefined) => {
-    const tone = resolveAdminBillingStatusTone(normalizeAdminBillingStatus(value));
-    return [
-        'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold capitalize',
-        adminBillingStatusClassName(tone),
-    ].join(' ');
+const BillingStatusBadge: React.FC<{ status: string | null | undefined }> = ({ status }) => (
+    <AdminStatusBadge tone={resolveAdminBillingStatusTone(normalizeAdminBillingStatus(status))}>
+        {humanizeAdminBillingStatus(status)}
+    </AdminStatusBadge>
+);
+
+const formatMajorAmount = (value: number): string => Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
+
+const toShareItems = (rows: Array<{ label: string; count: number }>): AdminBarListItem[] => {
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    return rows.map((row) => ({
+        key: row.label,
+        label: row.label,
+        value: row.count,
+        valueLabel: `${row.count.toLocaleString()} · ${total > 0 ? Math.round((row.count / total) * 100) : 0}%`,
+    }));
 };
 
 const webhookMessageClassName = (status: string | null | undefined) => {
     const normalizedStatus = normalizeAdminBillingStatus(status);
     if (normalizedStatus === 'failed') {
-        return 'mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+        return 'mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
     }
     if (normalizedStatus === 'past_due' || normalizedStatus === 'paused' || normalizedStatus === 'ignored') {
-        return 'mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+        return 'mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
     }
     if (normalizedStatus === 'processed' || normalizedStatus === 'received') {
-        return 'mt-3 rounded-lg border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-foreground dark:bg-accent-400/12 dark:border-accent-400/30';
+        return 'mt-3 rounded-md border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-foreground dark:bg-accent-400/12 dark:border-accent-400/30';
     }
-    return 'mt-3 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground';
+    return 'mt-3 rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground';
 };
 
 const webhookMessageLabel = (status: string | null | undefined): string => {
@@ -246,6 +267,22 @@ export const AdminBillingPage: React.FC = () => {
         () => dashboard ? buildAdminBillingAtRiskChartData(dashboard) : [],
         [dashboard],
     );
+    // Chart and list adapters: a readable series name for the tooltip, share labels for the mixes.
+    const mrrByTierChartData = useMemo(
+        () => dashboardMrrByTierData.map((row) => ({ label: row.label, MRR: row.amount })),
+        [dashboardMrrByTierData],
+    );
+    const atRiskListItems = useMemo<AdminBarListItem[]>(
+        () => dashboardAtRiskData.map((row) => ({
+            key: row.label,
+            label: row.label,
+            value: row.amount,
+            valueLabel: formatMajorAmount(row.amount),
+        })),
+        [dashboardAtRiskData],
+    );
+    const tierMixListItems = useMemo(() => toShareItems(dashboardTierMixData.map((row) => ({ label: row.tier, count: row.count }))), [dashboardTierMixData]);
+    const statusMixListItems = useMemo(() => toShareItems(dashboardStatusMixData.map((row) => ({ label: row.status, count: row.count }))), [dashboardStatusMixData]);
 
     const handleReconcile = async () => {
         const suggestedSubscriptionId = (() => {
@@ -321,420 +358,344 @@ export const AdminBillingPage: React.FC = () => {
         }
     };
 
+    const reconcileNeedsAttention = Boolean(
+        lastReconcileSummary && (lastReconcileSummary.failed > 0 || lastReconcileSummary.unresolved > 0),
+    );
+
     return (
         <AdminShell
             title="Billing"
-            description="Inspect subscription state, webhook delivery, and Paddle sync issues without leaving the admin workspace."
+            description="Subscription state, webhook delivery and Paddle sync issues."
             searchValue={searchValue}
             onSearchValueChange={setSearchValue}
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
             actions={(
-                <div className="flex flex-wrap items-center gap-2">
-                    <button
+                <>
+                    <Button
                         type="button"
                         onClick={() => void handleReconcile()}
                         disabled={isReconciling}
-                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-busy={isReconciling || undefined}
                     >
-                        {isReconciling ? <SpinnerGap size={14} className="animate-spin" /> : <ArrowsClockwise size={14} weight="bold" />}
+                        {isReconciling ? <SpinnerGap className="animate-spin" /> : <ArrowsClockwise weight="bold" />}
                         Reconcile Paddle
-                    </button>
+                    </Button>
                     <AdminReloadButton
                         onClick={() => void loadData()}
                         isLoading={isLoading}
                         label="Reload"
                     />
-                </div>
+                </>
             )}
         >
-            {errorMessage ? (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                    {errorMessage}
-                </section>
-            ) : null}
+            <div className="flex flex-col gap-4">
+                {errorMessage ? <AdminErrorAlert title="Could not load billing" message={errorMessage} /> : null}
 
-            {lastReconcileSummary ? (
-                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 p-4 text-sm text-foreground shadow-sm dark:bg-accent-400/12 dark:border-accent-400/30">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p className="font-semibold text-foreground">Latest Paddle reconciliation</p>
-                            <p className="mt-1 text-muted-foreground">
+                {lastReconcileSummary ? (
+                    <Alert variant={reconcileNeedsAttention ? 'warning' : 'success'} role="status">
+                        <ArrowsClockwise weight="bold" />
+                        <AlertTitle>Latest Paddle reconciliation</AlertTitle>
+                        <AlertDescription>
+                            <p>
                                 {lastReconcileSubscriptionId
                                     ? `Fetched ${lastReconcileSubscriptionId} and replayed it through the billing sync.`
                                     : `Fetched ${lastReconcileSummary.fetched} subscriptions and replayed ${lastReconcileSummary.eligible} eligible records through the billing sync.`}
                             </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 text-xs font-semibold text-foreground">
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Processed {lastReconcileSummary.processed}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Duplicates {lastReconcileSummary.duplicates}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Unresolved {lastReconcileSummary.unresolved}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Failed {lastReconcileSummary.failed}</span>
-                        </div>
-                    </div>
-                </section>
-            ) : null}
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <AdminSurfaceCard>
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Active paid</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-                                <AdminCountUpNumber value={dashboard?.active_subscriptions ?? metrics.activeSubscriptions} />
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                <AdminStatusBadge tone="success" className="tabular-nums">Processed {lastReconcileSummary.processed}</AdminStatusBadge>
+                                <AdminStatusBadge tone="neutral" className="tabular-nums">Duplicates {lastReconcileSummary.duplicates}</AdminStatusBadge>
+                                <AdminStatusBadge tone={lastReconcileSummary.unresolved > 0 ? 'warning' : 'neutral'} className="tabular-nums">
+                                    Unresolved {lastReconcileSummary.unresolved}
+                                </AdminStatusBadge>
+                                <AdminStatusBadge tone={lastReconcileSummary.failed > 0 ? 'danger' : 'neutral'} className="tabular-nums">
+                                    Failed {lastReconcileSummary.failed}
+                                </AdminStatusBadge>
                             </div>
-                            <p className="mt-2 text-sm text-muted-foreground">Current MRR-eligible subscriptions after the latest billing sync.</p>
-                        </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
-                            <ShieldCheck size={18} weight="duotone" />
-                        </span>
-                    </div>
-                </AdminSurfaceCard>
+                        </AlertDescription>
+                    </Alert>
+                ) : null}
 
-                <AdminSurfaceCard>
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Scheduled cancellations</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-                                <AdminCountUpNumber value={(dashboard?.scheduled_cancellations ?? 0) + (dashboard?.grace_subscriptions ?? metrics.graceSubscriptions)} />
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <AdminStatCard
+                        label="Active paid"
+                        icon={<ShieldCheck />}
+                        value={<AdminCountUpNumber value={dashboard?.active_subscriptions ?? metrics.activeSubscriptions} />}
+                        hint="MRR-eligible subscriptions after the latest billing sync."
+                        isLoading={isLoading}
+                    />
+                    <AdminStatCard
+                        label="Scheduled cancellations"
+                        icon={<CreditCard />}
+                        value={<AdminCountUpNumber value={(dashboard?.scheduled_cancellations ?? 0) + (dashboard?.grace_subscriptions ?? metrics.graceSubscriptions)} />}
+                        hint="Includes subscriptions scheduled to cancel and grace-access accounts."
+                        isLoading={isLoading}
+                    />
+                    <AdminStatCard
+                        label="Failed webhooks"
+                        icon={<WarningCircle />}
+                        value={<AdminCountUpNumber value={dashboard?.failed_webhook_events ?? metrics.failedWebhookEvents} />}
+                        hint="Events that need replay or payload inspection."
+                        hintTone={(dashboard?.failed_webhook_events ?? metrics.failedWebhookEvents) > 0 ? 'negative' : 'neutral'}
+                        isLoading={isLoading}
+                    />
+                    <AdminStatCard
+                        label="Unlinked events"
+                        icon={<LinkBreak />}
+                        value={<AdminCountUpNumber value={metrics.unlinkedWebhookEvents} />}
+                        hint="Webhook records that did not resolve to a TravelFlow user."
+                        hintTone={metrics.unlinkedWebhookEvents > 0 ? 'warning' : 'neutral'}
+                        isLoading={isLoading}
+                    />
+                </div>
+
+                {dashboard ? (
+                    <>
+                        {dashboardCurrentMrrCards.length > 0 ? (
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {dashboardCurrentMrrCards.map((card) => (
+                                    <AdminStatCard
+                                        key={`mrr-${card.currency}`}
+                                        label={`Current MRR (${card.currency})`}
+                                        value={card.amountLabel}
+                                        hint={`${card.subscriptions} running subscriptions`}
+                                    />
+                                ))}
                             </div>
-                            <p className="mt-2 text-sm text-muted-foreground">Includes subscriptions scheduled to cancel and grace-access accounts.</p>
-                        </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                            <CreditCard size={18} weight="duotone" />
-                        </span>
-                    </div>
-                </AdminSurfaceCard>
+                        ) : null}
 
-                <AdminSurfaceCard>
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Failed webhooks</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-                                <AdminCountUpNumber value={dashboard?.failed_webhook_events ?? metrics.failedWebhookEvents} />
-                            </div>
-                            <p className="mt-2 text-sm text-muted-foreground">Events that need replay or payload inspection.</p>
-                        </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                            <WarningCircle size={18} weight="duotone" />
-                        </span>
-                    </div>
-                </AdminSurfaceCard>
-
-                <AdminSurfaceCard>
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Unlinked events</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-                                <AdminCountUpNumber value={metrics.unlinkedWebhookEvents} />
-                            </div>
-                            <p className="mt-2 text-sm text-muted-foreground">Webhook records that did not resolve to a TravelFlow user.</p>
-                        </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-secondary text-foreground">
-                            <LinkBreak size={18} weight="duotone" />
-                        </span>
-                    </div>
-                </AdminSurfaceCard>
-            </div>
-
-            {dashboard ? (
-                <>
-                    <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        {dashboardCurrentMrrCards.map((card) => (
-                            <AdminSurfaceCard key={`mrr-${card.currency}`}>
-                                <Text>Current MRR ({card.currency})</Text>
-                                <Metric className="mt-2">{card.amountLabel}</Metric>
-                                <Text className="mt-2">{card.subscriptions} running subscriptions</Text>
-                            </AdminSurfaceCard>
-                        ))}
-                    </div>
-
-                    <div className="mt-6 grid gap-6 xl:grid-cols-2">
-                        <AdminSurfaceCard>
-                            <div className="space-y-4">
-                                <div>
-                                    <Title>Current MRR by tier</Title>
-                                    <Text>Current monthly recurring revenue grouped by tier and currency. Canceled access grace is excluded.</Text>
-                                </div>
-                                {dashboardMrrByTierData.length > 0 ? (
-                                    <BarChart
-                                        data={dashboardMrrByTierData}
+                        <div className="grid gap-4 xl:grid-cols-2">
+                            <AdminSurfaceCard className="flex flex-col gap-4">
+                                <AdminSectionHeader
+                                    title="Current MRR by tier"
+                                    description="Monthly recurring revenue by tier and currency. Canceled access grace is excluded."
+                                />
+                                {mrrByTierChartData.length > 0 ? (
+                                    <AdminBarChart
+                                        data={mrrByTierChartData}
                                         index="label"
-                                        categories={['amount']}
-                                        colors={['indigo']}
-                                        valueFormatter={(value) => Number(value).toLocaleString(undefined, {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                        })}
-                                        yAxisWidth={72}
+                                        categories={['MRR']}
+                                        layout="vertical"
+                                        valueFormatter={formatMajorAmount}
                                         className="h-72"
+                                        ariaLabel="Bar chart of current monthly recurring revenue by tier and currency"
                                     />
                                 ) : (
-                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
-                                        No MRR chart data yet.
-                                    </div>
+                                    <AdminEmptyState title="No MRR chart data yet" />
                                 )}
-                            </div>
-                        </AdminSurfaceCard>
+                            </AdminSurfaceCard>
 
-                        <AdminSurfaceCard>
-                            <div className="space-y-4">
-                                <div>
-                                    <Title>At-risk revenue</Title>
-                                    <Text>Revenue currently exposed to churn or collection risk, grouped by status bucket.</Text>
-                                </div>
-                                {dashboardAtRiskData.length > 0 ? (
-                                    <BarList
-                                        data={dashboardAtRiskData}
-                                        className="h-72"
-                                        color="rose"
-                                        valueFormatter={(value) => Number(value).toLocaleString(undefined, {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                        })}
-                                    />
+                            <AdminSurfaceCard className="flex flex-col gap-4">
+                                <AdminSectionHeader
+                                    title="At-risk revenue"
+                                    description="Revenue exposed to churn or collection risk, by status bucket."
+                                />
+                                {atRiskListItems.length > 0 ? (
+                                    <AdminBarList items={atRiskListItems} color="var(--chart-5)" ariaLabel="At-risk revenue by status" />
                                 ) : (
-                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
-                                        No at-risk revenue recorded in the selected data set.
-                                    </div>
+                                    <AdminEmptyState title="No at-risk revenue recorded in the selected data set" />
                                 )}
-                            </div>
-                        </AdminSurfaceCard>
-                    </div>
-
-                    <div className="mt-6 grid gap-6 xl:grid-cols-2">
-                        <AdminSurfaceCard>
-                            <div className="space-y-4">
-                                <div>
-                                    <Title>Subscription mix</Title>
-                                    <Text>Paid subscription distribution by plan tier.</Text>
-                                </div>
-                                {dashboardTierMixData.length > 0 ? (
-                                    <DonutChart
-                                        data={dashboardTierMixData}
-                                        category="count"
-                                        index="tier"
-                                        colors={['indigo', 'amber', 'slate']}
-                                        valueFormatter={(value) => `${value}`}
-                                        className="h-72"
-                                    />
-                                ) : (
-                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
-                                        No subscription mix data yet.
-                                    </div>
-                                )}
-                            </div>
-                        </AdminSurfaceCard>
-
-                        <AdminSurfaceCard>
-                            <div className="space-y-4">
-                                <div>
-                                    <Title>Status mix</Title>
-                                    <Text>Billing lifecycle distribution across currently synced subscriptions.</Text>
-                                </div>
-                                {dashboardStatusMixData.length > 0 ? (
-                                    <DonutChart
-                                        data={dashboardStatusMixData}
-                                        category="count"
-                                        index="status"
-                                        colors={['emerald', 'indigo', 'amber', 'rose', 'slate']}
-                                        valueFormatter={(value) => `${value}`}
-                                        className="h-72"
-                                    />
-                                ) : (
-                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
-                                        No status mix data yet.
-                                    </div>
-                                )}
-                            </div>
-                        </AdminSurfaceCard>
-                    </div>
-                </>
-            ) : null}
-
-            <section className="mt-6 flex flex-wrap items-center gap-2">
-                <AdminFilterMenu
-                    label="Subscription status"
-                    options={subscriptionStatusOptions}
-                    selectedValues={selectedSubscriptionStatuses}
-                    onSelectedValuesChange={setSelectedSubscriptionStatuses}
-                />
-                <AdminFilterMenu
-                    label="Webhook status"
-                    options={eventStatusOptions}
-                    selectedValues={selectedEventStatuses}
-                    onSelectedValuesChange={setSelectedEventStatuses}
-                />
-            </section>
-
-            <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-                <AdminSurfaceCard className="min-w-0">
-                    <div className="flex items-end justify-between gap-3 border-b border-border pb-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-foreground">Subscriptions</h2>
-                            <p className="mt-1 text-sm text-muted-foreground">Current billing state per user after webhook sync.</p>
+                            </AdminSurfaceCard>
                         </div>
-                        <span className="text-sm text-muted-foreground">{filteredSubscriptions.length} rows</span>
-                    </div>
 
-                    {filteredSubscriptions.length === 0 ? (
-                        <div className="py-8 text-sm text-muted-foreground">
-                            <p>No billing subscriptions found for this filter set.</p>
-                            {searchValue.trim() || selectedSubscriptionStatuses.length > 0 ? null : (
-                                <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                                    If a sandbox checkout already completed, replay the latest Paddle notification and confirm this deploy can receive simulation events.
-                                </p>
-                            )}
+                        <div className="grid gap-4 xl:grid-cols-2">
+                            <AdminSurfaceCard className="flex flex-col gap-4">
+                                <AdminSectionHeader title="Subscription mix" description="Paid subscriptions by plan tier." />
+                                {tierMixListItems.length > 0 ? (
+                                    <AdminBarList items={tierMixListItems} ariaLabel="Paid subscriptions by plan tier" />
+                                ) : (
+                                    <AdminEmptyState title="No subscription mix data yet" />
+                                )}
+                            </AdminSurfaceCard>
+
+                            <AdminSurfaceCard className="flex flex-col gap-4">
+                                <AdminSectionHeader title="Status mix" description="Billing lifecycle across synced subscriptions." />
+                                {statusMixListItems.length > 0 ? (
+                                    <AdminBarList items={statusMixListItems} ariaLabel="Subscriptions by billing lifecycle status" />
+                                ) : (
+                                    <AdminEmptyState title="No status mix data yet" />
+                                )}
+                            </AdminSurfaceCard>
                         </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-[860px] w-full border-separate border-spacing-0 text-left text-sm">
-                                <thead>
-                                    <tr className="text-muted-foreground">
-                                        <th className="border-b border-border py-3 pe-4 font-semibold">User</th>
-                                        <th className="border-b border-border py-3 pe-4 font-semibold">Plan</th>
-                                        <th className="border-b border-border py-3 pe-4 font-semibold">Status</th>
-                                        <th className="border-b border-border py-3 pe-4 font-semibold">Amount</th>
-                                        <th className="border-b border-border py-3 pe-4 font-semibold">Renews</th>
-                                        <th className="border-b border-border py-3 pe-4 font-semibold">Last event</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                    </>
+                ) : null}
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <AdminFilterMenu
+                        label="Subscription status"
+                        options={subscriptionStatusOptions}
+                        selectedValues={selectedSubscriptionStatuses}
+                        onSelectedValuesChange={setSelectedSubscriptionStatuses}
+                    />
+                    <AdminFilterMenu
+                        label="Webhook status"
+                        options={eventStatusOptions}
+                        selectedValues={selectedEventStatuses}
+                        onSelectedValuesChange={setSelectedEventStatuses}
+                    />
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-3 p-0">
+                        <AdminSectionHeader
+                            className="px-4 pt-4"
+                            title="Subscriptions"
+                            description="Current billing state per user after webhook sync."
+                            actions={<span className="text-sm tabular-nums text-muted-foreground">{filteredSubscriptions.length} rows</span>}
+                        />
+
+                        {filteredSubscriptions.length === 0 ? (
+                            <AdminEmptyState
+                                className="mx-4 mb-4"
+                                icon={<CreditCard />}
+                                title="No billing subscriptions found for this filter set"
+                                description={searchValue.trim() || selectedSubscriptionStatuses.length > 0
+                                    ? undefined
+                                    : 'If a sandbox checkout already completed, replay the latest Paddle notification and confirm this deploy can receive simulation events.'}
+                            />
+                        ) : (
+                            <Table className="min-w-[860px]">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="ps-4 text-muted-foreground">User</TableHead>
+                                        <TableHead className="text-muted-foreground">Plan</TableHead>
+                                        <TableHead className="text-muted-foreground">Status</TableHead>
+                                        <TableHead className="text-muted-foreground">Amount</TableHead>
+                                        <TableHead className="text-muted-foreground">Renews</TableHead>
+                                        <TableHead className="pe-4 text-muted-foreground">Last event</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                     {filteredSubscriptions.map((record) => (
-                                        <tr key={record.user_id} className="align-top text-foreground">
-                                            <td className="border-b border-border py-4 pe-4">
+                                        <TableRow key={record.user_id} className="align-top hover:bg-muted/50">
+                                            <TableCell className="max-w-[260px] py-3 ps-4">
                                                 <div className="min-w-0">
                                                     {record.user_id ? (
                                                         <Link
                                                             to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                            className="block truncate font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                            className="block truncate font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                         >
                                                             {record.email || 'Unknown user'}
                                                         </Link>
                                                     ) : (
-                                                        <span className="block truncate font-semibold text-foreground">{record.email || 'Unknown user'}</span>
+                                                        <span className="block truncate font-medium text-foreground">{record.email || 'Unknown user'}</span>
                                                     )}
                                                     <div className="mt-1">
                                                         <CopyableUuid value={record.user_id} textClassName="text-xs text-muted-foreground" hintClassName="text-[10px]" />
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td className="border-b border-border py-4 pe-4">
-                                                <div className="font-semibold text-foreground">{humanizeTierKey(record.tier_key)}</div>
+                                            </TableCell>
+                                            <TableCell className="py-3">
+                                                <div className="font-medium text-foreground">{humanizeTierKey(record.tier_key)}</div>
                                                 <div className="mt-1 font-mono text-xs text-muted-foreground">{record.provider_price_id || 'No price id'}</div>
-                                            </td>
-                                            <td className="border-b border-border py-4 pe-4">
+                                            </TableCell>
+                                            <TableCell className="py-3">
                                                 <div className="flex flex-col gap-2">
-                                                    <span className={statusPill(resolveAdminBillingLifecycleStatus(record))}>
-                                                        {humanizeAdminBillingStatus(resolveAdminBillingLifecycleStatus(record))}
-                                                    </span>
+                                                    <BillingStatusBadge status={resolveAdminBillingLifecycleStatus(record)} />
                                                     <span className="text-xs text-muted-foreground">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
                                                 </div>
-                                            </td>
-                                            <td className="border-b border-border py-4 pe-4">
-                                                <div className="font-semibold text-foreground">{formatAdminBillingAmount(record.amount, record.currency)}</div>
+                                            </TableCell>
+                                            <TableCell className="py-3">
+                                                <div className="font-medium tabular-nums text-foreground">{formatAdminBillingAmount(record.amount, record.currency)}</div>
                                                 <div className="mt-1 text-xs text-muted-foreground">{record.provider || 'Provider unknown'}</div>
-                                            </td>
-                                            <td className="border-b border-border py-4 pe-4">
-                                                <div className="font-medium text-foreground">{formatCompactDate(record.current_period_end)}</div>
+                                            </TableCell>
+                                            <TableCell className="py-3">
+                                                <div className="tabular-nums text-foreground">{formatCompactDate(record.current_period_end)}</div>
                                                 {record.grace_ends_at ? (
                                                     <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">Grace until {formatCompactDate(record.grace_ends_at)}</div>
                                                 ) : null}
-                                            </td>
-                                            <td className="border-b border-border py-4 pe-4">
-                                                <div className="font-medium text-foreground">{humanizeEventType(record.last_event_type)}</div>
-                                                <div className="mt-1 text-xs text-muted-foreground">{formatDateTime(record.last_event_at)}</div>
+                                            </TableCell>
+                                            <TableCell className="max-w-[240px] py-3 pe-4">
+                                                <div className="text-foreground">{humanizeEventType(record.last_event_type)}</div>
+                                                <div className="mt-1 text-xs tabular-nums text-muted-foreground">{formatDateTime(record.last_event_at)}</div>
                                                 <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">{record.provider_subscription_id || 'No subscription id'}</div>
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                        </TableRow>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </AdminSurfaceCard>
+                                </TableBody>
+                            </Table>
+                        )}
+                    </AdminSurfaceCard>
 
-                <AdminSurfaceCard className="min-w-0">
-                    <div className="flex items-end justify-between gap-3 border-b border-border pb-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-foreground">Webhook events</h2>
-                            <p className="mt-1 text-sm text-muted-foreground">Most recent Paddle delivery records stored for replay and debugging.</p>
-                        </div>
-                        <span className="text-sm text-muted-foreground">{filteredEvents.length} rows</span>
-                    </div>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-3">
+                        <AdminSectionHeader
+                            title="Webhook events"
+                            description="Recent Paddle delivery records stored for replay and debugging."
+                            actions={<span className="text-sm tabular-nums text-muted-foreground">{filteredEvents.length} rows</span>}
+                        />
 
-                    {filteredEvents.length === 0 ? (
-                        <div className="py-8 text-sm text-muted-foreground">
-                            <p>No billing webhook events found for this filter set.</p>
-                            {searchValue.trim() || selectedEventStatuses.length > 0 ? null : (
-                                <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                                    This usually means Paddle never reached the webhook endpoint, the notification was not sent for simulation traffic, or signature verification failed before the event could be stored.
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-border">
-                            {filteredEvents.map((record) => (
-                                <article key={record.event_id} className="py-4 first:pt-5 last:pb-0">
-                                    <div className="space-y-2">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className="font-semibold text-foreground">{humanizeEventType(record.event_type)}</span>
-                                            <span className={statusPill(record.status)}>{humanizeAdminBillingStatus(record.status)}</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                            <span>{formatDateTime(record.occurred_at)}</span>
-                                            <span>{record.provider}</span>
-                                            {record.user_email && record.user_id ? (
-                                                <Link
-                                                    to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                    className="font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
-                                                >
-                                                    {record.user_email}
-                                                </Link>
-                                            ) : (
-                                                <span>No linked user</span>
-                                            )}
-                                        </div>
-                                        <div className="rounded-lg border border-border bg-secondary px-3 py-2">
-                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Event ID</div>
-                                            <div className="mt-1 break-all font-mono text-xs leading-5 text-foreground">
-                                                {record.event_id}
+                        {filteredEvents.length === 0 ? (
+                            <AdminEmptyState
+                                icon={<WarningCircle />}
+                                title="No billing webhook events found for this filter set"
+                                description={searchValue.trim() || selectedEventStatuses.length > 0
+                                    ? undefined
+                                    : 'Paddle may never have reached the webhook endpoint, the notification was not sent for simulation traffic, or signature verification failed before the event could be stored.'}
+                            />
+                        ) : (
+                            <div className="divide-y divide-border border-t border-border">
+                                {filteredEvents.map((record) => (
+                                    <article key={record.event_id} className="py-4 last:pb-0">
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="font-medium text-foreground">{humanizeEventType(record.event_type)}</span>
+                                                <BillingStatusBadge status={record.status} />
+                                            </div>
+                                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                                <span className="tabular-nums">{formatDateTime(record.occurred_at)}</span>
+                                                <span>{record.provider}</span>
+                                                {record.user_email && record.user_id ? (
+                                                    <Link
+                                                        to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
+                                                        className="min-w-0 truncate font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                    >
+                                                        {record.user_email}
+                                                    </Link>
+                                                ) : (
+                                                    <span>No linked user</span>
+                                                )}
+                                            </div>
+                                            <div className="rounded-md border border-border bg-secondary px-3 py-2">
+                                                <div className="text-xs font-medium text-muted-foreground">Event ID</div>
+                                                <div className="mt-1 break-all font-mono text-xs leading-5 text-foreground">
+                                                    {record.event_id}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {record.error_message ? (
-                                        <div className={webhookMessageClassName(record.status)}>
-                                            <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">{webhookMessageLabel(record.status)}</p>
-                                            <p className="mt-1">{record.error_message}</p>
-                                        </div>
-                                    ) : null}
+                                        {record.error_message ? (
+                                            <div className={webhookMessageClassName(record.status)}>
+                                                <p className="text-xs font-medium opacity-80">{webhookMessageLabel(record.status)}</p>
+                                                <p className="mt-1 break-words">{record.error_message}</p>
+                                            </div>
+                                        ) : null}
 
-                                    <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                                        <div>
-                                            <span className="font-semibold text-foreground">Processed:</span> {formatDateTime(record.processed_at)}
+                                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                                            <div className="tabular-nums">
+                                                <span className="font-medium text-foreground">Processed:</span> {formatDateTime(record.processed_at)}
+                                            </div>
+                                            <div className="min-w-0 truncate">
+                                                <span className="font-medium text-foreground">User ID:</span>{' '}
+                                                {record.user_id ? <CopyableUuid value={record.user_id} textClassName="text-xs text-muted-foreground" hintClassName="text-[10px]" /> : '—'}
+                                            </div>
                                         </div>
-                                        <div className="truncate">
-                                            <span className="font-semibold text-foreground">User ID:</span>{' '}
-                                            {record.user_id ? <CopyableUuid value={record.user_id} textClassName="text-xs text-muted-foreground" hintClassName="text-[10px]" /> : '—'}
-                                        </div>
-                                    </div>
 
-                                    {record.payload ? (
-                                        <details className="mt-3 rounded-lg border border-border bg-secondary px-3 py-2">
-                                            <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Payload JSON
-                                            </summary>
-                                            <pre className="mt-3 max-h-56 overflow-auto rounded border border-border bg-slate-900 p-3 text-[10px] text-slate-100">
-                                                {formatPayloadJson(record.payload)}
-                                            </pre>
-                                        </details>
-                                    ) : null}
-                                </article>
-                            ))}
-                        </div>
-                    )}
-                </AdminSurfaceCard>
+                                        {record.payload ? (
+                                            <details className="mt-3 rounded-md border border-border bg-secondary px-3 py-2">
+                                                <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                                                    Payload JSON
+                                                </summary>
+                                                <pre className="mt-3 max-h-56 overflow-auto rounded-md border border-border bg-slate-900 p-3 text-[10px] text-slate-100 dark:bg-slate-950">
+                                                    {formatPayloadJson(record.payload)}
+                                                </pre>
+                                            </details>
+                                        ) : null}
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+                    </AdminSurfaceCard>
+                </div>
             </div>
         </AdminShell>
     );

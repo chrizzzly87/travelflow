@@ -6,7 +6,6 @@ import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
-import '../../styles/deferred-routes.css';
 import { suspendUntilAuthBootstrapSettles } from '../../services/authBootstrapSuspense';
 import { markInitialRouteHandoffCompleted } from '../../services/marketingRouteShellState';
 

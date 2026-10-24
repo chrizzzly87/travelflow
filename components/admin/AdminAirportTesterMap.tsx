@@ -4,6 +4,7 @@ import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import type mapboxgl from 'mapbox-gl';
 import { X } from 'lucide-react';
 import type { NearbyAirportsResponse } from '../../shared/airportReference';
+import { Button } from '../ui/button';
 import { buildMapboxStyleConfig, getMapboxStyleDescriptor } from '../../services/mapRendererVisualStyleService';
 import { createMapboxLineHandle, createMapboxOverlayMarker, type RuntimeMarkerHandle, type RuntimeRemovableHandle } from '../maps/mapboxOverlayRuntime';
 import { useGoogleMaps, useMapRuntime } from '../GoogleMapsLoader';
@@ -333,25 +334,27 @@ const AirportTesterDetailCard: React.FC<{
     <div
       role="dialog"
       aria-label={`${buildAirportTesterDetailTitle(point)} details`}
-      className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-2xl border border-border bg-card/97 p-3 shadow-xl backdrop-blur dark:shadow-none"
+      className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-lg border border-border bg-card p-3 shadow-lg dark:shadow-none"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="text-sm font-semibold text-foreground">{buildAirportTesterDetailTitle(point)}</div>
-        <button
+        <div className="min-w-0 text-sm font-semibold text-foreground">{buildAirportTesterDetailTitle(point)}</div>
+        <Button
           ref={closeButtonRef}
           type="button"
+          variant="ghost"
+          size="icon-xs"
           onClick={onClose}
           aria-label="Close airport details"
-          className="rounded-full border border-border p-1 text-muted-foreground transition hover:bg-secondary hover:text-foreground dark:text-foreground"
+          className="-me-1 -mt-0.5 text-muted-foreground"
         >
-          <X size={14} />
-        </button>
+          <X />
+        </Button>
       </div>
       <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
         {rows.map((row) => (
-          <div key={row.label} className="flex items-baseline justify-between gap-3 border-b border-border py-1 last:border-b-0">
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{row.label}</dt>
-            <dd className="text-xs font-medium text-foreground">{row.value}</dd>
+          <div key={row.label} className="flex min-w-0 items-baseline justify-between gap-3 border-b border-border py-1 last:border-b-0">
+            <dt className="shrink-0 text-xs text-muted-foreground">{row.label}</dt>
+            <dd className="min-w-0 truncate text-end text-xs font-medium tabular-nums text-foreground" title={row.value}>{row.value}</dd>
           </div>
         ))}
       </dl>
@@ -383,7 +386,7 @@ export const AdminAirportTesterMap: React.FC<AdminAirportTesterMapProps> = ({ or
   const rendererLabel = renderer === 'mapbox' ? 'Mapbox' : 'Google Maps';
 
   return (
-    <div className="relative h-[340px] overflow-hidden rounded-2xl border border-border bg-secondary">
+    <div className="relative h-[340px] min-w-0 overflow-hidden rounded-lg border border-border bg-muted">
       {!loadError && renderer === 'mapbox' && (
         <MapboxTesterMapLayer
           accessToken={mapboxAccessToken}
@@ -403,7 +406,7 @@ export const AdminAirportTesterMap: React.FC<AdminAirportTesterMapProps> = ({ or
       )}
 
       {!loadError && (!rendererReady || !origin) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-secondary/85 px-6 text-center text-sm text-muted-foreground">
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/85 px-6 text-center text-sm text-muted-foreground" role="status">
           {!rendererReady
             ? `Loading ${rendererLabel} for airport testing…`
             : 'Pick a city or use manual coordinates to preview the nearest-airport map.'}
@@ -411,7 +414,7 @@ export const AdminAirportTesterMap: React.FC<AdminAirportTesterMapProps> = ({ or
       )}
 
       {loadError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-secondary/90 px-6 text-center text-sm text-foreground">
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/90 px-6 text-center text-sm text-foreground" role="alert">
           {rendererLabel} could not be loaded for this admin tester.
         </div>
       )}

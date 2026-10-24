@@ -1,17 +1,26 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
-    ArrowsClockwise,
+    CheckCircle,
     DownloadSimple,
     FloppyDisk,
+    ImageBroken,
     MapPin,
+    PencilSimple,
     Plus,
     SpinnerGap,
     Trash,
-    WarningCircle,
 } from '@phosphor-icons/react';
 
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { showAppToast } from '../components/ui/appToast';
@@ -37,13 +46,25 @@ const STATUS_LABEL: Record<RecommendationStatus, string> = {
     retired: 'Retired',
 };
 
-const STATUS_TONE: Record<string, string> = {
-    published: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200',
-    in_review: 'bg-amber-100 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200',
-    draft: 'bg-secondary text-muted-foreground',
-    rejected: 'bg-red-100 text-red-800 dark:bg-red-400/12 dark:text-red-200',
-    retired: 'bg-slate-200 text-muted-foreground',
+const STATUS_TONE: Record<RecommendationStatus, AdminStatusTone> = {
+    published: 'success',
+    in_review: 'warning',
+    draft: 'neutral',
+    rejected: 'danger',
+    retired: 'neutral',
 };
+
+const resolveStatus = (value: string | null | undefined): RecommendationStatus => (
+    STATUSES.includes(value as RecommendationStatus) ? value as RecommendationStatus : 'draft'
+);
+
+/** A labelled form field: the label wraps the control so the name is programmatic. */
+const EditorField: React.FC<{ label: React.ReactNode; className?: string; children: React.ReactNode }> = ({ label, className, children }) => (
+    <label className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        {children}
+    </label>
+);
 
 /** The editor works on strings; the table works on JSON. This is the seam. */
 interface EditorState {
@@ -306,71 +327,41 @@ export const AdminRecommendationsPage: React.FC = () => {
 
     const countryOptions = Array.from(new Set([country, 'TW', ...countries])).filter(Boolean).sort();
 
+
     return (
         <AdminShell
             title="Recommendations"
-            description="The shared library of place ideas behind the trip Ideas deck. Add, edit and publish entries; travellers only ever see published ones."
+            description="The shared library of place ideas behind the trip Ideas deck. Travellers only ever see published entries."
             searchValue={query}
             onSearchValueChange={setQuery}
             showDateRange={false}
             actions={(
-                <div className="flex gap-2">
-                    <button
-                        type="button"
-                        onClick={() => void importBundled()}
-                        disabled={saving || loading}
-                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
-                    >
-                        <DownloadSimple size={16} /> Import bundled
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => void load(country)}
-                        disabled={loading}
-                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
-                    >
-                        <ArrowsClockwise size={16} className={loading ? 'animate-spin' : ''} /> Refresh
-                    </button>
-                    <button
-                        type="button"
-                        onClick={startNew}
-                        className="inline-flex items-center gap-2 rounded-xl bg-accent-600 px-3 py-2 text-sm font-semibold text-white hover:bg-accent-700"
-                    >
-                        <Plus size={16} /> New
-                    </button>
-                </div>
+                <>
+                    <Button type="button" variant="outline" onClick={() => void importBundled()} disabled={saving || loading}>
+                        <DownloadSimple /> Import bundled
+                    </Button>
+                    <AdminReloadButton onClick={() => void load(country)} isLoading={loading} label="Refresh" />
+                    <Button type="button" onClick={startNew}>
+                        <Plus /> New
+                    </Button>
+                </>
             )}
         >
-            <div className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    {([
-                        ['In this country', counts.total],
-                        ['Published', counts.published],
-                        ['Draft or in review', counts.drafts],
-                        ['Without a photo', counts.withoutImage],
-                    ] as const).map(([label, value]) => (
-                        <AdminSurfaceCard key={label} className="flex items-center justify-between">
-                            <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-                                <div className="mt-1 text-2xl font-bold text-foreground">{value}</div>
-                            </div>
-                            <MapPin size={24} />
-                        </AdminSurfaceCard>
-                    ))}
+            <div className="flex flex-col gap-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <AdminStatCard label="In this country" icon={<MapPin />} value={counts.total} isLoading={loading} />
+                    <AdminStatCard label="Published" icon={<CheckCircle />} value={counts.published} isLoading={loading} />
+                    <AdminStatCard label="Draft or in review" icon={<PencilSimple />} value={counts.drafts} isLoading={loading} />
+                    <AdminStatCard label="Without a photo" icon={<ImageBroken />} value={counts.withoutImage} isLoading={loading} />
                 </div>
 
-                {error && (
-                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30">
-                        <WarningCircle size={18} className="mt-0.5 shrink-0" />
-                        {error}
-                    </div>
-                )}
+                {error && <AdminErrorAlert message={error} />}
 
-                <div className="grid min-h-[640px] gap-4 xl:grid-cols-[minmax(340px,0.8fr)_minmax(520px,1.2fr)]">
-                    <AdminSurfaceCard className="flex min-h-0 flex-col p-0">
+                <div className="grid gap-4 xl:min-h-[640px] xl:grid-cols-[minmax(340px,0.8fr)_minmax(0,1.2fr)]">
+                    <AdminSurfaceCard className="flex min-h-0 min-w-0 flex-col p-0">
                         <div className="grid gap-2 border-b border-border p-4 sm:grid-cols-2">
                             <Select value={country} onValueChange={setCountry}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger aria-label="Country"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {countryOptions.map((code) => (
                                         <SelectItem key={code} value={code}>{code}</SelectItem>
@@ -378,7 +369,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                 </SelectContent>
                             </Select>
                             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | RecommendationStatus)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger aria-label="Status"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All statuses</SelectItem>
                                     {STATUSES.map((status) => (
@@ -390,81 +381,84 @@ export const AdminRecommendationsPage: React.FC = () => {
 
                         <div className="max-h-[720px] flex-1 overflow-y-auto p-2">
                             {loading && (
-                                <div className="flex h-48 items-center justify-center text-muted-foreground">
+                                <div className="flex h-48 items-center justify-center text-muted-foreground" role="status" aria-label="Loading recommendations">
                                     <SpinnerGap size={24} className="animate-spin" />
                                 </div>
                             )}
                             {!loading && filtered.length === 0 && (
-                                <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-                                    Nothing here yet. Use <strong>Import bundled</strong> to seed this country, or <strong>New</strong> to write one.
-                                </div>
+                                <AdminEmptyState
+                                    className="m-2"
+                                    title="Nothing here yet"
+                                    description={<>Use <strong className="font-medium text-foreground">Import bundled</strong> to seed this country, or <strong className="font-medium text-foreground">New</strong> to write one.</>}
+                                />
                             )}
-                            {!loading && filtered.map((row) => (
-                                <button
-                                    key={row.id}
-                                    type="button"
-                                    onClick={() => select(row)}
-                                    data-testid="admin-recommendation-row"
-                                    className={cn(
-                                        'mb-1 flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-3 text-start transition-colors',
-                                        selectedId === row.id
-                                            ? 'border-accent-300 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30'
-                                            : 'border-transparent hover:border-border hover:bg-secondary',
-                                    )}
-                                >
-                                    <div className="min-w-0">
-                                        <div className="truncate font-semibold text-foreground">{row.title}</div>
-                                        <div className="mt-0.5 truncate text-xs uppercase tracking-wide text-muted-foreground">
-                                            {[row.city_name, row.country_code, row.image ? 'photo' : 'no photo'].filter(Boolean).join(' · ')}
+                            {!loading && filtered.map((row) => {
+                                const status = resolveStatus(row.status);
+                                const active = selectedId === row.id;
+                                return (
+                                    <button
+                                        key={row.id}
+                                        type="button"
+                                        onClick={() => select(row)}
+                                        aria-pressed={active}
+                                        data-testid="admin-recommendation-row"
+                                        className={cn(
+                                            'flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2.5 text-start transition-colors',
+                                            active
+                                                ? 'border-accent-300 bg-accent-50 dark:border-accent-400/30 dark:bg-accent-400/12'
+                                                : 'border-transparent hover:bg-muted/50',
+                                        )}
+                                    >
+                                        <div className="min-w-0">
+                                            <div className="truncate text-sm font-medium text-foreground">{row.title}</div>
+                                            <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                {[row.city_name, row.country_code, row.image ? 'Photo' : 'No photo'].filter(Boolean).join(' · ')}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <span className={cn('shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold', STATUS_TONE[row.status ?? 'draft'])}>
-                                        {STATUS_LABEL[(row.status ?? 'draft') as RecommendationStatus]}
-                                    </span>
-                                </button>
-                            ))}
+                                        <AdminStatusBadge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</AdminStatusBadge>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard className="min-w-0">
-                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
-                            <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader
+                            className="border-b border-border pb-4"
+                            title={editor.title || 'Untitled'}
+                            description={(
+                                <>
                                     {selectedId ? 'Edit recommendation' : 'New recommendation'}
-                                </div>
-                                <h2 className="mt-1 text-xl font-bold text-foreground">{editor.title || 'Untitled'}</h2>
-                                {editor.id && <div className="mt-1 font-mono text-xs text-muted-foreground">{editor.id}</div>}
-                            </div>
-                            {selectedId && editor.status !== 'published' && (
-                                <button
+                                    {editor.id && <span className="mt-0.5 block break-all font-mono text-xs">{editor.id}</span>}
+                                </>
+                            )}
+                            actions={selectedId && editor.status !== 'published' ? (
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                         const row = rows.find((entry) => entry.id === selectedId);
                                         if (row) void changeStatus(row, 'published');
                                     }}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30"
                                 >
-                                    Publish now
-                                </button>
-                            )}
-                        </div>
+                                    <CheckCircle /> Publish now
+                                </Button>
+                            ) : null}
+                        />
 
-                        <div className="mt-4 space-y-4">
+                        <div className="flex flex-col gap-4">
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Title
+                                <EditorField label="Title">
                                     <Input value={editor.title} onChange={field('title')} placeholder="Din Tai Fung (Xinsheng Branch)" />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    City
+                                </EditorField>
+                                <EditorField label="City">
                                     <Input value={editor.cityName} onChange={field('cityName')} placeholder="Taipei" />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Country code
+                                </EditorField>
+                                <EditorField label="Country code">
                                     <Input value={editor.countryCode} onChange={field('countryCode')} placeholder="TW" maxLength={2} />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Status
+                                </EditorField>
+                                <EditorField label="Status">
                                     <Select value={editor.status} onValueChange={(value) => setEditor((current) => ({ ...current, status: value as RecommendationStatus }))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
@@ -473,47 +467,41 @@ export const AdminRecommendationsPage: React.FC = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </EditorField>
                             </div>
 
-                            <label className="block space-y-1 text-sm font-semibold text-foreground">
-                                One-line summary
+                            <EditorField label="One-line summary">
                                 <Input value={editor.summary} onChange={field('summary')} placeholder="Famous soup dumplings, expect a queue" />
-                            </label>
+                            </EditorField>
 
-                            <label className="block space-y-1 text-sm font-semibold text-foreground">
-                                Description
-                                <textarea
+                            <EditorField label="Description">
+                                <Textarea
                                     value={editor.description}
                                     onChange={field('description')}
                                     rows={6}
-                                    className="w-full resize-y rounded-xl border border-border p-3 text-sm font-normal leading-6 outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
+                                    className="resize-y leading-6 [field-sizing:fixed]"
                                     placeholder="A paragraph or two. This is what the card shows."
                                 />
-                            </label>
+                            </EditorField>
 
-                            <label className="block space-y-1 text-sm font-semibold text-foreground">
-                                Recommendations — one per line
-                                <textarea
+                            <EditorField label="Recommendations — one per line">
+                                <Textarea
                                     value={editor.highlights}
                                     onChange={field('highlights')}
                                     rows={5}
-                                    className="w-full resize-y rounded-xl border border-border p-3 text-sm font-normal leading-6 outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
+                                    className="resize-y leading-6 [field-sizing:fixed]"
                                     placeholder={'Order the xiaolongbao\nGo before noon to skip the queue'}
                                 />
-                            </label>
+                            </EditorField>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Activity types — comma separated
+                                <EditorField label="Activity types — comma separated">
                                     <Input value={editor.activityTypes} onChange={field('activityTypes')} placeholder="food, sightseeing" />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Tags — comma separated
+                                </EditorField>
+                                <EditorField label="Tags — comma separated">
                                     <Input value={editor.tags} onChange={field('tags')} placeholder="food-drink, taipei" />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Cost
+                                </EditorField>
+                                <EditorField label="Cost">
                                     <Select
                                         value={editor.costBand || 'none'}
                                         onValueChange={(value) => setEditor((current) => ({ ...current, costBand: value === 'none' ? '' : value }))}
@@ -526,77 +514,65 @@ export const AdminRecommendationsPage: React.FC = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Typical duration (minutes)
+                                </EditorField>
+                                <EditorField label="Typical duration (minutes)">
                                     <Input
                                         value={editor.typicalDurationMinutes}
                                         onChange={field('typicalDurationMinutes')}
                                         inputMode="numeric"
                                         placeholder="75"
                                     />
-                                </label>
+                                </EditorField>
                             </div>
 
-                            <label className="block space-y-1 text-sm font-semibold text-foreground">
-                                Address
+                            <EditorField label="Address">
                                 <Input value={editor.address} onChange={field('address')} placeholder="No. 277, Section 2, Xinyi Rd, Taipei" />
-                            </label>
+                            </EditorField>
 
                             <div className="grid gap-3 sm:grid-cols-3">
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Latitude
+                                <EditorField label="Latitude">
                                     <Input value={editor.lat} onChange={field('lat')} inputMode="decimal" placeholder="25.033889" />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Longitude
+                                </EditorField>
+                                <EditorField label="Longitude">
                                     <Input value={editor.lng} onChange={field('lng')} inputMode="decimal" placeholder="121.532134" />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Google place id
+                                </EditorField>
+                                <EditorField label="Google place id">
                                     <Input value={editor.googlePlaceId} onChange={field('googlePlaceId')} placeholder="ChIJ..." />
-                                </label>
+                                </EditorField>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Photo URL
+                                <EditorField label="Photo URL">
                                     <Input
                                         value={editor.imageUrl}
                                         onChange={field('imageUrl')}
                                         placeholder="/api/place-photo?ref=places/.../photos/..."
                                     />
-                                </label>
-                                <label className="space-y-1 text-sm font-semibold text-foreground">
-                                    Photo credit
+                                </EditorField>
+                                <EditorField label="Photo credit">
                                     <Input value={editor.imageAttribution} onChange={field('imageAttribution')} placeholder="Photographer name" />
-                                </label>
+                                </EditorField>
                             </div>
                             <p className="text-xs leading-5 text-muted-foreground">
                                 Photos are referenced, never copied. Paste a
-                                {' '}<code className="rounded bg-secondary px-1">/api/place-photo?ref=places/&lt;placeId&gt;/photos/&lt;photoId&gt;</code>{' '}
+                                {' '}<code className="break-all rounded bg-secondary px-1">/api/place-photo?ref=places/&lt;placeId&gt;/photos/&lt;photoId&gt;</code>{' '}
                                 path and credit the photographer. Leave the coordinates filled in and the card draws its own map.
                             </p>
 
                             <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => void save()}
                                     disabled={saving || !editor.title.trim()}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-50"
+                                    aria-busy={saving || undefined}
                                 >
-                                    {saving ? <SpinnerGap size={17} className="animate-spin" /> : <FloppyDisk size={17} />}
+                                    {saving ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
                                     {selectedId ? 'Save changes' : 'Create recommendation'}
-                                </button>
+                                </Button>
                                 {selectedId && (
-                                    <button
-                                        type="button"
-                                        onClick={() => void remove()}
-                                        disabled={saving}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-400/12 dark:text-red-200 dark:border-red-400/30"
-                                    >
-                                        <Trash size={17} /> Delete
-                                    </button>
+                                    <Button type="button" variant="destructive" onClick={() => void remove()} disabled={saving}>
+                                        <Trash /> Delete
+                                    </Button>
                                 )}
                             </div>
                         </div>

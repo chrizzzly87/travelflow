@@ -283,7 +283,7 @@ describe('AdminAirportsPage', () => {
     const user = userEvent.setup();
     renderAdminAirportsPage();
 
-    expect(await screen.findByText('Airport Catalog')).toBeInTheDocument();
+    expect(await screen.findByText('Airport catalog')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Berlin Brandenburg Airport')).toBeInTheDocument();
 
     await user.click(screen.getByRole('row', { name: /HAM\s+EDDH\s+Hamburg Airport/i }));
@@ -362,9 +362,9 @@ describe('AdminAirportsPage', () => {
     expect(await screen.findByRole('button', { name: 'Apply bulk edit' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('checkbox', { name: 'Select Hamburg Airport' }));
-    await user.click(screen.getByRole('combobox', { name: 'Scheduled Service' }));
+    await user.click(screen.getByRole('combobox', { name: 'Scheduled service' }));
     await user.click(await screen.findByRole('option', { name: 'Set scheduled service off' }));
-    await user.click(screen.getAllByRole('combobox', { name: 'Airport Type' })[0]);
+    await user.click(screen.getAllByRole('combobox', { name: 'Airport type' })[0]);
     await user.click(await screen.findByRole('option', { name: 'Set to small airport' }));
 
     await user.click(screen.getByRole('button', { name: 'Apply bulk edit' }));

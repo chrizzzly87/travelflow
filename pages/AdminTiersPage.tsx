@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowsClockwise, CheckCircle, SpinnerGap, Stack } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import type { PlanTierKey } from '../types';
 import { AdminShell } from '../components/admin/AdminShell';
@@ -16,6 +16,18 @@ import {
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Button } from '../components/ui/button';
+import { Checkbox } from '../components/ui/checkbox';
+import { Input } from '../components/ui/input';
+import { Separator } from '../components/ui/separator';
+import { Textarea } from '../components/ui/textarea';
 
 type DraftMap = Record<PlanTierKey, string>;
 type PreviewMap = Record<PlanTierKey, AdminTierReapplyPreview | null>;
@@ -60,62 +72,66 @@ const EntitlementCard: React.FC<{
 
     if (isError) {
         return (
-            <textarea
-                aria-label="Tier limits JSON editor"
-                value={draft}
-                onChange={(e) => onChange(e.target.value)}
-                className="mt-3 min-h-[220px] w-full rounded-lg border border-red-300 bg-red-50 text-red-900 px-3 py-2 font-mono text-xs dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30"
-            />
+            <div className="flex flex-col gap-2">
+                <p className="text-xs text-red-700 dark:text-red-300">
+                    The limits JSON is not valid. Fix it here to get the form back.
+                </p>
+                <Textarea
+                    aria-label="Tier limits JSON editor"
+                    aria-invalid="true"
+                    value={draft}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="min-h-[220px] font-mono text-xs"
+                />
+            </div>
         );
     }
 
     const limits = [
-        { key: 'maxActiveTrips', label: 'Max Active Trips' },
-        { key: 'maxTotalTrips', label: 'Max Total Trips' },
-        { key: 'tripExpirationDays', label: 'Trip Expiration (Days)' },
+        { key: 'maxActiveTrips', label: 'Max active trips' },
+        { key: 'maxTotalTrips', label: 'Max total trips' },
+        { key: 'tripExpirationDays', label: 'Trip expiration (days)' },
     ];
-    
+
     const permissions = [
-        { key: 'canShare', label: 'Can Share Trips' },
-        { key: 'canCreateEditableShares', label: 'Can Appoint Co-Editors' },
-        { key: 'canViewProTrips', label: 'Can View Premium Content' },
-        { key: 'canCreateProTrips', label: 'Can Create Premium Trips' },
+        { key: 'canShare', label: 'Can share trips' },
+        { key: 'canCreateEditableShares', label: 'Can appoint co-editors' },
+        { key: 'canViewProTrips', label: 'Can view premium content' },
+        { key: 'canCreateProTrips', label: 'Can create premium trips' },
     ];
 
     return (
-        <div className="mt-3 flex flex-col gap-4 rounded-xl border border-border bg-secondary p-4">
-            <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-4 rounded-md border border-border bg-muted/40 p-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {limits.map((l) => (
-                    <div key={l.key} className="flex flex-col gap-1">
-                        <label className="text-[11px] font-semibold uppercase text-muted-foreground">{l.label}</label>
-	                        <input
-	                            type="number"
-	                            aria-label={l.label}
-	                            value={parsed[l.key] === null ? '' : parsed[l.key] ?? ''}
+                    <label key={l.key} className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-muted-foreground">{l.label}</span>
+                        <Input
+                            type="number"
+                            aria-label={l.label}
+                            value={parsed[l.key] === null ? '' : parsed[l.key] ?? ''}
                             onChange={(e) => {
                                 const val = e.target.value === '' ? null : Number(e.target.value);
                                 updateField(l.key, val);
                             }}
                             placeholder="Unlimited"
-                            className="h-8 w-full rounded-md border border-border px-2 text-sm focus:border-accent-400 focus:ring-1 focus:ring-accent-400"
+                            className="h-8 tabular-nums"
                         />
-                    </div>
+                    </label>
                 ))}
             </div>
-            
-            <div className="h-px w-full bg-slate-200" />
-            
-            <div className="grid grid-cols-2 gap-3">
+
+            <Separator />
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {permissions.map((p) => (
                     <label key={p.key} className="flex cursor-pointer items-center gap-2">
-	                        <input
-	                            type="checkbox"
-	                            aria-label={p.label}
-	                            checked={Boolean(parsed[p.key])}
-                            onChange={(e) => updateField(p.key, e.target.checked)}
-                            className="size-4 rounded border-border text-accent-600 focus:ring-accent-600 dark:text-accent-300"
+                        <Checkbox
+                            aria-label={p.label}
+                            checked={Boolean(parsed[p.key])}
+                            onCheckedChange={(checked) => updateField(p.key, checked === true)}
                         />
-                        <span className="text-xs font-medium text-foreground">{p.label}</span>
+                        <span className="text-sm text-foreground">{p.label}</span>
                     </label>
                 ))}
             </div>
@@ -219,10 +235,14 @@ export const AdminTiersPage: React.FC = () => {
                 throw new Error('Tier entitlement payload must be a JSON object.');
             }
             await adminUpdatePlanEntitlements(tierKey, parsed as Record<string, unknown>);
-            setMessage(`Saved entitlement template for ${tierKey}.`);
+            setMessage(`Saved the ${PLAN_CATALOG[tierKey].publicName} template.`);
             await refreshTierSnapshot(tierKey);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : `Could not save ${tierKey}.`);
+            setErrorMessage(
+                error instanceof SyntaxError || (error instanceof Error && error.message.startsWith('Tier entitlement payload'))
+                    ? `The ${PLAN_CATALOG[tierKey].publicName} limits are not a valid JSON object. Fix them and save again.`
+                    : `Could not save the ${PLAN_CATALOG[tierKey].publicName} template. Try again in a moment.`
+            );
         } finally {
             setIsSaving(null);
         }
@@ -235,11 +255,11 @@ export const AdminTiersPage: React.FC = () => {
         try {
             const result = await adminReapplyTierToUsers(tierKey);
             setMessage(
-                `Reapply completed for ${tierKey}: ${result.affected_users} users and ${result.affected_trips} trips updated.`
+                `Reapplied ${PLAN_CATALOG[tierKey].publicName}: ${result.affected_users} users and ${result.affected_trips} trips updated.`
             );
             await refreshTierSnapshot(tierKey);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : `Could not reapply ${tierKey}.`);
+            setErrorMessage(`Could not reapply ${PLAN_CATALOG[tierKey].publicName} to existing customers. Try again in a moment.`);
         } finally {
             setIsReapplying(null);
         }
@@ -254,10 +274,12 @@ export const AdminTiersPage: React.FC = () => {
         );
     });
 
+    const isBusy = isSaving !== null || isReapplying !== null;
+
     return (
         <AdminShell
-            title="Tier and Entitlement Control"
-            description="Edit plan templates, then reapply entitlement and trip lifecycle changes to existing customers."
+            title="Tiers"
+            description="Edit plan templates, then reapply entitlements and trip lifecycle changes to existing customers."
             searchValue={searchValue}
             onSearchValueChange={setSearchValue}
             dateRange={dateRange}
@@ -272,108 +294,115 @@ export const AdminTiersPage: React.FC = () => {
                 />
             )}
         >
-            {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                    {errorMessage}
-                </section>
-            )}
-            {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                    {message}
-                </section>
-            )}
+            <div className="flex flex-col gap-6">
+                {(errorMessage || message) && (
+                    <div className="flex flex-col gap-3">
+                        {errorMessage && <AdminErrorAlert message={errorMessage} />}
+                        {message && (
+                            <Alert variant="success">
+                                <CheckCircle weight="fill" />
+                                <AlertDescription>{message}</AlertDescription>
+                            </Alert>
+                        )}
+                    </div>
+                )}
 
-            <section className="grid gap-3 md:grid-cols-3">
-                {visibleTierKeys.map((tierKey) => (
-                    <article key={`count-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tierKey}</p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">{PLAN_CATALOG[tierKey].publicName}</p>
-                        <p className="mt-2 text-2xl font-semibold text-foreground">
-                            <AdminCountUpNumber value={tierCounts[tierKey]} />
-                        </p>
-                        <p className="text-xs text-muted-foreground">Users in selected date range</p>
-                    </article>
-                ))}
-            </section>
+                {visibleTierKeys.length > 0 && (
+                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Users per tier">
+                        {visibleTierKeys.map((tierKey) => (
+                            <AdminStatCard
+                                key={`count-${tierKey}`}
+                                label={PLAN_CATALOG[tierKey].publicName}
+                                value={<AdminCountUpNumber value={tierCounts[tierKey]} />}
+                                hint={<>Users in the selected date range · <span className="font-mono">{tierKey}</span></>}
+                            />
+                        ))}
+                    </section>
+                )}
 
-            <section className="mt-4 grid gap-3 xl:grid-cols-3">
-                {visibleTierKeys.map((tierKey) => (
-                    <article key={`tier-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                        <div className="flex items-center justify-between gap-2">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tierKey}</p>
-                                <h2 className="text-base font-semibold text-foreground">{PLAN_CATALOG[tierKey].publicName}</h2>
-                            </div>
-                            <span className="rounded-full border border-border bg-secondary px-2 py-1 text-xs font-semibold text-foreground">
-                                ${PLAN_CATALOG[tierKey].monthlyPriceUsd}/mo
-                            </span>
-                        </div>
-                        <div className="mt-2 rounded-lg border border-border bg-secondary px-2.5 py-2 text-[11px] text-muted-foreground">
-                            {isLoadingPreview === tierKey ? (
-                                <span className="inline-flex items-center gap-1">
-                                    <SpinnerGap size={12} className="animate-spin" />
-                                    Loading reapply preview…
-                                </span>
-                            ) : (
-                                <span>
-                                    Preview: {tierPreview[tierKey]?.affected_users ?? 0} users, {tierPreview[tierKey]?.affected_trips ?? 0} trips
-                                    {' '}({tierPreview[tierKey]?.active_trips ?? 0} active / {tierPreview[tierKey]?.expired_trips ?? 0} expired / {tierPreview[tierKey]?.archived_trips ?? 0} archived),
-                                    {' '}overrides on {tierPreview[tierKey]?.users_with_overrides ?? 0} users.
-                                </span>
-                            )}
-                        </div>
-                        <EntitlementCard
-                            draft={tierDrafts[tierKey]}
-                            onChange={(nextStr) => {
-                                setTierDrafts((current) => ({
-                                    ...current,
-                                    [tierKey]: nextStr,
-                                }));
-                            }}
-                        />
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                onClick={() => void saveTier(tierKey)}
-                                disabled={isSaving !== null || isReapplying !== null}
-                                className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-                            >
-                                {isSaving === tierKey ? (
-                                    <span className="inline-flex items-center gap-1">
-                                        <SpinnerGap size={13} className="animate-spin" />
-                                        Saving…
-                                    </span>
-                                ) : (
-                                    'Save template'
-                                )}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void reapplyTier(tierKey)}
-                                disabled={isSaving !== null || isReapplying !== null}
-                                className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900 hover:bg-accent-100 disabled:opacity-50 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
-                            >
-                                {isReapplying === tierKey ? (
-                                    <span className="inline-flex items-center gap-1">
-                                        <SpinnerGap size={13} className="animate-spin" />
-                                        Reapplying…
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1">
-                                        <ArrowsClockwise size={13} />
-                                        Reapply to customers
-                                    </span>
-                                )}
-                            </button>
-                        </div>
-                    </article>
-                ))}
-            </section>
-            {visibleTierKeys.length === 0 && (
-                <section className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-                    No tiers match the current search filter.
-                </section>
-            )}
+                {visibleTierKeys.length > 0 && (
+                    <section className="grid gap-4 xl:grid-cols-3">
+                        {visibleTierKeys.map((tierKey) => {
+                            const preview = tierPreview[tierKey];
+                            return (
+                                <AdminSurfaceCard key={`tier-${tierKey}`} className="flex flex-col gap-4">
+                                    <AdminSectionHeader
+                                        title={PLAN_CATALOG[tierKey].publicName}
+                                        description={<span className="font-mono text-xs">{tierKey}</span>}
+                                        actions={(
+                                            <AdminStatusBadge tone="neutral" dot={false} className="tabular-nums">
+                                                ${PLAN_CATALOG[tierKey].monthlyPriceUsd}/mo
+                                            </AdminStatusBadge>
+                                        )}
+                                    />
+                                    <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground" aria-live="polite">
+                                        {isLoadingPreview === tierKey ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                <SpinnerGap size={12} className="animate-spin" aria-hidden="true" />
+                                                Loading reapply preview…
+                                            </span>
+                                        ) : (
+                                            <span className="tabular-nums">
+                                                Reapply would touch {preview?.affected_users ?? 0} users and {preview?.affected_trips ?? 0} trips
+                                                {' '}({preview?.active_trips ?? 0} active, {preview?.expired_trips ?? 0} expired, {preview?.archived_trips ?? 0} archived);
+                                                {' '}{preview?.users_with_overrides ?? 0} users have overrides.
+                                            </span>
+                                        )}
+                                    </div>
+                                    <EntitlementCard
+                                        draft={tierDrafts[tierKey]}
+                                        onChange={(nextStr) => {
+                                            setTierDrafts((current) => ({
+                                                ...current,
+                                                [tierKey]: nextStr,
+                                            }));
+                                        }}
+                                    />
+                                    <div className="mt-auto flex flex-wrap gap-2">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => void saveTier(tierKey)}
+                                            disabled={isBusy}
+                                        >
+                                            {isSaving === tierKey ? (
+                                                <>
+                                                    <SpinnerGap className="animate-spin" aria-hidden="true" />
+                                                    Saving…
+                                                </>
+                                            ) : (
+                                                'Save template'
+                                            )}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => void reapplyTier(tierKey)}
+                                            disabled={isBusy}
+                                        >
+                                            {isReapplying === tierKey ? (
+                                                <SpinnerGap className="animate-spin" aria-hidden="true" />
+                                            ) : (
+                                                <ArrowsClockwise aria-hidden="true" />
+                                            )}
+                                            {isReapplying === tierKey ? 'Reapplying…' : 'Reapply to customers'}
+                                        </Button>
+                                    </div>
+                                </AdminSurfaceCard>
+                            );
+                        })}
+                    </section>
+                )}
+
+                {visibleTierKeys.length === 0 && (
+                    <AdminEmptyState
+                        icon={<Stack />}
+                        title="No tiers match this search"
+                        description="Clear the search field to see every plan tier."
+                    />
+                )}
+            </div>
         </AdminShell>
     );
 };

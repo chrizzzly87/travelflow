@@ -2,13 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarDays, Clipboard, Eye, MapPin, Pin, RotateCcw, Star, Tag, Trophy } from 'lucide-react';
 import { ChatCircleDots, MapTrifold } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '../components/ui/card';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { SettingsCard, SettingsGroup, SettingsRow } from '../components/ui/settings-panel';
@@ -328,24 +325,24 @@ const FEATURE_CARD_COPY: Record<FeatureCardVariantId, { label: string; title: st
     },
 };
 
-const ADMIN_SURFACE_COPY: Record<AdminSurfaceStateId, { label: string; title: string; body: string; badgeClassName: string }> = {
+const ADMIN_SURFACE_COPY: Record<AdminSurfaceStateId, { label: string; title: string; body: string; tone: AdminStatusTone }> = {
     healthy: {
         label: 'Healthy',
         title: 'Worker queue',
         body: 'Generation workers are claiming jobs and completing within the expected window.',
-        badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
+        tone: 'success',
     },
     attention: {
         label: 'Needs attention',
         title: 'Billing sync',
         body: 'Webhook delivery is delayed and may require a reconciliation pass.',
-        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
+        tone: 'warning',
     },
     blocked: {
         label: 'Blocked',
         title: 'Airport import',
         body: 'The current upstream sync failed and is waiting for an admin retry.',
-        badgeClassName: 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
+        tone: 'danger',
     },
 };
 
@@ -405,10 +402,10 @@ const SliderControl: React.FC<SliderControlProps> = ({
     suffix = '',
     onChange,
 }) => (
-    <label className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
-        <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase text-muted-foreground">
+    <label className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
+        <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
             <span>{label}</span>
-            <span className="rounded bg-secondary px-2 py-0.5 text-foreground">
+            <span className="rounded-sm bg-secondary px-2 py-0.5 text-foreground tabular-nums">
                 {formatNumber(value)}{suffix}
             </span>
         </span>
@@ -439,16 +436,16 @@ const CopySettingsButton: React.FC<{
     }, [label, settings, variableName]);
 
     return (
-        <button
+        <Button
             type="button"
+            variant="outline"
             onClick={() => {
                 void handleCopy();
             }}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
         >
-            <Clipboard data-icon="inline-start" />
+            <Clipboard data-icon="inline-start" aria-hidden="true" />
             {label}
-        </button>
+        </Button>
     );
 };
 
@@ -457,17 +454,13 @@ const PlaygroundControls: React.FC<{
     copyButton: React.ReactNode;
     onReset: () => void;
 }> = ({ children, copyButton, onReset }) => (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-secondary p-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-muted/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-foreground">Settings</h3>
-            <button
-                type="button"
-                onClick={onReset}
-                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary"
-            >
-                <RotateCcw data-icon="inline-start" />
+            <Button type="button" variant="outline" size="sm" onClick={onReset}>
+                <RotateCcw data-icon="inline-start" aria-hidden="true" />
                 Reset
-            </button>
+            </Button>
         </div>
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]">{children}</div>
         {copyButton}
@@ -685,16 +678,13 @@ const PlaygroundBlock: React.FC<{
     preview: React.ReactNode;
     controls: React.ReactNode;
 }> = ({ title, description, preview, controls }) => (
-    <Card className="w-full rounded-xl border-border bg-card">
-        <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <AdminSurfaceCard className="flex w-full flex-col gap-4">
+        <AdminSectionHeader title={title} description={description} />
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <div className="min-w-0">{preview}</div>
             {controls}
-        </CardContent>
-    </Card>
+        </div>
+    </AdminSurfaceCard>
 );
 
 const ExampleTripCardPreview: React.FC<{ settings: ExampleTripCardSettings }> = ({ settings }) => {
@@ -800,10 +790,10 @@ const ProfileTripCardPreview: React.FC<{ settings: ProfileTripCardSettings }> = 
                 </div>
                 {settings.showActions ? (
                     <div className="flex items-center gap-2 border-t border-border pt-3">
-                        <button type="button" className="inline-flex size-8 items-center justify-center rounded-lg border border-border text-muted-foreground">
+                        <button type="button" aria-label="View trip" className="inline-flex size-8 items-center justify-center rounded-lg border border-border text-muted-foreground">
                             <Eye className="size-4" aria-hidden="true" />
                         </button>
-                        <button type="button" className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-border', settings.isFavorite ? 'text-amber-600' : 'text-muted-foreground')}>
+                        <button type="button" aria-label={settings.isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-pressed={settings.isFavorite} className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-border', settings.isFavorite ? 'text-amber-600 dark:text-amber-300' : 'text-muted-foreground')}>
                             <Star className="size-4" aria-hidden="true" />
                         </button>
                     </div>
@@ -867,35 +857,34 @@ const AdminSurfacePreview: React.FC<{ settings: AdminSurfaceSettings }> = ({ set
     const state = ADMIN_SURFACE_COPY[settings.state];
 
     return (
-        <article className="max-w-md rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin card</p>
-                    <h3 className="mt-1 text-lg font-semibold text-foreground">{state.title}</h3>
-                </div>
-                <span className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold', state.badgeClassName)}>{state.label}</span>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{state.body}</p>
+        <AdminSurfaceCard className="flex max-w-md flex-col gap-3">
+            <AdminSectionHeader
+                as="h3"
+                title={state.title}
+                description="Admin card"
+                actions={<AdminStatusBadge tone={state.tone}>{state.label}</AdminStatusBadge>}
+            />
+            <p className="text-sm leading-6 text-muted-foreground">{state.body}</p>
             {settings.showMetadata ? (
-                <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                <dl className="grid grid-cols-3 gap-2 text-xs">
                     {[
                         ['Runs', '42'],
                         ['Latency', '1.4s'],
                         ['Errors', settings.state === 'healthy' ? '0' : '3'],
                     ].map(([label, value]) => (
-                        <div key={label} className="rounded-lg bg-secondary px-3 py-2">
+                        <div key={label} className="rounded-md bg-secondary px-3 py-2">
                             <dt className="text-muted-foreground">{label}</dt>
-                            <dd className="font-semibold text-foreground">{value}</dd>
+                            <dd className="font-semibold text-foreground tabular-nums">{value}</dd>
                         </div>
                     ))}
                 </dl>
             ) : null}
             {settings.showAction ? (
-                <button type="button" className="mt-4 inline-flex min-h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground">
+                <Button type="button" variant="outline" size="sm" className="w-fit">
                     Review
-                </button>
+                </Button>
             ) : null}
-        </article>
+        </AdminSurfaceCard>
     );
 };
 
@@ -958,15 +947,17 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
 
     return (
         <AdminShell
-            title="Component Playground"
-            description="Hidden admin-only lab for tuning TravelFlow sections and copying exact settings back into code."
+            title="Component playground"
+            description="Hidden lab for tuning TravelFlow sections and copying exact settings back into code."
+            showGlobalSearch={false}
+            showDateRange={false}
         >
             <div className="flex w-full min-w-0 flex-col gap-6" data-testid="admin-component-playground-root">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
-                    <TabsList variant="line" className="w-full overflow-x-auto">
+                    <TabsList className="max-w-full overflow-x-auto">
                         <TabsTrigger value="sections">Sections</TabsTrigger>
                         <TabsTrigger value="components">Components</TabsTrigger>
-                        <TabsTrigger value="settings">Copied Settings</TabsTrigger>
+                        <TabsTrigger value="settings">Copied settings</TabsTrigger>
                     </TabsList>
                     <TabsContent value="sections" className="flex w-full min-w-0 flex-col gap-5">
                         <PlaygroundBlock
@@ -999,12 +990,12 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     onReset={() => setCtaSettings(CTA_DEFAULTS)}
                                     copyButton={<CopySettingsButton label="Copy CTA settings" variableName="ctaSectionSettings" settings={ctaSnippetSettings} />}
                                 >
-                                    <label htmlFor={ctaHeadlineInputId} className="flex flex-col gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                                    <label htmlFor={ctaHeadlineInputId} className="flex flex-col gap-2 text-xs font-medium text-muted-foreground">
                                         Headline
                                         <Input id={ctaHeadlineInputId} value={sampleHeadline} onChange={(event) => setSampleHeadline(event.target.value)} />
                                     </label>
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Audience</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Audience</span>
                                         <Select
                                             value={ctaSettings.audience}
                                             onValueChange={(audience) => setCtaSettings((current) => ({ ...current, audience: audience as CtaAudienceId }))}
@@ -1043,7 +1034,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy settings panel settings" variableName="settingsPanelSettings" settings={settingsPanelSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Row layout</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Row layout</span>
                                         <Select
                                             value={settingsPanelSettings.layout}
                                             onValueChange={(layout) => setSettingsPanelSettings((current) => ({ ...current, layout: layout as SettingsPanelDensityId }))}
@@ -1083,7 +1074,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy globe settings" variableName="globeSettings" settings={globeSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Globe palette</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Globe palette</span>
                                         <Select
                                             value={globeSettings.palette}
                                             onValueChange={(palette) => setGlobeSettings((current) => ({ ...current, palette: palette as GlobePaletteId }))}
@@ -1122,7 +1113,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy example trip settings" variableName="exampleTripCardSettings" settings={exampleTripSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Template</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Template</span>
                                         <Select value={exampleTripSettings.template} onValueChange={(template) => setExampleTripSettings((current) => ({ ...current, template: template as ExampleTripTemplateId }))}>
                                             <SelectTrigger aria-label="Example trip template"><SelectValue placeholder="Choose template" /></SelectTrigger>
                                             <SelectContent>
@@ -1152,7 +1143,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy blog card settings" variableName="blogPostCardSettings" settings={blogCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Category</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Category</span>
                                         <Select value={blogCardSettings.category} onValueChange={(category) => setBlogCardSettings((current) => ({ ...current, category: category as BlogCardCategoryId }))}>
                                             <SelectTrigger aria-label="Blog category"><SelectValue placeholder="Choose category" /></SelectTrigger>
                                             <SelectContent>
@@ -1161,7 +1152,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                         </Select>
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Language</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Language</span>
                                         <Select value={blogCardSettings.language} onValueChange={(language) => setBlogCardSettings((current) => ({ ...current, language: language as 'en' | 'de' }))}>
                                             <SelectTrigger aria-label="Blog language"><SelectValue placeholder="Choose language" /></SelectTrigger>
                                             <SelectContent>
@@ -1189,7 +1180,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy profile trip settings" variableName="profileTripCardSettings" settings={profileTripSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Status</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Status</span>
                                         <Select value={profileTripSettings.status} onValueChange={(status) => setProfileTripSettings((current) => ({ ...current, status: status as ProfileTripStatusId }))}>
                                             <SelectTrigger aria-label="Profile trip status"><SelectValue placeholder="Choose status" /></SelectTrigger>
                                             <SelectContent>
@@ -1226,7 +1217,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy stamp card settings" variableName="profileStampCardSettings" settings={stampCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Rarity</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Rarity</span>
                                         <Select value={stampCardSettings.rarity} onValueChange={(rarity) => setStampCardSettings((current) => ({ ...current, rarity: rarity as StampRarityId }))}>
                                             <SelectTrigger aria-label="Stamp rarity"><SelectValue placeholder="Choose rarity" /></SelectTrigger>
                                             <SelectContent>
@@ -1256,7 +1247,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy feature card settings" variableName="featureCardSettings" settings={featureCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Variant</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Variant</span>
                                         <Select value={featureCardSettings.variant} onValueChange={(variant) => setFeatureCardSettings((current) => ({ ...current, variant: variant as FeatureCardVariantId }))}>
                                             <SelectTrigger aria-label="Feature card variant"><SelectValue placeholder="Choose variant" /></SelectTrigger>
                                             <SelectContent>
@@ -1286,7 +1277,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy admin surface settings" variableName="adminSurfaceSettings" settings={adminSurfaceSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">State</span>
+                                        <span className="text-xs font-medium text-muted-foreground">State</span>
                                         <Select value={adminSurfaceSettings.state} onValueChange={(state) => setAdminSurfaceSettings((current) => ({ ...current, state: state as AdminSurfaceStateId }))}>
                                             <SelectTrigger aria-label="Admin surface state"><SelectValue placeholder="Choose state" /></SelectTrigger>
                                             <SelectContent>
@@ -1316,7 +1307,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy calendar card settings" variableName="calendarCardSettings" settings={calendarCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Scope</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Scope</span>
                                         <Select value={calendarCardSettings.scope} onValueChange={(scope) => setCalendarCardSettings((current) => ({ ...current, scope: scope as CalendarCardScopeId }))}>
                                             <SelectTrigger aria-label="Calendar scope"><SelectValue placeholder="Choose scope" /></SelectTrigger>
                                             <SelectContent>
@@ -1346,13 +1337,14 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                             ['adminSurfaceSettings', adminSurfaceSnippetSettings],
                             ['calendarCardSettings', calendarCardSnippetSettings],
                         ].map(([name, settings]) => (
-                            <Card key={name as string} className="rounded-xl border-border bg-card">
-                                <CardHeader>
-                                    <CardTitle>{name as string}</CardTitle>
-                                    <CardDescription>Copyable code snapshot for the current playground state.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex flex-col gap-3">
-                                    <pre className="max-h-80 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-50">
+                            <AdminSurfaceCard key={name as string} className="flex min-w-0 flex-col gap-3">
+                                <AdminSectionHeader
+                                    as="h3"
+                                    title={<span className="font-mono text-sm">{name as string}</span>}
+                                    description="Copyable code snapshot for the current playground state."
+                                />
+                                <div className="flex flex-col gap-3">
+                                    <pre className="max-h-80 overflow-auto rounded-md border border-border bg-muted/40 p-3 font-mono text-xs text-foreground">
                                         {formatSettingsSnippet(name as string, settings as Record<string, unknown>)}
                                     </pre>
                                     <CopySettingsButton
@@ -1360,8 +1352,8 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                         variableName={name as string}
                                         settings={settings as Record<string, unknown>}
                                     />
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </AdminSurfaceCard>
                         ))}
                     </TabsContent>
                 </Tabs>

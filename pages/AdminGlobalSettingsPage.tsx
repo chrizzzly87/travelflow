@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChatCircleDots, CheckCircle, Compass, MapTrifold, Sparkle, WarningCircle } from '@phosphor-icons/react';
+import { ChatCircleDots, CheckCircle, Compass, MapTrifold, Sparkle, SpinnerGap } from '@phosphor-icons/react';
 
 import { AdminShell } from '../components/admin/AdminShell';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AiModelPicker, ApprovedOpenRouterModelsField } from '../components/admin/AiModelPicker';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -74,7 +75,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
             })
             .catch((cause: unknown) => {
                 if (!active) return;
-                setError(cause instanceof Error ? cause.message : 'Could not load the settings.');
+                setError('Could not load the current settings. Reload the page to try again.');
                 setStatus('idle');
             });
         return () => { active = false; };
@@ -132,8 +133,8 @@ export const AdminGlobalSettingsPage: React.FC = () => {
             setSettings(saved);
             setDraft(saved);
             setSavedAt(Date.now());
-        } catch (cause: unknown) {
-            setError(cause instanceof Error ? cause.message : 'The save was refused.');
+        } catch {
+            setError('The settings were not saved. Your changes are still here; try saving again.');
         } finally {
             setStatus('idle');
         }
@@ -144,7 +145,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
 
     return (
         <AdminShell
-            title="Global settings"
+            title="Settings"
             description="App-wide switches for the feature rollout, the AI model and the map."
             showGlobalSearch={false}
             showDateRange={false}
@@ -152,7 +153,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     {isDirty && (
                         <>
-                            <span className="hidden text-xs text-muted-foreground sm:inline">Unsaved changes</span>
+                            <span className="hidden text-xs text-muted-foreground sm:inline" aria-live="polite">Unsaved changes</span>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -173,22 +174,22 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 </div>
             )}
         >
-            <div className="mx-auto w-full max-w-3xl">
-                {error && (
-                    <Alert variant="danger" className="mb-4">
-                        <WarningCircle weight="duotone" />
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
+            <div className="flex w-full max-w-3xl flex-col gap-4">
+                {error && <AdminErrorAlert message={error} />}
                 {savedAt && !isDirty && !error && (
-                    <Alert variant="success" className="mb-4">
-                        <CheckCircle weight="duotone" />
+                    <Alert variant="success">
+                        <CheckCircle weight="fill" />
                         <AlertDescription>Saved. Visitors pick the change up on their next page load.</AlertDescription>
                     </Alert>
                 )}
 
                 {!draft ? (
-                    <p className="text-sm text-muted-foreground">Loading the current settings…</p>
+                    status === 'loading' && (
+                        <p className="inline-flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+                            <SpinnerGap className="size-4 animate-spin" aria-hidden="true" />
+                            Loading the current settings…
+                        </p>
+                    )
                 ) : (
                     <SettingsGroup>
                         <SettingsCard
@@ -327,7 +328,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 )}
 
                 {settings?.updatedAt && (
-                    <p className="mt-3 text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                         Last changed {new Date(settings.updatedAt).toLocaleString()}.
                     </p>
                 )}

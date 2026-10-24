@@ -7,11 +7,13 @@ export const ADMIN_TABLE_ROW_SURFACE_CLASS = [
     'hover:[&>td]:bg-secondary',
     'data-[state=selected]:[&>td]:bg-accent-50/50',
     'data-[state=selected]:hover:[&>td]:bg-accent-50/50',
+    'dark:data-[state=selected]:[&>td]:bg-accent-400/12',
+    'dark:data-[state=selected]:hover:[&>td]:bg-accent-400/12',
 ].join(' ');
 const ADMIN_TABLE_STICKY_BASE_CLASS = '';
 const ADMIN_TABLE_STICKY_TRAILING_EDGE_CLASS = [
     'border-r border-border',
-    'before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-px before:bg-slate-300',
+    'before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-px before:bg-border',
 ].join(' ');
 export const ADMIN_TABLE_SORTED_HEADER_CLASS = 'bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200';
 export const ADMIN_TABLE_SORTED_CELL_CLASS = 'bg-accent-50/50 group-hover:bg-accent-50/50 group-data-[state=selected]:bg-accent-50/50 dark:bg-accent-400/12 dark:group-hover:bg-accent-400/12';
@@ -19,7 +21,7 @@ export const ADMIN_TABLE_SORTED_CELL_CLASS = 'bg-accent-50/50 group-hover:bg-acc
 const ADMIN_TABLE_STICKY_TRAILING_SHADOW_CLASS = [
     'shadow-[8px_0_14px_-10px_rgba(15,23,42,0.45)]',
     'after:pointer-events-none after:absolute after:inset-y-0 after:-right-3 after:w-3',
-    'after:bg-gradient-to-r after:from-slate-900/12 after:to-transparent',
+    'after:bg-gradient-to-r after:from-slate-900/12 after:to-transparent dark:after:from-black/40',
 ].join(' ');
 
 export const getAdminStickyHeaderCellClass = (params: {

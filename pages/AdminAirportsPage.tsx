@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import {
     AirplaneTakeoff,
     ArrowsClockwise,
-    Database,
     FloppyDisk,
     MapPin,
     MagnifyingGlass,
@@ -20,6 +19,14 @@ import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminShell } from '../components/admin/AdminShell';
 import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTableUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
 import { Input } from '../components/ui/input';
 import { showAppToast } from '../components/ui/appToast';
@@ -343,7 +350,7 @@ const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false })
     if (vertical) {
         return (
             <div className="relative flex h-24 items-center justify-center" aria-hidden="true">
-                <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-slate-300" />
+                <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-slate-300 dark:bg-slate-600" />
                 <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
                     <AirplaneTakeoff size={18} weight="fill" className="-rotate-90" />
                 </span>
@@ -353,7 +360,7 @@ const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false })
 
     return (
         <div className="relative flex h-12 items-center justify-center" aria-hidden="true">
-            <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300" />
+            <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300 dark:bg-slate-600" />
             <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
                 <AirplaneTakeoff size={18} weight="fill" />
             </span>
@@ -379,7 +386,9 @@ const TicketMetaPill: React.FC<{
 const TicketBarcode: React.FC<{
     bars: Array<{ id: string; width: number; muted: boolean }>;
 }> = ({ bars }) => (
-    <div className="overflow-hidden rounded-[10px] border border-border bg-card p-3">
+    // Always dark bars on white, as on a printed pass: on the dark-mode card
+    // fill the slate-950 bars were invisible.
+    <div className="overflow-hidden rounded-[10px] border border-border bg-white p-3">
         <div className="flex h-[84px] items-stretch gap-px" aria-hidden="true">
             {bars.map((bar) => (
                 <span
@@ -504,7 +513,7 @@ const AirportTicketPreviewCard: React.FC<{
 
                     <TicketRouteLine />
 
-                    <div className="min-w-0 text-left md:text-right">
+                    <div className="min-w-0 text-start md:text-end">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Arrival</div>
                         <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-foreground">
                             {arrivalCode}
@@ -640,38 +649,18 @@ const AirportSourcePill: React.FC<{
     databaseAvailable: boolean;
 }> = ({ source, databaseAvailable }) => {
     if (source === 'database') {
-        return (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                <Database size={12} />
-                Database-backed
-            </span>
-        );
+        return <AdminStatusBadge tone="success">Database-backed</AdminStatusBadge>;
     }
 
     return (
-        <span className={cn(
-            'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
-            databaseAvailable
-                ? 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
-                : 'border-border bg-secondary text-foreground',
-        )}>
-            <WarningCircle size={12} />
+        <AdminStatusBadge tone={databaseAvailable ? 'warning' : 'neutral'}>
             {databaseAvailable ? 'Snapshot fallback' : 'Snapshot only'}
-        </span>
+        </AdminStatusBadge>
     );
 };
 
-const AirportSummaryMetric: React.FC<{
-    label: string;
-    value: React.ReactNode;
-    hint?: string;
-}> = ({ label, value, hint }) => (
-    <div className="rounded-2xl border border-border bg-secondary/80 p-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
-        <div className="mt-1 text-xl font-black tracking-tight text-foreground">{value}</div>
-        {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
-    </div>
-);
+/** A small form label: sentence case, muted, no tracking (docs/DESIGN.md). */
+const ADMIN_FIELD_LABEL_CLASS = 'text-xs font-medium text-muted-foreground';
 
 const AdminAirportTester: React.FC<{
     filters: AdminAirportTesterFilters;
@@ -896,25 +885,20 @@ const AdminAirportTester: React.FC<{
     }, [filterSignature, filters.lookupActive, handleLookup, lastLookupAttemptSignature, lastLookupFilterSignature, lookupAttemptSignature, lookupLoading, lookupResult]);
 
     return (
-        <AdminSurfaceCard className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 className="text-lg font-semibold text-foreground">Nearby Airport Tester</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Search for a city with Google, run the shared nearby-airports endpoint, and preview the result set on a map.
-                    </p>
-                </div>
-            </div>
+        <AdminSurfaceCard className="flex flex-col gap-4">
+            <AdminSectionHeader
+                title="Nearby airport tester"
+                description="Search for a city with Google, run the shared nearby-airports endpoint, and preview the result set on a map."
+            />
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label htmlFor="admin-airports-city-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">City Search</label>
+                <div className="flex min-w-0 flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label htmlFor="admin-airports-city-search" className={ADMIN_FIELD_LABEL_CLASS}>City search</label>
                         <div className="relative">
-	                            <Input
-	                                id="admin-airports-city-search"
-	                                aria-label="City Search"
-	                                value={filters.cityQuery}
+                            <Input
+                                id="admin-airports-city-search"
+                                value={filters.cityQuery}
                                 onChange={(event) => {
                                     onFiltersChange({
                                         cityQuery: event.target.value,
@@ -922,21 +906,24 @@ const AdminAirportTester: React.FC<{
                                     setLookupError(null);
                                 }}
                                 placeholder="Berlin, Germany"
-                                className="pr-11"
+                                className="pe-11"
                             />
-                            <button
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon-xs"
                                 onClick={() => void handleResolveCity()}
-                                className="absolute inset-y-1.5 right-1.5 inline-flex w-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                                className="absolute end-1.5 top-1/2 -translate-y-1/2 text-muted-foreground"
                                 aria-label="Resolve city"
+                                data-tooltip="Resolve city"
                             >
-                                {searchingSuggestions ? <SpinnerGap size={16} className="animate-spin" /> : <MagnifyingGlass size={16} />}
-                            </button>
+                                {searchingSuggestions ? <SpinnerGap className="size-4 animate-spin" /> : <MagnifyingGlass className="size-4" />}
+                            </Button>
                         </div>
                         {(searchingSuggestions || suggestions.length > 0) && (
-                            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:shadow-none">
+                            <div className="overflow-hidden rounded-md border border-border bg-card">
                                 {searchingSuggestions && (
-                                    <div className="px-3 py-2 text-sm text-muted-foreground">Searching city suggestions…</div>
+                                    <div className="px-3 py-2 text-sm text-muted-foreground" role="status">Searching city suggestions…</div>
                                 )}
                                 {!searchingSuggestions && suggestions.map((suggestion) => (
                                     <button
@@ -952,13 +939,13 @@ const AdminAirportTester: React.FC<{
                                             );
                                             setSuggestions([]);
                                         }}
-                                        className="flex w-full items-start justify-between gap-3 border-b border-border px-3 py-2 text-left transition-colors hover:bg-secondary last:border-b-0"
+                                        className="flex w-full items-start justify-between gap-3 border-b border-border px-3 py-2 text-start transition-colors last:border-b-0 hover:bg-muted/50"
                                     >
-                                        <span>
-                                            <span className="block text-sm font-semibold text-foreground">{suggestion.name}</span>
-                                            <span className="block text-xs text-muted-foreground">{suggestion.label}</span>
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-sm font-medium text-foreground">{suggestion.name}</span>
+                                            <span className="block truncate text-xs text-muted-foreground">{suggestion.label}</span>
                                         </span>
-                                        <MapPin size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
+                                        <MapPin size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                                     </button>
                                 ))}
                             </div>
@@ -966,37 +953,37 @@ const AdminAirportTester: React.FC<{
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <label htmlFor="admin-airports-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Latitude</label>
-	                            <Input
-	                                id="admin-airports-latitude"
-	                                type="number"
-	                                aria-label="Latitude"
+                        <div className="flex flex-col gap-1.5">
+                            <label htmlFor="admin-airports-latitude" className={ADMIN_FIELD_LABEL_CLASS}>Latitude</label>
+                            <Input
+                                id="admin-airports-latitude"
+                                type="number"
                                 step="0.000001"
                                 value={filters.latitudeInput}
                                 onChange={(event) => onFiltersChange({ latitudeInput: event.target.value })}
                                 placeholder="52.5200"
+                                className="tabular-nums"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label htmlFor="admin-airports-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Longitude</label>
-	                            <Input
-	                                id="admin-airports-longitude"
-	                                type="number"
-	                                aria-label="Longitude"
+                        <div className="flex flex-col gap-1.5">
+                            <label htmlFor="admin-airports-longitude" className={ADMIN_FIELD_LABEL_CLASS}>Longitude</label>
+                            <Input
+                                id="admin-airports-longitude"
+                                type="number"
                                 step="0.000001"
                                 value={filters.longitudeInput}
                                 onChange={(event) => onFiltersChange({ longitudeInput: event.target.value })}
                                 placeholder="13.4050"
+                                className="tabular-nums"
                             />
                         </div>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <div id="admin-airports-passenger-filter-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Passenger Filter</div>
+                        <div className="flex flex-col gap-1.5">
+                            <div id="admin-airports-passenger-filter-label" className={ADMIN_FIELD_LABEL_CLASS}>Passenger filter</div>
                             <Select value={filters.minimumServiceTier} onValueChange={(value) => onFiltersChange({ minimumServiceTier: value as AirportCommercialServiceTier })}>
-                                <SelectTrigger aria-labelledby="admin-airports-passenger-filter-label" className="h-10">
+                                <SelectTrigger aria-labelledby="admin-airports-passenger-filter-label" className="w-full">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1011,22 +998,22 @@ const AdminAirportTester: React.FC<{
                                 {SERVICE_TIER_OPTIONS.find((option) => option.value === filters.minimumServiceTier)?.helper}
                             </p>
                         </div>
-                        <div className="space-y-2">
-                            <label htmlFor="admin-airports-result-limit" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Result Limit</label>
-	                            <Input
-	                                id="admin-airports-result-limit"
-	                                type="number"
-	                                aria-label="Result Limit"
+                        <div className="flex flex-col gap-1.5">
+                            <label htmlFor="admin-airports-result-limit" className={ADMIN_FIELD_LABEL_CLASS}>Result limit</label>
+                            <Input
+                                id="admin-airports-result-limit"
+                                type="number"
                                 min={1}
                                 max={10}
                                 value={filters.limitInput}
                                 onChange={(event) => onFiltersChange({ limitInput: event.target.value })}
+                                className="tabular-nums"
                             />
                         </div>
                     </div>
 
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
-                        <div className="space-y-2">
+                        <div className="flex min-w-0 flex-col gap-1.5">
                             <ProfileCountryRegionSelect
                                 value={filters.countryFilter}
                                 disabled={filters.sameCountryOnly}
@@ -1039,20 +1026,22 @@ const AdminAirportTester: React.FC<{
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 <span>Filter nearby-airport results to one country.</span>
                                 {filters.countryFilter && !filters.sameCountryOnly && (
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="link"
+                                        size="xs"
                                         onClick={() => onFiltersChange({ countryFilter: '' })}
-                                        className="font-semibold text-foreground underline-offset-2 hover:underline"
+                                        className="h-auto px-0 text-foreground"
                                     >
                                         Clear country filter
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-3 py-2">
-                            <div>
-                                <div className="text-sm font-semibold text-foreground">Same-country only</div>
+                        <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/50 px-3 py-2">
+                            <div className="min-w-0">
+                                <div className="text-sm font-medium text-foreground">Same-country only</div>
                                 <div className="text-xs text-muted-foreground">
                                     {filters.sameCountryOnly
                                         ? `Using ${origin?.countryName || origin?.countryCode || 'the origin country'} as the country filter.`
@@ -1068,15 +1057,15 @@ const AdminAirportTester: React.FC<{
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={() => void handleUseRuntimeLocation()}
-                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground"
                         >
-                            <MapPin size={15} />
+                            <MapPin />
                             Use runtime location
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
                             onClick={() => {
                                 if (!filters.lookupActive) {
@@ -1086,66 +1075,59 @@ const AdminAirportTester: React.FC<{
                                 void handleLookup({ force: true });
                             }}
                             disabled={lookupLoading}
-                            className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
+                            aria-busy={lookupLoading || undefined}
                         >
-                            {lookupLoading ? <SpinnerGap size={15} className="animate-spin" /> : <AirplaneTakeoff size={15} />}
+                            {lookupLoading ? <SpinnerGap className="animate-spin" /> : <AirplaneTakeoff />}
                             Lookup nearby airports
-                        </button>
+                        </Button>
                     </div>
 
                     {origin && (
-                        <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-foreground">
-                            <div className="font-semibold text-foreground">Origin</div>
-                            <div>{origin.label}</div>
-                            <div className="text-xs text-muted-foreground">
+                        <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground">
+                            <div className="text-xs font-medium text-muted-foreground">Origin</div>
+                            <div className="mt-0.5 font-medium">{origin.label}</div>
+                            <div className="text-xs tabular-nums text-muted-foreground">
                                 {origin.lat.toFixed(5)}, {origin.lng.toFixed(5)}
                                 {origin.countryCode ? ` · ${origin.countryCode}` : ''}
                             </div>
                         </div>
                     )}
 
-                    {lookupError && (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                            {lookupError}
-                        </div>
-                    )}
+                    {lookupError && <AdminErrorAlert message={lookupError} />}
 
                     {displayLookupResult && (
-                        <div className="space-y-2 rounded-2xl border border-border bg-card p-3">
+                        <div className="flex flex-col gap-2 rounded-md border border-border p-3">
                             <div className="flex items-center justify-between gap-3">
-                                <div className="text-sm font-semibold text-foreground">Nearest airports</div>
+                                <div className="text-sm font-medium text-foreground">Nearest airports</div>
                                 <div className="text-xs text-muted-foreground">Data version {displayLookupResult.dataVersion}</div>
                             </div>
-                            <div className="space-y-2">
+                            {displayLookupResult.airports.length === 0 && (
+                                <p className="text-sm text-muted-foreground">No airports match these filters. Widen the passenger filter or raise the limit.</p>
+                            )}
+                            <ol className="flex flex-col gap-2">
                                 {displayLookupResult.airports.map((entry) => (
-                                    <div key={`${entry.airport.ident}-${entry.rank}`} className="rounded-xl border border-border bg-secondary p-3">
+                                    <li key={`${entry.airport.ident}-${entry.rank}`} className="rounded-md border border-border bg-muted/50 p-3">
                                         <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className="text-sm font-semibold text-foreground">
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-medium text-foreground">
                                                     {entry.rank}. {entry.airport.name}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
                                                     {(entry.airport.iataCode || entry.airport.icaoCode || entry.airport.ident)} · {entry.airport.municipality || 'Unknown city'} · {entry.airport.countryName}
                                                 </div>
                                             </div>
-                                            <div className="text-sm font-semibold text-foreground">{formatDistance(entry.airDistanceKm)}</div>
+                                            <div className="shrink-0 text-sm font-medium tabular-nums text-foreground">{formatDistance(entry.airDistanceKm)}</div>
                                         </div>
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
-                                                {formatServiceTierLabel(entry.airport.commercialServiceTier)}
-                                            </span>
-                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
-                                                {formatAirportTypeLabel(entry.airport.airportType)}
-                                            </span>
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                            <Badge variant="outline">{formatServiceTierLabel(entry.airport.commercialServiceTier)}</Badge>
+                                            <Badge variant="outline">{formatAirportTypeLabel(entry.airport.airportType)}</Badge>
                                             {entry.airport.timezone && (
-                                                <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
-                                                    {entry.airport.timezone}
-                                                </span>
+                                                <Badge variant="outline">{entry.airport.timezone}</Badge>
                                             )}
                                         </div>
-                                    </div>
+                                    </li>
                                 ))}
-                            </div>
+                            </ol>
                         </div>
                     )}
                 </div>
@@ -1237,50 +1219,50 @@ const AdminAirportBulkEditor: React.FC<{
     }, [bulkPatch, onApply]);
 
     return (
-        <AdminSurfaceCard className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h2 className="text-lg font-semibold text-foreground">Bulk Editor</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Apply the same airport-type, scheduled-service, or timezone correction to many selected airports at once.
-                    </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        onClick={onSelectFiltered}
-                        disabled={filteredAirportCount === 0}
-                        className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        Select filtered ({filteredAirportCount})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onClearSelection}
-                        disabled={selectedCount === 0}
-                        className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        Clear selection
-                    </button>
-                </div>
-            </div>
+        <AdminSurfaceCard className="flex flex-col gap-4">
+            <AdminSectionHeader
+                title="Bulk editor"
+                description="Apply the same airport-type, scheduled-service, or timezone correction to many selected airports at once."
+                actions={(
+                    <>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onSelectFiltered}
+                            disabled={filteredAirportCount === 0}
+                        >
+                            Select filtered (<span className="tabular-nums">{filteredAirportCount}</span>)
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={onClearSelection}
+                            disabled={selectedCount === 0}
+                        >
+                            Clear selection
+                        </Button>
+                    </>
+                )}
+            />
 
-            <div className="grid gap-3 md:grid-cols-4">
-                <AirportSummaryMetric
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <AdminStatCard
                     label="Selected airports"
                     value={selectedCount}
                     hint={selectedCount > 0 ? 'Bulk edits apply to all selected rows.' : 'Pick rows from the table below.'}
                 />
-                <AirportSummaryMetric label="Major" value={selectionSummary.major} hint="Large commercial hubs." />
-                <AirportSummaryMetric label="Regional" value={selectionSummary.regional} hint="Typical passenger airports." />
-                <AirportSummaryMetric label="Local" value={selectionSummary.local} hint="Smaller scheduled commercial fields." />
+                <AdminStatCard label="Major" value={selectionSummary.major} hint="Large commercial hubs." />
+                <AdminStatCard label="Regional" value={selectionSummary.regional} hint="Typical passenger airports." />
+                <AdminStatCard label="Local" value={selectionSummary.local} hint="Smaller scheduled commercial fields." />
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">
-                <div className="space-y-2">
-                    <div id="admin-airports-bulk-airport-type-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Airport Type</div>
+                <div className="flex flex-col gap-1.5">
+                    <div id="admin-airports-bulk-airport-type-label" className={ADMIN_FIELD_LABEL_CLASS}>Airport type</div>
                     <Select value={bulkAirportType} onValueChange={(value) => setBulkAirportType(value as BulkAirportTypeOption)}>
-                        <SelectTrigger aria-labelledby="admin-airports-bulk-airport-type-label" className="h-10">
+                        <SelectTrigger aria-labelledby="admin-airports-bulk-airport-type-label" className="w-full">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1293,10 +1275,10 @@ const AdminAirportBulkEditor: React.FC<{
                     </Select>
                 </div>
 
-                <div className="space-y-2">
-                    <div id="admin-airports-bulk-scheduled-service-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Scheduled Service</div>
+                <div className="flex flex-col gap-1.5">
+                    <div id="admin-airports-bulk-scheduled-service-label" className={ADMIN_FIELD_LABEL_CLASS}>Scheduled service</div>
                     <Select value={bulkScheduledService} onValueChange={(value) => setBulkScheduledService(value as BulkScheduledServiceOption)}>
-                        <SelectTrigger aria-labelledby="admin-airports-bulk-scheduled-service-label" className="h-10">
+                        <SelectTrigger aria-labelledby="admin-airports-bulk-scheduled-service-label" className="w-full">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1309,10 +1291,10 @@ const AdminAirportBulkEditor: React.FC<{
                     </Select>
                 </div>
 
-                <div className="space-y-2">
-                    <div id="admin-airports-bulk-timezone-mode-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Timezone Action</div>
+                <div className="flex flex-col gap-1.5">
+                    <div id="admin-airports-bulk-timezone-mode-label" className={ADMIN_FIELD_LABEL_CLASS}>Timezone action</div>
                     <Select value={bulkTimezoneMode} onValueChange={(value) => setBulkTimezoneMode(value as BulkTimezoneMode)}>
-                        <SelectTrigger aria-labelledby="admin-airports-bulk-timezone-mode-label" className="h-10">
+                        <SelectTrigger aria-labelledby="admin-airports-bulk-timezone-mode-label" className="w-full">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1327,12 +1309,11 @@ const AdminAirportBulkEditor: React.FC<{
             </div>
 
             {bulkTimezoneMode === 'set' && (
-                <div className="space-y-2">
-                    <label htmlFor="admin-airports-bulk-timezone-value" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Timezone Value</label>
-	                    <Input
-	                        id="admin-airports-bulk-timezone-value"
-	                        aria-label="Timezone Value"
-	                        value={bulkTimezoneValue}
+                <div className="flex flex-col gap-1.5">
+                    <label htmlFor="admin-airports-bulk-timezone-value" className={ADMIN_FIELD_LABEL_CLASS}>Timezone value</label>
+                    <Input
+                        id="admin-airports-bulk-timezone-value"
+                        value={bulkTimezoneValue}
                         onChange={(event) => setBulkTimezoneValue(event.target.value)}
                         placeholder="Europe/Berlin"
                     />
@@ -1340,26 +1321,27 @@ const AdminAirportBulkEditor: React.FC<{
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-                <button
+                <Button
                     type="button"
                     onClick={() => void handleApply()}
                     disabled={!canApply}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-busy={isApplying || undefined}
                 >
-                    {isApplying ? <SpinnerGap size={14} className="animate-spin" /> : <FloppyDisk size={14} />}
+                    {isApplying ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
                     Apply bulk edit
-                </button>
-                <button
+                </Button>
+                <Button
                     type="button"
+                    variant="destructive"
                     onClick={() => void onDeleteSelected()}
                     disabled={!databaseBacked || selectedCount === 0 || isDeleting || isApplying}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
+                    aria-busy={isDeleting || undefined}
                 >
-                    {isDeleting ? <SpinnerGap size={14} className="animate-spin" /> : <Trash size={14} />}
+                    {isDeleting ? <SpinnerGap className="animate-spin" /> : <Trash />}
                     Delete selected
-                </button>
+                </Button>
                 {!databaseBacked && (
-                    <span className="text-xs text-amber-700 dark:text-amber-200">Sync the database catalog first to enable bulk edits.</span>
+                    <span className="text-xs text-amber-700 dark:text-amber-300">Sync the database catalog first to enable bulk edits.</span>
                 )}
             </div>
         </AdminSurfaceCard>
@@ -1471,67 +1453,61 @@ const AdminAirportTicketLab: React.FC<{
     const isUsingFallbackDeparture = Boolean(selectedDeparture?.isFallback);
 
     return (
-        <AdminSurfaceCard className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h2 className="text-lg font-semibold text-foreground">Fake Ticket Lab</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Build a digital boarding-pass preview from the nearest commercial airport so we can validate the future ticket experience against real airport data.
-                    </p>
-                </div>
-                {ticket && (
-                    <span className="inline-flex rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">
-                        {formatCabinClassLabel(ticket.cabinClass)} preview
-                    </span>
-                )}
-            </div>
+        <AdminSurfaceCard className="flex flex-col gap-4">
+            <AdminSectionHeader
+                title="Fake ticket lab"
+                description="Build a digital boarding-pass preview from the nearest commercial airport so we can validate the future ticket experience against real airport data."
+                actions={ticket ? (
+                    <Badge variant="secondary">{formatCabinClassLabel(ticket.cabinClass)} preview</Badge>
+                ) : null}
+            />
 
             {!nearbyResult && fallbackDepartureOption && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                    <div className="font-semibold text-amber-950 dark:text-amber-200">Testing fallback active</div>
-                    <div className="mt-1">
-                        Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.
-                    </div>
-                </div>
+                <Alert variant="warning">
+                    <WarningCircle weight="fill" />
+                    <AlertTitle>Testing fallback active</AlertTitle>
+                    <AlertDescription>
+                        <p>Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.</p>
+                    </AlertDescription>
+                </Alert>
             )}
 
             {!nearbyResult && !fallbackDepartureOption && (
-                <div className="rounded-2xl border border-dashed border-border bg-secondary p-6 text-sm text-muted-foreground">
-                    Run a nearby-airport lookup first, then this lab will use the closest commercial airport as the departure side of the fake ticket.
-                </div>
+                <AdminEmptyState
+                    title="No departure airport yet"
+                    description="Run a nearby-airport lookup first, then this lab will use the closest commercial airport as the departure side of the fake ticket."
+                />
             )}
 
             {ticket && (
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(360px,1.08fr)]">
-                    <div className="space-y-4">
+                    <div className="flex min-w-0 flex-col gap-4">
                         <div className="grid gap-3 md:grid-cols-2">
-                            <div className="space-y-2">
-                                <label htmlFor="admin-airports-ticket-passenger" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Passenger Name</label>
-	                                <Input
-	                                    id="admin-airports-ticket-passenger"
-	                                    aria-label="Passenger Name"
-	                                    value={passengerName}
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="admin-airports-ticket-passenger" className={ADMIN_FIELD_LABEL_CLASS}>Passenger name</label>
+                                <Input
+                                    id="admin-airports-ticket-passenger"
+                                    value={passengerName}
                                     onChange={(event) => setPassengerName(event.target.value)}
                                     placeholder="Alex Morgan"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label htmlFor="admin-airports-ticket-date" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Departure Date</label>
-	                                <Input
-	                                    id="admin-airports-ticket-date"
-	                                    type="date"
-	                                    aria-label="Departure Date"
-	                                    value={departureDate}
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="admin-airports-ticket-date" className={ADMIN_FIELD_LABEL_CLASS}>Departure date</label>
+                                <Input
+                                    id="admin-airports-ticket-date"
+                                    type="date"
+                                    value={departureDate}
                                     onChange={(event) => setDepartureDate(event.target.value)}
                                 />
                             </div>
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
-                            <div className="space-y-2">
-                                <div id="admin-airports-ticket-departure-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Departure Airport</div>
+                            <div className="flex min-w-0 flex-col gap-1.5">
+                                <div id="admin-airports-ticket-departure-label" className={ADMIN_FIELD_LABEL_CLASS}>Departure airport</div>
                                 <Select value={selectedDeparture?.airport.ident || ''} onValueChange={setSelectedDepartureIdent}>
-                                    <SelectTrigger aria-labelledby="admin-airports-ticket-departure-label" className="h-10">
+                                    <SelectTrigger aria-labelledby="admin-airports-ticket-departure-label" className="w-full">
                                         <SelectValue placeholder="Choose a nearby airport" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1543,10 +1519,10 @@ const AdminAirportTicketLab: React.FC<{
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2">
-                                <div id="admin-airports-ticket-destination-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Destination Airport</div>
+                            <div className="flex min-w-0 flex-col gap-1.5">
+                                <div id="admin-airports-ticket-destination-label" className={ADMIN_FIELD_LABEL_CLASS}>Destination airport</div>
                                 <Select value={selectedDestination?.ident || ''} onValueChange={setSelectedDestinationIdent}>
-                                    <SelectTrigger aria-labelledby="admin-airports-ticket-destination-label" className="h-10">
+                                    <SelectTrigger aria-labelledby="admin-airports-ticket-destination-label" className="w-full">
                                         <SelectValue placeholder="Choose a destination hub" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1560,10 +1536,10 @@ const AdminAirportTicketLab: React.FC<{
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <div id="admin-airports-ticket-cabin-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Cabin Class</div>
+                        <div className="flex flex-col gap-1.5">
+                            <div id="admin-airports-ticket-cabin-label" className={ADMIN_FIELD_LABEL_CLASS}>Cabin class</div>
                             <Select value={cabinClass} onValueChange={(value) => setCabinClass(value as FakeAirportTicketCabinClass)}>
-                                <SelectTrigger aria-labelledby="admin-airports-ticket-cabin-label" className="h-10">
+                                <SelectTrigger aria-labelledby="admin-airports-ticket-cabin-label" className="w-full">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1577,8 +1553,8 @@ const AdminAirportTicketLab: React.FC<{
                         </div>
 
                         {selectedDeparture && (
-                            <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-foreground">
-                                <div className="font-semibold text-foreground">Departure context</div>
+                            <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground">
+                                <div className="text-xs font-medium text-muted-foreground">Departure context</div>
                                 <div className="mt-1">
                                     {selectedDeparture.airport.name} · {selectedDeparture.airport.municipality || 'Unknown city'}
                                     {selectedDeparture.airportAccessDistanceKm !== null ? ` · ${formatDistance(selectedDeparture.airportAccessDistanceKm)}` : ''}
@@ -1596,9 +1572,9 @@ const AdminAirportTicketLab: React.FC<{
                         )}
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Horizontal style</div>
+                    <div className="flex min-w-0 flex-col gap-4">
+                        <div className="flex flex-col gap-1.5">
+                            <div className={ADMIN_FIELD_LABEL_CLASS}>Horizontal style</div>
                             <AirportTicketPreviewCard
                                 ticket={ticket}
                                 barcodeBars={ticketBarcodeBars}
@@ -1608,35 +1584,35 @@ const AdminAirportTicketLab: React.FC<{
                             />
                         </div>
                         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
-                            <div className="rounded-[18px] border border-border bg-secondary/90 p-4 text-sm text-muted-foreground">
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                    <span className="font-semibold text-foreground">
+                            <div className="h-fit rounded-md border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <span className="font-medium text-foreground">
                                         {isUsingFallbackDeparture ? 'Testing airport:' : 'Closest airport:'}
                                     </span>
                                     <span>{ticket.departureAirport.name}</span>
-                                    <span className="text-muted-foreground">•</span>
-                                    <span>{ticket.durationLabel}</span>
-                                    <span className="text-muted-foreground">•</span>
-                                    <span>{formatDistance(ticket.routeDistanceKm)}</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span className="tabular-nums">{ticket.durationLabel}</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span className="tabular-nums">{formatDistance(ticket.routeDistanceKm)}</span>
                                     {ticket.airportAccessDistanceKm !== null && (
                                         <>
-                                            <span className="text-muted-foreground">•</span>
-                                            <span>{formatDistance(ticket.airportAccessDistanceKm)} from origin</span>
+                                            <span aria-hidden="true">·</span>
+                                            <span className="tabular-nums">{formatDistance(ticket.airportAccessDistanceKm)} from origin</span>
                                         </>
                                     )}
                                 </div>
                                 {isUsingFallbackDeparture ? (
-                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                    <div className="mt-2 text-xs text-muted-foreground">
                                         BER fallback stays visible until you run a nearby-airport lookup
                                     </div>
                                 ) : ticket.originLabel && (
-                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                    <div className="mt-2 text-xs text-muted-foreground">
                                         Based on {ticket.originLabel}
                                     </div>
                                 )}
                             </div>
-                            <div className="space-y-2">
-                                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Vertical style</div>
+                            <div className="flex flex-col gap-1.5">
+                                <div className={ADMIN_FIELD_LABEL_CLASS}>Vertical style</div>
                                 <AirportTicketPreviewCard
                                     ticket={ticket}
                                     barcodeBars={ticketBarcodeBars}
@@ -1722,6 +1698,14 @@ export const AdminAirportsPage: React.FC = () => {
         window.addEventListener('mousemove', onPointerMove);
         window.addEventListener('mouseup', onPointerUp);
     }, [columnWidths]);
+
+    // Keyboard counterpart of the drag handle, so column resizing is not mouse-only.
+    const nudgeColumnWidth = useCallback((columnId: AirportTableColumnId, delta: number) => {
+        setColumnWidths((current) => {
+            const nextWidth = Math.max(AIRPORT_COLUMN_WIDTH_MIN[columnId], current[columnId] + delta);
+            return current[columnId] === nextWidth ? current : { ...current, [columnId]: nextWidth };
+        });
+    }, []);
 
     const loadCatalog = useCallback(async () => {
         setLoading(true);
@@ -2338,106 +2322,120 @@ export const AdminAirportsPage: React.FC = () => {
     const databaseBacked = catalog?.source === 'database';
     const editorPreviewAirport = editorDraft ? draftToAirport(editorDraft) : selectedAirport;
 
+    const renderResizableHead = (columnId: AirportTableColumnId, label: string) => (
+        <TableHead className="relative text-start text-muted-foreground">
+            {label}
+            <button
+                type="button"
+                onMouseDown={(event) => {
+                    event.preventDefault();
+                    beginColumnResize(columnId, event.clientX);
+                }}
+                onKeyDown={(event) => {
+                    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                    event.preventDefault();
+                    nudgeColumnWidth(columnId, event.key === 'ArrowRight' ? 16 : -16);
+                }}
+                className="absolute inset-y-0 end-0 w-2 cursor-col-resize outline-none hover:bg-border focus-visible:bg-ring/50"
+                aria-label={`Resize ${label.toLowerCase()} column`}
+                data-tooltip="Drag or use arrow keys to resize"
+            />
+        </TableHead>
+    );
+
+    const visibleRangeStart = filteredAirports.length === 0 ? 0 : (safePage - 1) * AIRPORT_TABLE_PAGE_SIZE + 1;
+    const visibleRangeEnd = Math.min(safePage * AIRPORT_TABLE_PAGE_SIZE, filteredAirports.length);
+
     return (
         <AdminShell
             title="Airports"
-            description="Manage the commercial airport catalog, sync the Supabase table from upstream free datasets, and test nearby-airport lookups with a map-based city search."
+            description="Manage the commercial airport catalog, sync it from upstream datasets, and test nearby-airport lookups."
             searchValue={searchValue}
             onSearchValueChange={handleSearchValueChange}
             showDateRange={false}
             actions={(
-                <div className="flex flex-wrap items-center gap-2">
-                    <button
+                <>
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={() => void handleStartCreateAirport()}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground"
                     >
-                        <Plus size={14} />
+                        <Plus />
                         New airport
-                    </button>
+                    </Button>
                     <AdminReloadButton onClick={() => void loadCatalog()} isLoading={loading} label="Reload catalog" />
-                    <button
+                    <Button
                         type="button"
                         onClick={() => void handleSyncCatalog()}
                         disabled={syncing}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
+                        aria-busy={syncing || undefined}
                     >
-                        {syncing ? <SpinnerGap size={14} className="animate-spin" /> : <ArrowsClockwise size={14} />}
+                        {syncing ? <SpinnerGap className="animate-spin" /> : <ArrowsClockwise />}
                         Sync from upstream
-                    </button>
-                </div>
+                    </Button>
+                </>
             )}
         >
-            <div className="space-y-4">
-                {errorMessage && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                        {errorMessage}
-                    </div>
-                )}
+            <div className="flex flex-col gap-4">
+                {errorMessage && <AdminErrorAlert title="Could not load the airport catalog" message={errorMessage} />}
 
-                <AdminSurfaceCard className="space-y-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="text-lg font-semibold text-foreground">Catalog Status</h2>
+                <AdminSurfaceCard className="flex flex-col gap-4">
+                    <AdminSectionHeader
+                        title={(
+                            <span className="flex flex-wrap items-center gap-2">
+                                Catalog status
                                 {catalog && (
                                     <AirportSourcePill source={catalog.source} databaseAvailable={catalog.databaseAvailable} />
                                 )}
-                            </div>
-                            <p className="max-w-3xl text-sm text-muted-foreground">
-                                Service tiers are derived from airport size so we can distinguish smaller local commercial airports from regional passenger airports and major commercial hubs.
-                            </p>
-                        </div>
-                        {editorPreviewAirport && (
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground">
-                                    {formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}
-                                </span>
-                                <span className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground">
-                                    {formatAirportTypeLabel(editorPreviewAirport.airportType)}
-                                </span>
-                                <span className={cn(
-                                    'inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold',
-                                    editorPreviewAirport.isCommercial
-                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
-                                        : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
-                                )}>
-                                    {editorPreviewAirport.isCommercial ? 'Commercial lookup eligible' : 'Excluded from commercial lookup'}
-                                </span>
-                            </div>
+                            </span>
                         )}
-                    </div>
+                        description="Service tiers are derived from airport size so we can distinguish smaller local commercial airports from regional passenger airports and major commercial hubs."
+                        actions={editorPreviewAirport ? (
+                            <>
+                                <Badge variant="outline">{formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}</Badge>
+                                <Badge variant="outline">{formatAirportTypeLabel(editorPreviewAirport.airportType)}</Badge>
+                                <AdminStatusBadge tone={editorPreviewAirport.isCommercial ? 'success' : 'warning'}>
+                                    {editorPreviewAirport.isCommercial ? 'Commercial lookup eligible' : 'Excluded from commercial lookup'}
+                                </AdminStatusBadge>
+                            </>
+                        ) : null}
+                    />
 
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                        <AirportSummaryMetric
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                        <AdminStatCard
                             label="Catalog airports"
                             value={catalog?.airports.length ?? '—'}
                             hint="Current rows available to the admin UI."
+                            isLoading={loading}
                         />
-                        <AirportSummaryMetric
+                        <AdminStatCard
                             label="Data version"
-                            value={catalog?.metadata?.dataVersion ?? 'unknown'}
+                            value={<span className="block truncate text-xl">{catalog?.metadata?.dataVersion ?? 'unknown'}</span>}
                             hint="Version string returned by nearby-airport responses."
+                            isLoading={loading}
                         />
-                        <AirportSummaryMetric
+                        <AdminStatCard
                             label="Generated"
-                            value={formatDateTime(catalog?.metadata?.generatedAt)}
+                            value={<span className="block text-base">{formatDateTime(catalog?.metadata?.generatedAt)}</span>}
                             hint="When the upstream generator snapshot was built."
+                            isLoading={loading}
                         />
-                        <AirportSummaryMetric
+                        <AdminStatCard
                             label="Last synced"
-                            value={formatDateTime(catalog?.metadata?.syncedAt)}
+                            value={<span className="block text-base">{formatDateTime(catalog?.metadata?.syncedAt)}</span>}
                             hint="When the database catalog was last touched."
+                            isLoading={loading}
                         />
-                        <AirportSummaryMetric
+                        <AdminStatCard
                             label="Synced by"
-                            value={catalog?.metadata?.syncedBy || '—'}
+                            value={<span className="block truncate text-base">{catalog?.metadata?.syncedBy || '—'}</span>}
                             hint="Actor or source that last wrote the database catalog."
+                            isLoading={loading}
                         />
                     </div>
 
-                    <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-muted-foreground">
-                        <span className="font-semibold text-foreground">Upstream sources:</span>{' '}
+                    <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">Upstream sources:</span>{' '}
                         {catalog?.metadata
                             ? `${catalog.metadata.sources.primary} · ${catalog.metadata.sources.enrichment}`
                             : 'Waiting for airport metadata.'}
@@ -2445,7 +2443,7 @@ export const AdminAirportsPage: React.FC = () => {
                 </AdminSurfaceCard>
 
                 <GoogleMapsLoader>
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <AdminAirportTester
                             filters={testerFilters}
                             onFiltersChange={handleTesterFiltersChange}
@@ -2472,25 +2470,23 @@ export const AdminAirportsPage: React.FC = () => {
                 />
 
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.9fr)]">
-                    <AdminSurfaceCard className="space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <h2 className="text-lg font-semibold text-foreground">Airport Catalog</h2>
-                                <p className="text-sm text-muted-foreground">
-                                    Browse the full commercial-airport table, filter it by tier or country, and pick a row to edit.
-                                </p>
-                            </div>
-                            <div className="space-y-1 text-right text-sm text-muted-foreground">
-                                <div>
-                                    Showing {(safePage - 1) * AIRPORT_TABLE_PAGE_SIZE + 1}-{Math.min(safePage * AIRPORT_TABLE_PAGE_SIZE, filteredAirports.length)} of {filteredAirports.length}
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader
+                            title="Airport catalog"
+                            description="Browse the full commercial-airport table, filter it by tier or country, and pick a row to edit."
+                            actions={(
+                                <div className="flex flex-col items-start gap-0.5 text-xs text-muted-foreground sm:items-end">
+                                    <span className="tabular-nums">
+                                        Showing {visibleRangeStart}-{visibleRangeEnd} of {filteredAirports.length}
+                                    </span>
+                                    <span className="tabular-nums">{selectedAirports.length} selected</span>
+                                    <span>Drag column handles to resize</span>
                                 </div>
-                                <div>{selectedAirports.length} selected</div>
-                                <div>Drag column handles to resize</div>
-                            </div>
-                        </div>
+                            )}
+                        />
 
                         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            <div className="space-y-2">
+                            <div className="flex min-w-0 flex-col gap-1.5">
                                 <ProfileCountryRegionSelect
                                     value={countryFilter}
                                     ariaLabel="Airport catalog country filter"
@@ -2501,20 +2497,22 @@ export const AdminAirportsPage: React.FC = () => {
                                 />
                                 <div className="text-xs text-muted-foreground">
                                     {countryFilter ? (
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="link"
+                                            size="xs"
                                             onClick={() => handleCountryFilterChange('')}
-                                            className="font-semibold text-foreground underline-offset-2 hover:underline"
+                                            className="h-auto px-0 text-foreground"
                                         >
                                             Clear country filter
-                                        </button>
+                                        </Button>
                                     ) : 'Filter the table by country with the shared flag picker.'}
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <div id="admin-airports-service-tier-filter-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Service Tier</div>
+                            <div className="flex flex-col gap-1.5">
+                                <div id="admin-airports-service-tier-filter-label" className={ADMIN_FIELD_LABEL_CLASS}>Service tier</div>
                                 <Select value={serviceTierFilter} onValueChange={handleServiceTierFilterChange}>
-                                    <SelectTrigger aria-labelledby="admin-airports-service-tier-filter-label" className="h-10">
+                                    <SelectTrigger aria-labelledby="admin-airports-service-tier-filter-label" className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -2527,12 +2525,12 @@ export const AdminAirportsPage: React.FC = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="rounded-2xl border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
+                            <p className="self-end text-xs text-muted-foreground md:col-span-2 xl:col-span-1">
                                 Search matches IATA, ICAO, ident, airport name, city, subdivision, and country.
-                            </div>
+                            </p>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-border">
+                        <div className="overflow-hidden rounded-lg border border-border">
                             <Table className="min-w-[980px] table-fixed">
                                 <colgroup>
                                     <col style={{ width: 52 }} />
@@ -2543,8 +2541,8 @@ export const AdminAirportsPage: React.FC = () => {
                                     <col style={{ width: `${columnWidths.type}px` }} />
                                     <col style={{ width: `${columnWidths.timezone}px` }} />
                                 </colgroup>
-                                <TableHeader className="bg-secondary">
-                                    <TableRow>
+                                <TableHeader className="bg-muted/50">
+                                    <TableRow className="hover:bg-transparent">
                                         <TableHead className="w-[52px]">
                                             <Checkbox
                                                 checked={areAllVisibleAirportsSelected ? true : (isVisibleAirportSelectionPartial ? 'indeterminate' : false)}
@@ -2552,78 +2550,12 @@ export const AdminAirportsPage: React.FC = () => {
                                                 aria-label="Select all visible airports"
                                             />
                                         </TableHead>
-                                        <TableHead className="relative">
-                                            Code
-                                            <button
-                                                type="button"
-                                                onMouseDown={(event) => {
-                                                    event.preventDefault();
-                                                    beginColumnResize('code', event.clientX);
-                                                }}
-                                                className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
-                                                aria-label="Resize code column"
-                                            />
-                                        </TableHead>
-                                        <TableHead className="relative">
-                                            Airport
-                                            <button
-                                                type="button"
-                                                onMouseDown={(event) => {
-                                                    event.preventDefault();
-                                                    beginColumnResize('airport', event.clientX);
-                                                }}
-                                                className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
-                                                aria-label="Resize airport column"
-                                            />
-                                        </TableHead>
-                                        <TableHead className="relative">
-                                            Location
-                                            <button
-                                                type="button"
-                                                onMouseDown={(event) => {
-                                                    event.preventDefault();
-                                                    beginColumnResize('location', event.clientX);
-                                                }}
-                                                className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
-                                                aria-label="Resize location column"
-                                            />
-                                        </TableHead>
-                                        <TableHead className="relative">
-                                            Tier
-                                            <button
-                                                type="button"
-                                                onMouseDown={(event) => {
-                                                    event.preventDefault();
-                                                    beginColumnResize('tier', event.clientX);
-                                                }}
-                                                className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
-                                                aria-label="Resize tier column"
-                                            />
-                                        </TableHead>
-                                        <TableHead className="relative">
-                                            Type
-                                            <button
-                                                type="button"
-                                                onMouseDown={(event) => {
-                                                    event.preventDefault();
-                                                    beginColumnResize('type', event.clientX);
-                                                }}
-                                                className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
-                                                aria-label="Resize type column"
-                                            />
-                                        </TableHead>
-                                        <TableHead className="relative">
-                                            Timezone
-                                            <button
-                                                type="button"
-                                                onMouseDown={(event) => {
-                                                    event.preventDefault();
-                                                    beginColumnResize('timezone', event.clientX);
-                                                }}
-                                                className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
-                                                aria-label="Resize timezone column"
-                                            />
-                                        </TableHead>
+                                        {renderResizableHead('code', 'Code')}
+                                        {renderResizableHead('airport', 'Airport')}
+                                        {renderResizableHead('location', 'Location')}
+                                        {renderResizableHead('tier', 'Tier')}
+                                        {renderResizableHead('type', 'Type')}
+                                        {renderResizableHead('timezone', 'Timezone')}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -2642,37 +2574,30 @@ export const AdminAirportsPage: React.FC = () => {
                                                 />
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-semibold text-foreground">{airport.iataCode || airport.ident}</div>
-                                                <div className="text-xs text-muted-foreground">{airport.icaoCode || 'No ICAO'}</div>
+                                                <div className="truncate font-medium text-foreground">{airport.iataCode || airport.ident}</div>
+                                                <div className="truncate text-xs text-muted-foreground">{airport.icaoCode || 'No ICAO'}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-semibold text-foreground">{airport.name}</div>
-                                                <div className="text-xs text-muted-foreground">{airport.ident}</div>
+                                                <div className="truncate font-medium text-foreground" title={airport.name}>{airport.name}</div>
+                                                <div className="truncate text-xs text-muted-foreground">{airport.ident}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-medium text-foreground">{airport.municipality || 'Unknown city'}</div>
-                                                <div className="text-xs text-muted-foreground">{airport.countryName}</div>
+                                                <div className="truncate text-foreground">{airport.municipality || 'Unknown city'}</div>
+                                                <div className="truncate text-xs text-muted-foreground">{airport.countryName}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <span className={cn(
-                                                    'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
-                                                    airport.commercialServiceTier === 'major'
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
-                                                        : airport.commercialServiceTier === 'regional'
-                                                            ? 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
-                                                            : 'border-border bg-card text-foreground',
-                                                )}>
+                                                <AdminStatusBadge tone={airport.commercialServiceTier === 'major' ? 'success' : airport.commercialServiceTier === 'regional' ? 'info' : 'neutral'}>
                                                     {formatServiceTierLabel(airport.commercialServiceTier)}
-                                                </span>
+                                                </AdminStatusBadge>
                                             </TableCell>
-                                            <TableCell>{formatAirportTypeLabel(airport.airportType)}</TableCell>
-                                            <TableCell>{airport.timezone || '—'}</TableCell>
+                                            <TableCell><div className="truncate">{formatAirportTypeLabel(airport.airportType)}</div></TableCell>
+                                            <TableCell><div className="truncate" title={airport.timezone || undefined}>{airport.timezone || '—'}</div></TableCell>
                                         </TableRow>
                                     ))}
                                     {pagedAirports.length === 0 && (
-                                        <TableRow>
+                                        <TableRow className="hover:bg-transparent">
                                             <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                                                No airports match the current filters.
+                                                {loading ? 'Loading airports…' : 'No airports match the current filters.'}
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -2681,69 +2606,65 @@ export const AdminAirportsPage: React.FC = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm tabular-nums text-muted-foreground">
                                 Page {safePage} of {pageCount}
                             </div>
                             <div className="flex gap-2">
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                                     disabled={safePage <= 1}
-                                    className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Previous
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
                                     disabled={safePage >= pageCount}
-                                    className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Next
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </AdminSurfaceCard>
 
-                    <AdminSurfaceCard className="space-y-4">
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <h2 className="text-lg font-semibold text-foreground">Airport Editor</h2>
-                                <p className="text-sm text-muted-foreground">
-                                    {editorMode === 'create'
-                                        ? 'Create a new airport row in the database catalog. Commercial flags are derived automatically.'
-                                        : 'Edit a selected row and save it back to the database catalog. Commercial flags are derived automatically.'}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {editorMode === 'create' && (
-                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
-                                        New row draft
-                                    </span>
-                                )}
-                                {!databaseBacked && (
-                                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                        Sync DB first to enable saves
-                                    </span>
-                                )}
-                            </div>
-                        </div>
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
+                        <AdminSectionHeader
+                            title="Airport editor"
+                            description={editorMode === 'create'
+                                ? 'Create a new airport row in the database catalog. Commercial flags are derived automatically.'
+                                : 'Edit a selected row and save it back to the database catalog. Commercial flags are derived automatically.'}
+                            actions={(editorMode === 'create' || !databaseBacked) ? (
+                                <>
+                                    {editorMode === 'create' && (
+                                        <AdminStatusBadge tone="info">New row draft</AdminStatusBadge>
+                                    )}
+                                    {!databaseBacked && (
+                                        <AdminStatusBadge tone="warning">Sync DB first to enable saves</AdminStatusBadge>
+                                    )}
+                                </>
+                            ) : null}
+                        />
 
                         {!editorDraft && (
-                            <div className="rounded-2xl border border-dashed border-border bg-secondary p-6 text-sm text-muted-foreground">
-                                Select an airport row to inspect and edit its catalog details, or start a new airport draft from the toolbar.
-                            </div>
+                            <AdminEmptyState
+                                title="No airport selected"
+                                description="Select an airport row to inspect and edit its catalog details, or start a new airport draft from the toolbar."
+                            />
                         )}
 
                         {editorDraft && (
                             <>
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-ident" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Ident</label>
-	                                        <Input
-	                                            id="admin-airports-editor-ident"
-	                                            aria-label="Ident"
-	                                            value={editorDraft.ident}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-ident" className={ADMIN_FIELD_LABEL_CLASS}>Ident</label>
+                                        <Input
+                                            id="admin-airports-editor-ident"
+                                            value={editorDraft.ident}
                                             disabled={editorMode !== 'create'}
                                             onChange={(event) => {
                                                 setEditorDraft((current) => current ? { ...current, ident: event.target.value.toUpperCase() } : current);
@@ -2751,8 +2672,8 @@ export const AdminAirportsPage: React.FC = () => {
                                             }}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <div id="admin-airports-editor-type-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Airport Type</div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <div id="admin-airports-editor-type-label" className={ADMIN_FIELD_LABEL_CLASS}>Airport type</div>
                                         <Select
                                             value={editorDraft.airportType}
                                             onValueChange={(value) => {
@@ -2763,7 +2684,7 @@ export const AdminAirportsPage: React.FC = () => {
                                                 setEditorDirty(true);
                                             }}
                                         >
-                                            <SelectTrigger aria-labelledby="admin-airports-editor-type-label" className="h-10">
+                                            <SelectTrigger aria-labelledby="admin-airports-editor-type-label" className="w-full">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -2778,41 +2699,41 @@ export const AdminAirportsPage: React.FC = () => {
                                 </div>
 
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-iata" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">IATA code</label>
-	                                        <Input id="admin-airports-editor-iata" aria-label="IATA code" value={editorDraft.iataCode} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-iata" className={ADMIN_FIELD_LABEL_CLASS}>IATA code</label>
+                                        <Input id="admin-airports-editor-iata" value={editorDraft.iataCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, iataCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-icao" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">ICAO code</label>
-	                                        <Input id="admin-airports-editor-icao" aria-label="ICAO code" value={editorDraft.icaoCode} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-icao" className={ADMIN_FIELD_LABEL_CLASS}>ICAO code</label>
+                                        <Input id="admin-airports-editor-icao" value={editorDraft.icaoCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, icaoCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="admin-airports-editor-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Airport name</label>
-	                                    <Input id="admin-airports-editor-name" aria-label="Airport name" value={editorDraft.name} onChange={(event) => {
+                                <div className="flex flex-col gap-1.5">
+                                    <label htmlFor="admin-airports-editor-name" className={ADMIN_FIELD_LABEL_CLASS}>Airport name</label>
+                                    <Input id="admin-airports-editor-name" value={editorDraft.name} onChange={(event) => {
                                         setEditorDraft((current) => current ? { ...current, name: event.target.value } : current);
                                         setEditorDirty(true);
                                     }} />
                                 </div>
 
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-municipality" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Municipality</label>
-	                                        <Input id="admin-airports-editor-municipality" aria-label="Municipality" value={editorDraft.municipality} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-municipality" className={ADMIN_FIELD_LABEL_CLASS}>Municipality</label>
+                                        <Input id="admin-airports-editor-municipality" value={editorDraft.municipality} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, municipality: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-subdivision" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Subdivision name</label>
-	                                        <Input id="admin-airports-editor-subdivision" aria-label="Subdivision name" value={editorDraft.subdivisionName} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-subdivision" className={ADMIN_FIELD_LABEL_CLASS}>Subdivision name</label>
+                                        <Input id="admin-airports-editor-subdivision" value={editorDraft.subdivisionName} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, subdivisionName: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
@@ -2820,16 +2741,16 @@ export const AdminAirportsPage: React.FC = () => {
                                 </div>
 
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-region" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Region code</label>
-	                                        <Input id="admin-airports-editor-region" aria-label="Region code" value={editorDraft.regionCode} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-region" className={ADMIN_FIELD_LABEL_CLASS}>Region code</label>
+                                        <Input id="admin-airports-editor-region" value={editorDraft.regionCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, regionCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-timezone" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Timezone</label>
-	                                        <Input id="admin-airports-editor-timezone" aria-label="Timezone" value={editorDraft.timezone} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-timezone" className={ADMIN_FIELD_LABEL_CLASS}>Timezone</label>
+                                        <Input id="admin-airports-editor-timezone" value={editorDraft.timezone} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, timezone: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
@@ -2837,8 +2758,8 @@ export const AdminAirportsPage: React.FC = () => {
                                 </div>
 
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Country or region</div>
+                                    <div className="flex min-w-0 flex-col gap-1.5">
+                                        <div className={ADMIN_FIELD_LABEL_CLASS} aria-hidden="true">Country or region</div>
                                         <ProfileCountryRegionSelect
                                             value={editorDraft.countryCode}
                                             ariaLabel="Country or region"
@@ -2851,38 +2772,37 @@ export const AdminAirportsPage: React.FC = () => {
                                             }}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-country-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Country name</label>
-	                                        <Input
-	                                            id="admin-airports-editor-country-name"
-	                                            aria-label="Country name"
-	                                            value={editorDraft.countryName}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-country-name" className={ADMIN_FIELD_LABEL_CLASS}>Country name</label>
+                                        <Input
+                                            id="admin-airports-editor-country-name"
+                                            value={editorDraft.countryName}
                                             readOnly
-                                            className="bg-secondary text-muted-foreground"
+                                            className="bg-muted/50 text-muted-foreground"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Latitude</label>
-	                                        <Input id="admin-airports-editor-latitude" aria-label="Latitude" type="number" step="0.000001" value={editorDraft.latitude} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-latitude" className={ADMIN_FIELD_LABEL_CLASS}>Latitude</label>
+                                        <Input id="admin-airports-editor-latitude" type="number" step="0.000001" className="tabular-nums" value={editorDraft.latitude} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, latitude: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Longitude</label>
-	                                        <Input id="admin-airports-editor-longitude" aria-label="Longitude" type="number" step="0.000001" value={editorDraft.longitude} onChange={(event) => {
+                                    <div className="flex flex-col gap-1.5">
+                                        <label htmlFor="admin-airports-editor-longitude" className={ADMIN_FIELD_LABEL_CLASS}>Longitude</label>
+                                        <Input id="admin-airports-editor-longitude" type="number" step="0.000001" className="tabular-nums" value={editorDraft.longitude} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, longitude: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-3 py-2">
-                                    <div>
-                                        <div className="text-sm font-semibold text-foreground">Scheduled passenger service</div>
+                                <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/50 px-3 py-2">
+                                    <div className="min-w-0">
+                                        <div className="text-sm font-medium text-foreground">Scheduled passenger service</div>
                                         <div className="text-xs text-muted-foreground">Controls whether the airport stays eligible for nearby commercial lookups.</div>
                                     </div>
                                     <Switch
@@ -2896,27 +2816,30 @@ export const AdminAirportsPage: React.FC = () => {
                                 </div>
 
                                 {editorPreviewAirport && (
-                                    <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-foreground">
-                                        <div className="font-semibold text-foreground">Derived commercial status</div>
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
-                                                {formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}
-                                            </span>
-                                            <span className={cn(
-                                                'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
-                                                editorPreviewAirport.isCommercial
-                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
-                                                    : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
-                                            )}>
+                                    <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground">
+                                        <div className="text-xs font-medium text-muted-foreground">Derived commercial status</div>
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                            <Badge variant="outline">{formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}</Badge>
+                                            <AdminStatusBadge tone={editorPreviewAirport.isCommercial ? 'success' : 'warning'}>
                                                 {editorPreviewAirport.isCommercial ? 'Included in nearby-airport results' : 'Excluded from nearby-airport results'}
-                                            </span>
+                                            </AdminStatusBadge>
                                         </div>
                                     </div>
                                 )}
 
                                 <div className="flex flex-wrap gap-2">
-                                    <button
+                                    <Button
                                         type="button"
+                                        onClick={() => void handleSaveAirport()}
+                                        disabled={!databaseBacked || saving || deleting}
+                                        aria-busy={saving || undefined}
+                                    >
+                                        {saving ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
+                                        {editorMode === 'create' ? 'Create airport' : 'Save airport'}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
                                         onClick={() => {
                                             setEditorDraft(editorMode === 'create' || !selectedAirport
                                                 ? buildEmptyAirportDraft()
@@ -2924,30 +2847,22 @@ export const AdminAirportsPage: React.FC = () => {
                                             setEditorDirty(false);
                                         }}
                                         disabled={!editorDirty}
-                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {editorMode === 'create' ? 'Reset draft' : 'Reset changes'}
-                                    </button>
+                                    </Button>
                                     {editorMode !== 'create' && (
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="destructive"
+                                            className="ms-auto"
                                             onClick={() => void handleDeleteAirport()}
                                             disabled={!databaseBacked || deleting}
-                                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
+                                            aria-busy={deleting || undefined}
                                         >
-                                            {deleting ? <SpinnerGap size={16} className="animate-spin" /> : <Trash size={16} />}
+                                            {deleting ? <SpinnerGap className="animate-spin" /> : <Trash />}
                                             Delete airport
-                                        </button>
+                                        </Button>
                                     )}
-                                    <button
-                                        type="button"
-                                        onClick={() => void handleSaveAirport()}
-                                        disabled={!databaseBacked || saving || deleting}
-                                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
-                                    >
-                                        {saving ? <SpinnerGap size={16} className="animate-spin" /> : <FloppyDisk size={16} />}
-                                        {editorMode === 'create' ? 'Create airport' : 'Save airport'}
-                                    </button>
                                 </div>
                             </>
                         )}

@@ -54,14 +54,17 @@ vi.mock('../../../components/admin/AdminSurfaceCard', () => ({
   AdminSurfaceCard: ({ children }: { children: React.ReactNode }) => React.createElement('section', null, children),
 }));
 
-vi.mock('@tremor/react', () => ({
-  BarChart: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-bar-chart' }, children),
-  BarList: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-bar-list' }, children),
-  DonutChart: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-donut-chart' }, children),
-  Metric: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
-  Text: ({ children }: { children?: React.ReactNode }) => React.createElement('p', null, children),
-  Title: ({ children }: { children?: React.ReactNode }) => React.createElement('h3', null, children),
-}));
+// The charts are real (Recharts via components/ui/chart). jsdom has no layout, so the
+// ResponsiveContainer would measure 0×0 and draw nothing: give it a fixed size instead.
+vi.mock('recharts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('recharts')>();
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: React.ReactElement }) => (
+      React.createElement('div', { style: { width: 640, height: 288 } }, React.cloneElement(children, { width: 640, height: 288 }))
+    ),
+  };
+});
 
 vi.mock('../../../components/admin/CopyableUuid', () => ({
   CopyableUuid: ({ value }: { value: string }) => React.createElement('span', null, value),
@@ -169,6 +172,10 @@ describe('pages/AdminBillingPage', () => {
     expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument();
     expect(screen.getByText('Current MRR by tier')).toBeInTheDocument();
     expect(screen.getByText('At-risk revenue')).toBeInTheDocument();
+    const mrrChart = screen.getByRole('img', { name: /monthly recurring revenue by tier/i });
+    expect(mrrChart.querySelectorAll('.recharts-bar-rectangle').length).toBeGreaterThan(0);
+    expect(screen.getByRole('list', { name: 'At-risk revenue by status' })).toHaveTextContent('Past due · USD');
+    expect(screen.getByRole('list', { name: 'Paid subscriptions by plan tier' })).toHaveTextContent('Explorer');
     expect(screen.getByText('Subscriptions')).toBeInTheDocument();
     expect(screen.getByText('Webhook events')).toBeInTheDocument();
     expect(screen.getAllByText('explorer@example.com')).toHaveLength(2);

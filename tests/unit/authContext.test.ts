@@ -62,6 +62,11 @@ describe('contexts/AuthContext dev bypass session precedence', () => {
     expect(shouldUseDevAdminBypassSession(true, 'dev-admin-id')).toBe(true);
   });
 
+  it('lets the bypass win over an anonymous guest session', () => {
+    expect(shouldUseDevAdminBypassSession(true, 'anon-guest-id', true)).toBe(true);
+    expect(shouldUseDevAdminBypassSession(false, 'anon-guest-id', true)).toBe(false);
+  });
+
   it('does not use bypass for real authenticated users', () => {
     expect(shouldUseDevAdminBypassSession(true, 'real-admin-user-id')).toBe(false);
     expect(shouldUseDevAdminBypassSession(false, null)).toBe(false);
