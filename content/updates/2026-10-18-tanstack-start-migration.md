@@ -47,5 +47,6 @@ summary: "Pages show up sooner, trips open straight into the planner, and button
 - [ ] [Internal] 🎞️ Preserve current sharing-image/video behavior in the native document head and resolve preview media against its own deployment origin.
 - [ ] [Internal] 🧷 Clear the full-project TypeScript backlog and gate `tsc --noEmit` in PR Quality and ci:local, fixing the runtime defects it surfaced.
 - [ ] [Internal] 📊 Replace the React-18-only admin chart package with shared recharts components (accessible figures, keyboard tooltips, theme tokens) and drop its unused dependencies.
+- [ ] [Internal] 🪶 Load the Trip Agent schemas and the map customize panel only when they are used, shrinking the trip view's first script by 17% (measured locally).
 
 - [ ] [Fixed] 🛠️ Fix cold admin route crashes caused by global syntax-highlighter initialization; retain JSON highlighting without global language registration.
