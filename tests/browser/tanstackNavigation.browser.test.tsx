@@ -78,4 +78,31 @@ describe('TanStack navigation migration contract', () => {
         const view = render(<RouterProvider router={router} />);
         expect(await view.findByRole('heading', { name: 'Users' })).toBeVisible();
     });
+    it('keeps a page that is being left from writing its search onto the destination (#586)', async () => {
+        function NormalizingProfile() {
+            const [search, setSearch] = useSearchParams();
+            const navigate = useNavigate();
+            React.useEffect(() => {
+                if (search.get('tab') === 'recent') return;
+                const next = new URLSearchParams(search);
+                next.set('tab', 'recent');
+                setSearch(next, { replace: true });
+            }, [search, setSearch]);
+            return <button onClick={() => navigate('/trip/abc')}>Open trip</button>;
+        }
+        let releaseTrip!: () => void;
+        const tripLoaded = new Promise<void>(resolve => { releaseTrip = resolve; });
+        const root = createRootRoute({ component: Outlet });
+        const profile = createRoute({ getParentRoute: () => root, path: '/profile', component: NormalizingProfile });
+        const trip = createRoute({ getParentRoute: () => root, path: '/trip/$tripId', loader: () => tripLoaded, component: () => <h1>Trip</h1> });
+        const router = createRouter({ parseSearch: parseRouteSearch, stringifySearch: stringifyRouteSearch, defaultPendingMs: Infinity, routeTree: root.addChildren([profile, trip]), history: createMemoryHistory({ initialEntries: ['/profile'] }) });
+        const view = render(<RouterProvider router={router} />);
+        await waitFor(() => expect(router.state.location.searchStr).toBe('?tab=recent'));
+        fireEvent.click(await view.findByText('Open trip'));
+        await waitFor(() => expect(router.state.location.pathname).toBe('/trip/abc'));
+        await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+        await act(async () => { releaseTrip(); await tripLoaded; });
+        expect(await view.findByRole('heading', { name: 'Trip' })).toBeVisible();
+        expect(router.state.location.href).toBe('/trip/abc');
+    });
 });

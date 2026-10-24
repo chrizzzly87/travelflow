@@ -4,7 +4,8 @@
  * TanStack APIs directly; components share these URL-oriented link helpers.
  */
 import React, { useCallback, useMemo } from 'react';
-import { Link as StartLink, Navigate as StartNavigate, useRouter, useRouterState } from '@tanstack/react-router';
+import { Link as StartLink, Navigate as StartNavigate, useMatch, useRouter, useRouterState } from '@tanstack/react-router';
+import { stringifyRouteSearch } from './routing/search';
 export interface Location { pathname: string; search: string; hash: string; state: any; key: string }
 export type NavigateFunction = ReturnType<typeof useNavigate>;
 
@@ -34,15 +35,27 @@ export const useParams = <T extends Record<string, string | undefined> = Record<
     return native as T;
 };
 
+/**
+ * Search params owned by the route that renders the caller. During a pending
+ * navigation `state.location` already points at the destination while the
+ * leaving page stays mounted, so reading or writing through it would copy this
+ * page's query onto the next one (#586). The match keeps its own search, and
+ * writes are dropped once the latest location no longer resolves to it.
+ */
 export const useSearchParams = (initial?: ConstructorParameters<typeof URLSearchParams>[0]) => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const params = useMemo(() => new URLSearchParams(location.search || initial), [location.search]);
+    const router = useRouter();
+    const routeId = useMatch({ strict: false, select: match => match.routeId });
+    const search = useMatch({ strict: false, select: match => match.search });
+    const searchStr = stringifyRouteSearch(search as Record<string, unknown>);
+    const params = useMemo(() => new URLSearchParams(searchStr || initial), [searchStr]);
     const setParams = useCallback((next: URLSearchParams | Record<string, string> | string | ((previous: URLSearchParams) => URLSearchParams), options?: { replace?: boolean; state?: unknown }) => {
-        const value = typeof next === 'function' ? next(new URLSearchParams(location.search)) : next;
-        const search = new URLSearchParams(value).toString();
-        navigate(`${location.pathname}${search ? `?${search}` : ''}${location.hash}`, options);
-    }, [location.pathname, location.search, location.hash, navigate]);
+        const latest = router.latestLocation;
+        if (!router.matchRoutes(latest).some(match => match.routeId === routeId)) return;
+        const value = typeof next === 'function' ? next(new URLSearchParams(latest.searchStr)) : next;
+        const query = new URLSearchParams(value).toString();
+        const href = `${latest.pathname}${query ? `?${query}` : ''}${latest.hash ? `#${latest.hash}` : ''}`;
+        void router.navigate({ href, replace: options?.replace, state: previous => ({ ...previous, usr: options?.state ?? null }) });
+    }, [router, routeId]);
     return [params, setParams] as const;
 };
 
