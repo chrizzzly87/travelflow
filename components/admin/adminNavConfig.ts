@@ -51,11 +51,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     },
     {
         id: 'tiers',
-        label: 'Tiers',
+        label: 'Plans',
         path: '/admin/tiers',
         section: 'operations',
         icon: 'tiers',
-        keywords: ['plans', 'entitlements', 'limits'],
+        keywords: ['tiers', 'entitlements', 'limits'],
     },
     {
         id: 'billing',

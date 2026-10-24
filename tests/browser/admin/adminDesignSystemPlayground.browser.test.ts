@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
@@ -152,5 +152,37 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
     expect(screen.getByText('The trip list did not load. Reload to try again.')).toBeTruthy();
     expect(screen.getByRole('img', { name: 'Sample stacked bar chart of daily new and returning users' })).toBeTruthy();
     expect(screen.getByRole('img', { name: 'Sample vertical bar chart of trips per country' })).toBeTruthy();
+  }, 25000);
+
+  it('demos the detail sheet, selection bar, pagination and bar list', async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    class ResizeObserverMock {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    }
+    Object.assign(globalThis, { ResizeObserver: ResizeObserverMock });
+
+    render(React.createElement(AdminDesignSystemPlaygroundPage));
+    const adminTabs = screen.getAllByRole('tab', { name: 'Admin workspace' });
+    await user.click(adminTabs[adminTabs.length - 1]);
+
+    expect(screen.getByRole('list', { name: 'Sample bar list of trips per country' })).toBeTruthy();
+    expect(screen.getByText('Showing 51–100 of 240 users')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.getByText('Showing 101–150 of 240 users')).toBeTruthy();
+
+    // The bulk bar exists only while something is selected.
+    expect(screen.queryByRole('region', { name: 'Bulk actions' })).toBeNull();
+    await user.click(screen.getByRole('checkbox', { name: 'Select Jonas Weber' }));
+    expect(screen.getByRole('region', { name: 'Bulk actions' })).toBeTruthy();
+    expect(screen.getByText('1 user selected')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('region', { name: 'Bulk actions' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Open sample detail sheet' }));
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getAllByRole('heading', { name: 'Mara Lindqvist' }).length).toBeGreaterThan(0);
+    expect(within(sheet).getByRole('button', { name: 'Soft-delete user' })).toBeTruthy();
   }, 25000);
 });

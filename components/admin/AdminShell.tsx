@@ -302,12 +302,19 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     );
 
     return (
-        <div className="flex min-h-dvh w-full bg-background text-foreground">
+        <div
+            className={cn(
+                'flex min-h-dvh w-full bg-background text-foreground',
+                // Press feedback on every admin button: the UI confirms it heard
+                // the click. Skipped under reduced motion.
+                'motion-safe:[&_[data-slot=button]:not(:disabled):active]:scale-[0.97]',
+            )}
+        >
             {/* Desktop sidebar: pinned to the viewport with its own scroll area,
                 so long tables scroll the page without dragging the nav along. */}
             <aside
                 className={cn(
-                    'sticky top-0 hidden h-dvh shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out lg:flex',
+                    'sticky top-0 hidden h-dvh shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:flex',
                     isSidebarCollapsed ? 'w-14' : 'w-60',
                 )}
                 aria-label="Admin navigation"
@@ -437,7 +444,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         )}
 
                         {!isSimulatedDebugLoginActive && isDevAdminBypassActive && (
-                            <Alert>
+                            <Alert variant="info">
                                 <Info />
                                 <AlertTitle>Dev admin bypass is active in this tab</AlertTitle>
                                 <AlertDescription>

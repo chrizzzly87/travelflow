@@ -9,6 +9,10 @@ import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/Admi
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminBarChart } from '../components/admin/AdminBarChart';
+import { AdminBarList } from '../components/admin/AdminBarList';
+import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
+import { AdminPagination } from '../components/admin/AdminPagination';
+import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { CountrySelect } from '../components/CountrySelect';
@@ -196,9 +200,9 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
     {
         id: 'admin',
         title: 'Admin workspace',
-        description: 'The building blocks every admin screen is made from: stat tiles, section headers, status badges, empty and error states, and bar charts.',
+        description: 'The building blocks every admin screen is made from: stat tiles, section headers, status badges, empty and error states, charts and bar lists, the record detail sheet, the bulk-action bar and pagination.',
         sourcePath: 'components/admin/AdminStatCard.tsx',
-        usagePaths: ['pages/AdminDashboardPage.tsx', 'components/admin/AdminBarChart.tsx', 'docs/DESIGN_SYSTEM_COMPONENTS.md'],
+        usagePaths: ['pages/AdminDashboardPage.tsx', 'components/admin/AdminDetailSheet.tsx', 'components/admin/AdminSelectionBar.tsx', 'docs/DESIGN_SYSTEM_COMPONENTS.md'],
     },
     {
         id: 'tables',
@@ -337,6 +341,22 @@ const sampleAdminTableRows: PlaygroundTableRow[] = [
 
 const formatPlaygroundTimestamp = (value: string): string => new Date(value).toLocaleString();
 
+const SAMPLE_BAR_LIST_ITEMS = [
+    { key: 'de', label: 'Germany', value: 412 },
+    { key: 'jp', label: 'Japan', value: 287 },
+    { key: 'th', label: 'Thailand', value: 164 },
+    { key: 'pt', label: 'Portugal', value: 98 },
+];
+
+const SAMPLE_SELECTION_ROWS = [
+    { id: 'u-1', name: 'Mara Lindqvist', email: 'mara@example.com' },
+    { id: 'u-2', name: 'Jonas Weber', email: 'jonas@example.com' },
+    { id: 'u-3', name: 'Aiko Tanaka', email: 'aiko@example.com' },
+];
+
+const SAMPLE_PAGINATION_TOTAL = 240;
+const SAMPLE_PAGINATION_PAGE_SIZE = 50;
+
 const ComponentUsageReferences: React.FC<{ definition: ComponentGroupDefinition }> = ({ definition }) => (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
         <div className={subtleHeadingClassName}>Where used</div>
@@ -386,6 +406,9 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const [sampleTableSortDirection, setSampleTableSortDirection] = useState<'asc' | 'desc'>('desc');
     const [sampleSelectedTableRows, setSampleSelectedTableRows] = useState<Set<string>>(() => new Set(['row-1']));
     const [isSampleTableScrolledHorizontally, setIsSampleTableScrolledHorizontally] = useState(false);
+    const [isSampleDetailSheetOpen, setIsSampleDetailSheetOpen] = useState(false);
+    const [sampleBulkSelection, setSampleBulkSelection] = useState<Set<string>>(() => new Set());
+    const [samplePaginationPage, setSamplePaginationPage] = useState(2);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -1310,6 +1333,109 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         </div>
                     </div>
 
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>AdminDetailSheet</p>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button type="button" variant="outline" onClick={() => setIsSampleDetailSheetOpen(true)}>
+                                Open sample detail sheet
+                            </Button>
+                            <span className="text-xs text-muted-foreground">The one inspector for a record: fixed header, scrolling body, pinned footer.</span>
+                        </div>
+                        <AdminDetailSheet
+                            open={isSampleDetailSheetOpen}
+                            onOpenChange={setIsSampleDetailSheetOpen}
+                            title="Mara Lindqvist"
+                            subtitle="mara@example.com"
+                            meta={<AdminStatusBadge tone="success">Active</AdminStatusBadge>}
+                            footer={(
+                                <>
+                                    <Button type="button" onClick={() => setIsSampleDetailSheetOpen(false)}>Save changes</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsSampleDetailSheetOpen(false)}>Cancel</Button>
+                                    <Button type="button" variant="ghost" className="ms-auto text-destructive" onClick={() => setIsSampleDetailSheetOpen(false)}>Soft-delete user</Button>
+                                </>
+                            )}
+                        >
+                            <section className="flex flex-col gap-2">
+                                <AdminSectionHeader as="h3" title="Account" description="Plan, sign-in method and activity." />
+                                <dl className="grid grid-cols-2 gap-2 text-sm">
+                                    <dt className="text-muted-foreground">Plan</dt><dd className="text-foreground">Explorer</dd>
+                                    <dt className="text-muted-foreground">Sign-in</dt><dd className="text-foreground">Google</dd>
+                                    <dt className="text-muted-foreground">Trips</dt><dd className="text-foreground tabular-nums">12</dd>
+                                </dl>
+                            </section>
+                            <section className="flex flex-col gap-2 border-t border-border pt-4">
+                                <AdminSectionHeader as="h3" title="Recent trips" />
+                                <p className="text-sm text-muted-foreground">Sections stack with an <code className="font-mono text-xs">h3</code> header each; actions live in the footer.</p>
+                            </section>
+                        </AdminDetailSheet>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>AdminSelectionBar + AdminPagination</p>
+                        <AdminSurfaceCard className="flex flex-col gap-3 p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-10 ps-4">
+                                            <Checkbox
+                                                checked={sampleBulkSelection.size === SAMPLE_SELECTION_ROWS.length
+                                                    ? true
+                                                    : (sampleBulkSelection.size > 0 ? 'indeterminate' : false)}
+                                                onCheckedChange={(checked) => setSampleBulkSelection(checked
+                                                    ? new Set(SAMPLE_SELECTION_ROWS.map((row) => row.id))
+                                                    : new Set())}
+                                                aria-label="Select all sample users"
+                                            />
+                                        </TableHead>
+                                        <TableHead>User</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {SAMPLE_SELECTION_ROWS.map((row) => {
+                                        const isSelected = sampleBulkSelection.has(row.id);
+                                        return (
+                                            <TableRow key={row.id} data-state={isSelected ? 'selected' : undefined}>
+                                                <TableCell className="ps-4">
+                                                    <Checkbox
+                                                        checked={isSelected}
+                                                        onCheckedChange={(checked) => setSampleBulkSelection((current) => {
+                                                            const next = new Set(current);
+                                                            if (checked) next.add(row.id);
+                                                            else next.delete(row.id);
+                                                            return next;
+                                                        })}
+                                                        aria-label={`Select ${row.name}`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="text-sm font-medium text-foreground">{row.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{row.email}</div>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                            <AdminPagination
+                                className="px-4 pb-3"
+                                page={samplePaginationPage}
+                                pageSize={SAMPLE_PAGINATION_PAGE_SIZE}
+                                totalItems={SAMPLE_PAGINATION_TOTAL}
+                                onPageChange={setSamplePaginationPage}
+                                noun="users"
+                            />
+                        </AdminSurfaceCard>
+                        <AdminSelectionBar
+                            count={sampleBulkSelection.size}
+                            noun="user"
+                            onClear={() => setSampleBulkSelection(new Set())}
+                        >
+                            <Button type="button" variant="outline" size="sm">Export</Button>
+                            <Button type="button" variant="destructive" size="sm">Soft-delete</Button>
+                        </AdminSelectionBar>
+                        <p className="text-xs text-muted-foreground">Select a row: the bar appears only while something is selected.</p>
+                    </div>
+
                     <div className="grid gap-4 lg:grid-cols-2">
                         <AdminSurfaceCard className="flex flex-col gap-3">
                             <AdminSectionHeader as="h3" title="AdminBarChart, stacked" description="Daily signups split by new and returning users." />
@@ -1334,6 +1460,11 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             />
                         </AdminSurfaceCard>
                     </div>
+
+                    <AdminSurfaceCard className="flex max-w-xl flex-col gap-3">
+                        <AdminSectionHeader as="h3" title="AdminBarList" description="Top destination countries, each row's share of the leader." />
+                        <AdminBarList items={SAMPLE_BAR_LIST_ITEMS} ariaLabel="Sample bar list of trips per country" sortOrder="descending" />
+                    </AdminSurfaceCard>
                 </div>
             );
         }
@@ -1599,6 +1730,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         <li className="flex items-start gap-2"><SlidersHorizontal size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> Keeps interactions local only; no backend writes, no profile or trip persistence side effects.</li>
                         <li className="flex items-start gap-2"><Bell size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> The notification lab fires only through <code className="font-mono text-xs">showAppToast(...)</code> for consistent UX and QA parity.</li>
                         <li className="flex items-start gap-2"><Eye size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> New shared components land in this playground before broad rollout, and are listed here when added.</li>
+                        <li className="flex items-start gap-2"><PaintBrush size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> Public-site sections and cards (globe, CTA, trip and blog cards) are tuned in the unlisted component playground at <code className="font-mono text-xs">/admin/component-playground</code>, which copies their settings back into code.</li>
                     </ul>
                 </AdminSurfaceCard>
             </div>

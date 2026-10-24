@@ -4,12 +4,13 @@
 
 Use Promptfoo for lightweight, git-versioned checks around AI trip creation.
 
-Keep using `/admin/ai-benchmark` for:
+Keep using the admin AI tools for:
 
-- manual model comparison
-- subjective quality review
-- saved benchmark sessions, comments, and ratings
-- telemetry exploration and trip inspection
+- manual model comparison and subjective quality review (`/admin/ai-benchmark`: rate and note
+  each run under **Runs**, read per-model averages under **Compare**)
+- saved benchmark sessions, notes and ratings
+- trip inspection (each run links to the trip it generated)
+- telemetry exploration (`/admin/ai-benchmark/telemetry`)
 
 Use Promptfoo for:
 

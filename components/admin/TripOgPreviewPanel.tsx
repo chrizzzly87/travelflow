@@ -25,6 +25,15 @@ const STATUS_TONE: Record<string, AdminStatusTone> = {
     missing: 'neutral',
 };
 
+const STATUS_LABEL: Record<string, string> = {
+    ready: 'Ready',
+    queued: 'Queued',
+    rendering: 'Rendering',
+    failed: 'Failed',
+    missing: 'Not generated',
+    loading: 'Loading',
+};
+
 const fieldLabelClass = 'text-xs font-medium text-muted-foreground';
 
 export const TripOgPreviewPanel: React.FC<{ tripId: string }> = ({ tripId }) => {
@@ -70,7 +79,7 @@ export const TripOgPreviewPanel: React.FC<{ tripId: string }> = ({ tripId }) => 
             <AdminSectionHeader
                 as="h3"
                 title="Trip sharing previews"
-                description="Wide 1200 × 630 or classic 960 × 720 · 6 seconds · MP4 · no audio · maximum 2 MB · Mapbox basemap."
+                description="The image and 6-second map video attached when this trip is shared."
                 actions={(
                     <Button type="button" variant="ghost" size="sm" onClick={() => setRevision(value => value + 1)}>
                         <ArrowsClockwise aria-hidden="true" />
@@ -78,7 +87,6 @@ export const TripOgPreviewPanel: React.FC<{ tripId: string }> = ({ tripId }) => 
                     </Button>
                 )}
             />
-            <p className="text-xs text-muted-foreground">Automatic renders are limited to once per trip per hour. Explicit re-renders have a five-minute cooldown; 20 renders per hour across this deployment context. Platforms may display the image instead of playing video.</p>
             <div className="grid gap-4 lg:grid-cols-2">
                 <figure className="flex min-w-0 flex-col gap-2">
                     <figcaption className={fieldLabelClass}>Attached OG image</figcaption>
@@ -87,7 +95,7 @@ export const TripOgPreviewPanel: React.FC<{ tripId: string }> = ({ tripId }) => 
                 <figure className="flex min-w-0 flex-col gap-2">
                     <figcaption className={`${fieldLabelClass} flex flex-wrap items-center gap-2`}>
                         OG video
-                        <AdminStatusBadge tone={STATUS_TONE[statusLabel] || 'neutral'}>{statusLabel}</AdminStatusBadge>
+                        <AdminStatusBadge tone={STATUS_TONE[statusLabel] || 'neutral'}>{STATUS_LABEL[statusLabel] || statusLabel}</AdminStatusBadge>
                         {state?.bytes ? <span className="tabular-nums">{(state.bytes / 1024).toFixed(0)} KB</span> : null}
                     </figcaption>
                     {videoUrl ? <video src={videoUrl} controls muted loop playsInline preload="metadata" aria-label="Animated trip route preview" style={{ aspectRatio }} className="w-full rounded-md border border-border object-contain" /> : <div style={{ aspectRatio }} className="flex items-center justify-center rounded-md border border-dashed border-border bg-muted/40 px-4 text-center text-xs text-muted-foreground">{rendering ? 'Your map animation is rendering in the background. You can leave this page.' : state?.error || 'Generate a short animation of this trip’s map and stops.'}</div>}
@@ -137,8 +145,17 @@ export const TripOgPreviewPanel: React.FC<{ tripId: string }> = ({ tripId }) => 
             </div>
             {state?.status === 'ready' && settingsChanged && <p className="text-xs text-amber-700 dark:text-amber-300">These settings differ from the attached video. Apply settings to render them; changing a control does not start a render.</p>}
             {(error || loadError) && <AdminErrorAlert message={error || loadError} />}
-            <p className="text-xs text-muted-foreground">Only the selected ratio is rendered; extra variants are never generated automatically. Messages chooses its own preview crop, so try Classic if Wide is cropped. Apply settings reuses an identical cached video. Re-render replaces it and refreshes its media URL. Realistic routes reuse cached geometry and use at most eight new directions lookups per render, with straight lines where routing is unavailable. Day trips use the same departure and return stays as the planner, with dashed spokes and stay-colored markers. Leg colors follow each departing stay.</p>
-            <p className="text-xs text-muted-foreground">Public media follows existing share access. Private trips can be previewed here without making them public. Saved-version links keep their image preview.</p>
+            <details className="text-xs text-muted-foreground">
+                <summary className="cursor-pointer select-none font-medium text-foreground">How rendering works</summary>
+                <ul className="mt-2 flex list-disc flex-col gap-1.5 ps-4">
+                    <li>Wide 1200 × 630 or classic 960 × 720 · 6 seconds · MP4 · no audio · maximum 2 MB · Mapbox basemap. Platforms may show the image instead of playing the video.</li>
+                    <li>Automatic renders run at most once per trip per hour. Explicit re-renders have a five-minute cooldown, and the deployment allows 20 renders per hour.</li>
+                    <li>Only the selected ratio is rendered; other variants are never generated automatically. Messages chooses its own preview crop, so try Classic if Wide is cropped.</li>
+                    <li>Apply settings reuses an identical cached video. Re-render replaces it and refreshes its media URL.</li>
+                    <li>Realistic routes reuse cached geometry and use at most eight new directions lookups per render, with straight lines where routing is unavailable. Day trips use the planner’s departure and return stays, with dashed spokes and stay-colored markers. Leg colors follow each departing stay.</li>
+                    <li>Public media follows the trip’s share access. Private trips can be previewed here without making them public. Saved-version links keep their image preview.</li>
+                </ul>
+            </details>
         </AdminSurfaceCard>
     );
 };

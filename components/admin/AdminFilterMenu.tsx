@@ -97,13 +97,20 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
         const onEscape = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             setIsOpen(false);
+            // Hand focus back to the trigger so keyboard users keep their place.
+            triggerRef.current?.focus();
         };
+        // Move focus into the panel so the options are reachable by keyboard.
+        const focusFrame = window.requestAnimationFrame(() => {
+            menuRef.current?.querySelector<HTMLElement>('[role="checkbox"], button:not(:disabled)')?.focus();
+        });
         const onViewportChange = () => updateMenuPosition();
         window.addEventListener('pointerdown', onPointer);
         window.addEventListener('keydown', onEscape);
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('scroll', onViewportChange, true);
         return () => {
+            window.cancelAnimationFrame(focusFrame);
             window.removeEventListener('pointerdown', onPointer);
             window.removeEventListener('keydown', onEscape);
             window.removeEventListener('resize', onViewportChange);
@@ -150,7 +157,11 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className="inline-flex h-8 w-fit max-w-full items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={cn(
+                    'inline-flex h-8 w-fit max-w-full items-center justify-center whitespace-nowrap rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+                    // Dashed while it filters nothing, solid once it narrows the list.
+                    selectedCount > 0 ? 'border-solid' : 'border-dashed',
+                )}
                 aria-label={`Filter by ${label.toLowerCase()}`}
                 aria-expanded={isOpen}
                 aria-haspopup="dialog"
@@ -193,7 +204,11 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                     ref={menuRef}
                     role="dialog"
                     aria-label={`${label} filter`}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
+                    className={cn(
+                        'fixed z-[1700] origin-top overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md dark:shadow-none',
+                        // Quick ease-out entry; reduced motion keeps only the fade.
+                        'animate-in fade-in-0 duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:zoom-in-95',
+                    )}
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
@@ -217,14 +232,13 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                     return (
                                         <label
                                             key={`${label}-${option.value}`}
-                                            className="group relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-secondary hover:text-foreground"
+                                            className="group relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus-within:bg-secondary hover:bg-secondary hover:text-foreground"
                                         >
                                             <div className="flex size-4 shrink-0 items-center justify-center">
                                                 <Checkbox
                                                     checked={checked}
                                                     onCheckedChange={() => toggleOption(option.value)}
                                                     className="size-4"
-                                                    tabIndex={-1}
                                                 />
                                             </div>
                                             <span className="truncate">{option.label}</span>

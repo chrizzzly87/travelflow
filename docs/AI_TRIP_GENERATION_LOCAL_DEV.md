@@ -129,9 +129,18 @@ The repo intentionally proxies these routes from Vite to Netlify dev:
 - `/api/internal/ai/generation-worker`
 - `/api/internal/admin/iam`
 - `/api/internal/admin/audit/replay-export`
+- `/api/billing/paddle/checkout`
+- `/api/billing/paddle/webhook`
 - `/api/trip-map-preview`
 
 So if `8888` is unavailable, Vite logs a proxy error instead of handling the route itself.
+
+### Admin AI benchmark needs `8888`
+`/admin/ai-benchmark` and its telemetry screen call `/api/internal/ai/benchmark*`, which are
+edge functions and are not proxied from Vite. Open the admin from `http://localhost:8888`;
+on `5173` the page shows "AI Benchmark API is unavailable (404)" with the same hint. Runs need
+the provider keys in `.env.local`, and they create real trips tagged for cleanup (use
+**Delete session data…** in the Runs menu when you are done).
 
 ### Cron is not required for basic local testing
 For create/retry testing, the browser and trip page can kick the worker route directly.
@@ -185,7 +194,8 @@ Inspect:
 - Netlify edge function logs
 
 ## Related docs
-- [README.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/README.md)
-- [docs/EDGE_FUNCTIONS.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/EDGE_FUNCTIONS.md)
-- [docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md)
-- [docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md)
+- [README.md](../README.md)
+- [docs/EDGE_FUNCTIONS.md](./EDGE_FUNCTIONS.md)
+- [docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md](./AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md)
+- [docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md](./AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md)
+- [docs/AI_BACKEND_TARGET_ARCHITECTURE.md](./AI_BACKEND_TARGET_ARCHITECTURE.md) (admin benchmark workspace)

@@ -1,11 +1,9 @@
 import { TripOgPreviewPanel } from '../components/admin/TripOgPreviewPanel';
-import { toAdminErrorMessage } from '../services/adminErrorMessages';
+import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import {
-    Archive,
     ArrowSquareOut,
-    CheckCircle,
     DotsThreeVertical,
     Hourglass,
     MapPin,
@@ -18,7 +16,6 @@ import {
 } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
-import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { AI_MODEL_CATALOG, getDefaultCreateTripModel, sortAiModels } from '../config/aiModelCatalog';
 import {
     adminGetUserProfile,
@@ -52,6 +49,9 @@ import { AdminStatCard } from '../components/admin/AdminStatCard';
 import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
+import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
+import { AdminPagination } from '../components/admin/AdminPagination';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -67,10 +67,19 @@ import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
-import { Drawer, DrawerContent } from '../components/ui/drawer';
+import {
+    buildAdminUserSheetPath,
+    getAdminTripExpirationBucket,
+    getLegacyOwnerDeepLinkTarget,
+    getPageSelectionState,
+    resolveAdminTripGenerationState,
+    isAdminTripInDateRange,
+    summarizeAdminTrips,
+} from '../components/admin/adminTripsModel';
 import { Checkbox } from '../components/ui/checkbox';
 import { useAppDialog } from '../components/AppDialogProvider';
-import { showAppToast } from '../components/ui/appToast';
+import { showAppToast, type AppToastTone } from '../components/ui/appToast';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     AdminSortHeaderButton,
 } from '../components/admin/AdminDataTable';
@@ -150,23 +159,27 @@ const TRIP_VISIBLE_COLUMN_IDS: readonly TripVisibleColumnId[] = [
 ];
 const TRIP_VISIBLE_COLUMN_OPTIONS: Array<{ value: TripVisibleColumnId; label: string }> = [
     { value: 'owner', label: 'Owner' },
-    { value: 'lifecycle', label: 'Lifecycle' },
+    { value: 'lifecycle', label: 'Status' },
     { value: 'generation', label: 'Generation' },
     { value: 'source', label: 'Source' },
     { value: 'expires', label: 'Expires' },
-    { value: 'updated', label: 'Last update' },
+    { value: 'updated', label: 'Updated' },
     { value: 'created', label: 'Created' },
-    { value: 'archived', label: 'Archived at' },
+    { value: 'archived', label: 'Archived' },
 ];
+// What an admin scans for: who owns it, is it live, did generation work, when
+// does it lapse, when was it touched. Source, created and archived dates are
+// one click away in the column picker and always shown in the trip's details.
 const DEFAULT_VISIBLE_TRIP_COLUMNS: TripVisibleColumnId[] = [
     'owner',
     'lifecycle',
     'generation',
-    'source',
     'expires',
     'updated',
-    'created',
 ];
+// Fixed widths of the two frozen columns (selection, trip).
+const SELECT_COLUMN_WIDTH = 48;
+const TRIP_COLUMN_WIDTH = 320;
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
@@ -309,17 +322,9 @@ const getExpirationFilterLabel = (value: TripExpirationFilter): string => {
     return 'No expiration';
 };
 
-const getTripExpirationBucket = (trip: Pick<AdminTripRecord, 'trip_expires_at'>): TripExpirationFilter => {
-    const expiresAt = trip.trip_expires_at;
-    if (!expiresAt) return 'no_expiration';
-    const parsed = Date.parse(expiresAt);
-    if (!Number.isFinite(parsed)) return 'no_expiration';
-    const diffMs = parsed - Date.now();
-    if (diffMs <= 0) return 'already_expired';
-    if (diffMs <= 24 * 60 * 60 * 1000) return 'expiring_24h';
-    if (diffMs <= 7 * 24 * 60 * 60 * 1000) return 'expiring_7d';
-    return 'scheduled';
-};
+const getTripExpirationBucket = (trip: Pick<AdminTripRecord, 'trip_expires_at'>): TripExpirationFilter => (
+    getAdminTripExpirationBucket(trip)
+);
 
 const getUserDisplayName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
@@ -337,13 +342,6 @@ const getUserReferenceText = (user: AdminUserRecord): string => {
     return email ? `${name} (${email})` : `${name} (${user.user_id})`;
 };
 
-const formatAccountStatusLabel = (status: string | null | undefined): string => {
-    const normalized = (status || 'active').toLowerCase();
-    if (normalized === 'disabled') return 'Suspended';
-    if (normalized === 'deleted') return 'Deleted';
-    return 'Active';
-};
-
 const getLifecycleTone = (status: TripStatus): AdminStatusTone => {
     if (status === 'archived') return 'neutral';
     if (status === 'expired') return 'warning';
@@ -354,10 +352,12 @@ const getLifecycleLabel = (status: TripStatus): string => (
     status.charAt(0).toUpperCase() + status.slice(1)
 );
 
+// Succeeded is the normal case, so it stays neutral and the states that need
+// attention (failed, in flight) are the only tinted badges in the column.
 const getGenerationTone = (state: TripGenerationState): AdminStatusTone => {
     if (state === 'failed') return 'danger';
     if (state === 'running' || state === 'queued') return 'warning';
-    return 'success';
+    return 'neutral';
 };
 
 const getGenerationStateLabel = (state: TripGenerationState): string => {
@@ -378,10 +378,11 @@ const reportAdminTripsError = (fallback: string, error: unknown): string => (
     toAdminErrorMessage(error, fallback, 'admin-trips')
 );
 
-const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
-    const state = trip.generation_state;
-    if (state === 'failed' || state === 'running' || state === 'queued' || state === 'succeeded') return state;
-    return 'succeeded';
+const resolveTripGenerationState = resolveAdminTripGenerationState;
+
+// Results of an action are transient: a toast, not a banner that stays on the page.
+const notifyTripsResult = (title: string, tone: AppToastTone = 'success', description?: string) => {
+    showAppToast({ tone, title, description });
 };
 
 const resolveRetryModelIdFromAttempt = (attempt: TripGenerationAttemptSummary | null | undefined): string => {
@@ -423,6 +424,7 @@ const downloadBlob = (blob: Blob, fileName: string) => {
 const TripRowActionsMenu: React.FC<{
     trip: AdminTripRecord;
     disabled: boolean;
+    onOpenDetails: (trip: AdminTripRecord) => void;
     onPreviewTrip: (trip: AdminTripRecord) => void;
     onDuplicateTrip: (trip: AdminTripRecord) => void;
     onTransferTrip: (trip: AdminTripRecord) => void;
@@ -432,6 +434,7 @@ const TripRowActionsMenu: React.FC<{
 }> = ({
     trip,
     disabled,
+    onOpenDetails,
     onPreviewTrip,
     onDuplicateTrip,
     onTransferTrip,
@@ -455,27 +458,76 @@ const TripRowActionsMenu: React.FC<{
                     <DotsThreeVertical size={16} weight="bold" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[180px]">
-                <DropdownMenuItem onSelect={() => onPreviewTrip(trip)}>Preview trip</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onDuplicateTrip(trip)}>Duplicate trip</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onTransferTrip(trip)}>Transfer owner</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="min-w-[200px]">
+                <DropdownMenuItem onSelect={() => onOpenDetails(trip)}>Open details</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onPreviewTrip(trip)}>
+                    Open trip
+                    <ArrowSquareOut className="ms-auto rtl:-scale-x-100" />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => onDuplicateTrip(trip)}>Duplicate…</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onTransferTrip(trip)}>Transfer owner…</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onDownloadTripJson(trip)}>Download JSON</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => onSoftDeleteTrip(trip)}>
-                    {isArchived ? 'Restore trip' : 'Soft-delete trip'}
+                    {isArchived ? 'Restore trip' : 'Archive trip'}
                 </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onSelect={() => onHardDeleteTrip(trip)}>
                     <Trash />
-                    Hard delete trip
+                    Delete permanently
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );
 };
 
+/** A label/value pair in the trip sheet's description lists. */
+const DetailField: React.FC<{ label: string; children: React.ReactNode; wide?: boolean; mono?: boolean }> = ({
+    label,
+    children,
+    wide = false,
+    mono = false,
+}) => (
+    <div className={wide ? 'flex min-w-0 flex-col gap-0.5 sm:col-span-2' : 'flex min-w-0 flex-col gap-0.5'}>
+        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+        <dd className={mono ? 'break-all font-mono text-xs text-foreground' : 'break-words text-sm text-foreground'}>{children}</dd>
+    </div>
+);
+
+/** Relative time with the absolute timestamp in the tooltip. */
+const RelativeTime: React.FC<{ value: string | null | undefined; fallback: string; className?: string }> = ({
+    value,
+    fallback,
+    className,
+}) => {
+    const hasValue = Boolean(normalizeIsoTimestamp(value));
+    return (
+        <span
+            className={className ?? 'tabular-nums'}
+            data-tooltip={hasValue ? formatTimestamp(value, fallback) : undefined}
+        >
+            {formatRelativeTimestamp(value, fallback)}
+        </span>
+    );
+};
+
+const formatRelativeWithAbsolute = (value: string | null | undefined): string => (
+    value && normalizeIsoTimestamp(value)
+        ? `${formatRelativeTimestamp(value, 'n/a')} (${formatTimestamp(value, 'n/a')})`
+        : 'n/a'
+);
+
+const JsonBlock: React.FC<{ label: string; value: unknown }> = ({ label, value }) => (
+    <div className="flex flex-col gap-1">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <pre className="max-h-48 overflow-auto rounded-md border border-border bg-slate-900 p-2 font-mono text-[11px] text-slate-100 dark:bg-slate-950">
+            {JSON.stringify(value, null, 2)}
+        </pre>
+    </div>
+);
+
 export const AdminTripsPage: React.FC = () => {
     const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
-    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedTrips = useMemo(
         () => readAdminCache<AdminTripRecord[]>(TRIPS_CACHE_KEY, []),
@@ -514,13 +566,9 @@ export const AdminTripsPage: React.FC = () => {
         return '30d';
     });
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
     const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
     const tripsTableScrollRef = useRef<HTMLDivElement | null>(null);
     const [isTripsTableScrolledHorizontally, setIsTripsTableScrolledHorizontally] = useState(false);
-    const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
-    const [selectedOwnerProfile, setSelectedOwnerProfile] = useState<AdminUserRecord | null>(null);
-    const [isOwnerDrawerOpen, setIsOwnerDrawerOpen] = useState(false);
     const [selectedTripDrawerId, setSelectedTripDrawerId] = useState<string | null>(null);
     const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
     const [selectedFullTrip, setSelectedFullTrip] = useState<ITrip | null>(null);
@@ -533,17 +581,11 @@ export const AdminTripsPage: React.FC = () => {
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [drawerRetryModelId, setDrawerRetryModelId] = useState<string>(DEFAULT_RETRY_MODEL_ID);
     const [isLoadingFullTrip, setIsLoadingFullTrip] = useState(false);
-    const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
     const [drawerLifecycleDraft, setDrawerLifecycleDraft] = useState<TripStatus>('active');
     const [drawerExpirationDraft, setDrawerExpirationDraft] = useState('');
-    const handledDeepLinkedOwnerIdRef = useRef<string | null>(null);
     const handledDeepLinkedTripIdRef = useRef<string | null>(null);
-    const deepLinkedOwnerId = useMemo(() => {
-        const drawer = searchParams.get('drawer');
-        const userId = searchParams.get('user');
-        if (drawer !== 'user' || !userId) return null;
-        return userId;
-    }, [searchParams]);
+    // Owner details live in the Users sheet; the old owner drawer link forwards there.
+    const legacyOwnerDeepLinkTarget = useMemo(() => getLegacyOwnerDeepLinkTarget(searchParams), [searchParams]);
     const deepLinkedTripId = useMemo(() => {
         const drawer = searchParams.get('drawer');
         const tripId = searchParams.get('trip');
@@ -552,6 +594,7 @@ export const AdminTripsPage: React.FC = () => {
     }, [searchParams]);
 
     useEffect(() => {
+        if (legacyOwnerDeepLinkTarget) return;
         const next = new URLSearchParams();
         const trimmedSearch = searchValue.trim();
         if (trimmedSearch) next.set('q', trimmedSearch);
@@ -581,28 +624,22 @@ export const AdminTripsPage: React.FC = () => {
             next.set('dir', sortDirection);
         }
         const drawerTripId = selectedTripDrawerId || deepLinkedTripId;
-        const drawerOwnerId = selectedOwnerId || deepLinkedOwnerId;
         if ((isTripDrawerOpen || deepLinkedTripId) && drawerTripId) {
             next.set('trip', drawerTripId);
             next.set('drawer', 'trip');
-        } else if ((isOwnerDrawerOpen || deepLinkedOwnerId) && drawerOwnerId) {
-            next.set('user', drawerOwnerId);
-            next.set('drawer', 'user');
         }
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
     }, [
         dateRange,
-        deepLinkedOwnerId,
         deepLinkedTripId,
         expirationFilters,
         generationStateFilters,
-        isOwnerDrawerOpen,
         isTripDrawerOpen,
+        legacyOwnerDeepLinkTarget,
         page,
         searchParams,
         searchValue,
-        selectedOwnerId,
         selectedTripDrawerId,
         setSearchParams,
         sortColumn,
@@ -973,7 +1010,7 @@ export const AdminTripsPage: React.FC = () => {
     const visibleTrips = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         return trips.filter((trip) => {
-            if (!isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)) return false;
+            if (!isAdminTripInDateRange(trip, dateRange)) return false;
             if (statusFilters.length > 0 && !statusFilters.includes(trip.status)) return false;
             if (generationStateFilters.length > 0 && !generationStateFilters.includes(resolveTripGenerationState(trip))) return false;
             if (expirationFilters.length > 0 && !expirationFilters.includes(getTripExpirationBucket(trip))) return false;
@@ -1053,26 +1090,30 @@ export const AdminTripsPage: React.FC = () => {
     }, [page, sortedVisibleTrips]);
 
     const tripsInDateRange = useMemo(
-        () => trips.filter((trip) => isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)),
+        () => trips.filter((trip) => isAdminTripInDateRange(trip, dateRange)),
         [dateRange, trips]
     );
 
-    const summary = useMemo(() => ({
-        total: visibleTrips.length,
-        active: visibleTrips.filter((trip) => trip.status === 'active').length,
-        expired: visibleTrips.filter((trip) => trip.status === 'expired').length,
-        archived: visibleTrips.filter((trip) => trip.status === 'archived').length,
-        failedGeneration: visibleTrips.filter((trip) => resolveTripGenerationState(trip) === 'failed').length,
-    }), [visibleTrips]);
+    const summary = useMemo(() => summarizeAdminTrips(tripsInDateRange), [tripsInDateRange]);
     const selectedVisibleTrips = useMemo(
         () => visibleTrips.filter((trip) => selectedTripIds.has(trip.trip_id)),
         [selectedTripIds, visibleTrips]
     );
-    const areAllVisibleTripsSelected = visibleTrips.length > 0 && visibleTrips.every((trip) => selectedTripIds.has(trip.trip_id));
-    const isVisibleTripSelectionPartial = selectedVisibleTrips.length > 0 && !areAllVisibleTripsSelected;
+    const pageTripIds = useMemo(() => pagedTrips.map((trip) => trip.trip_id), [pagedTrips]);
+    const pageSelectionState = getPageSelectionState(pageTripIds, selectedTripIds);
+    const canSelectAllMatchingTrips = (
+        pageSelectionState === 'all'
+        && selectedVisibleTrips.length < visibleTrips.length
+    );
+    const activeTripFilterCount = (
+        statusFilters.length
+        + generationStateFilters.length
+        + expirationFilters.length
+        + sourceFilters.length
+    );
+    const hasActiveTripFilters = activeTripFilterCount > 0;
     const visibleTripColumnSet = useMemo(() => new Set<TripVisibleColumnId>(visibleColumns), [visibleColumns]);
     const isTripColumnVisible = (columnId: TripVisibleColumnId): boolean => visibleTripColumnSet.has(columnId);
-    const hasStickyTripColumnPair = true;
     const tripsTableColumnCount = visibleColumns.length + 3;
 
     useEffect(() => {
@@ -1147,15 +1188,9 @@ export const AdminTripsPage: React.FC = () => {
     ) => {
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             await adminUpdateTrip(trip.trip_id, patch);
-            setMessage(successMessage);
-            showAppToast({
-                tone: 'success',
-                title: 'Trip saved',
-                description: successMessage,
-            });
+            notifyTripsResult(successMessage);
             await loadTrips();
         } catch (error) {
             setErrorMessage(reportAdminTripsError('Could not update trip.', error));
@@ -1200,7 +1235,6 @@ export const AdminTripsPage: React.FC = () => {
         setIsRetryingGeneration(true);
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
 
         try {
             const result = await retryTripGenerationWithDefaultModel(selectedFullTrip, {
@@ -1217,9 +1251,9 @@ export const AdminTripsPage: React.FC = () => {
             });
 
             if (result.state === 'queued') {
-                setMessage('Trip generation retry queued. Processing in background.');
+                notifyTripsResult('Generation retry queued. It runs in the background.');
             } else {
-                setMessage('Trip generation retry failed. Diagnostics have been updated.');
+                notifyTripsResult('Generation retry failed. The diagnostics below are updated.', 'warning');
             }
             await loadTrips();
         } catch (error) {
@@ -1236,7 +1270,6 @@ export const AdminTripsPage: React.FC = () => {
 
         setRequeueingGenerationJobId(job.id);
         setErrorMessage(null);
-        setMessage(null);
 
         try {
             const requeued = await requeueTripGenerationJob(job.id, {
@@ -1247,12 +1280,7 @@ export const AdminTripsPage: React.FC = () => {
                 throw new Error('Could not requeue generation job.');
             }
 
-            setMessage('Generation job requeued.');
-            showAppToast({
-                tone: 'success',
-                title: 'Generation job requeued',
-                description: 'The async worker queue will process this job again.',
-            });
+            notifyTripsResult('Generation job requeued.', 'success', 'The worker queue will process this job again.');
 
             const [tripResult, attemptRows, jobRows] = await Promise.all([
                 dbGetTrip(selectedTripForDrawer.trip_id),
@@ -1299,13 +1327,13 @@ export const AdminTripsPage: React.FC = () => {
             return;
         }
         window.open(importUrl, '_blank', 'noopener,noreferrer');
-        setMessage('Opened AI Benchmark with imported trip generation mask.');
+        notifyTripsResult('Opened the AI benchmark with this trip\'s generation input.', 'info');
     };
 
     const resolveTransferTargetUser = async (rawInput: string): Promise<AdminUserRecord> => {
         const normalizedInput = rawInput.trim();
         if (!normalizedInput) {
-            throw new Error('Enter a target user email or UUID.');
+            throw new AdminUserFacingError('Enter a target user email or UUID.');
         }
         const normalizedLower = normalizedInput.toLowerCase();
 
@@ -1318,7 +1346,7 @@ export const AdminTripsPage: React.FC = () => {
             const rows = await adminListUsers({ search: normalizedInput, limit: 20 });
             const exactMatches = rows.filter((candidate) => (candidate.email || '').trim().toLowerCase() === normalizedLower);
             if (exactMatches.length > 1) {
-                throw new Error('Multiple users found for that email. Enter a UUID instead.');
+                throw new AdminUserFacingError('Multiple users found for that email. Enter a UUID instead.');
             }
             if (exactMatches.length === 1) {
                 return exactMatches[0];
@@ -1328,13 +1356,13 @@ export const AdminTripsPage: React.FC = () => {
         const rows = await adminListUsers({ search: normalizedInput, limit: 20 });
         const idMatches = rows.filter((candidate) => candidate.user_id.toLowerCase() === normalizedLower);
         if (idMatches.length > 1) {
-            throw new Error('Multiple users matched that UUID. Enter a more specific value.');
+            throw new AdminUserFacingError('Multiple users matched that UUID. Enter a more specific value.');
         }
         if (idMatches.length === 1) {
             return idMatches[0];
         }
 
-        throw new Error('Target user not found. Enter an existing user email or UUID.');
+        throw new AdminUserFacingError('Target user not found. Enter an existing user email or UUID.');
     };
 
     const handleOpenTripPreview = (trip: AdminTripRecord) => {
@@ -1353,15 +1381,14 @@ export const AdminTripsPage: React.FC = () => {
 
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             const targetUser = await resolveTransferTargetUser(transferTargetInput);
             if (targetUser.user_id === trip.owner_id) {
-                throw new Error('Target owner is already the current owner.');
+                throw new AdminUserFacingError('Target owner is already the current owner.');
             }
             const targetStatus = (targetUser.account_status || 'active').toLowerCase();
             if (targetStatus !== 'active') {
-                throw new Error('Target user must be an active account.');
+                throw new AdminUserFacingError('Target user must be an active account.');
             }
 
             const confirmed = await confirmDialog(buildDangerConfirmDialog({
@@ -1372,7 +1399,7 @@ export const AdminTripsPage: React.FC = () => {
             if (!confirmed) return;
 
             await adminUpdateTrip(trip.trip_id, { ownerId: targetUser.user_id });
-            setMessage(`Trip owner transferred to ${getUserReferenceText(targetUser)}.`);
+            notifyTripsResult(`Trip owner transferred to ${getUserReferenceText(targetUser)}.`);
             await loadTrips();
         } catch (error) {
             setErrorMessage(reportAdminTripsError('Could not transfer trip owner.', error));
@@ -1394,20 +1421,19 @@ export const AdminTripsPage: React.FC = () => {
 
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             const targetInput = transferTargetInput.trim();
             const targetUser = targetInput ? await resolveTransferTargetUser(targetInput) : null;
             if (targetUser) {
                 const targetStatus = (targetUser.account_status || 'active').toLowerCase();
                 if (targetStatus !== 'active') {
-                    throw new Error('Target user must be an active account.');
+                    throw new AdminUserFacingError('Target user must be an active account.');
                 }
             }
 
             const result = await dbGetTrip(trip.trip_id);
             if (!result?.trip) {
-                throw new Error('Could not load source trip data for duplication.');
+                throw new AdminUserFacingError('Could not load source trip data for duplication.');
             }
 
             const sourceTrip = result.trip;
@@ -1428,14 +1454,14 @@ export const AdminTripsPage: React.FC = () => {
 
             const upsertedTripId = await dbUpsertTrip(duplicatedTrip, result.view || undefined);
             if (!upsertedTripId) {
-                throw new Error('Could not save duplicated trip.');
+                throw new AdminUserFacingError('Could not save duplicated trip.');
             }
 
             if (targetUser && targetUser.user_id !== trip.owner_id) {
                 await adminUpdateTrip(upsertedTripId, { ownerId: targetUser.user_id });
-                setMessage(`Trip duplicated and transferred to ${getUserReferenceText(targetUser)}.`);
+                notifyTripsResult(`Trip duplicated and transferred to ${getUserReferenceText(targetUser)}.`);
             } else {
-                setMessage('Trip duplicated.');
+                notifyTripsResult('Trip duplicated.');
             }
 
             await loadTrips();
@@ -1450,11 +1476,10 @@ export const AdminTripsPage: React.FC = () => {
     const handleDownloadTripJson = async (trip: AdminTripRecord) => {
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             const result = await dbGetTrip(trip.trip_id);
             if (!result?.trip) {
-                throw new Error('Could not load trip JSON.');
+                throw new AdminUserFacingError('Could not load trip JSON.');
             }
             const payload = {
                 exported_at: new Date().toISOString(),
@@ -1471,7 +1496,7 @@ export const AdminTripsPage: React.FC = () => {
             const fileName = `${sanitizeFilenameSegment(trip.title || 'trip')}-${sanitizeFilenameSegment(trip.trip_id)}.json`;
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
             downloadBlob(blob, fileName);
-            setMessage('Trip JSON downloaded.');
+            notifyTripsResult('Trip JSON downloaded.');
         } catch (error) {
             setErrorMessage(reportAdminTripsError('Could not download trip JSON.', error));
         } finally {
@@ -1483,7 +1508,7 @@ export const AdminTripsPage: React.FC = () => {
         const nextStatus: TripStatus = trip.status === 'archived' ? 'active' : 'archived';
         if (nextStatus === 'archived') {
             const confirmed = await confirmDialog(buildDangerConfirmDialog({
-                title: 'Soft delete trip',
+                title: 'Archive trip',
                 message: `Archive ${trip.title || trip.trip_id}?`,
                 confirmLabel: 'Archive',
             }));
@@ -1492,10 +1517,9 @@ export const AdminTripsPage: React.FC = () => {
 
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             await adminUpdateTrip(trip.trip_id, { status: nextStatus });
-            setMessage(nextStatus === 'archived' ? 'Trip archived.' : 'Trip restored.');
+            notifyTripsResult(nextStatus === 'archived' ? 'Trip archived.' : 'Trip restored.');
             await loadTrips();
         } catch (error) {
             setErrorMessage(reportAdminTripsError('Could not update trip status.', error));
@@ -1506,18 +1530,17 @@ export const AdminTripsPage: React.FC = () => {
 
     const handleHardDeleteTrip = async (trip: AdminTripRecord) => {
         const confirmed = await confirmDialog(buildDangerConfirmDialog({
-            title: 'Hard delete trip',
-            message: `Hard-delete ${trip.title || trip.trip_id}? This cannot be undone.`,
-            confirmLabel: 'Hard delete',
+            title: 'Delete trip permanently',
+            message: `Permanently delete ${trip.title || trip.trip_id}? This cannot be undone.`,
+            confirmLabel: 'Delete permanently',
         }));
         if (!confirmed) return;
 
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             await adminHardDeleteTrip(trip.trip_id);
-            setMessage('Trip permanently deleted.');
+            notifyTripsResult('Trip permanently deleted.');
             if (selectedTripDrawerId === trip.trip_id) {
                 setIsTripDrawerOpen(false);
                 setSelectedTripDrawerId(null);
@@ -1535,9 +1558,19 @@ export const AdminTripsPage: React.FC = () => {
         setGenerationStateFilters([]);
         setExpirationFilters([]);
         setSourceFilters([]);
-        setVisibleColumns([...DEFAULT_VISIBLE_TRIP_COLUMNS]);
-        setSortColumn(DEFAULT_TRIP_SORT_COLUMN);
-        setSortDirection(DEFAULT_TRIP_SORT_DIRECTION);
+        setPage(1);
+    };
+
+    // A KPI tile narrows the table to the trips it counts.
+    const applyKpiFilter = (kpi: 'failed' | 'generating' | 'expiring') => {
+        trackEvent('admin__trips_kpi--filter', { kpi });
+        setSourceFilters([]);
+        setGenerationStateFilters(
+            kpi === 'failed' ? ['failed'] : kpi === 'generating' ? ['running', 'queued'] : []
+        );
+        // "Expiring soon" counts trips that are not archived.
+        setStatusFilters(kpi === 'expiring' ? ['active', 'expired'] : []);
+        setExpirationFilters(kpi === 'expiring' ? ['expiring_24h', 'expiring_7d'] : []);
         setPage(1);
     };
 
@@ -1560,19 +1593,22 @@ export const AdminTripsPage: React.FC = () => {
         return sortDirection === 'asc' ? 'ascending' : 'descending';
     };
 
-    const openOwnerDrawer = (ownerId: string) => {
-        setSelectedTripDrawerId(null);
-        setIsTripDrawerOpen(false);
-        setSelectedOwnerId(ownerId);
-        setIsOwnerDrawerOpen(true);
-    };
-
     const openTripDrawer = (tripId: string) => {
-        setSelectedOwnerId(null);
-        setSelectedOwnerProfile(null);
-        setIsOwnerDrawerOpen(false);
+        setErrorMessage(null);
         setSelectedTripDrawerId(tripId);
         setIsTripDrawerOpen(true);
+    };
+
+    const handleTripSheetOpenChange = (open: boolean) => {
+        setIsTripDrawerOpen(open);
+        if (open) return;
+        setSelectedTripDrawerId(null);
+        if (searchParams.has('trip') || searchParams.get('drawer') === 'trip') {
+            const next = new URLSearchParams(searchParams);
+            next.delete('trip');
+            next.delete('drawer');
+            setSearchParams(next, { replace: true });
+        }
     };
 
     const toggleTripSelection = (tripId: string, checked: boolean) => {
@@ -1584,32 +1620,39 @@ export const AdminTripsPage: React.FC = () => {
         });
     };
 
-    const toggleSelectAllVisibleTrips = (checked: boolean) => {
+    // The header checkbox selects the rows you can see. Reaching past the page
+    // is an explicit second step in the selection bar, so a bulk delete never
+    // covers rows the admin has not looked at by accident.
+    const toggleSelectPageTrips = (checked: boolean) => {
         setSelectedTripIds((current) => {
             const next = new Set(current);
-            if (!checked) {
-                visibleTrips.forEach((trip) => next.delete(trip.trip_id));
-                return next;
-            }
-            visibleTrips.forEach((trip) => next.add(trip.trip_id));
+            pageTripIds.forEach((tripId) => {
+                if (checked) next.add(tripId);
+                else next.delete(tripId);
+            });
             return next;
         });
     };
 
+    const selectAllMatchingTrips = () => {
+        trackEvent('admin__trips_selection--select_all_matching', { count: visibleTrips.length });
+        setSelectedTripIds(new Set(visibleTrips.map((trip) => trip.trip_id)));
+    };
+
     const handleBulkSoftDeleteTrips = async () => {
         if (selectedVisibleTrips.length === 0) return;
+        trackEvent('admin__trips_bulk--archive', { count: selectedVisibleTrips.length });
         const confirmed = await confirmDialog(buildDangerConfirmDialog({
-            title: 'Soft delete selected trips',
+            title: 'Archive selected trips',
             message: `Archive ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
             confirmLabel: 'Archive',
         }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             await Promise.all(selectedVisibleTrips.map((trip) => adminUpdateTrip(trip.trip_id, { status: 'archived' })));
-            setMessage(`${selectedVisibleTrips.length} trip${selectedVisibleTrips.length === 1 ? '' : 's'} archived.`);
+            notifyTripsResult(`${selectedVisibleTrips.length} trip${selectedVisibleTrips.length === 1 ? '' : 's'} archived.`);
             setSelectedTripIds(new Set());
             await loadTrips();
         } catch (error) {
@@ -1621,24 +1664,25 @@ export const AdminTripsPage: React.FC = () => {
 
     const handleBulkHardDeleteTrips = async () => {
         if (selectedVisibleTrips.length === 0) return;
+        trackEvent('admin__trips_bulk--delete', { count: selectedVisibleTrips.length });
         const confirmed = await confirmDialog(buildDangerConfirmDialog({
-            title: 'Hard delete selected trips',
-            message: `Hard-delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}? This cannot be undone.`,
-            confirmLabel: 'Hard delete',
+            title: 'Delete selected trips permanently',
+            message: `Permanently delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}? This cannot be undone.`,
+            confirmLabel: 'Delete permanently',
         }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             const results = await Promise.allSettled(selectedVisibleTrips.map((trip) => adminHardDeleteTrip(trip.trip_id)));
             const failed = results.filter((result) => result.status === 'rejected').length;
             const deleted = results.length - failed;
             if (deleted > 0) {
-                setMessage(
+                notifyTripsResult(
                     failed > 0
                         ? `${deleted} trip${deleted === 1 ? '' : 's'} permanently deleted. ${failed} failed.`
-                        : `${deleted} trip${deleted === 1 ? '' : 's'} permanently deleted.`
+                        : `${deleted} trip${deleted === 1 ? '' : 's'} permanently deleted.`,
+                    failed > 0 ? 'warning' : 'success',
                 );
             }
             if (failed > 0 && deleted === 0) {
@@ -1654,28 +1698,11 @@ export const AdminTripsPage: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!deepLinkedOwnerId) {
-            handledDeepLinkedOwnerIdRef.current = null;
-            return;
-        }
-        if (handledDeepLinkedOwnerIdRef.current !== deepLinkedOwnerId) {
-            setSelectedTripDrawerId(null);
-            setIsTripDrawerOpen(false);
-            setSelectedOwnerId(deepLinkedOwnerId);
-            setIsOwnerDrawerOpen(true);
-            handledDeepLinkedOwnerIdRef.current = deepLinkedOwnerId;
-        }
-    }, [deepLinkedOwnerId]);
-
-    useEffect(() => {
         if (!deepLinkedTripId) {
             handledDeepLinkedTripIdRef.current = null;
             return;
         }
         if (handledDeepLinkedTripIdRef.current !== deepLinkedTripId) {
-            setSelectedOwnerId(null);
-            setSelectedOwnerProfile(null);
-            setIsOwnerDrawerOpen(false);
             setSelectedTripDrawerId(deepLinkedTripId);
             setIsTripDrawerOpen(true);
             handledDeepLinkedTripIdRef.current = deepLinkedTripId;
@@ -1729,28 +1756,6 @@ export const AdminTripsPage: React.FC = () => {
     }, [visibleTrips]);
 
     useEffect(() => {
-        if (!isOwnerDrawerOpen || !selectedOwnerId) return;
-        let active = true;
-        setIsLoadingOwnerProfile(true);
-        void adminGetUserProfile(selectedOwnerId)
-            .then((profile) => {
-                if (!active) return;
-                setSelectedOwnerProfile(profile);
-            })
-            .catch((error) => {
-                if (!active) return;
-                setErrorMessage(reportAdminTripsError('Could not load owner profile.', error));
-            })
-            .finally(() => {
-                if (!active) return;
-                setIsLoadingOwnerProfile(false);
-            });
-        return () => {
-            active = false;
-        };
-    }, [isOwnerDrawerOpen, selectedOwnerId]);
-
-    useEffect(() => {
         const root = tripsTableScrollRef.current;
         const node = root?.querySelector<HTMLElement>('[data-slot="table-container"]');
         if (!node) return;
@@ -1762,10 +1767,44 @@ export const AdminTripsPage: React.FC = () => {
         return () => node.removeEventListener('scroll', handleScroll);
     }, [visibleTrips.length]);
 
+
+    if (legacyOwnerDeepLinkTarget) {
+        return <Navigate to={legacyOwnerDeepLinkTarget} replace />;
+    }
+
+    const sortableHeader = (column: TripSortColumn, label: string) => (
+        <TableHead
+            aria-sort={getTripAriaSort(column)}
+            className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn(column) ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}
+        >
+            <AdminSortHeaderButton
+                label={label}
+                isActive={isTripSortedColumn(column)}
+                direction={sortDirection}
+                onClick={() => handleSortChange(column)}
+            />
+        </TableHead>
+    );
+    const sortedCellClass = (column: TripSortColumn): string => (
+        isTripSortedColumn(column) ? ADMIN_TABLE_SORTED_CELL_CLASS : ''
+    );
+    const kpiFilterButton = (kpi: 'failed' | 'generating' | 'expiring', label: string) => (
+        <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={() => applyKpiFilter(kpi)}
+            {...getAnalyticsDebugAttributes('admin__trips_kpi--filter', { kpi })}
+        >
+            {label}
+        </Button>
+    );
+    const selectedTrip = selectedTripForDrawer;
+
     return (
         <AdminShell
             title="Trips"
-            description="Inspect lifecycle, generation diagnostics, ownership and expiration."
+            description="Find a trip, fix failed generations, and manage status, expiry and ownership."
             searchValue={searchValue}
             onSearchValueChange={(value) => {
                 setSearchValue(value);
@@ -1785,69 +1824,55 @@ export const AdminTripsPage: React.FC = () => {
             )}
         >
             <div className="flex flex-col gap-4">
-                {errorMessage && <AdminErrorAlert message={errorMessage} />}
+                {errorMessage && !isTripDrawerOpen && <AdminErrorAlert message={errorMessage} />}
                 {dataSourceNotice && (
                     <Alert variant="warning">
                         <Warning weight="fill" />
                         <AlertDescription>{dataSourceNotice}</AlertDescription>
                     </Alert>
                 )}
-                {message && (
-                    <Alert variant="success">
-                        <CheckCircle weight="fill" />
-                        <AlertDescription>{message}</AlertDescription>
-                    </Alert>
-                )}
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                    <AdminStatCard
-                        label="Total"
-                        icon={<SuitcaseRolling />}
-                        value={<AdminCountUpNumber value={summary.total} />}
-                        isLoading={isLoading}
-                    />
-                    <AdminStatCard
-                        label="Active"
-                        icon={<CheckCircle />}
-                        value={<AdminCountUpNumber value={summary.active} />}
-                        isLoading={isLoading}
-                    />
-                    <AdminStatCard
-                        label="Expired"
-                        icon={<Hourglass />}
-                        value={<AdminCountUpNumber value={summary.expired} />}
-                        isLoading={isLoading}
-                    />
-                    <AdminStatCard
-                        label="Archived"
-                        icon={<Archive />}
-                        value={<AdminCountUpNumber value={summary.archived} />}
-                        isLoading={isLoading}
-                    />
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <AdminStatCard
                         label="Failed generation"
                         icon={<WarningCircle />}
                         value={<AdminCountUpNumber value={summary.failedGeneration} />}
+                        hint={summary.failedGeneration > 0 ? 'Open a trip to retry it.' : 'Nothing to retry.'}
+                        hintTone={summary.failedGeneration > 0 ? 'negative' : 'neutral'}
                         isLoading={isLoading}
-                        className="sm:col-span-2 xl:col-span-1"
                     >
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="xs"
-                            onClick={() => {
-                                setGenerationStateFilters(['failed']);
-                                setPage(1);
-                            }}
-                        >
-                            Filter failed
-                        </Button>
+                        {summary.failedGeneration > 0 && kpiFilterButton('failed', 'Show failed')}
                     </AdminStatCard>
+                    <AdminStatCard
+                        label="Generating now"
+                        icon={<SpinnerGap />}
+                        value={<AdminCountUpNumber value={summary.generating} />}
+                        hint="Queued or running."
+                        isLoading={isLoading}
+                    >
+                        {summary.generating > 0 && kpiFilterButton('generating', 'Show generating')}
+                    </AdminStatCard>
+                    <AdminStatCard
+                        label="Expiring in 7 days"
+                        icon={<Hourglass />}
+                        value={<AdminCountUpNumber value={summary.expiringSoon} />}
+                        hint={summary.expiringSoon > 0 ? 'Extend the date in the trip’s details.' : 'None due this week.'}
+                        hintTone={summary.expiringSoon > 0 ? 'warning' : 'neutral'}
+                        isLoading={isLoading}
+                    >
+                        {summary.expiringSoon > 0 && kpiFilterButton('expiring', 'Show expiring')}
+                    </AdminStatCard>
+                    <AdminStatCard
+                        label="Active trips"
+                        icon={<SuitcaseRolling />}
+                        value={<AdminCountUpNumber value={summary.active} />}
+                        hint={`Of ${summary.total.toLocaleString()} updated in this range.`}
+                        isLoading={isLoading}
+                    />
                 </div>
 
                 <AdminSurfaceCard className="flex min-w-0 flex-col gap-3">
-                    <AdminSectionHeader title="Trips" />
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Trip filters">
                         <AdminFilterMenu
                             label="Status"
                             options={statusFilterOptions}
@@ -1884,84 +1909,51 @@ export const AdminTripsPage: React.FC = () => {
                                 setPage(1);
                             }}
                         />
+                        {hasActiveTripFilters && (
+                            <Button type="button" variant="ghost" size="sm" onClick={resetTripFilters}>
+                                <X size={14} />
+                                Reset
+                            </Button>
+                        )}
                         <AdminFilterMenu
+                            className="ms-auto"
                             label="Columns"
                             options={visibleTripColumnOptions}
                             selectedValues={visibleColumns}
+                            selectAllLabel="Show all"
+                            clearLabel="Default columns"
                             onSelectedValuesChange={(next) => {
                                 setVisibleColumns(sanitizeTripVisibleColumns(next));
-                                setPage(1);
                             }}
                         />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={resetTripFilters}
-                        >
-                            <X size={14} />
-                            Reset
-                        </Button>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2">
-                        <span className="text-xs font-medium tabular-nums text-foreground">{selectedVisibleTrips.length} selected</span>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="xs"
-                            onClick={() => void handleBulkSoftDeleteTrips()}
-                            disabled={isSaving || selectedVisibleTrips.length === 0}
-                        >
-                            Soft-delete selected
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="xs"
-                            onClick={() => void handleBulkHardDeleteTrips()}
-                            disabled={isSaving || selectedVisibleTrips.length === 0}
-                        >
-                            <Trash size={12} />
-                            Hard delete selected
-                        </Button>
-                        {selectedVisibleTrips.length > 0 && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="xs"
-                                onClick={() => setSelectedTripIds(new Set())}
-                            >
-                                Clear
-                            </Button>
-                        )}
                     </div>
 
                     <div ref={tripsTableScrollRef} className="overflow-hidden rounded-lg border border-border bg-card">
-                        <Table className="w-[max(100%,1160px)]">
+                        <Table className="w-[max(100%,960px)]">
                             <TableHeader className="bg-secondary">
                                 <TableRow>
                                     <TableHead
-                                        className={`sticky start-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-4 ${getAdminStickyHeaderCellClass({
+                                        className={`sticky start-0 z-40 px-4 ${getAdminStickyHeaderCellClass({
                                             isScrolled: isTripsTableScrolledHorizontally,
-                                            isFirst: hasStickyTripColumnPair,
+                                            isFirst: true,
                                         })}`}
-                                        style={{ width: 56, minWidth: 56, maxWidth: 56 }}
+                                        style={{ width: SELECT_COLUMN_WIDTH, minWidth: SELECT_COLUMN_WIDTH, maxWidth: SELECT_COLUMN_WIDTH }}
                                     >
                                         <Checkbox
-                                            checked={areAllVisibleTripsSelected ? true : (isVisibleTripSelectionPartial ? 'indeterminate' : false)}
-                                            onCheckedChange={(checked) => toggleSelectAllVisibleTrips(Boolean(checked))}
-                                            aria-label="Select all visible trips"
+                                            checked={pageSelectionState === 'all' ? true : (pageSelectionState === 'some' ? 'indeterminate' : false)}
+                                            onCheckedChange={(checked) => toggleSelectPageTrips(Boolean(checked))}
+                                            disabled={pageTripIds.length === 0}
+                                            aria-label="Select all trips on this page"
                                         />
                                     </TableHead>
                                     <TableHead
                                         aria-sort={getTripAriaSort('trip')}
-                                        className={`sticky start-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] px-4 font-medium text-muted-foreground ${getAdminStickyHeaderCellClass({
+                                        className={`sticky z-30 px-4 font-medium text-muted-foreground ${getAdminStickyHeaderCellClass({
                                             isScrolled: isTripsTableScrolledHorizontally,
                                             isFirst: false,
                                             isSorted: isTripSortedColumn('trip'),
                                         })}`}
-                                        style={{ width: 340, minWidth: 340, maxWidth: 340 }}
+                                        style={{ insetInlineStart: SELECT_COLUMN_WIDTH, width: TRIP_COLUMN_WIDTH, minWidth: TRIP_COLUMN_WIDTH, maxWidth: TRIP_COLUMN_WIDTH }}
                                     >
                                         <AdminSortHeaderButton
                                             label="Trip"
@@ -1970,140 +1962,63 @@ export const AdminTripsPage: React.FC = () => {
                                             onClick={() => handleSortChange('trip')}
                                         />
                                     </TableHead>
-                                    {isTripColumnVisible('owner') && (
-                                        <TableHead aria-sort={getTripAriaSort('owner')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Owner"
-                                                isActive={isTripSortedColumn('owner')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('owner')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    {isTripColumnVisible('lifecycle') && (
-                                        <TableHead aria-sort={getTripAriaSort('lifecycle')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('lifecycle') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Lifecycle"
-                                                isActive={isTripSortedColumn('lifecycle')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('lifecycle')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    {isTripColumnVisible('generation') && (
-                                        <TableHead aria-sort={getTripAriaSort('generation')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('generation') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Generation"
-                                                isActive={isTripSortedColumn('generation')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('generation')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    {isTripColumnVisible('source') && (
-                                        <TableHead aria-sort={getTripAriaSort('source')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('source') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Source"
-                                                isActive={isTripSortedColumn('source')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('source')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    {isTripColumnVisible('expires') && (
-                                        <TableHead aria-sort={getTripAriaSort('expires')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('expires') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Expires"
-                                                isActive={isTripSortedColumn('expires')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('expires')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    {isTripColumnVisible('updated') && (
-                                        <TableHead aria-sort={getTripAriaSort('updated')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('updated') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Last update"
-                                                isActive={isTripSortedColumn('updated')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('updated')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    {isTripColumnVisible('created') && (
-                                        <TableHead aria-sort={getTripAriaSort('created')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('created') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Created"
-                                                isActive={isTripSortedColumn('created')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('created')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    {isTripColumnVisible('archived') && (
-                                        <TableHead aria-sort={getTripAriaSort('archived')} className={`px-4 font-medium text-muted-foreground ${isTripSortedColumn('archived') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                            <AdminSortHeaderButton
-                                                label="Archived at"
-                                                isActive={isTripSortedColumn('archived')}
-                                                direction={sortDirection}
-                                                onClick={() => handleSortChange('archived')}
-                                            />
-                                        </TableHead>
-                                    )}
-                                    <TableHead className="px-4 text-end font-medium text-muted-foreground">Actions</TableHead>
+                                    {isTripColumnVisible('owner') && sortableHeader('owner', 'Owner')}
+                                    {isTripColumnVisible('lifecycle') && sortableHeader('lifecycle', 'Status')}
+                                    {isTripColumnVisible('generation') && sortableHeader('generation', 'Generation')}
+                                    {isTripColumnVisible('source') && sortableHeader('source', 'Source')}
+                                    {isTripColumnVisible('expires') && sortableHeader('expires', 'Expires')}
+                                    {isTripColumnVisible('updated') && sortableHeader('updated', 'Updated')}
+                                    {isTripColumnVisible('created') && sortableHeader('created', 'Created')}
+                                    {isTripColumnVisible('archived') && sortableHeader('archived', 'Archived')}
+                                    <TableHead className="w-12 px-4">
+                                        <span className="sr-only">Actions</span>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {pagedTrips.map((trip) => {
+                                    const isSelected = selectedTripIds.has(trip.trip_id);
                                     const generationState = resolveTripGenerationState(trip);
                                     const normalizedSource = (trip.source_kind || '').trim() || 'unknown';
-                                    const hasExpiration = Boolean(normalizeIsoTimestamp(trip.trip_expires_at));
-                                    const hasArchivedAt = Boolean(normalizeIsoTimestamp(trip.archived_at));
+                                    const tripName = trip.title || 'Untitled trip';
                                     return (
                                         <TableRow
                                             key={trip.trip_id}
                                             className={ADMIN_TABLE_ROW_SURFACE_CLASS}
-                                            data-state={selectedTripIds.has(trip.trip_id) ? 'selected' : undefined}
+                                            data-state={isSelected ? 'selected' : undefined}
                                         >
                                             <TableCell
-                                                className={`sticky start-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-4 py-3 ${getAdminStickyBodyCellClass({
-                                                    isSelected: selectedTripIds.has(trip.trip_id),
+                                                className={`sticky start-0 z-40 px-4 py-2.5 ${getAdminStickyBodyCellClass({
+                                                    isSelected,
                                                     isScrolled: isTripsTableScrolledHorizontally,
-                                                    isFirst: hasStickyTripColumnPair,
+                                                    isFirst: true,
                                                 })}`}
-                                                style={{ width: 56, minWidth: 56, maxWidth: 56 }}
+                                                style={{ width: SELECT_COLUMN_WIDTH, minWidth: SELECT_COLUMN_WIDTH, maxWidth: SELECT_COLUMN_WIDTH }}
                                             >
                                                 <Checkbox
-                                                    checked={selectedTripIds.has(trip.trip_id)}
+                                                    checked={isSelected}
                                                     onCheckedChange={(checked) => toggleTripSelection(trip.trip_id, Boolean(checked))}
-                                                    aria-label={`Select trip ${trip.title || trip.trip_id}`}
+                                                    aria-label={`Select trip ${tripName}`}
                                                 />
                                             </TableCell>
                                             <TableCell
-                                                className={`sticky start-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] cursor-pointer px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 ${getAdminStickyBodyCellClass({
-                                                    isSelected: selectedTripIds.has(trip.trip_id),
+                                                className={`sticky z-30 px-4 py-2.5 ${getAdminStickyBodyCellClass({
+                                                    isSelected,
                                                     isScrolled: isTripsTableScrolledHorizontally,
                                                     isFirst: false,
                                                     isSorted: isTripSortedColumn('trip'),
                                                 })}`}
-                                                style={{ width: 340, minWidth: 340, maxWidth: 340 }}
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => openTripDrawer(trip.trip_id)}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === 'Enter' || event.key === ' ') {
-                                                        event.preventDefault();
-                                                        openTripDrawer(trip.trip_id);
-                                                    }
-                                                }}
+                                                style={{ insetInlineStart: SELECT_COLUMN_WIDTH, width: TRIP_COLUMN_WIDTH, minWidth: TRIP_COLUMN_WIDTH, maxWidth: TRIP_COLUMN_WIDTH }}
                                             >
-                                                <div
-                                                    title="Open trip details drawer"
-                                                    className="inline-flex max-w-full items-center gap-1.5 truncate text-start text-sm font-medium text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200"
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openTripDrawer(trip.trip_id)}
+                                                    className="block max-w-full truncate rounded-sm text-start text-sm font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                                                    aria-label={`Open details for ${tripName}`}
                                                 >
-                                                    <span className="truncate">{trip.title || trip.trip_id}</span>
-                                                </div>
-                                                <div className="mt-1 text-xs text-muted-foreground">
+                                                    {tripName}
+                                                </button>
+                                                <div className="mt-0.5 text-xs text-muted-foreground">
                                                     <CopyableUuid
                                                         value={trip.trip_id}
                                                         textClassName="max-w-full truncate text-xs"
@@ -2112,95 +2027,62 @@ export const AdminTripsPage: React.FC = () => {
                                                 </div>
                                             </TableCell>
                                             {isTripColumnVisible('owner') && (
-                                                <TableCell className={`max-w-[240px] px-4 py-3 text-xs text-muted-foreground ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openOwnerDrawer(trip.owner_id)}
-                                                        title="Open owner details"
-                                                        className="group block w-full cursor-pointer rounded-sm text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                                                <TableCell className={`max-w-[240px] px-4 py-2.5 ${sortedCellClass('owner')}`}>
+                                                    <Link
+                                                        to={buildAdminUserSheetPath(trip.owner_id)}
+                                                        onClick={() => trackEvent('admin__trips_owner--open_user')}
+                                                        {...getAnalyticsDebugAttributes('admin__trips_owner--open_user')}
+                                                        data-tooltip="Open owner in Users"
+                                                        className="block truncate rounded-sm text-sm text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                                                     >
-                                                        <span className="block truncate text-sm font-medium text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200">
-                                                            {trip.owner_email || trip.owner_id}
-                                                        </span>
-                                                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                                                            <CopyableUuid
-                                                                value={trip.owner_id}
-                                                                focusable={false}
-                                                                textClassName="max-w-full truncate text-[11px]"
-                                                                hintClassName="text-[9px]"
-                                                            />
-                                                        </span>
-                                                    </button>
+                                                        {trip.owner_email || trip.owner_id}
+                                                    </Link>
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('lifecycle') && (
-                                                <TableCell className={`px-4 py-3 ${isTripSortedColumn('lifecycle') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <TableCell className={`px-4 py-2.5 ${sortedCellClass('lifecycle')}`}>
                                                     <AdminStatusBadge tone={getLifecycleTone(trip.status)}>
                                                         {getLifecycleLabel(trip.status)}
                                                     </AdminStatusBadge>
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('generation') && (
-                                                <TableCell className={`px-4 py-3 ${isTripSortedColumn('generation') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <TableCell className={`px-4 py-2.5 ${sortedCellClass('generation')}`}>
                                                     <AdminStatusBadge tone={getGenerationTone(generationState)}>
                                                         {getGenerationStateLabel(generationState)}
                                                     </AdminStatusBadge>
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('source') && (
-                                                <TableCell className={`px-4 py-3 ${isTripSortedColumn('source') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                    <div className="text-xs font-medium text-foreground">{formatSourceKindLabel(normalizedSource)}</div>
-                                                    <div className="text-[11px] text-muted-foreground">{normalizedSource}</div>
+                                                <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('source')}`}>
+                                                    <span data-tooltip={normalizedSource}>{formatSourceKindLabel(normalizedSource)}</span>
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('expires') && (
-                                                <TableCell className={`px-4 py-3 ${isTripSortedColumn('expires') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                    <div className="text-xs font-medium text-foreground">
-                                                        {formatRelativeTimestamp(trip.trip_expires_at, 'No expiration')}
-                                                    </div>
-                                                    {hasExpiration && (
-                                                        <div className="text-[11px] tabular-nums text-muted-foreground">
-                                                            {formatTimestamp(trip.trip_expires_at, 'Not set')}
-                                                        </div>
-                                                    )}
+                                                <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('expires')}`}>
+                                                    <RelativeTime value={trip.trip_expires_at} fallback="Never" />
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('updated') && (
-                                                <TableCell className={`px-4 py-3 ${isTripSortedColumn('updated') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                    <div className="text-xs font-medium text-foreground">
-                                                        {formatRelativeTimestamp(trip.updated_at, 'No update')}
-                                                    </div>
-                                                    <div className="text-[11px] tabular-nums text-muted-foreground">
-                                                        {formatTimestamp(trip.updated_at, 'No update')}
-                                                    </div>
+                                                <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('updated')}`}>
+                                                    <RelativeTime value={trip.updated_at} fallback="—" />
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('created') && (
-                                                <TableCell className={`px-4 py-3 ${isTripSortedColumn('created') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                    <div className="text-xs font-medium text-foreground">
-                                                        {formatRelativeTimestamp(trip.created_at, 'No timestamp')}
-                                                    </div>
-                                                    <div className="text-[11px] tabular-nums text-muted-foreground">
-                                                        {formatTimestamp(trip.created_at, 'No timestamp')}
-                                                    </div>
+                                                <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('created')}`}>
+                                                    <RelativeTime value={trip.created_at} fallback="—" />
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('archived') && (
-                                                <TableCell className={`px-4 py-3 ${isTripSortedColumn('archived') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                    <div className="text-xs font-medium text-foreground">
-                                                        {formatRelativeTimestamp(trip.archived_at, 'Not archived')}
-                                                    </div>
-                                                    {hasArchivedAt && (
-                                                        <div className="text-[11px] tabular-nums text-muted-foreground">
-                                                            {formatTimestamp(trip.archived_at, 'Not archived')}
-                                                        </div>
-                                                    )}
+                                                <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('archived')}`}>
+                                                    <RelativeTime value={trip.archived_at} fallback="—" />
                                                 </TableCell>
                                             )}
-                                            <TableCell className="px-4 py-3 text-end">
+                                            <TableCell className="px-4 py-2.5 text-end">
                                                 <TripRowActionsMenu
                                                     trip={trip}
                                                     disabled={isSaving}
+                                                    onOpenDetails={(candidate) => openTripDrawer(candidate.trip_id)}
                                                     onPreviewTrip={handleOpenTripPreview}
                                                     onDuplicateTrip={(candidate) => {
                                                         void handleDuplicateTrip(candidate);
@@ -2225,25 +2107,35 @@ export const AdminTripsPage: React.FC = () => {
                                 {sortedVisibleTrips.length === 0 && !isLoading && (
                                     <TableRow>
                                         <TableCell className="whitespace-normal p-4" colSpan={tripsTableColumnCount}>
-                                            <AdminEmptyState
-                                                className="sticky start-0 max-w-[min(36rem,calc(100vw-5rem))]"
-                                                icon={<SuitcaseRolling />}
-                                                title="No trips match the current filters."
-                                                action={(
-                                                    <Button type="button" variant="outline" size="sm" onClick={resetTripFilters}>
-                                                        <X size={14} />
-                                                        Reset
-                                                    </Button>
-                                                )}
-                                            />
+                                            {hasActiveTripFilters || searchValue.trim() ? (
+                                                <AdminEmptyState
+                                                    className="sticky start-0 max-w-[min(36rem,calc(100vw-5rem))]"
+                                                    icon={<SuitcaseRolling />}
+                                                    title="No trips match these filters"
+                                                    description="Clear a filter or the search to see more trips."
+                                                    action={hasActiveTripFilters ? (
+                                                        <Button type="button" variant="outline" size="sm" onClick={resetTripFilters}>
+                                                            <X size={14} />
+                                                            Reset filters
+                                                        </Button>
+                                                    ) : undefined}
+                                                />
+                                            ) : (
+                                                <AdminEmptyState
+                                                    className="sticky start-0 max-w-[min(36rem,calc(100vw-5rem))]"
+                                                    icon={<SuitcaseRolling />}
+                                                    title="No trips in this date range"
+                                                    description="Widen the date range to see trips updated earlier."
+                                                />
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 )}
-                                {isLoading && (
+                                {isLoading && pagedTrips.length === 0 && (
                                     <TableRow>
                                         <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={tripsTableColumnCount}>
-                                            <span className="inline-flex items-center gap-2 font-medium">
-                                                <SpinnerGap size={16} className="animate-spin text-muted-foreground" />
+                                            <span role="status" className="inline-flex items-center gap-2 font-medium">
+                                                <SpinnerGap size={16} className="animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
                                                 Loading trips…
                                             </span>
                                         </TableCell>
@@ -2252,789 +2144,524 @@ export const AdminTripsPage: React.FC = () => {
                             </TableBody>
                         </Table>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs tabular-nums text-muted-foreground">
-                        <span>
-                            {sortedVisibleTrips.length === 0
-                                ? 'Showing 0 trips'
-                                : `Showing ${(page - 1) * TRIPS_PAGE_SIZE + 1}-${Math.min(page * TRIPS_PAGE_SIZE, sortedVisibleTrips.length)} of ${sortedVisibleTrips.length}`}
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="xs"
-                                onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                                disabled={page === 1}
-                            >
-                                Prev
-                            </Button>
-                            <span>Page {page} / {tripPageCount}</span>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="xs"
-                                onClick={() => setPage((current) => Math.min(current + 1, tripPageCount))}
-                                disabled={page >= tripPageCount}
-                            >
-                                Next
-                            </Button>
-                        </div>
-                    </div>
+                    <AdminPagination
+                        page={page}
+                        pageSize={TRIPS_PAGE_SIZE}
+                        totalItems={sortedVisibleTrips.length}
+                        onPageChange={setPage}
+                        noun="trips"
+                    />
                     {isSaving && (
                         <p className="text-xs text-muted-foreground" role="status">Saving changes…</p>
                     )}
                 </AdminSurfaceCard>
+
+                <AdminSelectionBar
+                    count={selectedVisibleTrips.length}
+                    noun="trip"
+                    onClear={() => setSelectedTripIds(new Set())}
+                >
+                    {canSelectAllMatchingTrips && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={selectAllMatchingTrips}
+                            {...getAnalyticsDebugAttributes('admin__trips_selection--select_all_matching')}
+                        >
+                            Select all {visibleTrips.length.toLocaleString()} matching
+                        </Button>
+                    )}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleBulkSoftDeleteTrips()}
+                        disabled={isSaving}
+                        {...getAnalyticsDebugAttributes('admin__trips_bulk--archive')}
+                    >
+                        Archive
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => void handleBulkHardDeleteTrips()}
+                        disabled={isSaving}
+                        {...getAnalyticsDebugAttributes('admin__trips_bulk--delete')}
+                    >
+                        <Trash />
+                        Delete permanently
+                    </Button>
+                </AdminSelectionBar>
             </div>
 
-            <Drawer
+            <AdminDetailSheet
                 open={isTripDrawerOpen}
-                onOpenChange={(open) => {
-                    setIsTripDrawerOpen(open);
-                    if (!open) {
-                        setSelectedTripDrawerId(null);
-                        if (searchParams.has('trip') || searchParams.get('drawer') === 'trip') {
-                            const next = new URLSearchParams(searchParams);
-                            next.delete('trip');
-                            next.delete('drawer');
-                            setSearchParams(next, { replace: true });
-                        }
-                    }
-                }}
-                direction="right"
-            >
-                <DrawerContent
-                    side="right"
-                    className="w-[min(96vw,560px)] p-0"
-                    accessibleTitle={selectedTripForDrawer ? (selectedTripForDrawer.title || selectedTripForDrawer.trip_id) : 'Trip details'}
-                    accessibleDescription="Inspect selected trip metadata and jump to related owner details."
-                >
-                    <div className="flex h-full flex-col">
-                        <div className="border-b border-border px-5 py-4">
-                            <h2 className="text-base font-semibold text-foreground">Trip details</h2>
-                            <p className="truncate text-sm text-muted-foreground">
-                                {selectedTripForDrawer ? (selectedTripForDrawer.title || selectedTripForDrawer.trip_id) : 'No trip selected'}
-                            </p>
-                            {selectedTripForDrawer && (
-                                <Button
-                                    type="button"
-                                    variant="soft"
-                                    size="sm"
-                                    onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
-                                    className="mt-3"
-                                >
-                                    Open trip page
-                                    <ArrowSquareOut size={14} />
-                                </Button>
-                            )}
+                onOpenChange={handleTripSheetOpenChange}
+                title={selectedTrip ? (selectedTrip.title || 'Untitled trip') : 'Trip details'}
+                subtitle={selectedTrip ? (
+                    <CopyableUuid value={selectedTrip.trip_id} textClassName="max-w-[22rem] truncate text-sm" />
+                ) : undefined}
+                meta={selectedTrip ? (
+                    <>
+                        <AdminStatusBadge tone={getLifecycleTone(selectedTrip.status)}>
+                            {getLifecycleLabel(selectedTrip.status)}
+                        </AdminStatusBadge>
+                        <AdminStatusBadge tone={getGenerationTone(selectedTripGenerationState)}>
+                            {`Generation ${getGenerationStateLabel(selectedTripGenerationState).toLowerCase()}`}
+                        </AdminStatusBadge>
+                    </>
+                ) : undefined}
+                headerActions={selectedTrip ? (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenTripPreview(selectedTrip)}>
+                        Open trip
+                        <ArrowSquareOut className="rtl:-scale-x-100" />
+                    </Button>
+                ) : undefined}
+                footer={selectedTrip ? (
+                    <>
+                        <Button type="button" variant="outline" size="sm" onClick={() => void handleDuplicateTrip(selectedTrip)} disabled={isSaving}>
+                            Duplicate…
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => void handleTransferTrip(selectedTrip)} disabled={isSaving}>
+                            Transfer owner…
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => void handleDownloadTripJson(selectedTrip)} disabled={isSaving}>
+                            Download JSON
+                        </Button>
+                        <div className="ms-auto flex flex-wrap items-center gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => void handleSoftDeleteTrip(selectedTrip)} disabled={isSaving}>
+                                {selectedTrip.status === 'archived' ? 'Restore trip' : 'Archive trip'}
+                            </Button>
+                            <Button type="button" variant="destructive" size="sm" onClick={() => void handleHardDeleteTrip(selectedTrip)} disabled={isSaving}>
+                                <Trash />
+                                Delete permanently
+                            </Button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {!selectedTripForDrawer ? (
-                                <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                    No trip found for the selected audit target.
+                    </>
+                ) : undefined}
+            >
+                {errorMessage && <AdminErrorAlert message={errorMessage} />}
+                {!selectedTrip ? (
+                    isLoading ? (
+                        <p role="status" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                            <SpinnerGap size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                            Loading trip…
+                        </p>
+                    ) : (
+                        <AdminEmptyState
+                            icon={<SuitcaseRolling />}
+                            title="Trip not found"
+                            description="It may have been deleted, or the link points to another environment."
+                        />
+                    )
+                ) : (
+                    <>
+                        <AdminSurfaceCard className="flex flex-col gap-4">
+                            <AdminSectionHeader as="h3" title="Overview" />
+                            <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                                <DetailField label="Owner" wide>
+                                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <span className="break-all">{selectedTrip.owner_email || 'No email on file'}</span>
+                                        <Link
+                                            to={buildAdminUserSheetPath(selectedTrip.owner_id)}
+                                            onClick={() => trackEvent('admin__trips_sheet--open_owner')}
+                                            {...getAnalyticsDebugAttributes('admin__trips_sheet--open_owner')}
+                                            className="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-accent-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:text-accent-200"
+                                        >
+                                            Open in Users
+                                        </Link>
+                                    </span>
+                                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                                        <CopyableUuid value={selectedTrip.owner_id} textClassName="break-all text-xs" />
+                                    </span>
+                                </DetailField>
+                                <DetailField label="Source">
+                                    <span data-tooltip={(selectedTrip.source_kind || '').trim() || 'unknown'}>
+                                        {formatSourceKindLabel(selectedTrip.source_kind)}
+                                    </span>
+                                </DetailField>
+                                <DetailField label="Expires">
+                                    <RelativeTime value={selectedTrip.trip_expires_at} fallback="Never" />
+                                </DetailField>
+                                <DetailField label="Created">
+                                    <RelativeTime value={selectedTrip.created_at} fallback="n/a" />
+                                </DetailField>
+                                <DetailField label="Updated">
+                                    <RelativeTime value={selectedTrip.updated_at} fallback="n/a" />
+                                </DetailField>
+                                {selectedTrip.archived_at && (
+                                    <DetailField label="Archived">
+                                        <RelativeTime value={selectedTrip.archived_at} fallback="n/a" />
+                                    </DetailField>
+                                )}
+                            </dl>
+
+                            {isLoadingFullTrip ? (
+                                <p role="status" className="rounded-md bg-secondary px-3 py-4 text-center text-sm text-muted-foreground">
+                                    Loading trip map and itinerary…
+                                </p>
+                            ) : selectedFullTrip && (previewCityStops.length > 0 || previewMapUrl) ? (
+                                <div className="grid overflow-hidden rounded-md border border-border sm:grid-cols-2">
+                                    <div className="h-48 overflow-y-auto border-b border-border p-3 sm:border-b-0 sm:border-e">
+                                        {previewCityStops.length === 0 ? (
+                                            <p className="text-xs text-muted-foreground">No city stops found.</p>
+                                        ) : (
+                                            <ol aria-label="Itinerary">
+                                                {previewCityStops.map((stop, idx) => {
+                                                    const isStart = idx === 0;
+                                                    const isEnd = idx === previewCityStops.length - 1;
+                                                    const pinClass = isStart && !isEnd ? 'text-indigo-500 dark:text-indigo-300' : isEnd && !isStart ? 'text-indigo-300 dark:text-indigo-400' : 'text-indigo-500 dark:text-indigo-300';
+                                                    return (
+                                                        <li key={stop.id} className="flex min-h-[31px] items-center gap-2.5 px-1">
+                                                            <div className="relative flex w-4 shrink-0 items-center justify-center self-stretch" aria-hidden="true">
+                                                                {previewCityStops.length > 1 && (
+                                                                    <span
+                                                                        className={`absolute start-1/2 w-0.5 -translate-x-1/2 bg-indigo-200 rtl:translate-x-1/2 dark:bg-indigo-400/40 ${
+                                                                            isStart ? 'top-1/2 -bottom-px' : isEnd ? '-top-px bottom-1/2' : '-top-px -bottom-px'
+                                                                        }`}
+                                                                    />
+                                                                )}
+                                                                {isStart || isEnd ? (
+                                                                    <MapPin weight="fill" size={13} className={`relative z-10 ${pinClass}`} />
+                                                                ) : (
+                                                                    <span className="relative z-10 size-1.5 rounded-full bg-indigo-400 dark:bg-indigo-300" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                                                                <span className="break-words text-sm font-medium leading-5 text-foreground">{stop.title}</span>
+                                                                <span className="text-xs leading-5 tabular-nums text-muted-foreground">
+                                                                    {Math.max(1, Math.ceil(stop.duration))} nights
+                                                                </span>
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ol>
+                                        )}
+                                    </div>
+                                    <div className="relative h-48 bg-secondary">
+                                        {previewMapUrl ? (
+                                            <img
+                                                src={previewMapUrl}
+                                                alt={`Map preview for ${selectedFullTrip.title}`}
+                                                className="size-full object-cover"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                                                Map preview unavailable
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-                                        <AdminSectionHeader as="h3" title="Trip information" />
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Trip ID</span>
-                                                <CopyableUuid value={selectedTripForDrawer.trip_id} textClassName="break-all text-sm font-medium text-foreground" />
-                                            </div>
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Owner ID</span>
-                                                <div className="flex flex-col gap-2">
-                                                    <CopyableUuid value={selectedTripForDrawer.owner_id} textClassName="break-all text-sm font-medium text-foreground" />
-                                                    <span className="text-xs text-muted-foreground">{selectedTripForDrawer.owner_email || 'No owner email'}</span>
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="xs"
-                                                            onClick={() => openOwnerDrawer(selectedTripForDrawer.owner_id)}
-                                                        >
-                                                            View owner
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="xs"
-                                                            onClick={() => {
-                                                                void handleTransferTrip(selectedTripForDrawer);
-                                                            }}
-                                                            disabled={isSaving}
-                                                        >
-                                                            Transfer owner
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Lifecycle</span>
-                                                <AdminStatusBadge tone={getLifecycleTone(selectedTripForDrawer.status)}>
-                                                    {getLifecycleLabel(selectedTripForDrawer.status)}
-                                                </AdminStatusBadge>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Generation</span>
-                                                <AdminStatusBadge tone={getGenerationTone(selectedTripGenerationState)}>
-                                                    {getGenerationStateLabel(selectedTripGenerationState)}
-                                                </AdminStatusBadge>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Source</span>
-                                                <span className="text-sm font-medium text-foreground">{formatSourceKindLabel(selectedTripForDrawer.source_kind)}</span>
-                                                <span className="text-[11px] text-muted-foreground">{(selectedTripForDrawer.source_kind || '').trim() || 'unknown'}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Created at</span>
-                                                <span className="text-sm font-medium text-foreground">{formatRelativeTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
-                                                <span className="text-[11px] text-muted-foreground">{formatTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Updated at</span>
-                                                <span className="text-sm font-medium text-foreground">{formatRelativeTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
-                                                <span className="text-[11px] text-muted-foreground">{formatTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
-                                            </div>
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Expires at</span>
-                                                <span className="text-sm font-medium text-foreground">{formatRelativeTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
-                                                <span className="text-[11px] text-muted-foreground">{formatTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    <TripOgPreviewPanel key={selectedTripForDrawer.trip_id} tripId={selectedTripForDrawer.trip_id} />
-
-                                    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-                                        <AdminSectionHeader as="h3" title="Lifecycle controls" />
-                                        <div className="grid gap-3 sm:grid-cols-2">
-                                            <div className="flex flex-col gap-1">
-                                                <span id="trip-lifecycle-status-label" className="text-xs font-medium text-muted-foreground">Lifecycle status</span>
-                                                <Select
-                                                    value={drawerLifecycleDraft}
-                                                    onValueChange={(value) => {
-                                                        setDrawerLifecycleDraft(value as TripStatus);
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="h-9 text-sm font-medium" aria-labelledby="trip-lifecycle-status-label">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="active">Active</SelectItem>
-                                                        <SelectItem value="expired">Expired</SelectItem>
-                                                        <SelectItem value="archived">Archived</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <label htmlFor="trip-lifecycle-expiration" className="flex flex-col gap-1">
-                                                <span className="text-xs font-medium text-muted-foreground">Expiration timestamp</span>
-                                                <Input
-                                                    id="trip-lifecycle-expiration"
-                                                    type="datetime-local"
-                                                    value={drawerExpirationDraft}
-                                                    onChange={(event) => {
-                                                        setDrawerExpirationDraft(event.target.value);
-                                                    }}
-                                                    className="h-9 tabular-nums"
-                                                />
-                                            </label>
-                                        </div>
-                                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-secondary px-3 py-2">
-                                            <p className="text-xs text-muted-foreground">
-                                                Changes here are applied only after you save.
-                                            </p>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                onClick={() => {
-                                                    void handleSaveDrawerLifecycle();
-                                                }}
-                                                disabled={isSaving || !hasDrawerLifecycleChanges}
-                                            >
-                                                Save lifecycle settings
-                                            </Button>
-                                        </div>
-                                    </section>
-                                    
-                                    {isLoadingFullTrip ? (
-                                        <div className="rounded-lg border border-border bg-secondary px-3 py-4 text-center text-sm text-muted-foreground">
-                                            Loading trip map and itinerary…
-                                        </div>
-                                    ) : selectedFullTrip && (previewCityStops.length > 0 || previewMapUrl) ? (
-                                        <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
-                                            <div className="grid grid-cols-2">
-                                                <div className="border-e border-border p-3.5">
-                                                    <div className="space-y-0 h-48 overflow-y-auto">
-                                                        {previewCityStops.length === 0 ? (
-                                                            <div className="text-[11px] text-muted-foreground">No city stops found</div>
-                                                        ) : (
-                                                            previewCityStops.map((stop, idx) => {
-                                                                const isStart = idx === 0;
-                                                                const isEnd = idx === previewCityStops.length - 1;
-                                                                const pinClass = isStart && !isEnd ? 'text-indigo-500 dark:text-indigo-300' : isEnd && !isStart ? 'text-indigo-300 dark:text-indigo-400' : 'text-indigo-500 dark:text-indigo-300';
-                                                                return (
-                                                                    <div key={stop.id} className="flex min-h-[31px] items-center gap-2.5 px-2">
-                                                                        <div className="relative flex w-4 shrink-0 items-center justify-center self-stretch">
-                                                                            {previewCityStops.length > 1 && (
-                                                                                <span
-                                                                                    className={`absolute left-1/2 w-0.5 -translate-x-1/2 bg-indigo-200 dark:bg-indigo-400/40 ${
-                                                                                        isStart ? 'top-1/2 -bottom-px' : isEnd ? '-top-px bottom-1/2' : '-top-px -bottom-px'
-                                                                                    }`}
-                                                                                />
-                                                                            )}
-                                                                            {isStart || isEnd ? (
-                                                                                <MapPin weight="fill" size={13} className={`relative z-10 ${pinClass}`} />
-                                                                            ) : (
-                                                                                <span className="relative z-10 size-1.5 rounded-full bg-indigo-400 dark:bg-indigo-300" />
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                                                                            <span className="break-words text-[15px] font-medium leading-5 text-foreground">{stop.title}</span>
-                                                                            <span className="text-xs font-medium leading-5 tabular-nums text-indigo-500/75 dark:text-indigo-300/80">
-                                                                                {Math.max(1, Math.ceil(stop.duration))} nights
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="bg-secondary p-2">
-                                                    <div className="relative h-48 w-full overflow-hidden rounded-lg border border-border bg-secondary">
-                                                        {previewMapUrl ? (
-                                                            <img
-                                                                src={previewMapUrl}
-                                                                alt={`Map preview for ${selectedFullTrip.title}`}
-                                                                className="size-full object-cover"
-                                                                loading="lazy"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex size-full items-center justify-center text-[11px] text-muted-foreground">
-                                                                Map preview unavailable
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-lg border border-border bg-secondary px-3 py-4 text-center text-sm text-muted-foreground">
-                                            Trip preview is unavailable for this record.
-                                        </div>
-                                    )}
-
-                                    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-                                        <AdminSectionHeader
-                                            as="h3"
-                                            title="Generation diagnostics"
-                                            actions={(
-                                                <AdminStatusBadge tone={getGenerationTone(selectedTripGenerationState)}>
-                                                    {getGenerationStateLabel(selectedTripGenerationState)}
-                                                </AdminStatusBadge>
-                                            )}
-                                        />
-                                        <dl className="grid gap-2 sm:grid-cols-2">
-                                            <div className="rounded-lg border border-border bg-secondary p-3">
-                                                <dt className="text-xs font-medium text-muted-foreground">Retries</dt>
-                                                <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripRetryCount}</dd>
-                                            </div>
-                                            <div className="rounded-lg border border-border bg-secondary p-3">
-                                                <dt className="text-xs font-medium text-muted-foreground">Dead-letter jobs</dt>
-                                                <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripDeadLetterJobCount}</dd>
-                                            </div>
-                                            <div className="rounded-lg border border-border bg-secondary p-3">
-                                                <dt className="text-xs font-medium text-muted-foreground">Latest state transition</dt>
-                                                <dd className="mt-1 text-sm font-medium text-foreground">
-                                                    {selectedTripGenerationMeta?.lastFailedAt
-                                                        ? `${formatRelativeTimestamp(selectedTripGenerationMeta.lastFailedAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.lastFailedAt, 'n/a')})`
-                                                        : selectedTripGenerationMeta?.lastSucceededAt
-                                                            ? `${formatRelativeTimestamp(selectedTripGenerationMeta.lastSucceededAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.lastSucceededAt, 'n/a')})`
-                                                            : 'n/a'}
-                                                </dd>
-                                            </div>
-                                            <div className="rounded-lg border border-border bg-secondary p-3">
-                                                <dt className="text-xs font-medium text-muted-foreground">Retry requested at</dt>
-                                                <dd className="mt-1 text-sm font-medium text-foreground">
-                                                    {selectedTripGenerationMeta?.retryRequestedAt
-                                                        ? `${formatRelativeTimestamp(selectedTripGenerationMeta.retryRequestedAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.retryRequestedAt, 'n/a')})`
-                                                        : 'n/a'}
-                                                </dd>
-                                            </div>
-                                            <div className="rounded-lg border border-border bg-secondary p-3">
-                                                <dt className="text-xs font-medium text-muted-foreground">Input snapshot</dt>
-                                                <dd className="mt-1 text-sm font-medium text-foreground">
-                                                    {selectedTripGenerationMeta?.inputSnapshot
-                                                        ? `${selectedTripGenerationMeta.inputSnapshot.flow} (${formatTimestamp(selectedTripGenerationMeta.inputSnapshot.createdAt, 'n/a')})`
-                                                        : 'Unavailable'}
-                                                </dd>
-                                            </div>
-                                            <div className="rounded-lg border border-border bg-secondary p-3">
-                                                <dt className="text-xs font-medium text-muted-foreground">Latest queue job</dt>
-                                                <dd className="mt-1 text-sm font-medium text-foreground">
-                                                    {selectedTripLatestGenerationJob
-                                                        ? `${selectedTripLatestGenerationJob.state} (${formatRelativeTimestamp(selectedTripLatestGenerationJob.createdAt, 'n/a')})`
-                                                        : 'n/a'}
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                        {isLoadingTripAttemptLogRows && (
-                                            <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                                Loading attempt history…
-                                            </div>
-                                        )}
-                                        {selectedTripLatestAttempt ? (
-                                            <dl className="grid gap-2 sm:grid-cols-2">
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Flow</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.flow}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Attempt source</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.source}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Provider</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.provider || 'n/a'}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Model</dt>
-                                                    <dd className="mt-1 break-all text-sm font-medium text-foreground">{selectedTripLatestAttempt.model || 'n/a'}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Provider model</dt>
-                                                    <dd className="mt-1 break-all text-sm font-medium text-foreground">{selectedTripLatestAttempt.providerModel || 'n/a'}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">HTTP status</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">
-                                                        {typeof selectedTripLatestAttempt.statusCode === 'number' ? selectedTripLatestAttempt.statusCode : 'n/a'}
-                                                    </dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Request ID</dt>
-                                                    <dd className="mt-1 break-all font-mono text-xs text-foreground">{selectedTripLatestAttempt.requestId || 'n/a'}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Execution mode</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripOrchestrationMode || 'n/a'}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Duration</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">
-                                                        {formatDurationMs(selectedTripLatestAttempt.durationMs)}
-                                                    </dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Started at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">
-                                                        {formatRelativeTimestamp(selectedTripLatestAttempt.startedAt, 'n/a')} ({formatTimestamp(selectedTripLatestAttempt.startedAt, 'n/a')})
-                                                    </dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Finished at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">
-                                                        {selectedTripLatestAttempt.finishedAt
-                                                            ? `${formatRelativeTimestamp(selectedTripLatestAttempt.finishedAt, 'n/a')} (${formatTimestamp(selectedTripLatestAttempt.finishedAt, 'n/a')})`
-                                                            : 'n/a'}
-                                                    </dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Failure kind</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.failureKind || 'n/a'}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Error code</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.errorCode || 'n/a'}</dd>
-                                                </div>
-                                                <div className="sm:col-span-2 rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Error message</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestAttempt.errorMessage || 'n/a'}</dd>
-                                                </div>
-                                                <div className="sm:col-span-2 rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Attempt metadata details</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestAttemptDetails || 'n/a'}</dd>
-                                                </div>
-                                            </dl>
-                                        ) : (
-                                            <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                                No generation attempts captured yet.
-                                            </div>
-                                        )}
-                                        {selectedTripLatestGenerationJob && (
-                                            <dl className="grid gap-2 sm:grid-cols-2">
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Job started at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">
-                                                        {selectedTripLatestGenerationJob.startedAt
-                                                            ? `${formatRelativeTimestamp(selectedTripLatestGenerationJob.startedAt, 'n/a')} (${formatTimestamp(selectedTripLatestGenerationJob.startedAt, 'n/a')})`
-                                                            : 'n/a'}
-                                                    </dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Job finished at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-foreground">
-                                                        {selectedTripLatestGenerationJob.finishedAt
-                                                            ? `${formatRelativeTimestamp(selectedTripLatestGenerationJob.finishedAt, 'n/a')} (${formatTimestamp(selectedTripLatestGenerationJob.finishedAt, 'n/a')})`
-                                                            : 'n/a'}
-                                                    </dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Job last error code</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestGenerationJob.lastErrorCode || 'n/a'}</dd>
-                                                </div>
-                                                <div className="rounded-lg border border-border bg-secondary p-3">
-                                                    <dt className="text-xs font-medium text-muted-foreground">Job last error message</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestGenerationJob.lastErrorMessage || 'n/a'}</dd>
-                                                </div>
-                                            </dl>
-                                        )}
-                                        {selectedTripGenerationAttempts.length > 0 && (
-                                            <div className="space-y-1 rounded-lg border border-border bg-secondary p-2">
-                                                <p className="text-xs font-medium text-muted-foreground">Recent attempts</p>
-                                                {selectedTripGenerationAttempts.map((attempt) => (
-                                                    <div key={attempt.id} className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-2 py-1 text-[11px]">
-                                                        <span className="font-medium capitalize text-foreground">{attempt.state}</span>
-                                                        <span className="truncate text-muted-foreground">{attempt.model || attempt.providerModel || 'n/a'}</span>
-                                                        <span className="truncate text-muted-foreground">{formatRelativeTimestamp(attempt.startedAt, 'n/a')}</span>
-                                                        <span className="shrink-0 tabular-nums text-muted-foreground">
-                                                            {formatDurationMs(attempt.durationMs)}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {isLoadingTripGenerationJobRows && (
-                                            <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                                Loading queue/dead-letter jobs…
-                                            </div>
-                                        )}
-                                        {selectedTripGenerationJobRows.length > 0 && (
-                                            <div className="space-y-1 rounded-lg border border-border bg-secondary p-2">
-                                                <p className="text-xs font-medium text-muted-foreground">Queue jobs</p>
-                                                {selectedTripGenerationJobRows.map((job) => (
-                                                    <div key={job.id} className="grid gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] sm:grid-cols-[auto_1fr_auto_auto_auto] sm:items-center sm:gap-2">
-                                                        <AdminStatusBadge tone={getGenerationJobTone(job.state)} className="capitalize">
-                                                            {job.state}
-                                                        </AdminStatusBadge>
-                                                        <span className="truncate text-muted-foreground">
-                                                            {job.lastErrorCode || job.lastErrorMessage || job.attemptId}
-                                                        </span>
-                                                        <span className="shrink-0 text-muted-foreground">
-                                                            r{job.retryCount}/{job.maxRetries}
-                                                        </span>
-                                                        <span className="shrink-0 text-muted-foreground">
-                                                            {formatRelativeTimestamp(job.createdAt, 'n/a')}
-                                                        </span>
-                                                        {(job.state === 'dead' || job.state === 'failed') ? (
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="xs"
-                                                                onClick={(event) => {
-                                                                    event.preventDefault();
-                                                                    event.stopPropagation();
-                                                                    void handleRequeueGenerationJob(job);
-                                                                }}
-                                                                disabled={requeueingGenerationJobId === job.id}
-                                                                aria-busy={requeueingGenerationJobId === job.id || undefined}
-                                                            >
-                                                                {requeueingGenerationJobId === job.id ? (
-                                                                    <>
-                                                                        <SpinnerGap size={12} className="animate-spin" />
-                                                                        Requeueing…
-                                                                    </>
-                                                                ) : (
-                                                                    'Requeue'
-                                                                )}
-                                                            </Button>
-                                                        ) : (
-                                                            <span className="hidden sm:block" aria-hidden="true" />
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {(selectedTripLatestAttemptMetadata || selectedTripLatestGenerationJobPayload || selectedTripRequestPayload || selectedTripInputSnapshot) && (
-                                            <div className="space-y-2">
-                                                {selectedTripLatestAttemptMetadata && (
-                                                    <div className="rounded-lg border border-border bg-secondary p-2">
-                                                        <p className="text-xs font-medium text-muted-foreground">Attempt metadata JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded-md border border-border bg-slate-900 p-2 font-mono text-[11px] text-slate-100 dark:bg-slate-950">
-                                                            {JSON.stringify(selectedTripLatestAttemptMetadata, null, 2)}
-                                                        </pre>
-                                                    </div>
-                                                )}
-                                                {selectedTripLatestGenerationJobPayload && (
-                                                    <div className="rounded-lg border border-border bg-secondary p-2">
-                                                        <p className="text-xs font-medium text-muted-foreground">Latest queue job payload JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded-md border border-border bg-slate-900 p-2 font-mono text-[11px] text-slate-100 dark:bg-slate-950">
-                                                            {JSON.stringify(selectedTripLatestGenerationJobPayload, null, 2)}
-                                                        </pre>
-                                                    </div>
-                                                )}
-                                                {selectedTripRequestPayload && (
-                                                    <div className="rounded-lg border border-border bg-secondary p-2">
-                                                        <p className="text-xs font-medium text-muted-foreground">Request payload JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded-md border border-border bg-slate-900 p-2 font-mono text-[11px] text-slate-100 dark:bg-slate-950">
-                                                            {JSON.stringify(selectedTripRequestPayload, null, 2)}
-                                                        </pre>
-                                                    </div>
-                                                )}
-                                                {selectedTripInputSnapshot && (
-                                                    <div className="rounded-lg border border-border bg-secondary p-2">
-                                                        <p className="text-xs font-medium text-muted-foreground">Input snapshot JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded-md border border-border bg-slate-900 p-2 font-mono text-[11px] text-slate-100 dark:bg-slate-950">
-                                                            {JSON.stringify(selectedTripInputSnapshot, null, 2)}
-                                                        </pre>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        <div className="space-y-2">
-                                            {ACTIVE_RETRY_MODEL_OPTIONS.length > 0 && (
-                                                <div className="max-w-sm">
-                                                    <p id="trip-retry-model-label" className="mb-1 text-xs font-medium text-muted-foreground">Retry model</p>
-                                                    {selectedDrawerRetryModelOption && (
-                                                        <div className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-xs font-medium text-accent-800 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200">
-                                                            <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={12} />
-                                                            <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.label}</span>
-                                                            <span className="rounded-full border border-accent-300 bg-card px-1.5 text-[10px] text-accent-700 dark:border-accent-400/30 dark:text-accent-200">Current</span>
-                                                        </div>
-                                                    )}
-                                                    <Select
-                                                        value={drawerRetryModelId}
-                                                        onValueChange={setDrawerRetryModelId}
-                                                    >
-                                                        <SelectTrigger className="h-8 text-xs" aria-labelledby="trip-retry-model-label">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {groupedRetryModelOptions.map((group) => (
-                                                                <SelectGroup key={`drawer-model-group-${group.providerLabel}`}>
-                                                                    <SelectLabel>{group.providerLabel}</SelectLabel>
-                                                                    {group.options.map((option) => (
-                                                                        <SelectItem key={option.id} value={option.id}>
-                                                                            <span className="inline-flex items-center gap-2">
-                                                                                <AiProviderLogo provider={option.provider} model={option.model} size={14} />
-                                                                                <span className="font-medium text-foreground">{option.label}</span>
-                                                                                {option.id === drawerRetryModelId && (
-                                                                                    <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] text-accent-700 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200">
-                                                                                        Current
-                                                                                    </span>
-                                                                                )}
-                                                                            </span>
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectGroup>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            )}
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span
-                                                    className="inline-flex"
-                                                    title={drawerRetryDisabledReason || 'Retry generation with the selected model'}
-                                                >
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            void handleRetryTripGeneration();
-                                                        }}
-                                                        disabled={!canRetryGenerationInDrawer}
-                                                        aria-busy={isRetryingGeneration || undefined}
-                                                    >
-                                                        {isRetryingGeneration && <SpinnerGap size={14} className="animate-spin" />}
-                                                        {isRetryingGeneration ? 'Retrying generation…' : 'Retry generation'}
-                                                    </Button>
-                                                </span>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={handleOpenBenchmarkFromDrawer}
-                                                    disabled={!selectedTripGenerationMeta?.inputSnapshot}
-                                                >
-                                                    Open in AI benchmark
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-                                        <AdminSectionHeader as="h3" title="Trip actions" />
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
-                                            >
-                                                Preview trip
-                                                <ArrowSquareOut size={16} />
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    void handleDownloadTripJson(selectedTripForDrawer);
-                                                }}
-                                                disabled={isSaving}
-                                            >
-                                                Download JSON
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    void handleDuplicateTrip(selectedTripForDrawer);
-                                                }}
-                                                disabled={isSaving}
-                                            >
-                                                Duplicate trip
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    void handleTransferTrip(selectedTripForDrawer);
-                                                }}
-                                                disabled={isSaving}
-                                            >
-                                                Transfer owner
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    void handleSoftDeleteTrip(selectedTripForDrawer);
-                                                }}
-                                                disabled={isSaving}
-                                            >
-                                                {selectedTripForDrawer.status === 'archived' ? 'Restore trip' : 'Soft-delete trip'}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="destructive"
-                                                onClick={() => {
-                                                    void handleHardDeleteTrip(selectedTripForDrawer);
-                                                }}
-                                                disabled={isSaving}
-                                            >
-                                                <Trash size={16} />
-                                                Hard delete
-                                            </Button>
-                                        </div>
-                                    </section>
-                                </div>
+                                <p className="rounded-md bg-secondary px-3 py-4 text-center text-sm text-muted-foreground">
+                                    No itinerary preview for this trip.
+                                </p>
                             )}
-                        </div>
-                    </div>
-                </DrawerContent>
-            </Drawer>
+                        </AdminSurfaceCard>
 
-            <Drawer
-                open={isOwnerDrawerOpen}
-                onOpenChange={(open) => {
-                    setIsOwnerDrawerOpen(open);
-                    if (!open) {
-                        setSelectedOwnerId(null);
-                        setSelectedOwnerProfile(null);
-                        if (searchParams.has('user') || searchParams.get('drawer') === 'user') {
-                            const next = new URLSearchParams(searchParams);
-                            next.delete('user');
-                            next.delete('drawer');
-                            setSearchParams(next, { replace: true });
-                        }
-                    }
-                }}
-                direction="right"
-            >
-                <DrawerContent
-                    side="right"
-                    className="w-[min(96vw,560px)] p-0"
-                    accessibleTitle="Owner details"
-                    accessibleDescription="View selected trip owner identity and account context."
-                >
-                    <div className="flex h-full flex-col">
-                        <div className="border-b border-border px-5 py-4">
-                            <h2 className="text-base font-semibold text-foreground">Owner details</h2>
-                            <p className="truncate text-sm text-muted-foreground">
-                                {selectedOwnerId
-                                    ? <CopyableUuid value={selectedOwnerId} textClassName="max-w-[360px] truncate text-sm" />
-                                    : 'No owner selected'}
-                            </p>
-                            {selectedOwnerId && (
-                                <Button
-                                    type="button"
-                                    variant="soft"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerId)}&drawer=user`)}
-                                    className="mt-3"
-                                >
-                                    Open user profile
-                                    <ArrowSquareOut size={14} />
-                                </Button>
+                        <AdminSurfaceCard className="flex flex-col gap-4">
+                            <AdminSectionHeader
+                                as="h3"
+                                title="Generation"
+                                description="The latest AI attempt, and a retry when it failed."
+                                actions={(
+                                    <AdminStatusBadge tone={getGenerationTone(selectedTripGenerationState)}>
+                                        {getGenerationStateLabel(selectedTripGenerationState)}
+                                    </AdminStatusBadge>
+                                )}
+                            />
+                            {isLoadingTripAttemptLogRows && (
+                                <p role="status" className="text-sm text-muted-foreground">Loading attempt history…</p>
                             )}
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {isLoadingOwnerProfile ? (
-                                <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                    Loading owner profile…
-                                </div>
-                            ) : selectedOwnerProfile ? (
-                                <div className="space-y-4">
-                                    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-                                        <AdminSectionHeader as="h3" title="Identity context" />
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">User ID</span>
-                                                <CopyableUuid value={selectedOwnerProfile.user_id} textClassName="break-all text-sm font-medium text-foreground" />
-                                            </div>
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Email address</span>
-                                                <span className="break-all text-sm font-medium text-foreground">{selectedOwnerProfile.email || '—'}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Display name</span>
-                                                <span className="text-sm font-medium text-foreground">{getUserDisplayName(selectedOwnerProfile) || '—'}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Role</span>
-                                                <span className="text-sm font-medium text-foreground">{selectedOwnerProfile.system_role === 'admin' ? 'Admin' : 'User'}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Tier</span>
-                                                <span className="text-sm font-medium text-foreground">{selectedOwnerProfile.tier_key || '—'}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
-                                                <span className="text-xs font-medium text-muted-foreground">Status</span>
-                                                <span className="text-sm font-medium text-foreground">{formatAccountStatusLabel(selectedOwnerProfile.account_status)}</span>
-                                            </div>
-                                        </div>
-                                    </section>
-                                    
+                            {selectedTripLatestAttempt ? (
+                                <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                                    <DetailField label="Model">
+                                        <span className="break-all">
+                                            {[selectedTripLatestAttempt.provider, selectedTripLatestAttempt.model].filter(Boolean).join(' · ') || 'n/a'}
+                                        </span>
+                                    </DetailField>
+                                    <DetailField label="Started">
+                                        <RelativeTime value={selectedTripLatestAttempt.startedAt} fallback="n/a" />
+                                    </DetailField>
+                                    <DetailField label="Duration">
+                                        <span className="tabular-nums">{formatDurationMs(selectedTripLatestAttempt.durationMs)}</span>
+                                    </DetailField>
+                                    <DetailField label="Retries">
+                                        <span className="tabular-nums">
+                                            {selectedTripRetryCount}
+                                            {selectedTripDeadLetterJobCount > 0 && ` · ${selectedTripDeadLetterJobCount} dead-letter`}
+                                        </span>
+                                    </DetailField>
+                                    <DetailField label="Failure kind">{selectedTripLatestAttempt.failureKind || 'n/a'}</DetailField>
+                                    <DetailField label="Error code">{selectedTripLatestAttempt.errorCode || 'n/a'}</DetailField>
+                                    <DetailField label="Error message" wide>{selectedTripLatestAttempt.errorMessage || 'n/a'}</DetailField>
+                                </dl>
+                            ) : !isLoadingTripAttemptLogRows && (
+                                <p className="text-sm text-muted-foreground">No generation attempts captured yet.</p>
+                            )}
+
+                            <div className="flex flex-col gap-2 rounded-md bg-secondary p-3">
+                                {ACTIVE_RETRY_MODEL_OPTIONS.length > 0 && (
+                                    <div className="flex max-w-sm flex-col gap-1">
+                                        <span id="trip-retry-model-label" className="text-xs font-medium text-muted-foreground">Retry with model</span>
+                                        <Select value={drawerRetryModelId} onValueChange={setDrawerRetryModelId}>
+                                            <SelectTrigger className="h-8 bg-card text-sm" aria-labelledby="trip-retry-model-label">
+                                                {selectedDrawerRetryModelOption ? (
+                                                    <span className="inline-flex min-w-0 items-center gap-2">
+                                                        <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={14} />
+                                                        <span className="truncate">{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.label}</span>
+                                                    </span>
+                                                ) : (
+                                                    <SelectValue />
+                                                )}
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {groupedRetryModelOptions.map((group) => (
+                                                    <SelectGroup key={`drawer-model-group-${group.providerLabel}`}>
+                                                        <SelectLabel>{group.providerLabel}</SelectLabel>
+                                                        {group.options.map((option) => (
+                                                            <SelectItem key={option.id} value={option.id}>
+                                                                <span className="inline-flex items-center gap-2">
+                                                                    <AiProviderLogo provider={option.provider} model={option.model} size={14} />
+                                                                    <span className="font-medium text-foreground">{option.label}</span>
+                                                                </span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap items-center gap-2">
                                     <Button
                                         type="button"
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerProfile.user_id)}&drawer=user`)}
+                                        size="sm"
+                                        variant={selectedTripGenerationState === 'failed' ? 'default' : 'outline'}
+                                        onClick={() => {
+                                            void handleRetryTripGeneration();
+                                        }}
+                                        disabled={!canRetryGenerationInDrawer}
+                                        aria-busy={isRetryingGeneration || undefined}
+                                        aria-describedby={drawerRetryDisabledReason && !isRetryingGeneration ? 'trip-retry-disabled-reason' : undefined}
                                     >
-                                        View full profile
-                                        <ArrowSquareOut size={16} />
+                                        {isRetryingGeneration && <SpinnerGap size={14} className="animate-spin motion-reduce:animate-none" />}
+                                        {isRetryingGeneration ? 'Retrying generation…' : 'Retry generation'}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleOpenBenchmarkFromDrawer}
+                                        disabled={!selectedTripGenerationMeta?.inputSnapshot}
+                                    >
+                                        Open in AI benchmark
+                                        <ArrowSquareOut className="rtl:-scale-x-100" />
                                     </Button>
                                 </div>
-                            ) : (
-                                <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                    No owner profile found.
+                                {drawerRetryDisabledReason && !isRetryingGeneration && (
+                                    <p id="trip-retry-disabled-reason" className="text-xs text-muted-foreground">{drawerRetryDisabledReason}</p>
+                                )}
+                            </div>
+
+                            {selectedTripGenerationAttempts.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-xs font-medium text-muted-foreground">Recent attempts</p>
+                                    <ul className="divide-y divide-border rounded-md border border-border">
+                                        {selectedTripGenerationAttempts.map((attempt) => (
+                                            <li key={attempt.id} className="grid grid-cols-[5rem_1fr_auto_auto] items-center gap-2 px-2.5 py-1.5 text-xs">
+                                                <span className="font-medium capitalize text-foreground">{attempt.state}</span>
+                                                <span className="truncate text-muted-foreground">{attempt.model || attempt.providerModel || 'n/a'}</span>
+                                                <RelativeTime value={attempt.startedAt} fallback="n/a" className="tabular-nums text-muted-foreground" />
+                                                <span className="tabular-nums text-muted-foreground">{formatDurationMs(attempt.durationMs)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                </DrawerContent>
-            </Drawer>
+
+                            {isLoadingTripGenerationJobRows && (
+                                <p role="status" className="text-sm text-muted-foreground">Loading queue jobs…</p>
+                            )}
+                            {selectedTripGenerationJobRows.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-xs font-medium text-muted-foreground">Queue jobs</p>
+                                    <ul className="divide-y divide-border rounded-md border border-border">
+                                        {selectedTripGenerationJobRows.map((job) => (
+                                            <li key={job.id} className="grid gap-1 px-2.5 py-1.5 text-xs sm:grid-cols-[auto_1fr_auto_auto_auto] sm:items-center sm:gap-2">
+                                                <AdminStatusBadge tone={getGenerationJobTone(job.state)} className="capitalize">
+                                                    {job.state}
+                                                </AdminStatusBadge>
+                                                <span className="truncate text-muted-foreground">
+                                                    {job.lastErrorCode || job.lastErrorMessage || job.attemptId}
+                                                </span>
+                                                <span className="shrink-0 tabular-nums text-muted-foreground" data-tooltip="Retries used / allowed">
+                                                    {job.retryCount}/{job.maxRetries}
+                                                </span>
+                                                <RelativeTime value={job.createdAt} fallback="n/a" className="shrink-0 tabular-nums text-muted-foreground" />
+                                                {(job.state === 'dead' || job.state === 'failed') ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="xs"
+                                                        onClick={(event) => {
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            void handleRequeueGenerationJob(job);
+                                                        }}
+                                                        disabled={requeueingGenerationJobId === job.id}
+                                                        aria-busy={requeueingGenerationJobId === job.id || undefined}
+                                                    >
+                                                        {requeueingGenerationJobId === job.id ? (
+                                                            <>
+                                                                <SpinnerGap size={12} className="animate-spin motion-reduce:animate-none" />
+                                                                Requeueing…
+                                                            </>
+                                                        ) : (
+                                                            'Requeue'
+                                                        )}
+                                                    </Button>
+                                                ) : (
+                                                    <span className="hidden sm:block" aria-hidden="true" />
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            <details className="group rounded-md border border-border">
+                                <summary className="cursor-pointer select-none rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                                    Technical details
+                                </summary>
+                                <div className="flex flex-col gap-4 border-t border-border p-3">
+                                    <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                                        <DetailField label="Flow">{selectedTripLatestAttempt?.flow || 'n/a'}</DetailField>
+                                        <DetailField label="Attempt source">{selectedTripLatestAttempt?.source || 'n/a'}</DetailField>
+                                        <DetailField label="Provider model">
+                                            <span className="break-all">{selectedTripLatestAttempt?.providerModel || 'n/a'}</span>
+                                        </DetailField>
+                                        <DetailField label="HTTP status">
+                                            {typeof selectedTripLatestAttempt?.statusCode === 'number' ? selectedTripLatestAttempt.statusCode : 'n/a'}
+                                        </DetailField>
+                                        <DetailField label="Request ID" mono>{selectedTripLatestAttempt?.requestId || 'n/a'}</DetailField>
+                                        <DetailField label="Execution mode">{selectedTripOrchestrationMode || 'n/a'}</DetailField>
+                                        <DetailField label="Finished at">{formatRelativeWithAbsolute(selectedTripLatestAttempt?.finishedAt)}</DetailField>
+                                        <DetailField label="Latest state transition">
+                                            {formatRelativeWithAbsolute(selectedTripGenerationMeta?.lastFailedAt || selectedTripGenerationMeta?.lastSucceededAt)}
+                                        </DetailField>
+                                        <DetailField label="Retry requested at">{formatRelativeWithAbsolute(selectedTripGenerationMeta?.retryRequestedAt)}</DetailField>
+                                        <DetailField label="Input snapshot">
+                                            {selectedTripGenerationMeta?.inputSnapshot
+                                                ? `${selectedTripGenerationMeta.inputSnapshot.flow} (${formatTimestamp(selectedTripGenerationMeta.inputSnapshot.createdAt, 'n/a')})`
+                                                : 'Unavailable'}
+                                        </DetailField>
+                                        <DetailField label="Latest queue job">
+                                            {selectedTripLatestGenerationJob
+                                                ? `${selectedTripLatestGenerationJob.state} (${formatRelativeTimestamp(selectedTripLatestGenerationJob.createdAt, 'n/a')})`
+                                                : 'n/a'}
+                                        </DetailField>
+                                        <DetailField label="Dead-letter jobs">{selectedTripDeadLetterJobCount}</DetailField>
+                                        <DetailField label="Attempt metadata details" wide>{selectedTripLatestAttemptDetails || 'n/a'}</DetailField>
+                                        {selectedTripLatestGenerationJob && (
+                                            <>
+                                                <DetailField label="Job started at">{formatRelativeWithAbsolute(selectedTripLatestGenerationJob.startedAt)}</DetailField>
+                                                <DetailField label="Job finished at">{formatRelativeWithAbsolute(selectedTripLatestGenerationJob.finishedAt)}</DetailField>
+                                                <DetailField label="Job last error code">{selectedTripLatestGenerationJob.lastErrorCode || 'n/a'}</DetailField>
+                                                <DetailField label="Job last error message" wide>{selectedTripLatestGenerationJob.lastErrorMessage || 'n/a'}</DetailField>
+                                            </>
+                                        )}
+                                    </dl>
+                                    {selectedTripLatestAttemptMetadata && (
+                                        <JsonBlock label="Attempt metadata JSON" value={selectedTripLatestAttemptMetadata} />
+                                    )}
+                                    {selectedTripLatestGenerationJobPayload && (
+                                        <JsonBlock label="Latest queue job payload JSON" value={selectedTripLatestGenerationJobPayload} />
+                                    )}
+                                    {selectedTripRequestPayload && (
+                                        <JsonBlock label="Request payload JSON" value={selectedTripRequestPayload} />
+                                    )}
+                                    {selectedTripInputSnapshot && (
+                                        <JsonBlock label="Input snapshot JSON" value={selectedTripInputSnapshot} />
+                                    )}
+                                </div>
+                            </details>
+                        </AdminSurfaceCard>
+
+                        <AdminSurfaceCard className="flex flex-col gap-4">
+                            <AdminSectionHeader
+                                as="h3"
+                                title="Status and expiry"
+                                description="Changes apply when you save."
+                            />
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="flex flex-col gap-1">
+                                    <span id="trip-lifecycle-status-label" className="text-xs font-medium text-muted-foreground">Status</span>
+                                    <Select
+                                        value={drawerLifecycleDraft}
+                                        onValueChange={(value) => {
+                                            setDrawerLifecycleDraft(value as TripStatus);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-9 text-sm" aria-labelledby="trip-lifecycle-status-label">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="expired">Expired</SelectItem>
+                                            <SelectItem value="archived">Archived</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <label htmlFor="trip-lifecycle-expiration" className="flex flex-col gap-1">
+                                    <span className="text-xs font-medium text-muted-foreground">Expires at</span>
+                                    <Input
+                                        id="trip-lifecycle-expiration"
+                                        type="datetime-local"
+                                        value={drawerExpirationDraft}
+                                        onChange={(event) => {
+                                            setDrawerExpirationDraft(event.target.value);
+                                        }}
+                                        className="h-9 tabular-nums"
+                                    />
+                                </label>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                                {hasDrawerLifecycleChanges && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setDrawerLifecycleDraft(selectedTrip.status);
+                                            setDrawerExpirationDraft(toDateTimeInputValue(selectedTrip.trip_expires_at));
+                                        }}
+                                        disabled={isSaving}
+                                    >
+                                        Discard
+                                    </Button>
+                                )}
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => {
+                                        void handleSaveDrawerLifecycle();
+                                    }}
+                                    disabled={isSaving || !hasDrawerLifecycleChanges}
+                                >
+                                    Save changes
+                                </Button>
+                            </div>
+                        </AdminSurfaceCard>
+
+                        <TripOgPreviewPanel key={selectedTrip.trip_id} tripId={selectedTrip.trip_id} />
+                    </>
+                )}
+            </AdminDetailSheet>
         </AdminShell>
     );
 };

@@ -89,6 +89,21 @@ Avoid card grids when the controls form one workflow. Nested cards should be rar
 - Keep server polling separate from local elapsed-time display.
 - Preserve control state during refreshes and show when data was last synchronized.
 
+## Motion
+
+An admin dashboard is a tool used all day, so motion is crisp, short and rare.
+
+- **Don't animate what people do constantly.** No animation on keyboard-triggered UI (the
+  `⌘K` palette opens instantly), row selection, tab switches or filter toggles.
+- **Animate entrances that would otherwise jump:** sheets, popovers, the selection bar,
+  toasts. Opacity plus a small translate or `scale(0.95 → 1)`; never from `scale(0)`.
+- **Timing:** 150–250 ms for UI, ease-out (`cubic-bezier(0.23, 1, 0.32, 1)`), never `ease-in`.
+  Exits are faster than entries.
+- **Transition only what changes** (`transition-colors`, `transition-[width]`,
+  `transition-opacity`), not `transition-all`.
+- **Press feedback:** admin buttons scale to `0.97` while pressed (set once on the shell).
+- **Respect reduced motion:** movement goes, fades stay (`motion-safe:` / `motion-reduce:`).
+
 ## Responsive and direction-aware behavior
 
 - Collapse control strips into a logical reading order on narrow screens.

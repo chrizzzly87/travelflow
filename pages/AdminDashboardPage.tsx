@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Hourglass, SuitcaseRolling, UserMinus, UsersThree } from '@phosphor-icons/react';
+import { ArrowRight, Hourglass, SuitcaseRolling, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { adminListTrips, adminListUsers, type AdminTripRecord, type AdminUserRecord } from '../services/adminService';
@@ -16,6 +16,7 @@ import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminBarChart } from '../components/admin/AdminBarChart';
 import { AdminBarList } from '../components/admin/AdminBarList';
 import { buildAdminDashboardUserLevelBreakdown } from '../components/admin/adminDashboardUserBreakdown';
+import { buildAdminTripsFilterPath, isAdminTripInDateRange, summarizeAdminTrips } from '../components/admin/adminTripsModel';
 import {
     ACTIVITY_STACKED_CATEGORIES,
     buildTripStatusStackedChartData,
@@ -66,6 +67,19 @@ const getLoginLabel = (user: AdminUserRecord): string => {
     if (provider === 'github') return 'GitHub';
     return provider;
 };
+
+const OverviewTileLink: React.FC<{ to: string; eventId: string; children: React.ReactNode }> = ({ to, eventId, children }) => (
+    <Button asChild variant="link" size="xs" className="h-auto px-0">
+        <Link
+            to={to}
+            onClick={() => trackEvent(`admin__dashboard--${eventId}`)}
+            {...getAnalyticsDebugAttributes(`admin__dashboard--${eventId}`)}
+        >
+            {children}
+            <ArrowRight className="rtl:rotate-180" />
+        </Link>
+    </Button>
+);
 
 const parseDateRange = (value: string | null): AdminDateRange => (
     value === '7d' || value === '30d' || value === '90d' || value === 'all' ? value : '30d'
@@ -126,9 +140,17 @@ export const AdminDashboardPage: React.FC = () => {
             totalTrips,
             activeTrips,
             activeShare: totalTrips ? activeTrips / totalTrips : 0,
-            expiredTrips: scopedTrips.filter((trip) => trip.status === 'expired').length,
         };
     }, [scopedTrips, scopedUsers]);
+
+    // Same counts and date scope as the Trips screen's tiles, so a link from
+    // here lands on a list of exactly this many trips.
+    // The Trips screen scopes its range by last update (charts here go by
+    // creation day), so the attention tiles use its rule, not `scopedTrips`.
+    const tripAttention = useMemo(
+        () => summarizeAdminTrips(trips.filter((trip) => isAdminTripInDateRange(trip, dateRange))),
+        [dateRange, trips]
+    );
 
     const userLevelBreakdown = useMemo(() => buildAdminDashboardUserLevelBreakdown(scopedUsers), [scopedUsers]);
     const userLevelCategories = useMemo(() => userLevelBreakdown.map((level) => level.label), [userLevelBreakdown]);
@@ -163,7 +185,10 @@ export const AdminDashboardPage: React.FC = () => {
                         label="Users"
                         icon={<UsersThree />}
                         value={<AdminCountUpNumber value={metrics.totalUsers} />}
-                        hint={`Signed up ${rangeLabel}`}
+                        hint={metrics.disabledUsers > 0
+                            ? `${formatValue(metrics.disabledUsers)} suspended · signed up ${rangeLabel}`
+                            : `Signed up ${rangeLabel}`}
+                        hintTone={metrics.disabledUsers > 0 ? 'negative' : 'neutral'}
                         isLoading={isLoading}
                     />
                     <AdminStatCard
@@ -185,21 +210,33 @@ export const AdminDashboardPage: React.FC = () => {
                         </div>
                     </AdminStatCard>
                     <AdminStatCard
-                        label="Expired trips"
-                        icon={<Hourglass />}
-                        value={<AdminCountUpNumber value={metrics.expiredTrips} />}
-                        hint={metrics.expiredTrips > 0 ? 'Owners may need a nudge to renew' : 'Nothing has expired'}
-                        hintTone={metrics.expiredTrips > 0 ? 'warning' : 'neutral'}
+                        label="Failed generations"
+                        icon={<WarningCircle />}
+                        value={<AdminCountUpNumber value={tripAttention.failedGeneration} />}
+                        hint={tripAttention.failedGeneration > 0 ? 'Retry them from the trip details' : 'Every trip generated'}
+                        hintTone={tripAttention.failedGeneration > 0 ? 'negative' : 'neutral'}
                         isLoading={isLoading}
-                    />
+                    >
+                        {tripAttention.failedGeneration > 0 && (
+                            <OverviewTileLink to={buildAdminTripsFilterPath({ generation: 'failed' }, dateRange)} eventId="failed_generations">
+                                Show failed trips
+                            </OverviewTileLink>
+                        )}
+                    </AdminStatCard>
                     <AdminStatCard
-                        label="Suspended users"
-                        icon={<UserMinus />}
-                        value={<AdminCountUpNumber value={metrics.disabledUsers} />}
-                        hint={metrics.disabledUsers > 0 ? 'Accounts blocked or locked' : 'No blocked accounts'}
-                        hintTone={metrics.disabledUsers > 0 ? 'negative' : 'neutral'}
+                        label="Expiring in 7 days"
+                        icon={<Hourglass />}
+                        value={<AdminCountUpNumber value={tripAttention.expiringSoon} />}
+                        hint={tripAttention.expiringSoon > 0 ? 'Owners lose editing when a trip expires' : 'Nothing expires this week'}
+                        hintTone={tripAttention.expiringSoon > 0 ? 'warning' : 'neutral'}
                         isLoading={isLoading}
-                    />
+                    >
+                        {tripAttention.expiringSoon > 0 && (
+                            <OverviewTileLink to={buildAdminTripsFilterPath({ expires: 'expiring_24h,expiring_7d' }, dateRange)} eventId="expiring_trips">
+                                Show expiring trips
+                            </OverviewTileLink>
+                        )}
+                    </AdminStatCard>
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-3">

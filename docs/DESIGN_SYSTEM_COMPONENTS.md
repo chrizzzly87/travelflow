@@ -231,8 +231,10 @@ should reach for `SettingsRow`'s `htmlFor` instead of importing this directly.
 ## `alert.tsx`
 
 Inline page feedback. Variants: `default`, `destructive` (text-only emphasis on the card
-surface), and the tone variants `success`, `warning`, `danger`, which carry their own border
-and tint so they read as a state rather than a panel.
+surface), and the tone variants `success`, `warning`, `danger` and `info`, which carry their
+own border and tint so they read as a state rather than a panel. Each tone sets a dark-mode ink
+for the description too — without it the light-theme `-800` ink sat on the dark wash and was
+nearly unreadable (`tests/browser/ui/alert.browser.test.tsx`).
 
 ```tsx
 <Alert variant="success">
@@ -382,6 +384,11 @@ add their own outer padding. Nav entries, sections and command-palette keywords 
 | `AdminStatusBadge` | Status pills in tables and headers. Tones: `neutral`, `info`, `success`, `warning`, `danger`, `accent`; the leading dot repeats the tone so state never rests on colour alone. |
 | `AdminBarChart` | Bar or stacked bar chart (`index`, `categories`, `stacked`, `layout="vertical"`, `colors`, `valueFormatter`). Set the height through `className` (default `h-64`). |
 | `AdminBarList` | Ranked rows with label, tabular value and a thin share track (`scale="max"` or `"total"`, `sortOrder`, one `color` or the palette with swatches). Use it for breakdowns and leaderboards instead of a chart. |
+| `AdminDetailSheet` | The inspector for one record (user, trip, audit target): right-hand sheet with a fixed header (`title`, `subtitle`, `meta` badges, `headerActions`), a scrolling body and a pinned `footer` for the record's actions, destructive last. Sizes `md` (560px) and `lg` (720px). Every admin detail view uses it so they open, close and lay out the same way. |
+| `AdminSelectionBar` | Bulk actions for a table. Renders **only** while `count > 0`, floating at the bottom of the viewport so the actions stay reachable on a long table. Pass the actions as children, destructive last. Never show a permanent strip of disabled buttons reading "0 selected". |
+| `AdminPagination` | "Showing 51–100 of 240 trips" with previous/next icon buttons and "Page 2 of 5"; hides the controls when there is one page. |
+| `AdminEditorListItem` | The row in a list + editor split (Destinations, Recommendations): title, secondary line, status badge, selected state with `aria-pressed`. A real `forwardRef`. |
+| `formatAdminRelativeTime` / `formatAdminAbsoluteTime` | `components/admin/adminRelativeTime.ts`. The one relative-time format ("4 minutes ago", "yesterday", then a date) — always paired with the absolute time in `data-tooltip`. |
 | `AdminReloadButton` | The outline "Reload" action with a spinning icon while loading. |
 
 ### Rules for admin screens

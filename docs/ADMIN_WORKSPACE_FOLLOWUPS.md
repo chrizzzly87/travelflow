@@ -2,80 +2,60 @@
 
 Last updated: 2026-10-24
 
-This note captures open admin/user-management items that are intentionally deferred, plus where to resume implementation quickly.
+Open admin items that are deliberately deferred, grouped by what they need. What each screen
+does today is in [`ADMIN_SCREENS.md`](./ADMIN_SCREENS.md).
 
-## Confirmed Open UI Items (Deferred)
+## Done (for reference)
 
-- [x] Left sidebar does not behave correctly with long table pages and does not use full usable window height in all cases.
-  - Symptom: on long data-table pages, shell feels visually broken and left rail/viewport behavior is inconsistent.
-  - Primary file: `components/admin/AdminShell.tsx`
-  - Current layout areas to revisit:
-    - Desktop rail wrapper with `h-screen` and local scroll region.
-    - `main` content flow and how page-level vertical overflow is handled.
-    - Header stickiness and interaction with long table sections.
-  - Decision pending: keep viewport-pinned shell (independent scroll regions) vs page-scroll shell (single document flow).
+- [x] Shell layout: viewport-pinned sidebar with its own scroll area, page-scroll content, one
+  shared page header (2026-10-24, admin redesign). This replaced the February notes about the
+  sidebar breaking on long tables.
+- [x] Full shell and spacing pass across every screen; shared filter, selection, pagination and
+  detail-sheet components (`DESIGN_SYSTEM_COMPONENTS.md` → Admin workspace).
+- [x] Filter menu keyboard access and visual parity (`AdminFilterMenu`).
+- [x] User deletion operations, transfer-before-delete, deep links from Trips/Audit/trip view
+  into the Users sheet (`ADMIN_USER_DELETION_POLICY.md`).
 
-- [x] Full admin-shell layout pass to simplify and stabilize spacing/height behavior across all admin pages.
-  - Done 2026-10-24 in the admin redesign: viewport-pinned sidebar with its own scroll region, page-scroll content, one shared page header.
-  - Primary file: `components/admin/AdminShell.tsx`
-  - Affected pages: `pages/AdminDashboardPage.tsx`, `pages/AdminUsersPage.tsx`, `pages/AdminTripsPage.tsx`, `pages/AdminTiersPage.tsx`, `pages/AdminAuditPage.tsx`
+## Needs backend or schema work
 
-## Open UX/Feature Follow-ups
+- [ ] **Server-side paging and filtering** for Users (500-row cap), Trips (600), Audit (500 per
+  source) and Worker health (latest 50). KPI tiles on those screens count only the loaded rows.
+- [ ] **Plans read RPC.** The Plans screen starts each form from `PLAN_CATALOG` defaults because
+  no RPC returns the stored `plans.entitlements`; saving can silently revert an earlier stored
+  edit. Add an `admin_get_plan_entitlements`-style read.
+- [ ] **Billing:** a range-aware server count for sync issues (failed + unlinked webhooks), and a
+  "replay one webhook event" RPC (repair currently goes through a subscription reconcile).
+- [ ] **AI telemetry:** a server-side summary so totals stay exact past the 2,000-row cap, and
+  window-wide failure-code counts (today: latest 120 rows).
+- [ ] **Users:** a "resend invite" endpoint for the Awaiting activation queue.
+- [ ] **Trips:** a batch RPC for bulk archive/delete (today one request per trip).
+- [ ] **Legal terms:** persisted drafts (the service has no draft state; a reload loses one).
+- [ ] **Recommendations:** bulk publish/retire and a review queue.
+- [ ] **RBAC strict mode:** backfill `public.admin_user_roles`, remove the fail-open path and the
+  edge permission fallback in `netlify/edge-functions/admin-iam.ts`
+  (`AUTH_ROLES_IMPLEMENTATION_NOTES.md`).
 
-- [ ] Final polish pass for data-table filter UX parity once the shell layout refactor is done.
-  - Current filter components are functional; final visual rhythm and spacing should be revisited after shell refactor.
-  - Primary shared component: `components/admin/AdminFilterMenu.tsx`
+## Needs a product decision
 
-## Data/Backend Follow-ups (Still Relevant)
+- [ ] Audit log `?entry=<source:id>` deep link for sharing one event.
+- [ ] AI benchmark session switcher (the API already returns past sessions) and a `?run=` deep link.
+- [ ] Whether the AI benchmark's 7-day leaders should live only on AI telemetry.
+- [ ] Whether the Airports ticket lab belongs in the design system playground.
+- [ ] Users sheet `?tab=` param, so the Audit log can link straight to a user's Activity.
 
-- [ ] RBAC strict-mode rollout:
-  - Backfill explicit admin role assignments in `public.admin_user_roles`.
-  - Remove fail-open compatibility behavior in permission checks.
-  - Existing note: `docs/AUTH_ROLES_IMPLEMENTATION_NOTES.md`
+## Code hygiene
 
-- [ ] Remove edge-function permission fallback once RPC path is fully guaranteed.
-  - File: `netlify/edge-functions/admin-iam.ts`
+- [ ] Fold the remaining relative-time helpers (Users, Billing, Audit, AI benchmark) into
+  `components/admin/adminRelativeTime.ts`. They already produce the same format.
+- [ ] `AdminBarChart` decimal ticks and an area mark, so AI telemetry can drop its local
+  `TelemetrySeriesChart`.
+- [ ] `AdminStatCard` as a pressable tile (work-queue tiles currently toggle through a link
+  button in the hint).
+- [ ] `components/admin/AdminAirportTesterMap.tsx` type errors: wire `@types/google.maps`.
 
-- [ ] Server-side pagination/filtering for large datasets (Users/Trips/Audit).
-  - Current pages still fetch capped batches and filter client-side.
-  - Files:
-    - `pages/AdminUsersPage.tsx`
-    - `pages/AdminTripsPage.tsx`
-    - `pages/AdminAuditPage.tsx`
-    - `services/adminService.ts`
-    - `docs/supabase.sql` (RPC extensions)
+## Quick resume checklist
 
-## What Was Just Finished (Reference)
-
-- User deletion operations:
-  - Added explicit hard-delete impact warnings and a transfer-before-delete flow in Admin Users.
-  - Added policy/runbook: `docs/ADMIN_USER_DELETION_POLICY.md`.
-
-- Trips table:
-  - Direct trip link from first column.
-  - Owner cell opens owner-info drawer.
-  - File: `pages/AdminTripsPage.tsx`
-
-- User details drawer:
-  - Connected trip titles now open trip URLs directly.
-  - Trip title area widened to avoid early ellipsis.
-  - File: `pages/AdminUsersPage.tsx`
-
-- Trip-owner deep links:
-  - Trips and trip-view admin fallback now deep-link directly into the Users drawer via URL state.
-  - File: `pages/AdminTripsPage.tsx`
-  - File: `components/TripView.tsx`
-  - File: `pages/AdminUsersPage.tsx`
-
-## Quick Resume Checklist (Next Admin Iteration)
-
-1. Reproduce sidebar height/long-table break on Users and Trips with long datasets.
-2. Refactor `AdminShell` height/overflow strategy first (before cosmetic polish).
-3. Re-check filter/menu alignment after shell refactor.
-4. Run:
-   - `npm run build`
-   - targeted UI verification on:
-     - `/admin/users`
-     - `/admin/trips`
-     - `/admin/tiers`
-     - `/admin/audit`
+1. Read `ADMIN_SCREENS.md` for the screen you are changing.
+2. `TZ=Europe/Berlin npx vitest run tests/browser/admin tests/unit/admin*`
+3. Check the screen in the browser at 1440px and 375px, light and dark (local dev: set
+   `VITE_DEV_ADMIN_BYPASS=true`; turn on mock data with `tf_debug_simulated_login=1`).

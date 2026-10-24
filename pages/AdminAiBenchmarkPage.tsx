@@ -4,19 +4,20 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
     Plus,
     ArrowClockwise,
-    DownloadSimple,
-    Trash,
-    CheckCircle,
-    Smiley,
-    SmileyMeh,
-    SmileySad,
+    ArrowSquareOut,
     ArrowsDownUp,
-    StopCircle,
-    X,
+    CheckCircle,
+    DotsThree,
+    DownloadSimple,
+    Funnel,
+    Info,
+    NotePencil,
     Play,
+    StopCircle,
     ToggleLeft,
     ToggleRight,
-    Funnel,
+    Trash,
+    X,
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 if (typeof window !== 'undefined') {
@@ -34,6 +35,7 @@ import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProvi
 import { type GenerateOptions } from '../services/aiService';
 import { buildClassicBenchmarkScenario } from '../services/aiBenchmarkClassicScenarioService';
 import { buildDangerConfirmDialog } from '../services/appDialogPresets';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     BENCHMARK_DEFAULT_MODEL_IDS,
     createSystemBenchmarkPresets,
@@ -61,18 +63,58 @@ import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
 import { AdminStatCard } from '../components/admin/AdminStatCard';
-import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
-import { AiProviderLogo } from '../components/admin/AiProviderLogo';
+import { AiModelPicker } from '../components/admin/AiModelPicker';
+import { AiProviderLabel as ProviderLabel, AiProviderLogo } from '../components/admin/AiProviderLogo';
+import { AiBenchmarkRunSheet, RunLatency, RunRatingButtons } from '../components/admin/AiBenchmarkRunSheet';
+import {
+    BENCHMARK_RUN_COMMENT_MAX_LENGTH,
+    DEFAULT_BENCHMARK_RUN_FILTERS,
+    buildModelComparisonRows,
+    countUnratedCompletedRuns,
+    filterAndSortBenchmarkRuns,
+    formatDuration,
+    formatRelativeTime,
+    formatTimestamp,
+    formatUsd,
+    getRunStatusMeta,
+    getRunTimestampIso,
+    getRunValidationVerdict,
+    getValidationCheckStats,
+    getValidationWarnings,
+    hasActiveBenchmarkRunFilter,
+    hasRunValidationDetails,
+    isOptimisticRun,
+    isRunActive,
+    normalizeRunCommentDraft,
+    parseRunError,
+    resolveAiBenchmarkWorkspaceTab,
+    summarizeRunsLocal,
+    type AiBenchmarkWorkspaceTab,
+    type BenchmarkRun,
+    type BenchmarkRunFilters,
+    type BenchmarkSummary,
+    type RunSortDirection,
+    type SatisfactionRating,
+} from '../components/admin/aiBenchmarkRuns';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { AppModal } from '../components/ui/app-modal';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import { Input } from '../components/ui/input';
 import { SearchInput } from '../components/ui/search-input';
+import { Spinner } from '../components/ui/spinner';
 import { Switch } from '../components/ui/switch';
 import { Textarea } from '../components/ui/textarea';
 import {
@@ -116,43 +158,6 @@ interface BenchmarkSession {
     created_at: string;
     updated_at: string;
     deleted_at?: string | null;
-}
-
-interface BenchmarkRun {
-    id: string;
-    session_id: string;
-    provider: string;
-    model: string;
-    label: string | null;
-    run_index: number;
-    status: 'queued' | 'running' | 'completed' | 'failed';
-    latency_ms: number | null;
-    schema_valid: boolean | null;
-    usage: Record<string, unknown> | null;
-    cost_usd: number | null;
-    trip_id: string | null;
-    error_message: string | null;
-    satisfaction_rating?: 'good' | 'medium' | 'bad' | null;
-    satisfaction_updated_at?: string | null;
-    run_comment?: string | null;
-    run_comment_updated_at?: string | null;
-    started_at?: string | null;
-    finished_at?: string | null;
-    created_at: string;
-    updated_at?: string;
-    normalized_trip?: Record<string, unknown> | null;
-    validation_errors?: string[] | null;
-    validation_checks?: Record<string, unknown> | null;
-}
-
-interface BenchmarkSummary {
-    total: number;
-    completed: number;
-    failed: number;
-    running: number;
-    queued: number;
-    averageLatencyMs: number | null;
-    totalCostUsd: number;
 }
 
 interface BenchmarkApiResponse {
@@ -223,19 +228,6 @@ interface PresetEditorDraft {
     scenario: BenchmarkMaskScenario;
 }
 
-type SatisfactionRating = 'good' | 'medium' | 'bad';
-type RunSortDirection = 'asc' | 'desc';
-
-interface ParsedRunError {
-    shortMessage: string;
-    details: unknown | null;
-}
-
-interface ValidationCheckStats {
-    total: number;
-    passed: number;
-}
-
 const DEFAULT_SESSION_NAME = 'AI benchmark session';
 const CUSTOM_JSON_PRESET_ID = '__custom_json__';
 const CUSTOM_JSON_PRESET_NAME = 'Custom JSON import';
@@ -255,132 +247,12 @@ const REASONING_MODE_LABELS: Record<BenchmarkReasoningMode, string> = {
     xhigh: 'Extra high',
     max: 'Maximum',
 };
-const BENCHMARK_RUN_COMMENT_MAX_LENGTH = 2000;
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 const BENCHMARK_BASELINE_PREFERENCE_DEFAULTS = {
     travelerSetup: 'solo',
     tripStyle: 'everything_except_remote_work',
     transportPreference: 'automatic',
 };
-
-const SATISFACTION_SCORE: Record<SatisfactionRating, number> = {
-    good: 3,
-    medium: 2,
-    bad: 1,
-};
-
-const SATISFACTION_META: Record<SatisfactionRating, { label: string; icon: React.ReactNode; activeClass: string; idleClass: string }> = {
-    good: {
-        label: 'Good',
-        icon: <Smiley size={14} weight="fill" />,
-        activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-400/12 dark:text-emerald-200 dark:hover:bg-emerald-400/20 dark:hover:text-emerald-100',
-        idleClass: 'text-muted-foreground',
-    },
-    medium: {
-        label: 'Medium',
-        icon: <SmileyMeh size={14} weight="fill" />,
-        activeClass: 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/12 dark:text-amber-200 dark:hover:bg-amber-400/20 dark:hover:text-amber-100',
-        idleClass: 'text-muted-foreground',
-    },
-    bad: {
-        label: 'Bad',
-        icon: <SmileySad size={14} weight="fill" />,
-        activeClass: 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 dark:border-rose-400/30 dark:bg-rose-400/12 dark:text-rose-200 dark:hover:bg-rose-400/20 dark:hover:text-rose-100',
-        idleClass: 'text-muted-foreground',
-    },
-};
-
-const formatDuration = (ms: number | null | undefined): string => {
-    if (!Number.isFinite(ms)) return '—';
-    const value = Number(ms);
-    if (value < 1000) return `${value} ms`;
-    return `${(value / 1000).toFixed(2)} s`;
-};
-
-const formatUsd = (value: number | null | undefined): string => {
-    if (!Number.isFinite(value)) return '—';
-    return `$${Number(value).toFixed(6)}`;
-};
-
-const formatTimestamp = (value?: string | null): string => {
-    if (!value) return '—';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return '—';
-    return new Date(parsed).toLocaleString();
-};
-
-const normalizeRunCommentDraft = (value?: string | null): string => {
-    if (!value) return '';
-    return value.trim();
-};
-
-const ProviderLabel: React.FC<{
-    provider: string;
-    model?: string | null;
-    showModel?: boolean;
-    providerClassName?: string;
-    modelClassName?: string;
-    logoSize?: number;
-}> = ({
-    provider,
-    model,
-    showModel = true,
-    providerClassName,
-    modelClassName,
-    logoSize = 14,
-}) => {
-    const metadata = getAiProviderMetadata(provider);
-    const catalogModel = model
-        ? AI_MODEL_CATALOG.find((item) => item.provider === provider && item.model === model)
-        : null;
-    const providerLabel = catalogModel?.providerLabel || metadata.label;
-    const providerShortName = catalogModel?.providerShortName || metadata.shortName;
-    const modelLabel = catalogModel?.label || model;
-    return (
-        <span className="inline-flex min-w-0 items-center gap-1.5">
-            <AiProviderLogo provider={provider} model={model} size={logoSize} />
-            <span className={providerClassName || 'font-semibold text-foreground'} title={`${providerLabel} (${provider})`}>
-                {providerShortName}
-            </span>
-            {modelLabel && showModel ? (
-                <span className={modelClassName || 'truncate text-muted-foreground'}>
-                    / {modelLabel}
-                </span>
-            ) : null}
-        </span>
-    );
-};
-
-const getRunTimestampIso = (run: BenchmarkRun): string | null => {
-    return run.started_at || run.created_at || null;
-};
-
-const isRunActive = (run: BenchmarkRun): boolean => run.status === 'queued' || run.status === 'running';
-
-const RunLatency: React.FC<{ run: BenchmarkRun }> = React.memo(({ run }) => {
-    const startedMs = run.started_at ? Date.parse(run.started_at) : Number.NaN;
-    const [elapsedMs, setElapsedMs] = useState(() => (
-        Number.isFinite(startedMs) ? Math.max(0, Date.now() - startedMs) : 0
-    ));
-
-    useEffect(() => {
-        if (run.status !== 'running' || !Number.isFinite(startedMs)) return;
-        const updateElapsed = () => setElapsedMs(Math.max(0, Date.now() - startedMs));
-        updateElapsed();
-        const timer = window.setInterval(updateElapsed, 1000);
-        return () => window.clearInterval(timer);
-    }, [run.status, startedMs]);
-
-    if (typeof run.latency_ms === 'number') {
-        return <span className="tabular-nums">{formatDuration(run.latency_ms)}</span>;
-    }
-    if (run.status !== 'running' || !Number.isFinite(startedMs)) {
-        return <span>—</span>;
-    }
-    return <span className="tabular-nums">{Math.floor(elapsedMs / 1000)} s</span>;
-});
-
-RunLatency.displayName = 'RunLatency';
 
 const ModelReasoningSelect: React.FC<{
     model: AiModelCatalogItem;
@@ -410,169 +282,6 @@ const ModelReasoningSelect: React.FC<{
             </SelectContent>
         </Select>
     );
-};
-
-const isRunCancelledByUser = (run: BenchmarkRun): boolean => {
-    if (run.status !== 'failed') return false;
-    if (!run.error_message) return false;
-    return run.error_message.startsWith('Cancelled by user.');
-};
-
-const RUN_STATUS_META: Record<BenchmarkRun['status'] | 'cancelled', { label: string; tone: AdminStatusTone }> = {
-    queued: { label: 'Queued', tone: 'neutral' },
-    running: { label: 'Running', tone: 'info' },
-    completed: { label: 'Completed', tone: 'success' },
-    failed: { label: 'Failed', tone: 'danger' },
-    cancelled: { label: 'Cancelled', tone: 'warning' },
-};
-
-const truncate = (value: string, max: number): string => {
-    if (value.length <= max) return value;
-    return `${value.slice(0, Math.max(1, max - 1))}…`;
-};
-
-const looksLikeJsonPayload = (value: string): boolean => {
-    const trimmed = value.trim();
-    return (
-        (trimmed.startsWith('{') && trimmed.endsWith('}'))
-        || (trimmed.startsWith('[') && trimmed.endsWith(']'))
-        || (trimmed.startsWith('"') && trimmed.endsWith('"'))
-    );
-};
-
-const tryParseJsonString = (value: string): unknown | null => {
-    if (!looksLikeJsonPayload(value)) return null;
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-};
-
-const tryParsePossiblyTruncatedJson = (value: string): unknown | null => {
-    const trimmed = value.trim();
-    if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) return null;
-
-    const direct = tryParseJsonString(trimmed);
-    if (direct !== null) return direct;
-
-    for (let index = trimmed.length - 1; index >= 0; index -= 1) {
-        const char = trimmed[index];
-        if (char !== '}' && char !== ']') continue;
-        const candidate = trimmed.slice(0, index + 1);
-        try {
-            return JSON.parse(candidate);
-        } catch {
-            // continue scanning backwards
-        }
-    }
-
-    return null;
-};
-
-const hydrateStringifiedJson = (value: unknown, depth = 0): unknown => {
-    if (depth > 6) return value;
-
-    if (typeof value === 'string') {
-        const parsed = tryParseJsonString(value) ?? tryParsePossiblyTruncatedJson(value);
-        if (parsed === null) return value;
-        return hydrateStringifiedJson(parsed, depth + 1);
-    }
-
-    if (Array.isArray(value)) {
-        return value.map((entry) => hydrateStringifiedJson(entry, depth + 1));
-    }
-
-    if (value && typeof value === 'object') {
-        return Object.fromEntries(
-            Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
-                key,
-                hydrateStringifiedJson(entry, depth + 1),
-            ])
-        );
-    }
-
-    return value;
-};
-
-const parseRunError = (errorMessage: string | null | undefined): ParsedRunError => {
-    if (!errorMessage || !errorMessage.trim()) {
-        return {
-            shortMessage: 'Unknown error',
-            details: null,
-        };
-    }
-
-    const trimmed = errorMessage.trim();
-    const firstBrace = trimmed.indexOf('{');
-    if (firstBrace < 0) {
-        return {
-            shortMessage: truncate(trimmed, 180),
-            details: null,
-        };
-    }
-
-    const prefix = trimmed.slice(0, firstBrace).replace(/[:\s-]+$/, '').trim();
-    const jsonCandidate = trimmed.slice(firstBrace).trim();
-
-    try {
-        const parsed = JSON.parse(jsonCandidate);
-        return {
-            shortMessage: truncate(prefix || 'Detailed provider error', 180),
-            details: hydrateStringifiedJson(parsed),
-        };
-    } catch {
-        return {
-            shortMessage: truncate(prefix || trimmed, 180),
-            details: {
-                raw: jsonCandidate,
-            },
-        };
-    }
-};
-
-const getValidationCheckStats = (checks: Record<string, unknown> | null | undefined): ValidationCheckStats => {
-    if (!checks) return { total: 0, passed: 0 };
-    const boolEntries = Object.values(checks).filter((value) => typeof value === 'boolean') as boolean[];
-    if (boolEntries.length === 0) return { total: 0, passed: 0 };
-    return {
-        total: boolEntries.length,
-        passed: boolEntries.filter(Boolean).length,
-    };
-};
-
-const getValidationWarnings = (checks: Record<string, unknown> | null | undefined): string[] => {
-    if (!checks) return [];
-    const raw = checks.validationWarnings ?? checks.warnings;
-    if (!Array.isArray(raw)) return [];
-    return raw.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
-};
-
-const summarizeRunsLocal = (rows: BenchmarkRun[]): BenchmarkSummary => {
-    const total = rows.length;
-    const completed = rows.filter((run) => run.status === 'completed').length;
-    const failed = rows.filter((run) => run.status === 'failed').length;
-    const running = rows.filter((run) => run.status === 'running').length;
-    const queued = rows.filter((run) => run.status === 'queued').length;
-    const completedLatencies = rows.flatMap((run) => (
-        run.status === 'completed' && typeof run.latency_ms === 'number'
-            ? [Number(run.latency_ms)]
-            : []
-    ));
-    const averageLatencyMs = completedLatencies.length > 0
-        ? Math.round(completedLatencies.reduce((sum, value) => sum + value, 0) / completedLatencies.length)
-        : null;
-    const totalCostUsd = rows.reduce((sum, run) => sum + (typeof run.cost_usd === 'number' ? run.cost_usd : 0), 0);
-
-    return {
-        total,
-        completed,
-        failed,
-        running,
-        queued,
-        averageLatencyMs,
-        totalCostUsd: Number(totalCostUsd.toFixed(6)),
-    };
 };
 
 const downloadBlob = (blob: Blob, filename: string) => {
@@ -616,7 +325,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [benchmarkConcurrency, setBenchmarkConcurrency] = useState(BENCHMARK_CONCURRENCY_DEFAULT);
     const [modelReasoningModes, setModelReasoningModes] = useState<Record<string, BenchmarkReasoningMode>>({});
     const [compactBenchmarkOutput, setCompactBenchmarkOutput] = useState(true);
-    const [workspaceTab, setWorkspaceTab] = useState<'setup' | 'results' | 'insights'>('setup');
+    // null until the admin picks a tab: then a loaded session opens on its results.
+    const [workspaceTab, setWorkspaceTab] = useState<AiBenchmarkWorkspaceTab | null>(null);
 
     const [modelFilter, setModelFilter] = useState('');
     const [modelProviderFilter, setModelProviderFilter] = useState('all');
@@ -651,13 +361,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         tripId: string | null;
     } | null>(null);
     const [preferencesLoaded, setPreferencesLoaded] = useState(false);
-    const [hideFailedRuns, setHideFailedRuns] = useState(false);
-    const [onlyWarningRuns, setOnlyWarningRuns] = useState(false);
-    const [onlyUnratedRuns, setOnlyUnratedRuns] = useState(false);
-    const [providerFilter, setProviderFilter] = useState<'all' | string>('all');
+    const [runFilters, setRunFilters] = useState<BenchmarkRunFilters>(DEFAULT_BENCHMARK_RUN_FILTERS);
     const [runSortDirection, setRunSortDirection] = useState<RunSortDirection>('desc');
-    const [errorModalRun, setErrorModalRun] = useState<BenchmarkRun | null>(null);
-    const [validationModalRun, setValidationModalRun] = useState<BenchmarkRun | null>(null);
+    const [inspectedRunId, setInspectedRunId] = useState<string | null>(null);
     const [ratingSavingRunId, setRatingSavingRunId] = useState<string | null>(null);
     const [commentSavingRunId, setCommentSavingRunId] = useState<string | null>(null);
     const [runCommentDrafts, setRunCommentDrafts] = useState<Record<string, string>>({});
@@ -879,121 +585,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         });
     }, [runs]);
 
-    const displayRuns = useMemo(() => {
-        const filtered = runs.filter((run) => {
-            if (hideFailedRuns && run.status === 'failed') return false;
-            if (onlyWarningRuns && getValidationWarnings(run.validation_checks).length === 0) return false;
-            if (onlyUnratedRuns && run.satisfaction_rating) return false;
-            if (providerFilter !== 'all' && run.provider !== providerFilter) return false;
-            return true;
-        });
+    const displayRuns = useMemo(
+        () => filterAndSortBenchmarkRuns(runs, runFilters, runSortDirection),
+        [runs, runFilters, runSortDirection],
+    );
+    const runFiltersActive = hasActiveBenchmarkRunFilter(runFilters);
+    const unratedRunCount = useMemo(() => countUnratedCompletedRuns(runs), [runs]);
+    const inspectedRun = useMemo(
+        () => (inspectedRunId ? runs.find((run) => run.id === inspectedRunId) ?? null : null),
+        [inspectedRunId, runs],
+    );
 
-        return filtered.sort((left, right) => {
-            const leftTs = Date.parse(getRunTimestampIso(left) || '');
-            const rightTs = Date.parse(getRunTimestampIso(right) || '');
-            const leftSafe = Number.isFinite(leftTs) ? leftTs : 0;
-            const rightSafe = Number.isFinite(rightTs) ? rightTs : 0;
-            if (runSortDirection === 'asc') return leftSafe - rightSafe;
-            return rightSafe - leftSafe;
-        });
-    }, [runs, hideFailedRuns, onlyWarningRuns, onlyUnratedRuns, providerFilter, runSortDirection]);
-
-    const modelDashboardRows = useMemo(() => {
-        const bucket = new Map<string, {
-            provider: string;
-            model: string;
-            totalRuns: number;
-            completedRuns: number;
-            latencySum: number;
-            latencyCount: number;
-            costSum: number;
-            costCount: number;
-            ratingSum: number;
-            ratingCount: number;
-            totalTokensSum: number;
-            totalTokensCount: number;
-            repairAttemptedRuns: number;
-        }>();
-
-        runs.forEach((run) => {
-            const key = `${run.provider}::${run.model}`;
-            if (!bucket.has(key)) {
-                bucket.set(key, {
-                    provider: run.provider,
-                    model: run.model,
-                    totalRuns: 0,
-                    completedRuns: 0,
-                    latencySum: 0,
-                    latencyCount: 0,
-                    costSum: 0,
-                    costCount: 0,
-                    ratingSum: 0,
-                    ratingCount: 0,
-                    totalTokensSum: 0,
-                    totalTokensCount: 0,
-                    repairAttemptedRuns: 0,
-                });
-            }
-
-            const entry = bucket.get(key);
-            if (!entry) return;
-            entry.totalRuns += 1;
-            if (run.status === 'completed') entry.completedRuns += 1;
-
-            if (typeof run.latency_ms === 'number' && Number.isFinite(run.latency_ms)) {
-                entry.latencySum += run.latency_ms;
-                entry.latencyCount += 1;
-            }
-
-            if (typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd)) {
-                entry.costSum += run.cost_usd;
-                entry.costCount += 1;
-            }
-
-            if (run.satisfaction_rating && SATISFACTION_SCORE[run.satisfaction_rating]) {
-                entry.ratingSum += SATISFACTION_SCORE[run.satisfaction_rating];
-                entry.ratingCount += 1;
-            }
-
-            const totalTokens = Number(run.usage?.totalTokens ?? run.usage?.total_tokens);
-            if (Number.isFinite(totalTokens) && totalTokens >= 0) {
-                entry.totalTokensSum += totalTokens;
-                entry.totalTokensCount += 1;
-            }
-
-            if (run.validation_checks?.semanticRepairAttempted === true) {
-                entry.repairAttemptedRuns += 1;
-            }
-        });
-
-        return Array.from(bucket.values())
-            .map((entry) => {
-                const averageLatencyMs = entry.latencyCount > 0 ? Math.round(entry.latencySum / entry.latencyCount) : null;
-                const averageCostUsd = entry.costCount > 0 ? Number((entry.costSum / entry.costCount).toFixed(6)) : null;
-                const averageRatingScore = entry.ratingCount > 0 ? Number((entry.ratingSum / entry.ratingCount).toFixed(2)) : null;
-                const averageTotalTokens = entry.totalTokensCount > 0 ? Math.round(entry.totalTokensSum / entry.totalTokensCount) : null;
-                const successRate = entry.totalRuns > 0 ? entry.completedRuns / entry.totalRuns : 0;
-                const repairRate = entry.totalRuns > 0 ? entry.repairAttemptedRuns / entry.totalRuns : 0;
-                return {
-                    ...entry,
-                    averageLatencyMs,
-                    averageCostUsd,
-                    averageRatingScore,
-                    averageTotalTokens,
-                    successRate,
-                    repairRate,
-                };
-            })
-            .sort((left, right) => {
-                const rightScore = right.averageRatingScore ?? -1;
-                const leftScore = left.averageRatingScore ?? -1;
-                if (rightScore !== leftScore) return rightScore - leftScore;
-                if (right.ratingCount !== left.ratingCount) return right.ratingCount - left.ratingCount;
-                const leftLatency = left.averageLatencyMs ?? Number.MAX_SAFE_INTEGER;
-                const rightLatency = right.averageLatencyMs ?? Number.MAX_SAFE_INTEGER;
-                return leftLatency - rightLatency;
-            });
-    }, [runs]);
+    const modelComparisonRows = useMemo(() => buildModelComparisonRows(runs), [runs]);
 
     const benchmarkSessionParam = (searchParams.get('session') || '').trim();
 
@@ -1359,7 +962,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const nextRuns = payload.runs || [];
             setRuns(nextRuns);
             setSummary(payload.summary || summarizeRunsLocal(nextRuns));
-            setMessage(payload.session ? `Loaded benchmark session ${payload.session.id}` : null);
+            // Loading is visible in the table; a success banner on every visit is noise.
+            setMessage(null);
 
             if (payload.session?.share_token && payload.session.share_token !== sessionLookup) {
                 const next = new URLSearchParams(searchParams);
@@ -2192,36 +1796,48 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         }, { silent: true });
     }, [applyMaskScenario, defaultDates.endDate, defaultDates.startDate, presetConfigs, presetEditor, savePreferences]);
 
-    const errorModalParsed = useMemo(() => {
-        if (!errorModalRun) return null;
-        return parseRunError(errorModalRun.error_message);
-    }, [errorModalRun]);
-
-    const errorJsonSource = useMemo(() => {
-        if (!errorModalRun) return '';
-        const parsed = parseRunError(errorModalRun.error_message);
-        const payload = hydrateStringifiedJson(parsed.details ?? { error: errorModalRun.error_message || 'Unknown error' });
-        return JSON.stringify(payload, null, 2);
-    }, [errorModalRun]);
-
-    const validationJsonSource = useMemo(() => {
-        if (!validationModalRun) return '';
-        const warnings = getValidationWarnings(validationModalRun.validation_checks);
-        const payload = {
-            schemaValid: validationModalRun.schema_valid,
-            checks: validationModalRun.validation_checks || {},
-            errors: validationModalRun.validation_errors || [],
-            warnings,
-        };
-        return JSON.stringify(payload, null, 2);
-    }, [validationModalRun]);
-
-    const validationModalWarnings = useMemo(() => {
-        if (!validationModalRun) return [];
-        return getValidationWarnings(validationModalRun.validation_checks);
-    }, [validationModalRun]);
-
     const presetFieldLabelClass = 'text-xs font-medium text-muted-foreground';
+
+    const activeTab = resolveAiBenchmarkWorkspaceTab(workspaceTab, Boolean(session));
+    const runningCount = summary?.running ?? 0;
+    const queuedCount = summary?.queued ?? 0;
+    const runDisabled = loading || hasPendingRuns || cancelling || runnableTargets.length === 0;
+    const runButtonLabel = `Run ${runnableTargets.length} model${runnableTargets.length === 1 ? '' : 's'}`;
+    const queuedBehindConcurrency = Math.max(0, runnableTargets.length - benchmarkConcurrency);
+    const activeModels = useMemo(
+        () => sortedModels.filter((model) => model.availability === 'active'),
+        [sortedModels],
+    );
+
+    const startBenchmark = (source: 'header' | 'empty_state') => {
+        trackEvent('admin__ai_benchmark--run', { source, models: runnableTargets.length });
+        scrollToResults();
+        void runBenchmark();
+    };
+
+    const startNewSession = () => {
+        trackEvent('admin__ai_benchmark--new_session');
+        setSession(null);
+        setRuns([]);
+        setSummary(null);
+        setInspectedRunId(null);
+        setMessage(null);
+        setError(null);
+        const next = new URLSearchParams(searchParams);
+        next.delete('session');
+        setSearchParams(next, { replace: true });
+        setWorkspaceTab('setup');
+    };
+
+    const openRunDetails = (run: BenchmarkRun, source: 'model' | 'status' | 'note' | 'menu') => {
+        if (isOptimisticRun(run)) return;
+        trackEvent('admin__ai_benchmark--open_run', { source });
+        setInspectedRunId(run.id);
+    };
+
+    const updateRunFilters = (patch: Partial<BenchmarkRunFilters>) => {
+        setRunFilters((current) => ({ ...current, ...patch }));
+    };
 
     return (
         <AdminShell
@@ -2229,6 +1845,34 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             description="Compare trip quality, latency and cost across models."
             showGlobalSearch={false}
             showDateRange={false}
+            actions={(
+                <>
+                    {hasPendingRuns && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                trackEvent('admin__ai_benchmark--stop');
+                                cancelActiveRunsInSession();
+                            }}
+                            disabled={cancelling || !session}
+                            {...getAnalyticsDebugAttributes('admin__ai_benchmark--stop')}
+                        >
+                            <StopCircle />
+                            {cancelling ? 'Stopping…' : 'Stop runs'}
+                        </Button>
+                    )}
+                    <Button
+                        type="button"
+                        onClick={() => startBenchmark('header')}
+                        disabled={runDisabled}
+                        {...getAnalyticsDebugAttributes('admin__ai_benchmark--run', { source: 'header' })}
+                    >
+                        <Play weight="fill" />
+                        {runButtonLabel}
+                    </Button>
+                </>
+            )}
         >
             <div className="flex w-full flex-col gap-4">
 
@@ -2242,30 +1886,552 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 )}
 
                 <Tabs
-                    value={workspaceTab}
-                    onValueChange={(value) => setWorkspaceTab(value as 'setup' | 'results' | 'insights')}
+                    value={activeTab}
+                    onValueChange={(value) => setWorkspaceTab(value as AiBenchmarkWorkspaceTab)}
                     className="flex flex-col gap-4"
                 >
                     {/* top-16 clears the shell's sticky 56px top bar; top-2 slid under it. */}
                     <div className="sticky top-16 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card/95 p-2 backdrop-blur">
                         <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                            <TabsTrigger value="results">Runs · <span className="tabular-nums">{runs.length}</span></TabsTrigger>
+                            <TabsTrigger value="compare">Compare</TabsTrigger>
                             <TabsTrigger value="setup">Setup</TabsTrigger>
-                            <TabsTrigger value="results">Results · <span className="tabular-nums">{runs.length}</span></TabsTrigger>
-                            <TabsTrigger value="insights">Insights</TabsTrigger>
                         </TabsList>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <AdminStatusBadge tone={accessToken ? 'success' : 'danger'}>
-                                {accessToken ? 'Admin connected' : 'Re-auth required'}
-                            </AdminStatusBadge>
-                            <span className="tabular-nums">{runnableTargets.length} active models</span>
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            {!accessToken && (
+                                <AdminStatusBadge tone={isAuthenticated ? 'neutral' : 'danger'}>
+                                    {isAuthenticated ? 'Connecting…' : 'Sign in again to run'}
+                                </AdminStatusBadge>
+                            )}
+                            {hasPendingRuns && (
+                                <span role="status">
+                                    <AdminStatusBadge tone="info">
+                                        <span className="tabular-nums">{runningCount} running · {queuedCount} queued</span>
+                                    </AdminStatusBadge>
+                                </span>
+                            )}
+                            <span className="tabular-nums">{runnableTargets.length} of {selectedTargets.length} models active</span>
                         </div>
                     </div>
 
-                    <TabsContent value="insights" className="mt-0">
+                    <TabsContent value="results" className="mt-0 flex flex-col gap-4">
+                        {summary && runs.length > 0 && (
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                <AdminStatCard
+                                    label="Completed"
+                                    value={<span className="tabular-nums">{summary.completed}/{summary.total}</span>}
+                                    hint={summary.failed > 0 ? `${summary.failed} failed · open a run for the error` : 'No failed runs'}
+                                    hintTone={summary.failed > 0 ? 'negative' : 'neutral'}
+                                />
+                                <AdminStatCard
+                                    label="Avg latency"
+                                    value={<span className="tabular-nums">{formatDuration(summary.averageLatencyMs)}</span>}
+                                    hint="Completed runs only"
+                                />
+                                <AdminStatCard
+                                    label="Total cost"
+                                    value={<span className="tabular-nums">{hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'}</span>}
+                                    hint={hasExactCostData ? 'As reported by the providers' : 'No provider has reported a cost yet'}
+                                />
+                                <AdminStatCard
+                                    label="To rate"
+                                    value={<span className="tabular-nums">{unratedRunCount}</span>}
+                                    hint={unratedRunCount > 0 ? 'Completed runs without a rating' : 'Every completed run is rated'}
+                                    hintTone={unratedRunCount > 0 ? 'warning' : 'positive'}
+                                >
+                                    {unratedRunCount > 0 && !runFilters.onlyUnrated && (
+                                        <Button
+                                            type="button"
+                                            variant="link"
+                                            size="xs"
+                                            className="h-auto self-start p-0"
+                                            onClick={() => {
+                                                trackEvent('admin__ai_benchmark--show_unrated');
+                                                updateRunFilters({ onlyUnrated: true });
+                                            }}
+                                            {...getAnalyticsDebugAttributes('admin__ai_benchmark--show_unrated')}
+                                        >
+                                            Show unrated runs
+                                        </Button>
+                                    )}
+                                </AdminStatCard>
+                            </div>
+                        )}
+
+                        <AdminSurfaceCard ref={resultsSectionRef} className="flex flex-col gap-4">
+                            <AdminSectionHeader
+                                title="Runs"
+                                description={session ? (
+                                    <>
+                                        {session.name || 'Unnamed session'}
+                                        <span aria-hidden="true"> · </span>
+                                        <span className="select-all font-mono text-xs">{session.share_token}</span>
+                                    </>
+                                ) : 'No session loaded. Your next run starts a new one.'}
+                                actions={(
+                                    <>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild disabled={loading || !session || runs.length === 0}>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={loading || !session || runs.length === 0}
+                                                >
+                                                    <DownloadSimple />
+                                                    Export
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="min-w-[220px]">
+                                                <DropdownMenuItem
+                                                    onSelect={() => {
+                                                        trackEvent('admin__ai_benchmark--export', { include_logs: false });
+                                                        void downloadAllZip(false);
+                                                    }}
+                                                    {...getAnalyticsDebugAttributes('admin__ai_benchmark--export', { include_logs: false })}
+                                                >
+                                                    All runs (ZIP)
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onSelect={() => {
+                                                        trackEvent('admin__ai_benchmark--export', { include_logs: true });
+                                                        void downloadAllZip(true);
+                                                    }}
+                                                    {...getAnalyticsDebugAttributes('admin__ai_benchmark--export', { include_logs: true })}
+                                                >
+                                                    All runs with logs (ZIP)
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild disabled={!session}>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    disabled={!session}
+                                                    aria-label="Session actions"
+                                                    data-tooltip="Session actions"
+                                                >
+                                                    <DotsThree weight="bold" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="min-w-[220px]">
+                                                <DropdownMenuItem
+                                                    disabled={loading || cancelling || hasPendingRuns}
+                                                    onSelect={startNewSession}
+                                                    {...getAnalyticsDebugAttributes('admin__ai_benchmark--new_session')}
+                                                >
+                                                    <Plus />
+                                                    Start a new session
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    variant="destructive"
+                                                    disabled={loading || cancelling || hasPendingRuns}
+                                                    onSelect={() => {
+                                                        trackEvent('admin__ai_benchmark--delete_session');
+                                                        void cleanupSession();
+                                                    }}
+                                                    {...getAnalyticsDebugAttributes('admin__ai_benchmark--delete_session')}
+                                                >
+                                                    <Trash />
+                                                    Delete session data…
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </>
+                                )}
+                            />
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                <Select value={runFilters.provider} onValueChange={(provider) => updateRunFilters({ provider })}>
+                                    <SelectTrigger aria-label="Filter runs by provider" className="h-8 w-[180px] text-xs">
+                                        <SelectValue placeholder="All providers" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All providers</SelectItem>
+                                        {providerOptions.map((provider) => (
+                                            <SelectItem key={provider} value={provider}>
+                                                <ProviderLabel
+                                                    provider={provider}
+                                                    providerClassName="text-foreground"
+                                                    logoSize={12}
+                                                />
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Checkbox
+                                        aria-label="Hide failed"
+                                        checked={runFilters.hideFailed}
+                                        onCheckedChange={(checked) => updateRunFilters({ hideFailed: checked === true })}
+                                    />
+                                    Hide failed
+                                </label>
+                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Checkbox
+                                        aria-label="Only warnings"
+                                        checked={runFilters.onlyWarnings}
+                                        onCheckedChange={(checked) => updateRunFilters({ onlyWarnings: checked === true })}
+                                    />
+                                    Only warnings
+                                </label>
+                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Checkbox
+                                        aria-label="Only unrated"
+                                        checked={runFilters.onlyUnrated}
+                                        onCheckedChange={(checked) => updateRunFilters({ onlyUnrated: checked === true })}
+                                    />
+                                    Only unrated
+                                </label>
+                                {runFiltersActive && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            trackEvent('admin__ai_benchmark--reset_filters');
+                                            setRunFilters(DEFAULT_BENCHMARK_RUN_FILTERS);
+                                        }}
+                                        {...getAnalyticsDebugAttributes('admin__ai_benchmark--reset_filters')}
+                                    >
+                                        Reset
+                                    </Button>
+                                )}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ms-auto text-muted-foreground"
+                                    onClick={() => setRunSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
+                                    aria-label={runSortDirection === 'desc' ? 'Newest first. Switch to oldest first' : 'Oldest first. Switch to newest first'}
+                                >
+                                    <ArrowsDownUp />
+                                    {runSortDirection === 'desc' ? 'Newest first' : 'Oldest first'}
+                                </Button>
+                            </div>
+
+                            {displayRuns.length === 0 ? (
+                                loading && runs.length === 0 ? (
+                                    <div role="status" className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border px-6 py-10 text-sm text-muted-foreground">
+                                        <Spinner className="size-4" />
+                                        Loading runs…
+                                    </div>
+                                ) : runs.length === 0 ? (
+                                    <AdminEmptyState
+                                        title={session ? 'No runs in this session yet' : 'No benchmark session yet'}
+                                        description="Pick a trip template and models in Setup, then run them."
+                                        action={(
+                                            <Button type="button" variant="outline" size="sm" onClick={() => setWorkspaceTab('setup')}>
+                                                Go to setup
+                                            </Button>
+                                        )}
+                                    />
+                                ) : (
+                                    <AdminEmptyState
+                                        title="No runs match these filters"
+                                        description="Reset the filters to see every run in this session."
+                                        action={(
+                                            <Button type="button" variant="outline" size="sm" onClick={() => setRunFilters(DEFAULT_BENCHMARK_RUN_FILTERS)}>
+                                                Reset filters
+                                            </Button>
+                                        )}
+                                    />
+                                )
+                            ) : (
+                                <div className="overflow-x-auto rounded-md border border-border">
+                                    <Table>
+                                        <TableHeader className="bg-secondary">
+                                            <TableRow className="hover:bg-transparent">
+                                                <TableHead className="ps-3" aria-sort={runSortDirection === 'asc' ? 'ascending' : 'descending'}>Model</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Latency</TableHead>
+                                                <TableHead>Checks</TableHead>
+                                                <TableHead>
+                                                    <span
+                                                        className="inline-flex items-center gap-1"
+                                                        data-tooltip="Exact provider cost when returned, otherwise the catalog estimate for that model."
+                                                        tabIndex={0}
+                                                    >
+                                                        Cost
+                                                        <Info aria-hidden="true" className="size-3.5" />
+                                                    </span>
+                                                </TableHead>
+                                                <TableHead>Rating</TableHead>
+                                                <TableHead>Note</TableHead>
+                                                <TableHead className="w-10 pe-3"><span className="sr-only">Actions</span></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {displayRuns.map((run) => {
+                                                const isPending = isRunActive(run);
+                                                const isOptimistic = isOptimisticRun(run);
+                                                const statusMeta = getRunStatusMeta(run);
+                                                const parsedError = run.error_message ? parseRunError(run.error_message) : null;
+                                                const validationStats = getValidationCheckStats(run.validation_checks);
+                                                const warningCount = getValidationWarnings(run.validation_checks).length;
+                                                const verdict = getRunValidationVerdict(run);
+                                                const costEstimateLabel = getModelCostEstimateLabel(run.provider, run.model);
+                                                const persistedComment = normalizeRunCommentDraft(run.run_comment || '');
+                                                const canEditComment = !isPending && !isOptimistic;
+                                                const runTimestamp = getRunTimestampIso(run);
+
+                                                return (
+                                                    <TableRow key={run.id} className="[&>td]:align-top">
+                                                        <TableCell className="ps-3">
+                                                            <Button
+                                                                type="button"
+                                                                variant="link"
+                                                                className="h-auto max-w-[260px] justify-start p-0 font-medium text-foreground"
+                                                                onClick={() => openRunDetails(run, 'model')}
+                                                                disabled={isOptimistic}
+                                                                aria-label={`Open run #${run.run_index} of ${run.label || run.model}`}
+                                                            >
+                                                                <ProviderLabel provider={run.provider} model={run.model} />
+                                                            </Button>
+                                                            <div className="text-xs tabular-nums text-muted-foreground">
+                                                                Run #{run.run_index}
+                                                                <span aria-hidden="true"> · </span>
+                                                                <span data-tooltip={formatTimestamp(runTimestamp)}>{formatRelativeTime(runTimestamp)}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <AdminStatusBadge tone={statusMeta.tone}>{statusMeta.label}</AdminStatusBadge>
+                                                            {parsedError && (
+                                                                <div className="mt-1.5 flex max-w-[280px] flex-col items-start gap-1 whitespace-normal text-xs text-rose-700 dark:text-rose-200">
+                                                                    <div className="line-clamp-2 break-words">{parsedError.shortMessage}</div>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="link"
+                                                                        size="xs"
+                                                                        className="h-auto p-0 text-xs"
+                                                                        onClick={() => openRunDetails(run, 'status')}
+                                                                        disabled={isOptimistic}
+                                                                        aria-label={`Error details for run #${run.run_index}`}
+                                                                    >
+                                                                        Details
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-sm text-foreground"><RunLatency run={run} /></TableCell>
+                                                        <TableCell className="text-sm">
+                                                            {hasRunValidationDetails(run) && run.schema_valid !== null ? (
+                                                                <div className="flex flex-col items-start gap-1">
+                                                                    <AdminStatusBadge tone={verdict.tone}>
+                                                                        <span className="tabular-nums">
+                                                                            {run.schema_valid ? 'Valid' : 'Invalid'}
+                                                                            {validationStats.total > 0 && ` ${validationStats.passed}/${validationStats.total}`}
+                                                                        </span>
+                                                                    </AdminStatusBadge>
+                                                                    {warningCount > 0 && (
+                                                                        <span className="text-xs tabular-nums text-amber-700 dark:text-amber-200">
+                                                                            {warningCount} warning{warningCount === 1 ? '' : 's'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : <span className="text-muted-foreground">—</span>}
+                                                        </TableCell>
+                                                        <TableCell className="text-sm tabular-nums text-foreground">
+                                                            {typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd) ? (
+                                                                formatUsd(run.cost_usd)
+                                                            ) : costEstimateLabel ? (
+                                                                <span data-tooltip="Catalog estimate; the provider returned no cost.">
+                                                                    {costEstimateLabel}
+                                                                    <span className="ms-1 text-xs text-muted-foreground">est.</span>
+                                                                </span>
+                                                            ) : <span className="text-muted-foreground">—</span>}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <RunRatingButtons
+                                                                run={run}
+                                                                disabled={loading || isPending || ratingSavingRunId === run.id || commentSavingRunId === run.id}
+                                                                onRate={(rating) => void updateRunRating(run, rating)}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="xs"
+                                                                className={persistedComment ? 'max-w-[200px] justify-start font-normal text-foreground' : 'text-muted-foreground'}
+                                                                onClick={() => openRunDetails(run, 'note')}
+                                                                disabled={!canEditComment}
+                                                                data-tooltip={persistedComment || undefined}
+                                                                aria-label={persistedComment ? `Edit note for run #${run.run_index}` : `Add note for run #${run.run_index}`}
+                                                            >
+                                                                {persistedComment ? (
+                                                                    <span className="truncate">{persistedComment}</span>
+                                                                ) : (
+                                                                    <>
+                                                                        <NotePencil />
+                                                                        Add note
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        </TableCell>
+                                                        <TableCell className="pe-3 text-end">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon-sm"
+                                                                        aria-label={`Actions for run #${run.run_index} of ${run.label || run.model}`}
+                                                                        data-tooltip="Run actions"
+                                                                    >
+                                                                        <DotsThree weight="bold" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end" className="min-w-[190px]">
+                                                                    <DropdownMenuItem disabled={isOptimistic} onSelect={() => openRunDetails(run, 'menu')}>
+                                                                        Open details
+                                                                    </DropdownMenuItem>
+                                                                    {run.trip_id && (
+                                                                        <DropdownMenuItem asChild>
+                                                                            <a
+                                                                                href={`/trip/${encodeURIComponent(run.trip_id)}`}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                onClick={() => trackEvent('admin__ai_benchmark_run--open_trip')}
+                                                                            >
+                                                                                <ArrowSquareOut />
+                                                                                Open trip
+                                                                            </a>
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuItem
+                                                                        disabled={loading || cancelling || isPending}
+                                                                        onSelect={() => {
+                                                                            trackEvent('admin__ai_benchmark_run--rerun', { source: 'menu' });
+                                                                            void rerunTarget(run);
+                                                                        }}
+                                                                    >
+                                                                        <ArrowClockwise />
+                                                                        Rerun model
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        disabled={isPending}
+                                                                        onSelect={() => {
+                                                                            trackEvent('admin__ai_benchmark_run--download', { source: 'menu' });
+                                                                            downloadRow(run);
+                                                                        }}
+                                                                    >
+                                                                        <DownloadSimple />
+                                                                        Download JSON
+                                                                    </DropdownMenuItem>
+                                                                    {isPending && (
+                                                                        <>
+                                                                            <DropdownMenuSeparator />
+                                                                            <DropdownMenuItem
+                                                                                variant="destructive"
+                                                                                disabled={cancelling || isOptimistic}
+                                                                                onSelect={() => {
+                                                                                    trackEvent('admin__ai_benchmark_run--abort', { source: 'menu' });
+                                                                                    cancelRun(run);
+                                                                                }}
+                                                                            >
+                                                                                <StopCircle />
+                                                                                Abort run
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    )}
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </AdminSurfaceCard>
+                    </TabsContent>
+
+                    <TabsContent value="compare" className="mt-0 flex flex-col gap-4">
                         <AdminSurfaceCard className="flex flex-col gap-4">
                             <AdminSectionHeader
-                                title="7-day telemetry"
-                                description="Quick rankings from the last week. Open the telemetry page for charts and filters."
+                                title="Model comparison"
+                                description="Averages per model in this session, best rated first. Rate runs to rank them."
+                            />
+
+                            {modelComparisonRows.length === 0 ? (
+                                <AdminEmptyState
+                                    title="Nothing to compare yet"
+                                    description="Run at least one model, then rate its trips in Runs."
+                                    action={(
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setWorkspaceTab('setup')}>
+                                            Go to setup
+                                        </Button>
+                                    )}
+                                />
+                            ) : (
+                                <div className="overflow-x-auto rounded-md border border-border">
+                                    <Table className="text-xs">
+                                        <TableHeader className="bg-secondary">
+                                            <TableRow className="hover:bg-transparent">
+                                                <TableHead className="ps-3">Model</TableHead>
+                                                <TableHead>Rating</TableHead>
+                                                <TableHead>Success</TableHead>
+                                                <TableHead>Avg time</TableHead>
+                                                <TableHead>Avg cost</TableHead>
+                                                <TableHead>Avg tokens</TableHead>
+                                                <TableHead>
+                                                    <span data-tooltip="Share of runs where the semantic repair pass ran." tabIndex={0}>Repair</span>
+                                                </TableHead>
+                                                <TableHead className="pe-3">Runs</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {modelComparisonRows.map((row) => {
+                                                const satisfactionClass = row.averageRatingScore === null
+                                                    ? 'text-muted-foreground'
+                                                    : row.averageRatingScore >= 2.5
+                                                        ? 'text-emerald-700 dark:text-emerald-200'
+                                                        : row.averageRatingScore >= 1.75
+                                                            ? 'text-amber-700 dark:text-amber-200'
+                                                            : 'text-rose-700 dark:text-rose-200';
+                                                return (
+                                                    <TableRow key={`${row.provider}-${row.model}`}>
+                                                        <TableCell className="ps-3 font-medium text-foreground">
+                                                            <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
+                                                        </TableCell>
+                                                        <TableCell className="tabular-nums">
+                                                            {row.averageRatingScore === null ? (
+                                                                <span className="text-muted-foreground">No votes</span>
+                                                            ) : (
+                                                                <>
+                                                                    <span className={`font-medium ${satisfactionClass}`}>{row.averageRatingScore.toFixed(2)} / 3</span>
+                                                                    <span className="ms-1 text-muted-foreground">· {row.ratingCount} vote{row.ratingCount === 1 ? '' : 's'}</span>
+                                                                </>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="tabular-nums text-foreground">{Math.round(row.successRate * 100)}%</TableCell>
+                                                        <TableCell className="tabular-nums text-foreground">{formatDuration(row.averageLatencyMs)}</TableCell>
+                                                        <TableCell className="tabular-nums text-foreground">{formatUsd(row.averageCostUsd)}</TableCell>
+                                                        <TableCell className="tabular-nums text-foreground">{row.averageTotalTokens?.toLocaleString() ?? '—'}</TableCell>
+                                                        <TableCell className="tabular-nums text-foreground">{Math.round(row.repairRate * 100)}%</TableCell>
+                                                        <TableCell className="pe-3 tabular-nums text-foreground">{row.totalRuns}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </AdminSurfaceCard>
+
+                        <AdminSurfaceCard className="flex flex-col gap-4">
+                            <AdminSectionHeader
+                                title="Last 7 days, all AI calls"
+                                description={snapshotTelemetrySummary ? (
+                                    <span className="tabular-nums">
+                                        {snapshotTelemetrySummary.total.toLocaleString()} calls · {snapshotTelemetrySummary.successRate.toFixed(1)}% success · {formatUsd(snapshotTelemetrySummary.totalCostUsd)}
+                                    </span>
+                                ) : 'Benchmark and live planner calls together. Leaders across the whole week.'}
                                 actions={(
                                     <>
                                         <Button
@@ -2277,10 +2443,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             aria-busy={snapshotTelemetryLoading || undefined}
                                         >
                                             <ArrowClockwise className={snapshotTelemetryLoading ? 'animate-spin' : ''} />
-                                            Refresh snapshot
+                                            Reload
                                         </Button>
                                         <Button asChild variant="ghost" size="sm">
-                                            <Link to="/admin/ai-benchmark/telemetry">Open telemetry page</Link>
+                                            <Link
+                                                to="/admin/ai-benchmark/telemetry"
+                                                onClick={() => trackEvent('admin__ai_benchmark--open_telemetry')}
+                                                {...getAnalyticsDebugAttributes('admin__ai_benchmark--open_telemetry')}
+                                            >
+                                                Open AI telemetry
+                                            </Link>
                                         </Button>
                                     </>
                                 )}
@@ -2288,30 +2460,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             {snapshotTelemetryError && <AdminErrorAlert message={snapshotTelemetryError} />}
 
-                            <div className="grid gap-4 sm:grid-cols-3">
-                                <AdminStatCard
-                                    label="Calls"
-                                    value={snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}
-                                    isLoading={snapshotTelemetryLoading}
-                                />
-                                <AdminStatCard
-                                    label="Success rate"
-                                    value={snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}
-                                    isLoading={snapshotTelemetryLoading}
-                                />
-                                <AdminStatCard
-                                    label="Cost"
-                                    value={snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}
-                                    isLoading={snapshotTelemetryLoading}
-                                />
-                            </div>
-
                             <div className="grid gap-4 xl:grid-cols-3">
                                 {snapshotTelemetryCards.map((card) => (
                                     <AdminStatCard
                                         key={card.id}
                                         label={card.title}
-                                        value={card.metric}
+                                        value={<span className="tabular-nums">{card.metric}</span>}
                                         hint={card.detail}
                                         isLoading={snapshotTelemetryLoading}
                                     >
@@ -2334,58 +2488,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <TabsContent value="setup" className="mt-0">
                         <AdminSurfaceCard className="p-0">
-                            <AdminSectionHeader
-                                className="border-b border-border p-4 md:px-6"
-                                title={(
-                                    <span className="flex flex-wrap items-center gap-2">
-                                        Benchmark setup
-                                        <Badge variant="secondary" className="tabular-nums">{runnableTargets.length} active</Badge>
-                                        <Badge variant="outline" className="tabular-nums">{selectedTargets.length} selected</Badge>
-                                    </span>
-                                )}
-                                description="Choose one trip template, tune execution, then compare the selected models."
-                                actions={(
-                                    <>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            onClick={() => {
-                                                scrollToResults();
-                                                void runBenchmark();
-                                            }}
-                                            disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
-                                        >
-                                            <Play weight="fill" />
-                                            Run {runnableTargets.length} model{runnableTargets.length === 1 ? '' : 's'}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={cancelActiveRunsInSession}
-                                            disabled={loading || cancelling || !session || !hasPendingRuns}
-                                        >
-                                            <StopCircle />
-                                            Stop
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={cleanupSession}
-                                            disabled={loading || cancelling || !session || hasPendingRuns}
-                                        >
-                                            <Trash />
-                                            Clear
-                                        </Button>
-                                    </>
-                                )}
-                            />
-
                             <div className="divide-y divide-border">
-                                <section className="grid gap-4 p-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(240px,1fr)_minmax(300px,1.4fr)] md:p-6">
-                                    <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
-                                        Trip template
+                                <section className="flex flex-col gap-3 p-4 md:p-6">
+                                    <AdminSectionHeader
+                                        title="Trip template"
+                                        description="The trip request every model receives."
+                                        actions={(
+                                            <Button type="button" variant="outline" size="sm" onClick={() => setTemplateDetailsOpen(true)}>
+                                                Details and prompt
+                                            </Button>
+                                        )}
+                                    />
+                                    <div className="grid gap-3 md:grid-cols-[minmax(220px,0.8fr)_minmax(300px,1.6fr)]">
                                         <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
                                             <SelectTrigger aria-label="Trip template" className="h-9">
                                                 <SelectValue placeholder="Choose a template" />
@@ -2399,56 +2513,218 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 </SelectGroup>
                                             </SelectContent>
                                         </Select>
-                                    </label>
-
-                                    <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
-                                        Session name
-                                        <Input
-                                            aria-label="Session name"
-                                            value={sessionName}
-                                            onChange={(event) => setSessionName(event.target.value)}
-                                            className="h-9"
-                                        />
-                                    </label>
-
-                                    <div className="min-w-0 rounded-md border border-border bg-secondary p-3">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                                    <span className="min-w-0 truncate text-sm font-semibold text-foreground">{selectedPreset?.name || 'Template'}</span>
-                                                    <Badge variant="outline">{selectedPreset?.kind === 'custom' ? 'Custom' : 'System'}</Badge>
-                                                </div>
-                                                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                                    {selectedPreset?.description || 'No description saved for this template.'}
-                                                </p>
+                                        <div className="min-w-0">
+                                            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                                                <Badge variant="outline">{selectedPreset?.kind === 'custom' ? 'Custom' : 'System'}</Badge>
+                                                <Badge variant="secondary" className="max-w-full truncate">{destinations || 'No destination'}</Badge>
+                                                <Badge variant="outline">{dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}</Badge>
+                                                <Badge variant="outline">{budget}</Badge>
+                                                <Badge variant="outline">{pace}</Badge>
                                             </div>
-                                            <Button type="button" variant="outline" size="xs" onClick={() => setTemplateDetailsOpen(true)}>
-                                                Details
-                                            </Button>
-                                        </div>
-                                        <div className="mt-2 flex flex-wrap gap-1.5">
-                                            <Badge variant="secondary" className="max-w-full truncate">{destinations || 'No destination'}</Badge>
-                                            <Badge variant="outline">{dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}</Badge>
-                                            <Badge variant="outline">{budget}</Badge>
-                                            <Badge variant="outline">{pace}</Badge>
+                                            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                                                {selectedPreset?.description || 'No description saved for this template.'}
+                                            </p>
                                         </div>
                                     </div>
                                 </section>
 
                                 <section className="flex flex-col gap-3 p-4 md:p-6">
                                     <AdminSectionHeader
-                                        as="h3"
-                                        title="Execution"
-                                        description="Run defaults apply unless a model has its own reasoning setting below."
+                                        title="Models"
+                                        description="Switch a model off to skip it without removing it."
                                         actions={(
-                                            <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <span className="tabular-nums">{Math.max(0, runnableTargets.length - benchmarkConcurrency)} queued</span>
-                                                <span aria-hidden="true">·</span>
-                                                <span>{preferencesLoaded ? 'Saved preferences ready' : 'Loading preferences'}</span>
-                                            </span>
+                                            <>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        trackEvent('admin__ai_benchmark--add_models');
+                                                        openModelPicker();
+                                                    }}
+                                                    disabled={loading || cancelling || hasPendingRuns}
+                                                    {...getAnalyticsDebugAttributes('admin__ai_benchmark--add_models')}
+                                                >
+                                                    <Plus />
+                                                    Add models
+                                                </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon-sm"
+                                                            disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}
+                                                            aria-label="Model list actions"
+                                                            data-tooltip="Model list actions"
+                                                        >
+                                                            <DotsThree weight="bold" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="min-w-[200px]">
+                                                        <DropdownMenuItem disabled={allTargetsActive} onSelect={activateAllModelTargets}>
+                                                            <ToggleRight />
+                                                            Activate all
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem disabled={allTargetsInactive} onSelect={deactivateAllModelTargets}>
+                                                            <ToggleLeft />
+                                                            Deactivate all
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem variant="destructive" onSelect={() => void removeAllModelTargets()}>
+                                                            <Trash />
+                                                            Remove all…
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </>
                                         )}
                                     />
-                                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+
+                                    {selectedTargets.length === 0 ? (
+                                        <AdminEmptyState
+                                            title="No benchmark models selected"
+                                            description="Add models to build a comparison set."
+                                        />
+                                    ) : (
+                                        <div className="overflow-x-auto rounded-md border border-border">
+                                            <Table>
+                                                <TableHeader className="bg-secondary">
+                                                    <TableRow className="hover:bg-transparent">
+                                                        <TableHead className="ps-4">Model</TableHead>
+                                                        <TableHead className="w-[120px]">
+                                                            <span className="inline-flex items-center gap-1" data-tooltip={COST_ESTIMATE_FOOTNOTE} tabIndex={0}>
+                                                                Est. cost
+                                                                <Info aria-hidden="true" className="size-3.5" />
+                                                            </span>
+                                                        </TableHead>
+                                                        <TableHead className="w-[220px]">Reasoning</TableHead>
+                                                        <TableHead className="w-[90px]">Active</TableHead>
+                                                        <TableHead className="w-[90px] pe-4"><span className="sr-only">Actions</span></TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {selectedTargets.map((model) => {
+                                                        const isActive = !inactiveTargetIdSet.has(model.id);
+                                                        const singleTarget: AiBenchmarkRunTarget = { provider: model.provider, model: model.model, label: model.label };
+                                                        return (
+                                                            <TableRow key={model.id} className={!isActive ? 'bg-secondary/70 text-muted-foreground' : undefined}>
+                                                                <TableCell className="ps-4">
+                                                                    <div className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                                                                        <AiProviderLogo provider={model.provider} model={model.model} size={20} />
+                                                                        <span className="min-w-0 truncate">{model.label}</span>
+                                                                        {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">App default</Badge>}
+                                                                    </div>
+                                                                    <div className="select-all ps-7 font-mono text-xs text-muted-foreground">{model.providerShortName} · {model.model}</div>
+                                                                </TableCell>
+                                                                <TableCell className="text-sm tabular-nums text-foreground">
+                                                                    {model.estimatedCostPerQueryLabel || <span className="text-muted-foreground">—</span>}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <ModelReasoningSelect
+                                                                        model={model}
+                                                                        runDefault={benchmarkReasoningMode}
+                                                                        value={modelReasoningModes[model.id]}
+                                                                        onChange={(value) => setModelReasoningModes((current) => {
+                                                                            if (value === undefined) {
+                                                                                const next = { ...current };
+                                                                                delete next[model.id];
+                                                                                return next;
+                                                                            }
+                                                                            return { ...current, [model.id]: value };
+                                                                        })}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Switch
+                                                                        checked={isActive}
+                                                                        onCheckedChange={() => toggleModelTargetActive(model.id)}
+                                                                        disabled={loading || cancelling || hasPendingRuns}
+                                                                        aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${model.label}`}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell className="pe-4">
+                                                                    <div className="flex justify-end gap-1">
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="icon-sm"
+                                                                            onClick={() => {
+                                                                                trackEvent('admin__ai_benchmark--run_single');
+                                                                                scrollToResults();
+                                                                                runSingleTarget(singleTarget);
+                                                                            }}
+                                                                            disabled={loading || cancelling || hasPendingRuns}
+                                                                            aria-label={`Run ${model.label} only`}
+                                                                            data-tooltip={`Run ${model.label} only`}
+                                                                            {...getAnalyticsDebugAttributes('admin__ai_benchmark--run_single')}
+                                                                        >
+                                                                            <Play weight="fill" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="icon-sm"
+                                                                            onClick={() => void removeModelTarget(model.id)}
+                                                                            disabled={loading || cancelling || hasPendingRuns}
+                                                                            aria-label={`Remove ${model.label}`}
+                                                                            data-tooltip={`Remove ${model.label}`}
+                                                                        >
+                                                                            <X />
+                                                                        </Button>
+                                                                    </div>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
+
+                                    <div className="grid gap-1.5 border-t border-border pt-3 md:grid-cols-[minmax(0,1fr)_minmax(260px,380px)] md:items-center">
+                                        <div>
+                                            <div className="text-sm font-medium text-foreground">App default model</div>
+                                            <p className="text-xs text-muted-foreground">What the planner and the Trip Agent use for real trips. Picking a model here also approves it.</p>
+                                        </div>
+                                        <AiModelPicker
+                                            value={aiRuntimeSettings.defaultModelId}
+                                            models={activeModels}
+                                            onChange={(value) => {
+                                                trackEvent('admin__ai_benchmark--app_default_model');
+                                                void persistAiRuntimeSettings({
+                                                    defaultModelId: value,
+                                                    approvedOpenRouterModels: Array.from(new Set([
+                                                        ...aiRuntimeSettings.approvedOpenRouterModels,
+                                                        ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
+                                                    ])),
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                </section>
+
+                                <section className="flex flex-col gap-3 p-4 md:p-6">
+                                    <AdminSectionHeader
+                                        title="Execution"
+                                        description="Applies to the next run. A model's own reasoning setting wins over the run default."
+                                    />
+                                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                        <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
+                                            New session name
+                                            <Input
+                                                aria-label="Session name"
+                                                value={sessionName}
+                                                onChange={(event) => setSessionName(event.target.value)}
+                                                className="h-9"
+                                            />
+                                            <span className="font-normal text-muted-foreground">
+                                                {session
+                                                    ? `Runs join “${session.name || 'Unnamed session'}”. Start a new session from the Runs menu to use this name.`
+                                                    : 'Names the session your next run creates.'}
+                                            </span>
+                                        </label>
+
                                         <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
                                             Run default reasoning
                                             <Select value={benchmarkReasoningMode} onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}>
@@ -2477,7 +2753,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     </SelectGroup>
                                                 </SelectContent>
                                             </Select>
-                                            <span className="font-normal text-muted-foreground">Lower reduces provider contention and timeout risk.</span>
+                                            <span className="font-normal text-muted-foreground">
+                                                {queuedBehindConcurrency > 0
+                                                    ? `${queuedBehindConcurrency} model${queuedBehindConcurrency === 1 ? '' : 's'} will wait in the queue. Lower reduces timeout risk.`
+                                                    : 'Lower reduces provider contention and timeout risk.'}
+                                            </span>
                                         </label>
 
                                         <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
@@ -2500,7 +2780,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <span className="font-normal text-muted-foreground">Seconds per model; actual latency stays visible.</span>
                                         </label>
 
-                                        <div className="flex min-h-[76px] items-start justify-between gap-3 rounded-md border border-border bg-secondary p-3">
+                                        <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-secondary p-3">
                                             <div>
                                                 <div className="text-xs font-medium text-foreground">Compact output</div>
                                                 <p className="mt-1 text-xs text-muted-foreground">Shorter JSON, faster comparisons.</p>
@@ -2509,531 +2789,30 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         </div>
                                     </div>
                                 </section>
-
-                                <section className="flex flex-col gap-3 p-4 md:p-6">
-                                    <AdminSectionHeader
-                                        as="h3"
-                                        title="Models"
-                                        description="Set each model’s reasoning, active status, and single-run actions."
-                                        actions={(
-                                            <Button type="button" variant="outline" size="sm" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns}>
-                                                <Plus />
-                                                Add models
-                                            </Button>
-                                        )}
-                                    />
-
-                                    <div className="grid gap-3 rounded-md border border-border bg-secondary p-3 lg:grid-cols-[minmax(260px,1fr)_auto]">
-                                        <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
-                                            Frontend default model
-                                            <Select
-                                                value={aiRuntimeSettings.defaultModelId}
-                                                onValueChange={(value) => void persistAiRuntimeSettings({
-                                                    defaultModelId: value,
-                                                    approvedOpenRouterModels: Array.from(new Set([
-                                                        ...aiRuntimeSettings.approvedOpenRouterModels,
-                                                        ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
-                                                    ])),
-                                                })}
-                                            >
-                                                <SelectTrigger aria-label="Frontend default model" className="h-9 bg-card">
-                                                    <SelectValue placeholder="Choose the frontend model" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                        {sortedModels.filter((model) => model.availability === 'active').map((model) => (
-                                                            <SelectItem key={model.id} value={model.id}>{model.providerShortName} · {model.label}</SelectItem>
-                                                        ))}
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                        </label>
-                                        <div className="flex flex-wrap items-end gap-2">
-                                            <Button type="button" variant="outline" size="sm" onClick={activateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}>
-                                                <ToggleRight /> Activate all
-                                            </Button>
-                                            <Button type="button" variant="outline" size="sm" onClick={deactivateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}>
-                                                <ToggleLeft /> Deactivate all
-                                            </Button>
-                                            <Button type="button" variant="destructive" size="sm" onClick={() => void removeAllModelTargets()} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
-                                                <Trash /> Remove all
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {selectedTargets.length === 0 ? (
-                                        <AdminEmptyState
-                                            title="No benchmark models selected"
-                                            description="Add models to build a comparison set."
-                                        />
-                                    ) : (
-                                        <div className="overflow-hidden rounded-md border border-border">
-                                            <Table>
-                                                <TableHeader className="bg-secondary">
-                                                    <TableRow className="hover:bg-transparent">
-                                                        <TableHead className="ps-4">Model</TableHead>
-                                                        <TableHead className="w-[220px]">Reasoning</TableHead>
-                                                        <TableHead className="w-[110px]">Active</TableHead>
-                                                        <TableHead className="w-[100px] pe-4 text-end">Actions</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {selectedTargets.map((model) => {
-                                                        const isActive = !inactiveTargetIdSet.has(model.id);
-                                                        const singleTarget: AiBenchmarkRunTarget = { provider: model.provider, model: model.model, label: model.label };
-                                                        return (
-                                                            <TableRow key={model.id} className={!isActive ? 'bg-secondary/70 text-muted-foreground' : undefined}>
-                                                                <TableCell className="ps-4">
-                                                                    <div className="flex min-w-0 items-center gap-2 font-medium text-foreground">
-                                                                        <AiProviderLogo provider={model.provider} model={model.model} size={20} />
-                                                                        <span className="min-w-0 truncate">{model.label}</span>
-                                                                        {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend</Badge>}
-                                                                    </div>
-                                                                    <div className="ps-7 font-mono text-xs text-muted-foreground">{model.providerShortName} · {model.model}</div>
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <ModelReasoningSelect
-                                                                        model={model}
-                                                                        runDefault={benchmarkReasoningMode}
-                                                                        value={modelReasoningModes[model.id]}
-                                                                        onChange={(value) => setModelReasoningModes((current) => {
-                                                                            if (value === undefined) {
-                                                                                const next = { ...current };
-                                                                                delete next[model.id];
-                                                                                return next;
-                                                                            }
-                                                                            return { ...current, [model.id]: value };
-                                                                        })}
-                                                                    />
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Switch
-                                                                            checked={isActive}
-                                                                            onCheckedChange={() => toggleModelTargetActive(model.id)}
-                                                                            disabled={loading || cancelling || hasPendingRuns}
-                                                                            aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${model.label}`}
-                                                                        />
-                                                                        <span className="text-xs text-muted-foreground">{isActive ? 'On' : 'Off'}</span>
-                                                                    </div>
-                                                                </TableCell>
-                                                                <TableCell className="pe-4">
-                                                                    <div className="flex justify-end gap-1">
-                                                                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => { scrollToResults(); runSingleTarget(singleTarget); }} disabled={loading || cancelling || hasPendingRuns} aria-label={`Run ${model.label} only`} title={`Run ${model.label} only`}>
-                                                                            <Play weight="fill" />
-                                                                        </Button>
-                                                                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => void removeModelTarget(model.id)} disabled={loading || cancelling || hasPendingRuns} aria-label={`Remove ${model.label}`} title={`Remove ${model.label}`}>
-                                                                            <X />
-                                                                        </Button>
-                                                                    </div>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    })}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    )}
-                                    <p className="text-xs text-muted-foreground">{COST_ESTIMATE_FOOTNOTE}</p>
-                                </section>
                             </div>
-                        </AdminSurfaceCard>
-                    </TabsContent>
-
-                    <TabsContent value="results" className="mt-0">
-                        <AdminSurfaceCard ref={resultsSectionRef} className="flex flex-col gap-4">
-                            <AdminSectionHeader
-                                title="Benchmark runs"
-                                description={session ? `Session: ${session.name || 'Unnamed'} (${session.share_token})` : 'No session loaded'}
-                                actions={(
-                                    <>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => downloadAllZip(false)}
-                                            disabled={loading || !session || runs.length === 0}
-                                        >
-                                            <DownloadSimple />
-                                            Download all
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => downloadAllZip(true)}
-                                            disabled={loading || !session || runs.length === 0}
-                                        >
-                                            <DownloadSimple />
-                                            Download all + logs
-                                        </Button>
-                                    </>
-                                )}
-                            />
-
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                <Select value={providerFilter} onValueChange={setProviderFilter}>
-                                    <SelectTrigger aria-label="Filter runs by provider" className="h-8 w-[180px] text-xs">
-                                        <SelectValue placeholder="All providers" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All providers</SelectItem>
-                                        {providerOptions.map((provider) => (
-                                            <SelectItem key={provider} value={provider}>
-                                                <ProviderLabel
-                                                    provider={provider}
-                                                    providerClassName="text-foreground"
-                                                    logoSize={12}
-                                                />
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
-                                    <Checkbox
-                                        aria-label="Hide failed"
-                                        checked={hideFailedRuns}
-                                        onCheckedChange={(checked) => setHideFailedRuns(checked === true)}
-                                    />
-                                    Hide failed
-                                </label>
-                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
-                                    <Checkbox
-                                        aria-label="Only warnings"
-                                        checked={onlyWarningRuns}
-                                        onCheckedChange={(checked) => setOnlyWarningRuns(checked === true)}
-                                    />
-                                    Only warnings
-                                </label>
-                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
-                                    <Checkbox
-                                        aria-label="Only unrated"
-                                        checked={onlyUnratedRuns}
-                                        onCheckedChange={(checked) => setOnlyUnratedRuns(checked === true)}
-                                    />
-                                    Only unrated
-                                </label>
-                            </div>
-
-                            {summary && (
-                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                    <AdminStatCard label="Completed" value={`${summary.completed}/${summary.total}`} />
-                                    <AdminStatCard label="Failed" value={summary.failed} />
-                                    <AdminStatCard label="Avg latency" value={formatDuration(summary.averageLatencyMs)} />
-                                    <AdminStatCard label="Total est." value={hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'} />
-                                </div>
-                            )}
-
-                            <p className="text-xs text-muted-foreground">
-                                Cost column uses exact provider cost when returned; otherwise it falls back to the catalog estimate for that model.
-                            </p>
-
-                            <div className="overflow-hidden rounded-md border border-border">
-                                <Table>
-                                    <TableHeader className="bg-secondary">
-                                        <TableRow className="hover:bg-transparent">
-                                            <TableHead className="ps-3">Model</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead aria-sort={runSortDirection === 'asc' ? 'ascending' : 'descending'}>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    className="-ms-2 font-medium text-muted-foreground"
-                                                    onClick={() => setRunSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
-                                                    title={runSortDirection === 'desc' ? 'Newest first — click for oldest first' : 'Oldest first — click for newest first'}
-                                                >
-                                                    Run at
-                                                    <ArrowsDownUp />
-                                                </Button>
-                                            </TableHead>
-                                            <TableHead>Latency</TableHead>
-                                            <TableHead>Structure</TableHead>
-                                            <TableHead>Cost</TableHead>
-                                            <TableHead>Trip</TableHead>
-                                            <TableHead>Rating</TableHead>
-                                            <TableHead>Comment</TableHead>
-                                            <TableHead className="pe-3">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {displayRuns.length === 0 && (
-                                            <TableRow className="hover:bg-transparent">
-                                                <TableCell colSpan={10} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                                                    {loading ? 'Loading benchmark runs…' : 'No runs yet. Add models in Setup, then run the benchmark.'}
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-
-                                        {displayRuns.map((run) => {
-                                            const isPending = isRunActive(run);
-                                            const isCancelled = isRunCancelledByUser(run);
-                                            const statusMeta = RUN_STATUS_META[isCancelled ? 'cancelled' : run.status] || RUN_STATUS_META.queued;
-                                            const parsedError = parseRunError(run.error_message);
-                                            const hasErrorDetails = Boolean(run.error_message);
-                                            const validationStats = getValidationCheckStats(run.validation_checks);
-                                            const validationWarnings = getValidationWarnings(run.validation_checks);
-                                            const warningCount = validationWarnings.length;
-                                            const hasValidationDetails = validationStats.total > 0 || (run.validation_errors?.length || 0) > 0 || warningCount > 0 || run.schema_valid !== null;
-                                            const costEstimateLabel = getModelCostEstimateLabel(run.provider, run.model);
-                                            const persistedComment = normalizeRunCommentDraft(run.run_comment || '');
-                                            const commentDraft = runCommentDrafts[run.id] ?? run.run_comment ?? '';
-                                            const normalizedCommentDraft = normalizeRunCommentDraft(commentDraft);
-                                            const commentLength = normalizedCommentDraft.length;
-                                            const isCommentDirty = normalizedCommentDraft !== persistedComment;
-                                            const isCommentTooLong = commentLength > BENCHMARK_RUN_COMMENT_MAX_LENGTH;
-                                            const canEditComment = !isPending && !run.id.startsWith('optimistic-');
-                                            const isCommentSaveBusy = commentSavingRunId === run.id;
-                                            const canSaveComment = canEditComment && isCommentDirty && !isCommentTooLong && !isCommentSaveBusy && !loading;
-
-                                            return (
-                                                <TableRow key={run.id} className="[&>td]:align-top">
-                                                    <TableCell className="ps-3">
-                                                        <div className="font-medium text-foreground">
-                                                            <ProviderLabel provider={run.provider} model={run.model} />
-                                                        </div>
-                                                        <div className="text-xs tabular-nums text-muted-foreground">Run #{run.run_index}</div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <AdminStatusBadge tone={statusMeta.tone}>{statusMeta.label}</AdminStatusBadge>
-                                                        {run.error_message && (
-                                                            <div className="mt-1.5 flex max-w-[320px] flex-col items-start gap-1 whitespace-normal text-xs text-rose-700 dark:text-rose-200">
-                                                                <div className="break-words">{parsedError.shortMessage}</div>
-                                                                {hasErrorDetails && (
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="outline"
-                                                                        size="xs"
-                                                                        onClick={() => setErrorModalRun(run)}
-                                                                        aria-label={`Error details for run #${run.run_index}`}
-                                                                    >
-                                                                        Details
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs tabular-nums text-muted-foreground">{formatTimestamp(getRunTimestampIso(run))}</TableCell>
-                                                    <TableCell className="text-sm text-foreground"><RunLatency run={run} /></TableCell>
-                                                    <TableCell className="text-sm text-foreground">
-                                                        <div className="flex flex-col items-start gap-1">
-                                                            <div>
-                                                                {run.schema_valid === null ? '—' : run.schema_valid ? 'Valid' : 'Invalid'}
-                                                                {validationStats.total > 0 && (
-                                                                    <span className="ms-1 text-xs tabular-nums text-muted-foreground">({validationStats.passed}/{validationStats.total})</span>
-                                                                )}
-                                                            </div>
-                                                            {warningCount > 0 && (
-                                                                <AdminStatusBadge tone="warning">
-                                                                    {warningCount} warning{warningCount === 1 ? '' : 's'}
-                                                                </AdminStatusBadge>
-                                                            )}
-                                                            {hasValidationDetails && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="xs"
-                                                                    onClick={() => setValidationModalRun(run)}
-                                                                    aria-label={`Validation checks for run #${run.run_index}`}
-                                                                >
-                                                                    Checks
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-sm tabular-nums text-foreground">
-                                                        {typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd) ? (
-                                                            formatUsd(run.cost_usd)
-                                                        ) : costEstimateLabel ? (
-                                                            <div className="space-y-0.5">
-                                                                <div>{costEstimateLabel}</div>
-                                                                <div className="text-xs text-muted-foreground">Catalog est.</div>
-                                                            </div>
-                                                        ) : '—'}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {run.trip_id ? (
-                                                            <a
-                                                                href={`/trip/${encodeURIComponent(run.trip_id)}`}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="font-medium text-accent-700 underline-offset-4 hover:underline dark:text-accent-200"
-                                                            >
-                                                                Open trip
-                                                            </a>
-                                                        ) : '—'}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1">
-                                                            {(Object.keys(SATISFACTION_META) as SatisfactionRating[]).map((rating) => {
-                                                                const isActive = run.satisfaction_rating === rating;
-                                                                const isDisabled = loading || isPending || ratingSavingRunId === run.id || commentSavingRunId === run.id;
-                                                                const meta = SATISFACTION_META[rating];
-                                                                return (
-                                                                    <Button
-                                                                        key={rating}
-                                                                        type="button"
-                                                                        variant="outline"
-                                                                        size="icon-xs"
-                                                                        aria-label={`Mark run ${run.id} as ${meta.label}`}
-                                                                        aria-pressed={isActive}
-                                                                        title={meta.label}
-                                                                        onClick={() => updateRunRating(run, isActive ? null : rating)}
-                                                                        disabled={isDisabled}
-                                                                        className={isActive ? meta.activeClass : meta.idleClass}
-                                                                    >
-                                                                        {meta.icon}
-                                                                    </Button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="w-[250px] space-y-1.5 whitespace-normal">
-                                                            <Textarea
-                                                                aria-label={`Comment for run ${run.id}`}
-                                                                value={commentDraft}
-                                                                onChange={(event) => {
-                                                                    const nextValue = event.target.value;
-                                                                    setRunCommentDrafts((current) => ({
-                                                                        ...current,
-                                                                        [run.id]: nextValue,
-                                                                    }));
-                                                                }}
-                                                                disabled={!canEditComment || isCommentSaveBusy}
-                                                                maxLength={BENCHMARK_RUN_COMMENT_MAX_LENGTH}
-                                                                rows={2}
-                                                                placeholder={canEditComment ? 'Add run note…' : 'Comment after run completes'}
-                                                                className="min-h-0 resize-y bg-card px-2 py-1 text-xs md:text-xs"
-                                                            />
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <span className={`text-xs tabular-nums ${isCommentTooLong ? 'text-rose-600 dark:text-rose-300' : 'text-muted-foreground'}`}>
-                                                                    {commentLength}/{BENCHMARK_RUN_COMMENT_MAX_LENGTH}
-                                                                </span>
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="xs"
-                                                                    onClick={() => void saveRunComment(run)}
-                                                                    disabled={!canSaveComment}
-                                                                >
-                                                                    {isCommentSaveBusy ? 'Saving…' : 'Save'}
-                                                                </Button>
-                                                            </div>
-                                                            {run.run_comment_updated_at && (
-                                                                <div className="text-xs text-muted-foreground">
-                                                                    Saved {formatTimestamp(run.run_comment_updated_at)}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="pe-3">
-                                                        <div className="flex flex-wrap gap-1">
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="xs"
-                                                                onClick={() => rerunTarget(run)}
-                                                                disabled={loading || cancelling || isPending}
-                                                            >
-                                                                Rerun
-                                                            </Button>
-                                                            {isPending && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="xs"
-                                                                    onClick={() => cancelRun(run)}
-                                                                    disabled={cancelling}
-                                                                    className="border-amber-300 text-amber-800 hover:bg-amber-50 hover:text-amber-900 dark:border-amber-400/30 dark:text-amber-200 dark:hover:bg-amber-400/12 dark:hover:text-amber-100"
-                                                                >
-                                                                    Abort
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="xs"
-                                                                onClick={() => downloadRow(run)}
-                                                                disabled={isPending}
-                                                                title="Download this run as JSON"
-                                                            >
-                                                                <DownloadSimple />
-                                                                JSON
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            <section className="flex flex-col gap-3 border-t border-border pt-4">
-                                <AdminSectionHeader
-                                    as="h3"
-                                    title="Model dashboard"
-                                    description="Averages are computed from persisted runs in the loaded session."
-                                />
-
-                                {modelDashboardRows.length === 0 ? (
-                                    <AdminEmptyState
-                                        title="No model metrics yet"
-                                        description="Run the benchmark to see averages per model."
-                                        className="py-6"
-                                    />
-                                ) : (
-                                    <div className="overflow-hidden rounded-md border border-border">
-                                        <Table className="text-xs">
-                                            <TableHeader className="bg-secondary">
-                                                <TableRow className="hover:bg-transparent">
-                                                    <TableHead className="ps-3">Model</TableHead>
-                                                    <TableHead>Avg time</TableHead>
-                                                    <TableHead>Avg cost</TableHead>
-                                                    <TableHead>Avg tokens</TableHead>
-                                                    <TableHead>Success</TableHead>
-                                                    <TableHead>Repair</TableHead>
-                                                    <TableHead>Avg satisfaction</TableHead>
-                                                    <TableHead>Votes</TableHead>
-                                                    <TableHead className="pe-3">Runs</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {modelDashboardRows.map((row) => {
-                                                    const satisfactionClass = row.averageRatingScore === null
-                                                        ? 'text-muted-foreground'
-                                                        : row.averageRatingScore >= 2.5
-                                                            ? 'text-emerald-700 dark:text-emerald-200'
-                                                            : row.averageRatingScore >= 1.75
-                                                                ? 'text-amber-700 dark:text-amber-200'
-                                                                : 'text-rose-700 dark:text-rose-200';
-                                                    return (
-                                                        <TableRow key={`${row.provider}-${row.model}`}>
-                                                            <TableCell className="ps-3 font-medium text-foreground">
-                                                                <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
-                                                            </TableCell>
-                                                            <TableCell className="tabular-nums text-foreground">{formatDuration(row.averageLatencyMs)}</TableCell>
-                                                            <TableCell className="tabular-nums text-foreground">{formatUsd(row.averageCostUsd)}</TableCell>
-                                                            <TableCell className="tabular-nums text-foreground">{row.averageTotalTokens?.toLocaleString() ?? '—'}</TableCell>
-                                                            <TableCell className="tabular-nums text-foreground">{Math.round(row.successRate * 100)}%</TableCell>
-                                                            <TableCell className="tabular-nums text-foreground">{Math.round(row.repairRate * 100)}%</TableCell>
-                                                            <TableCell className={`font-medium tabular-nums ${satisfactionClass}`}>
-                                                                {row.averageRatingScore === null ? 'No votes' : `${row.averageRatingScore.toFixed(2)} / 3`}
-                                                            </TableCell>
-                                                            <TableCell className="tabular-nums text-foreground">{row.ratingCount}</TableCell>
-                                                            <TableCell className="pe-3 tabular-nums text-foreground">{row.totalRuns}</TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                )}
-                            </section>
                         </AdminSurfaceCard>
                     </TabsContent>
                 </Tabs>
+
+                <AiBenchmarkRunSheet
+                    run={inspectedRun}
+                    onOpenChange={(open) => { if (!open) setInspectedRunId(null); }}
+                    costEstimateLabel={inspectedRun ? getModelCostEstimateLabel(inspectedRun.provider, inspectedRun.model) : null}
+                    commentDraft={inspectedRun ? (runCommentDrafts[inspectedRun.id] ?? inspectedRun.run_comment ?? '') : ''}
+                    onCommentDraftChange={(value) => {
+                        if (!inspectedRun) return;
+                        setRunCommentDrafts((current) => ({ ...current, [inspectedRun.id]: value }));
+                    }}
+                    onSaveComment={() => { if (inspectedRun) void saveRunComment(inspectedRun); }}
+                    commentSaving={Boolean(inspectedRun && commentSavingRunId === inspectedRun.id)}
+                    onRate={(rating) => { if (inspectedRun) void updateRunRating(inspectedRun, rating); }}
+                    ratingSaving={Boolean(inspectedRun && ratingSavingRunId === inspectedRun.id)}
+                    busy={loading}
+                    cancelling={cancelling}
+                    onRerun={() => { if (inspectedRun) void rerunTarget(inspectedRun); }}
+                    onAbort={() => { if (inspectedRun) cancelRun(inspectedRun); }}
+                    onDownload={() => { if (inspectedRun) downloadRow(inspectedRun); }}
+                />
 
                 <AppModal
                     isOpen={templateDetailsOpen}
@@ -3047,6 +2826,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <Button type="button" variant="ghost" size="sm" onClick={openPromptPreview}>Preview prompt</Button>
                             <div className="flex items-center gap-2">
+                                <Button type="button" variant="ghost" size="sm" onClick={() => { setTemplateDetailsOpen(false); openPresetEditor('create'); }}>
+                                    Save as new template
+                                </Button>
                                 {selectedPresetId !== CUSTOM_JSON_PRESET_ID && (
                                     <Button type="button" variant="outline" size="sm" onClick={() => { setTemplateDetailsOpen(false); openPresetEditor('edit'); }}>
                                         Edit template
@@ -3067,7 +2849,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             ].map((item) => (
                                 <div key={item.label} className="min-w-0 rounded-md border border-border bg-secondary p-3">
                                     <div className="text-xs font-medium text-muted-foreground">{item.label}</div>
-                                    <div className="mt-1 truncate text-sm font-semibold text-foreground" title={item.value}>{item.value}</div>
+                                    <div className="mt-1 truncate text-sm font-semibold text-foreground" data-tooltip={item.value}>{item.value}</div>
                                 </div>
                             ))}
                         </div>
@@ -3119,14 +2901,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <AppModal
                     isOpen={modelModalOpen}
                     onClose={() => setModelModalOpen(false)}
-                    title="Add model targets"
-                    description="Select the models to include in benchmark execution."
+                    title="Choose benchmark models"
+                    description="Tick the models to compare. Saving also approves new OpenRouter models for the app."
                     size="lg"
                     mobileSheet={false}
                     footer={(
                         <div className="flex items-center justify-end gap-2">
                             <Button type="button" variant="outline" size="sm" onClick={() => setModelModalOpen(false)}>Cancel</Button>
-                            <Button type="button" size="sm" onClick={() => void saveModelDraft()}>Save {modelDraftIds.length} models</Button>
+                            <Button type="button" size="sm" onClick={() => void saveModelDraft()}>Save {modelDraftIds.length} model{modelDraftIds.length === 1 ? '' : 's'}</Button>
                         </div>
                     )}
                 >
@@ -3199,25 +2981,27 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             const selected = modelDraftIds.includes(model.id);
                                             const disabled = model.availability !== 'active';
                                             return (
-                                                <button
+                                                <label
                                                     key={model.id}
-                                                    type="button"
-                                                    disabled={disabled}
-                                                    aria-pressed={selected}
-                                                    onClick={() => toggleModelDraft(model.id)}
                                                     className={[
-                                                        'flex w-full items-center justify-between rounded-md border p-2 text-start text-xs outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                                        'flex w-full cursor-pointer items-center gap-3 rounded-md border p-2 text-start text-xs transition-colors has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50',
                                                         selected
                                                             ? 'border-accent-300 bg-accent-50 text-accent-900 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary',
                                                         disabled ? 'cursor-not-allowed opacity-50' : '',
                                                     ].join(' ')}
                                                 >
-                                                    <span className="flex min-w-0 flex-col gap-1">
+                                                    <Checkbox
+                                                        checked={selected}
+                                                        disabled={disabled}
+                                                        onCheckedChange={() => toggleModelDraft(model.id)}
+                                                        aria-label={`Include ${model.label}`}
+                                                    />
+                                                    <span className="flex min-w-0 flex-1 flex-col gap-1">
                                                         <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
                                                             <AiProviderLogo provider={model.provider} model={model.model} size={12} />
                                                             <span className="min-w-0 truncate font-semibold">{model.label}</span>
-                                                            {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend default</Badge>}
+                                                            {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">App default</Badge>}
                                                             {model.catalogSource === 'openrouter-live' && <Badge variant="outline">Live</Badge>}
                                                             {model.isFree && <Badge variant="outline">Free</Badge>}
                                                         </span>
@@ -3229,7 +3013,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         </span>
                                                     </span>
                                                     <span className="ms-2 shrink-0 text-xs tabular-nums text-muted-foreground">{model.estimatedCostPerQueryLabel}</span>
-                                                </button>
+                                                </label>
                                             );
                                         })}
                                     </div>
@@ -3242,8 +3026,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <AppModal
                     isOpen={Boolean(presetEditor)}
                     onClose={() => setPresetEditor(null)}
-                    title={presetEditor?.mode === 'create' ? 'Create custom preset' : 'Edit preset'}
-                    description="Compact benchmark mask editor. Saved presets are owner-scoped in DB."
+                    title={presetEditor?.mode === 'create' ? 'New trip template' : 'Edit trip template'}
+                    description="Templates are saved to your admin account and reused for every run."
                     size="lg"
                     mobileSheet={false}
                     footer={(
@@ -3252,7 +3036,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 Cancel
                             </Button>
                             <Button type="button" size="sm" onClick={() => void savePresetDraft()}>
-                                Save preset
+                                Save template
                             </Button>
                         </div>
                     )}
@@ -3543,76 +3327,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             rows={18}
                             className="bg-secondary font-mono text-xs md:text-xs"
                         />
-                    )}
-                </AppModal>
-
-                <AppModal
-                    isOpen={Boolean(errorModalRun)}
-                    onClose={() => setErrorModalRun(null)}
-                    title="Run error details"
-                    closeLabel="Close run error details"
-                    size="lg"
-                    mobileSheet={false}
-                >
-                    {errorModalRun && (
-                        <div className="flex flex-col gap-3">
-                            <p className="text-xs text-muted-foreground">
-                                <ProviderLabel
-                                    provider={errorModalRun.provider}
-                                    model={errorModalRun.model}
-                                    providerClassName="font-medium text-foreground"
-                                    modelClassName="text-muted-foreground"
-                                    logoSize={12}
-                                />
-                                <span className="ms-1 tabular-nums">· run #{errorModalRun.run_index}</span>
-                            </p>
-                            <div className="text-sm font-medium text-rose-700 dark:text-rose-300">
-                                {errorModalParsed?.shortMessage || 'Detailed provider error'}
-                            </div>
-                            <pre className="max-h-[56vh] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed">
-                                <code className="language-json">{errorJsonSource}</code>
-                            </pre>
-                        </div>
-                    )}
-                </AppModal>
-
-                <AppModal
-                    isOpen={Boolean(validationModalRun)}
-                    onClose={() => setValidationModalRun(null)}
-                    title="Validation details"
-                    closeLabel="Close validation details"
-                    size="lg"
-                    mobileSheet={false}
-                >
-                    {validationModalRun && (
-                        <div className="flex flex-col gap-3">
-                            <p className="text-xs text-muted-foreground">
-                                <ProviderLabel
-                                    provider={validationModalRun.provider}
-                                    model={validationModalRun.model}
-                                    providerClassName="font-medium text-foreground"
-                                    modelClassName="text-muted-foreground"
-                                    logoSize={12}
-                                />
-                                <span className="ms-1 tabular-nums">· run #{validationModalRun.run_index}</span>
-                            </p>
-                            <div>
-                                <AdminStatusBadge
-                                    tone={validationModalRun.schema_valid
-                                        ? (validationModalWarnings.length > 0 ? 'warning' : 'success')
-                                        : 'danger'}
-                                >
-                                    {validationModalRun.schema_valid
-                                        ? (validationModalWarnings.length > 0
-                                            ? `Validation passed with ${validationModalWarnings.length} warning${validationModalWarnings.length === 1 ? '' : 's'}`
-                                            : 'Validation passed')
-                                        : 'Validation failed'}
-                                </AdminStatusBadge>
-                            </div>
-                            <pre className="max-h-[56vh] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed">
-                                <code className="language-json">{validationJsonSource}</code>
-                            </pre>
-                        </div>
                     )}
                 </AppModal>
 

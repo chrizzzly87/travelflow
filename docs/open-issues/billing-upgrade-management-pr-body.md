@@ -1,3 +1,5 @@
+Status (2026-10-24): merged history. The admin billing screen has since moved off Tremor onto the shared admin shell (`AdminBarChart`/`AdminBarList`) and was restructured into health tiles, subscription/webhook tabs with detail sheets, and a revenue section; see `docs/open-issues/paddle-setup-testing-guide-216.md` → "Admin Visibility Baseline".
+
 ## Summary
 - adds an in-app Paddle upgrade flow for existing paid subscribers while keeping acquisition checkout unchanged for free users
 - surfaces cancellation and billing-management entry points inside signed-in profile settings

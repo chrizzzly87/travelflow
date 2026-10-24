@@ -948,15 +948,18 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
     return (
         <AdminShell
             title="Component playground"
-            description="Hidden lab for tuning TravelFlow sections and copying exact settings back into code."
+            description="Unlisted lab for tuning public-site sections and cards, then copying their exact settings back into code."
             showGlobalSearch={false}
             showDateRange={false}
         >
             <div className="flex w-full min-w-0 flex-col gap-6" data-testid="admin-component-playground-root">
+                <p className="max-w-3xl text-sm text-muted-foreground">
+                    This page tunes replicas of what visitors see — the globe, CTA sections, trip, blog, stamp and feature cards — with sliders and switches, and turns each state into a settings snippet. The shared primitives that admin and app screens are built from live in the Design system playground instead. It stays off the sidebar and out of search engines.
+                </p>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
                     <TabsList className="max-w-full overflow-x-auto">
-                        <TabsTrigger value="sections">Sections</TabsTrigger>
                         <TabsTrigger value="components">Components</TabsTrigger>
+                        <TabsTrigger value="sections">Sections</TabsTrigger>
                         <TabsTrigger value="settings">Copied settings</TabsTrigger>
                     </TabsList>
                     <TabsContent value="sections" className="flex w-full min-w-0 flex-col gap-5">
@@ -1269,7 +1272,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
 
                         <PlaygroundBlock
                             title="Admin surface card"
-                            description="Reusable admin card pattern for operational dashboards and status panels."
+                            description="A status panel built from AdminSurfaceCard. The full admin set (detail sheet, selection bar, pagination, charts) is demoed in the Design system playground."
                             preview={<AdminSurfacePreview settings={adminSurfaceSettings} />}
                             controls={(
                                 <PlaygroundControls

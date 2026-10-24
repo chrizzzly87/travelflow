@@ -37,7 +37,7 @@ Keep the current Vite + prerender + hydrate setup otherwise.
   the critical-CSS work already queued.
 - Effort: 🟡 low–medium: flip the aliases, re-point vitest to react-dom, run the
   full WebKit + prerender verification, measure bundle. No routing/data rewrite.
-- Ecosystem: ✅ radix, vaul, tremor, framer-motion, react-router v7 all target
+- Ecosystem: ✅ radix, vaul, tremor (removed 2026-10; admin charts now use Recharts via shadcn's chart), framer-motion, react-router v7 all target
   React first — fewer compat surprises.
 
 **Best if:** we want to stop fighting the runtime and keep the codebase maximally

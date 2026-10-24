@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
-import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, Warning, X } from '@phosphor-icons/react';
-import { useSearchParams } from 'react-router-dom';
+import { ArrowSquareOut, CopySimple, Crosshair, DotsThreeVertical, DownloadSimple, Info, SpinnerGap, User, Warning, X } from '@phosphor-icons/react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { PlanTierKey } from '../types';
 import {
@@ -33,9 +33,19 @@ import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
+import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
+import { AdminPagination } from '../components/admin/AdminPagination';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
-import { Drawer, DrawerContent } from '../components/ui/drawer';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { Checkbox } from '../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -74,24 +84,34 @@ const AUDIT_COLUMN_OPTIONS: Array<{ value: AuditVisibleColumnId; label: string }
     { value: 'actor', label: 'Actor' },
     { value: 'action', label: 'Action' },
     { value: 'target', label: 'Target' },
-    { value: 'diff', label: 'Diff & details' },
+    { value: 'diff', label: 'Changes' },
     { value: 'rowActions', label: 'Actions' },
 ];
 const DEFAULT_VISIBLE_COLUMNS: AuditVisibleColumnId[] = [...AUDIT_VISIBLE_COLUMN_IDS];
+// Defaults sum (with the checkbox and menu columns) to ~1140px, the content width
+// beside the expanded sidebar at 1440px, so the timeline fits without scrolling.
 const AUDIT_COLUMN_WIDTH_DEFAULTS: Record<AuditResizableColumnId, number> = {
-    when: 176,
-    actor: 200,
-    action: 296,
-    target: 220,
-    diff: 620,
+    when: 112,
+    actor: 210,
+    action: 220,
+    target: 170,
+    diff: 340,
 };
 const AUDIT_COLUMN_WIDTH_MIN: Record<AuditResizableColumnId, number> = {
-    when: 124,
-    actor: 160,
-    action: 190,
-    target: 160,
-    diff: 360,
+    when: 96,
+    actor: 150,
+    action: 160,
+    target: 140,
+    diff: 220,
 };
+const AUDIT_COLUMN_RESIZE_LABELS: Record<AuditResizableColumnId, string> = {
+    when: 'When',
+    actor: 'Actor',
+    action: 'Action',
+    target: 'Target',
+    diff: 'Changes',
+};
+const AUDIT_DIFF_SUMMARY_LIMIT = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Errors this page throws itself carry an authored sentence that is safe to show.
@@ -336,10 +356,42 @@ const getActionFilterLabel = (action: string): string => ACTION_FILTER_LABELS[ac
 
 const getTargetLabel = (targetType: string): string => TARGET_LABELS[targetType] || targetType;
 
+/**
+ * An action filter that covers every available action is no filter at all. Storing
+ * it as `[]` keeps actions that appear later (a wider time range, a reload) visible
+ * instead of silently hiding them, and keeps the URL short.
+ */
+const normalizeActionFilters = (values: string[], allValues: string[]): string[] => {
+    if (values.length === 0 || allValues.length === 0) return values;
+    const selected = new Set(values);
+    return allValues.every((value) => selected.has(value)) ? [] : values;
+};
+
+const auditRelativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+const formatAuditRelativeTime = (isoDate: string | null | undefined, now = Date.now()): string => {
+    if (!isoDate) return '—';
+    const parsed = Date.parse(isoDate);
+    if (!Number.isFinite(parsed)) return '—';
+    const diffMs = parsed - now;
+    const absDiffMs = Math.abs(diffMs);
+    const minuteMs = 60_000;
+    const hourMs = 60 * minuteMs;
+    if (absDiffMs < minuteMs) return 'just now';
+    if (absDiffMs < hourMs) return auditRelativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
+    if (absDiffMs < DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
+    if (absDiffMs < 7 * DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / DAY_MS), 'day');
+    if (absDiffMs < 30 * DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / (7 * DAY_MS)), 'week');
+    if (absDiffMs < 365 * DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / (30 * DAY_MS)), 'month');
+    return auditRelativeTimeFormatter.format(Math.round(diffMs / (365 * DAY_MS)), 'year');
+};
+
 export const __ADMIN_AUDIT_TESTING__ = {
     getActionGroupLabel,
     getActionFilterLabel,
     getTargetLabel,
+    normalizeActionFilters,
+    formatAuditRelativeTime,
 };
 
 const asString = (value: unknown): string | null => {
@@ -596,10 +648,10 @@ const canUndoTimelineEntry = (entry: AuditTimelineEntry): boolean => {
 
     if (!log.target_id) return false;
     if (action === 'admin.trip.override_commit') {
-        const sourceEventId = parseUndoSourceEventId(log);
+        const sourceEventId = parseUndoSourceEventId(entry.log);
         if (sourceEventId) return true;
         const before = asRecord(log.before_data);
-        return Object.keys(asRecord(before.data)).length > 0;
+        return Object.keys(asRecord(before.data as Record<string, unknown> | null | undefined)).length > 0;
     }
     if (action === 'admin.trip.update') {
         const before = asRecord(log.before_data);
@@ -635,6 +687,38 @@ const toForensicsReplayFileName = (generatedAtIso: string): string => {
     const safeTimestamp = generatedAtIso.replace(/[:]/g, '-').replace(/\.\d+Z$/, 'Z');
     return `admin-audit-replay-${safeTimestamp}.json`;
 };
+
+const AuditColumnResizeHandle: React.FC<{
+    columnId: AuditResizableColumnId;
+    onResizeStart: (columnId: AuditResizableColumnId, clientX: number) => void;
+}> = ({ columnId, onResizeStart }) => (
+    // Mouse-only affordance: the column picker and Reset cover keyboard users.
+    <span
+        aria-hidden="true"
+        onMouseDown={(event) => {
+            event.preventDefault();
+            onResizeStart(columnId, event.clientX);
+        }}
+        data-tooltip={`Drag to resize ${AUDIT_COLUMN_RESIZE_LABELS[columnId].toLowerCase()}`}
+        className="absolute inset-y-0 end-0 w-2 cursor-col-resize transition-colors hover:bg-border"
+    />
+);
+
+const AuditDetailRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-3 py-1.5 text-sm">
+        <dt className="text-muted-foreground">{label}</dt>
+        <dd className="min-w-0 break-words text-foreground">{children}</dd>
+    </div>
+);
+
+const SnapshotDisclosure: React.FC<{ snapshot: Record<string, unknown> }> = ({ snapshot }) => (
+    <details className="rounded-md border border-border text-xs text-muted-foreground">
+        <summary className="cursor-pointer px-3 py-2 font-medium text-foreground">Audit snapshot (JSON)</summary>
+        <pre className="max-h-64 overflow-auto whitespace-pre-wrap border-t border-border bg-slate-800 p-3 font-mono text-[11px] text-slate-100 dark:bg-slate-950">
+            {JSON.stringify(snapshot, null, 2)}
+        </pre>
+    </details>
+);
 
 export const AdminAuditPage: React.FC = () => {
     const { confirm: confirmDialog } = useAppDialog();
@@ -672,7 +756,6 @@ export const AdminAuditPage: React.FC = () => {
     const [offset, setOffset] = useState(() => parseNonNegativeOffset(searchParams.get('offset')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
-    const [copiedToken, setCopiedToken] = useState<string | null>(null);
     const [selectedUserLog, setSelectedUserLog] = useState<AdminAuditRecord | null>(null);
     const [selectedTripLog, setSelectedTripLog] = useState<AdminAuditRecord | null>(null);
     const [selectedUserProfile, setSelectedUserProfile] = useState<AdminUserRecord | null>(null);
@@ -695,8 +778,8 @@ export const AdminAuditPage: React.FC = () => {
     const [diffModalAfterValue, setDiffModalAfterValue] = useState<unknown>({});
     const [isExportingReplay, setIsExportingReplay] = useState(false);
     const [revertingEntryKey, setRevertingEntryKey] = useState<string | null>(null);
+    const [selectedEntryKey, setSelectedEntryKey] = useState<string | null>(null);
     const requestedUndoSourceIdsRef = useRef<Set<string>>(new Set());
-    const initializedActionFiltersRef = useRef(false);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -775,7 +858,7 @@ export const AdminAuditPage: React.FC = () => {
         }
 
         if (hardFailures.length > 0) {
-            setErrorMessage(hardFailures.join(' '));
+            setErrorMessage(Array.from(new Set(hardFailures)).join(' '));
         }
         if (notices.length > 0) {
             setDataSourceNotice(notices.join(' '));
@@ -818,6 +901,7 @@ export const AdminAuditPage: React.FC = () => {
                 metadata: { source: 'actor_column' },
                 created_at: new Date().toISOString(),
             };
+        setSelectedEntryKey(null);
         setSelectedTripLog(null);
         setSelectedTripRecord(null);
         setTripDrawerError(null);
@@ -838,6 +922,7 @@ export const AdminAuditPage: React.FC = () => {
             });
             return;
         }
+        setSelectedEntryKey(null);
         setSelectedUserLog(null);
         setSelectedUserProfile(null);
         setUserDrawerError(null);
@@ -968,13 +1053,14 @@ export const AdminAuditPage: React.FC = () => {
         const previousVersionId = asString(metadata.previous_version_id);
 
         setDiffModalError(null);
-        setDiffModalTitle(`${log.action} · ${targetLabel}`);
+        setDiffModalTitle(`${getTimelineActionLabel(entry)} · ${targetLabel}`);
         setDiffModalDescription(
             [
+                log.action,
                 actorEmail ? `Actor: ${actorEmail}` : null,
-                log.target_id ? `${targetLabel} ID: ${log.target_id}` : null,
+                log.target_id ? `${targetLabel} id: ${log.target_id}` : null,
                 versionId ? `Version: ${versionId}` : null,
-            ].filter(Boolean).join(' • ')
+            ].filter(Boolean).join(' · ')
         );
 
         setDiffModalBeforeLabel('Before snapshot');
@@ -1187,17 +1273,6 @@ export const AdminAuditPage: React.FC = () => {
         [actionFilterOptions]
     );
 
-    useEffect(() => {
-        if (initializedActionFiltersRef.current) return;
-        if (allActionFilterValues.length === 0) return;
-        if (searchParams.get('action')) {
-            initializedActionFiltersRef.current = true;
-            return;
-        }
-        setActionFilters(allActionFilterValues);
-        initializedActionFiltersRef.current = true;
-    }, [allActionFilterValues, searchParams]);
-
     const targetFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
         const counts = new Map<string, number>();
         logsInTimeRange.forEach((entry) => {
@@ -1239,7 +1314,7 @@ export const AdminAuditPage: React.FC = () => {
     };
 
     const handleActionFiltersChange = (values: string[]) => {
-        setActionFilters(values);
+        setActionFilters(normalizeActionFilters(values, allActionFilterValues));
         setOffset(0);
     };
 
@@ -1262,16 +1337,14 @@ export const AdminAuditPage: React.FC = () => {
         setVisibleColumns(nextValues.length > 0 ? nextValues : [...DEFAULT_VISIBLE_COLUMNS]);
     };
 
-    const copyToClipboard = async (value: string, token: string) => {
-        if (!value.trim() || typeof navigator === 'undefined' || !navigator.clipboard) return;
+    const copyActionCode = async (actionCode: string) => {
+        trackEvent('admin__audit--copy_action_code');
+        if (!actionCode.trim() || typeof navigator === 'undefined' || !navigator.clipboard) return;
         try {
-            await navigator.clipboard.writeText(value);
-            setCopiedToken(token);
-            window.setTimeout(() => {
-                setCopiedToken((current) => (current === token ? null : current));
-            }, 1400);
+            await navigator.clipboard.writeText(actionCode);
+            showAppToast({ tone: 'success', title: 'Action code copied', description: actionCode });
         } catch {
-            // best effort only
+            showAppToast({ tone: 'warning', title: 'Could not copy', description: 'Your browser blocked clipboard access.' });
         }
     };
 
@@ -1357,10 +1430,12 @@ export const AdminAuditPage: React.FC = () => {
             setErrorMessage('Select at least one row to export.');
             return;
         }
+        trackEvent('admin__audit--export_selected', { count: selectedEntryKeys.length });
         await exportReplayBundle({ selectedEventIds: selectedEntryKeys });
     };
 
     const exportSingleReplayEntry = async (entry: AuditTimelineEntry) => {
+        trackEvent('admin__audit--export_entry');
         await exportReplayBundle({ selectedEventIds: [getTimelineEntryKey(entry)] });
     };
 
@@ -1468,14 +1543,14 @@ export const AdminAuditPage: React.FC = () => {
                 if (!entry.log.target_id) throw new AuditUserFacingError('Target id missing for undo.');
                 if (action === 'admin.trip.override_commit') {
                     const before = asRecord(entry.log.before_data);
-                    const tripData = asRecord(before.data);
+                    const tripData = asRecord(before.data as Record<string, unknown> | null | undefined);
                     if (Object.keys(tripData).length === 0) {
                         throw new AuditUserFacingError('No previous trip snapshot found for this undo.');
                     }
                     await adminOverrideTripCommit({
                         tripId: entry.log.target_id,
                         data: tripData,
-                        viewSettings: asRecord(before.view_settings),
+                        viewSettings: asRecord(before.view_settings as Record<string, unknown> | null | undefined),
                         label: `Audit undo ${entry.log.id}`,
                         metadata: buildUndoOverrideMetadata(entry),
                     });
@@ -1572,6 +1647,118 @@ export const AdminAuditPage: React.FC = () => {
     const isColumnVisible = (columnId: AuditVisibleColumnId): boolean => visibleColumnSet.has(columnId);
     const tableColumnCount = 1 + visibleColumns.length;
 
+    const hasActiveFilters = (
+        actionFilters.length > 0
+        || targetFilters.length > 0
+        || actorFilters.length > 0
+        || timePreset !== '30d'
+        || visibleColumns.length !== DEFAULT_VISIBLE_COLUMNS.length
+        || RESIZABLE_AUDIT_COLUMN_IDS.some((columnId) => columnWidths[columnId] !== AUDIT_COLUMN_WIDTH_DEFAULTS[columnId])
+    );
+
+    const resetFilters = () => {
+        trackEvent('admin__audit--reset_filters');
+        setActionFilters([]);
+        setTargetFilters([]);
+        setActorFilters([]);
+        setTimePreset('30d');
+        setCustomStartDate(getDefaultCustomStartDate());
+        setCustomEndDate(getDefaultCustomEndDate());
+        setVisibleColumns([...DEFAULT_VISIBLE_COLUMNS]);
+        setSelectedEntryKeys([]);
+        setColumnWidths({ ...AUDIT_COLUMN_WIDTH_DEFAULTS });
+        setOffset(0);
+    };
+
+    // Everything a row, the entry sheet and the row menu need, derived once per entry.
+    const describeEntry = (timelineEntry: AuditTimelineEntry) => {
+        const log = timelineEntry.kind === 'admin'
+            ? timelineEntry.log
+            : mapUserChangeLogToAuditRecord(timelineEntry.log);
+        const baseDiffEntries = timelineEntry.kind === 'admin'
+            ? buildAuditDiffEntries(timelineEntry.log)
+            : buildUserChangeDiffEntries(timelineEntry.log);
+        const undoDiffEntries = timelineEntry.kind === 'admin'
+            ? resolveUndoDiffEntries(timelineEntry.log, timelineEntriesById)
+            : null;
+        const diffEntries = undoDiffEntries ?? baseDiffEntries;
+        const actionPresentation = timelineEntry.kind === 'admin'
+            ? resolveAuditActionPresentation(timelineEntry.log, diffEntries)
+            : resolveUserChangeActionPresentation(timelineEntry.log, diffEntries);
+        const metadataRecord = asRecord(log.metadata);
+        const rawOwnedTripCount = metadataRecord.owned_trips_before_delete;
+        const ownedTripsBeforeDelete = timelineEntry.kind === 'admin'
+            && log.action === 'admin.user.hard_delete'
+            && typeof rawOwnedTripCount === 'number'
+            ? rawOwnedTripCount
+            : null;
+        const formatValue = (entry: (typeof diffEntries)[number], value: unknown): string => (
+            timelineEntry.kind === 'user'
+                ? formatUserChangeDiffValue(entry, value)
+                : formatAuditValue(value)
+        );
+        return {
+            log,
+            diffEntries,
+            formatValue,
+            actionPresentation,
+            secondaryFacets: timelineEntry.kind === 'user' ? resolveUserChangeSecondaryFacets(timelineEntry.log) : [],
+            targetLabel: getTargetLabel(log.target_type),
+            targetCanOpenDrawer: canOpenTargetDrawer(log),
+            ownedTripsBeforeDelete,
+            actorEmail: getTimelineActorEmail(timelineEntry),
+            actorUserId: getTimelineActorUserId(timelineEntry),
+            originLabel: timelineEntry.kind === 'admin' ? 'Admin action' : 'User action',
+            canShowFullDiff: canOpenFullDiffModal(timelineEntry),
+            entryKey: getTimelineEntryKey(timelineEntry),
+            canUndo: canUndoTimelineEntry(timelineEntry),
+        };
+    };
+
+    const selectedEntry = useMemo(
+        () => (selectedEntryKey
+            ? timelineEntries.find((entry) => getTimelineEntryKey(entry) === selectedEntryKey) ?? null
+            : null),
+        [selectedEntryKey, timelineEntries]
+    );
+    const selectedEntryDetails = selectedEntry ? describeEntry(selectedEntry) : null;
+
+    const openEntrySheet = (entryKey: string) => {
+        trackEvent('admin__audit--open_entry');
+        setIsUserDrawerOpen(false);
+        setIsTripDrawerOpen(false);
+        setSelectedEntryKey(entryKey);
+    };
+
+    const openActorDetails = (actorUserId: string, log: AdminAuditRecord, actorEmail: string | null) => {
+        trackEvent('admin__audit--open_actor');
+        openUserDrawerById(actorUserId, { sourceLog: log, actorEmail });
+    };
+
+    const openTargetDetails = (log: AdminAuditRecord) => {
+        trackEvent('admin__audit--open_target', { target_type: log.target_type });
+        openTargetDrawer(log);
+    };
+
+    const showFullDiff = (entry: AuditTimelineEntry) => {
+        trackEvent('admin__audit--show_diff');
+        void openFullDiffModal(entry);
+    };
+
+    const requestUndo = (entry: AuditTimelineEntry) => {
+        trackEvent('admin__audit--undo', { action: entry.log.action });
+        void undoTimelineEntry(entry);
+    };
+
+    const undoButtonClassName = 'border-amber-300 text-amber-800 hover:bg-amber-50 hover:text-amber-900 dark:border-amber-400/30 dark:text-amber-200 dark:hover:bg-amber-400/12 dark:hover:text-amber-100';
+
+    const renderDiffLine = (
+        details: ReturnType<typeof describeEntry>,
+        entry: (typeof details.diffEntries)[number],
+    ): string => (
+        `${formatFieldLabel(entry.key)}: ${details.formatValue(entry, entry.beforeValue)} → ${details.formatValue(entry, entry.afterValue)}`
+    );
+
     return (
         <AdminShell
             title="Audit log"
@@ -1584,28 +1771,19 @@ export const AdminAuditPage: React.FC = () => {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => void exportReplayBundle()}
+                        onClick={() => {
+                            trackEvent('admin__audit--export_replay', { count: visibleLogs.length });
+                            void exportReplayBundle();
+                        }}
                         disabled={isLoading || isExportingReplay || visibleLogs.length === 0}
                         aria-busy={isExportingReplay || undefined}
-                        className="h-9"
+                        data-tooltip="Download every entry that matches the filters as a replay bundle"
+                        {...getAnalyticsDebugAttributes('admin__audit--export_replay')}
                     >
                         {isExportingReplay
                             ? <SpinnerGap className="animate-spin" />
                             : <DownloadSimple />}
                         Export replay
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => void exportSelectedReplayBundle()}
-                        disabled={isLoading || isExportingReplay || selectedEntryKeys.length === 0}
-                        aria-busy={isExportingReplay || undefined}
-                        className="h-9"
-                    >
-                        {isExportingReplay
-                            ? <SpinnerGap className="animate-spin" />
-                            : <DownloadSimple />}
-                        Export selected <span className="tabular-nums">({selectedEntryKeys.length})</span>
                     </Button>
                     <AdminReloadButton
                         onClick={() => void loadLogs()}
@@ -1629,31 +1807,29 @@ export const AdminAuditPage: React.FC = () => {
             )}
 
             <section className="flex flex-wrap items-center gap-2" aria-label="Audit filters">
-                <div className="inline-flex items-center gap-2">
-                    <Select value={timePreset} onValueChange={(value) => handleTimePresetChange(value as AuditTimePreset)}>
-                        <SelectTrigger className="h-8 w-[180px]" aria-label="Time range">
-                            <SelectValue placeholder="Time range" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="24h">Last 24 hours</SelectItem>
-                            <SelectItem value="7d">Last 7 days</SelectItem>
-                            <SelectItem value="30d">Last 30 days</SelectItem>
-                            <SelectItem value="all">All time</SelectItem>
-                            <SelectItem value="custom">Custom range</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    {timePreset === 'custom' && (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsCustomRangeDialogOpen(true)}
-                            className="tabular-nums"
-                        >
-                            {formatAuditCustomRangeLabel(customStartDate, customEndDate)}
-                        </Button>
-                    )}
-                </div>
+                <Select value={timePreset} onValueChange={(value) => handleTimePresetChange(value as AuditTimePreset)}>
+                    <SelectTrigger className="h-8 w-[160px]" aria-label="Time range">
+                        <SelectValue placeholder="Time range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="24h">Last 24 hours</SelectItem>
+                        <SelectItem value="7d">Last 7 days</SelectItem>
+                        <SelectItem value="30d">Last 30 days</SelectItem>
+                        <SelectItem value="all">All time</SelectItem>
+                        <SelectItem value="custom">Custom range</SelectItem>
+                    </SelectContent>
+                </Select>
+                {timePreset === 'custom' && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsCustomRangeDialogOpen(true)}
+                        className="tabular-nums"
+                    >
+                        {formatAuditCustomRangeLabel(customStartDate, customEndDate)}
+                    </Button>
+                )}
                 <AdminFilterMenu
                     label="Action"
                     icon={<Info size={14} className="mr-2 shrink-0 text-muted-foreground" weight="duotone" />}
@@ -1661,7 +1837,7 @@ export const AdminAuditPage: React.FC = () => {
                     selectedValues={actionFilters}
                     onSelectedValuesChange={handleActionFiltersChange}
                     selectAllLabel="Select all actions"
-                    clearLabel="Deselect all actions"
+                    clearLabel="Clear action filter"
                 />
                 <AdminFilterMenu
                     label="Target"
@@ -1683,26 +1859,18 @@ export const AdminAuditPage: React.FC = () => {
                     selectedValues={visibleColumns}
                     onSelectedValuesChange={handleVisibleColumnsChange}
                 />
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                        setActionFilters(allActionFilterValues);
-                        setTargetFilters([]);
-                        setActorFilters([]);
-                        setTimePreset('30d');
-                        setCustomStartDate(getDefaultCustomStartDate());
-                        setCustomEndDate(getDefaultCustomEndDate());
-                        setVisibleColumns([...DEFAULT_VISIBLE_COLUMNS]);
-                        setSelectedEntryKeys([]);
-                        setColumnWidths({ ...AUDIT_COLUMN_WIDTH_DEFAULTS });
-                        setOffset(0);
-                    }}
-                >
-                    <X />
-                    Reset
-                </Button>
+                {hasActiveFilters && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetFilters}
+                        {...getAnalyticsDebugAttributes('admin__audit--reset_filters')}
+                    >
+                        <X />
+                        Reset
+                    </Button>
+                )}
             </section>
 
             <Dialog open={isCustomRangeDialogOpen} onOpenChange={setIsCustomRangeDialogOpen}>
@@ -1736,379 +1904,249 @@ export const AdminAuditPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
-            <AdminSurfaceCard className="flex flex-col gap-4">
-                <AdminSectionHeader
-                    title="Timeline"
-                    description={(
-                        <span className="tabular-nums">
-                            {selectedEntryKeys.length} selected · {visibleLogs.length} matching entr{visibleLogs.length === 1 ? 'y' : 'ies'}
-                        </span>
-                    )}
-                    actions={(
-                        <p className="text-xs text-muted-foreground">
-                            Drag a column edge to resize it.
-                        </p>
-                    )}
-                />
-                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">Legend</span>
-                    <AdminStatusBadge tone="info" dot={false}>Primary action</AdminStatusBadge>
-                    <AdminStatusBadge tone="neutral" dot={false}>Event origin</AdminStatusBadge>
-                    <AdminStatusBadge tone="warning" dot={false}>Field facet</AdminStatusBadge>
-                    <span>Copy the raw event key from the action code chip.</span>
-                </div>
-                <div className="overflow-x-auto rounded-md border border-border">
+            <AdminSurfaceCard className="flex flex-col gap-3 p-0">
+                <div className="overflow-x-auto">
                     <table className="min-w-full table-fixed border-collapse text-start text-sm">
                         <colgroup>
-                            <col style={{ width: 44 }} />
+                            <col style={{ width: 40 }} />
                             {isColumnVisible('when') && <col style={{ width: `${columnWidths.when}px` }} />}
                             {isColumnVisible('actor') && <col style={{ width: `${columnWidths.actor}px` }} />}
                             {isColumnVisible('action') && <col style={{ width: `${columnWidths.action}px` }} />}
                             {isColumnVisible('target') && <col style={{ width: `${columnWidths.target}px` }} />}
                             {isColumnVisible('diff') && <col style={{ width: `${columnWidths.diff}px` }} />}
-                            {isColumnVisible('rowActions') && <col style={{ width: 170 }} />}
+                            {isColumnVisible('rowActions') && <col style={{ width: 48 }} />}
                         </colgroup>
                         <thead>
                             <tr className="border-b border-border bg-muted/50 text-sm">
-                                <th className="h-10 p-2 text-start align-middle">
+                                <th className="h-10 ps-3 pe-1 text-start align-middle">
                                     <Checkbox
                                         checked={areAllPageRowsSelected ? true : hasSomePageRowsSelected ? 'indeterminate' : false}
                                         onCheckedChange={(checked) => togglePageSelection(Boolean(checked))}
                                         aria-label="Select all rows on this page"
+                                        disabled={pagedLogs.length === 0}
                                     />
                                 </th>
-                                {isColumnVisible('when') && (
-                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
-                                        When
-                                        <button
-                                            type="button"
-                                            onMouseDown={(event) => {
-                                                event.preventDefault();
-                                                beginColumnResize('when', event.clientX);
-                                            }}
-                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
-                                            aria-label="Resize when column"
-                                        />
+                                {RESIZABLE_AUDIT_COLUMN_IDS.map((columnId) => (
+                                    isColumnVisible(columnId) && (
+                                        <th key={columnId} className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
+                                            {AUDIT_COLUMN_RESIZE_LABELS[columnId]}
+                                            <AuditColumnResizeHandle columnId={columnId} onResizeStart={beginColumnResize} />
+                                        </th>
+                                    )
+                                ))}
+                                {isColumnVisible('rowActions') && (
+                                    <th className="h-10 px-2 text-end align-middle font-medium text-muted-foreground">
+                                        <span className="sr-only">Actions</span>
                                     </th>
                                 )}
-                                {isColumnVisible('actor') && (
-                                    <th
-                                        className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground"
-                                        style={{
-                                            width: `${columnWidths.actor}px`,
-                                            minWidth: `${columnWidths.actor}px`,
-                                            maxWidth: `${columnWidths.actor}px`,
-                                        }}
-                                    >
-                                        Actor
-                                        <button
-                                            type="button"
-                                            onMouseDown={(event) => {
-                                                event.preventDefault();
-                                                beginColumnResize('actor', event.clientX);
-                                            }}
-                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
-                                            aria-label="Resize actor column"
-                                        />
-                                    </th>
-                                )}
-                                {isColumnVisible('action') && (
-                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
-                                        Action
-                                        <button
-                                            type="button"
-                                            onMouseDown={(event) => {
-                                                event.preventDefault();
-                                                beginColumnResize('action', event.clientX);
-                                            }}
-                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
-                                            aria-label="Resize action column"
-                                        />
-                                    </th>
-                                )}
-                                {isColumnVisible('target') && (
-                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
-                                        Target
-                                        <button
-                                            type="button"
-                                            onMouseDown={(event) => {
-                                                event.preventDefault();
-                                                beginColumnResize('target', event.clientX);
-                                            }}
-                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
-                                            aria-label="Resize target column"
-                                        />
-                                    </th>
-                                )}
-                                {isColumnVisible('diff') && (
-                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
-                                        Diff and details
-                                        <button
-                                            type="button"
-                                            onMouseDown={(event) => {
-                                                event.preventDefault();
-                                                beginColumnResize('diff', event.clientX);
-                                            }}
-                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
-                                            aria-label="Resize diff and details column"
-                                        />
-                                    </th>
-                                )}
-                                {isColumnVisible('rowActions') && <th className="h-10 px-3 text-start align-middle font-medium text-muted-foreground">Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {pagedLogs.map((timelineEntry) => {
-                                const log = timelineEntry.kind === 'admin'
-                                    ? timelineEntry.log
-                                    : mapUserChangeLogToAuditRecord(timelineEntry.log);
-                                const baseDiffEntries = timelineEntry.kind === 'admin'
-                                    ? buildAuditDiffEntries(timelineEntry.log)
-                                    : buildUserChangeDiffEntries(timelineEntry.log);
-                                const undoDiffEntries = timelineEntry.kind === 'admin'
-                                    ? resolveUndoDiffEntries(timelineEntry.log, timelineEntriesById)
-                                    : null;
-                                const diffEntries = undoDiffEntries ?? baseDiffEntries;
-                                const actionPresentation = timelineEntry.kind === 'admin'
-                                    ? resolveAuditActionPresentation(timelineEntry.log, diffEntries)
-                                    : resolveUserChangeActionPresentation(timelineEntry.log, diffEntries);
-                                const secondaryFacets = timelineEntry.kind === 'user'
-                                    ? resolveUserChangeSecondaryFacets(timelineEntry.log)
-                                    : [];
-                                const targetLabel = getTargetLabel(log.target_type);
-                                const visibleDiffEntries = diffEntries.slice(0, 5);
-                                const hiddenDiffCount = Math.max(diffEntries.length - visibleDiffEntries.length, 0);
-                                const targetCanOpenDrawer = canOpenTargetDrawer(log);
-                                const metadataRecord = asRecord(log.metadata);
-                                const rawOwnedTripCount = metadataRecord.owned_trips_before_delete;
-                                const ownedTripsBeforeDelete = typeof rawOwnedTripCount === 'number' ? rawOwnedTripCount : null;
-                                const actorEmail = getTimelineActorEmail(timelineEntry);
-                                const actorUserId = getTimelineActorUserId(timelineEntry);
-                                const eventTypeLabel = timelineEntry.kind === 'admin' ? 'Admin action' : 'User action';
-                                const canShowFullDiff = canOpenFullDiffModal(timelineEntry);
-                                const entryKey = getTimelineEntryKey(timelineEntry);
+                                const details = describeEntry(timelineEntry);
+                                const { log, diffEntries, actionPresentation, actorEmail, actorUserId, entryKey } = details;
+                                const summaryEntries = diffEntries.slice(0, AUDIT_DIFF_SUMMARY_LIMIT);
+                                const hiddenDiffCount = Math.max(diffEntries.length - summaryEntries.length, 0);
                                 const isRowSelected = selectedEntryKeySet.has(entryKey);
-                                const canUndo = canUndoTimelineEntry(timelineEntry);
                                 const isUndoing = revertingEntryKey === entryKey;
 
                                 return (
-                                    <tr key={entryKey} className={`border-b border-border align-top transition-colors ${ADMIN_TABLE_ROW_SURFACE_CLASS}`}>
-                                        <td className="p-2">
+                                    <tr
+                                        key={entryKey}
+                                        data-state={isRowSelected ? 'selected' : undefined}
+                                        className={`border-b border-border align-top last:border-b-0 data-[state=selected]:bg-muted/60 ${ADMIN_TABLE_ROW_SURFACE_CLASS}`}
+                                    >
+                                        <td className="py-2.5 ps-3 pe-1">
                                             <Checkbox
                                                 checked={isRowSelected}
                                                 onCheckedChange={() => toggleRowSelection(entryKey)}
-                                                aria-label="Select row"
+                                                aria-label={`Select ${actionPresentation.label} entry`}
                                             />
                                         </td>
                                         {isColumnVisible('when') && (
-                                            <td className="px-3 py-2 text-xs text-muted-foreground">{formatAuditValue(log.created_at)}</td>
+                                            <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                                                <time
+                                                    dateTime={log.created_at}
+                                                    data-tooltip={formatAuditValue(log.created_at)}
+                                                    className="tabular-nums"
+                                                >
+                                                    {formatAuditRelativeTime(log.created_at)}
+                                                </time>
+                                            </td>
                                         )}
                                         {isColumnVisible('actor') && (
-                                            <td
-                                                className="max-w-0 px-3 py-2 text-xs text-foreground"
-                                                style={{
-                                                    width: `${columnWidths.actor}px`,
-                                                    minWidth: `${columnWidths.actor}px`,
-                                                    maxWidth: `${columnWidths.actor}px`,
-                                                }}
-                                            >
+                                            <td className="max-w-0 px-3 py-2.5">
                                                 {actorUserId ? (
-                                                    <div className="group">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                openUserDrawerById(actorUserId, {
-                                                                    sourceLog: log,
-                                                                    actorEmail,
-                                                                });
-                                                            }}
-                                                            title="Open actor details"
-                                                            className="block w-full truncate text-start text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
-                                                        >
-                                                            {actorEmail || 'Unknown actor'}
-                                                        </button>
-                                                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                                                            <CopyableUuid
-                                                                value={actorUserId}
-                                                                focusable={false}
-                                                                textClassName="max-w-full truncate text-[11px]"
-                                                                hintClassName="text-[9px]"
-                                                            />
-                                                        </span>
-                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="link"
+                                                        onClick={() => openActorDetails(actorUserId, log, actorEmail)}
+                                                        className="block h-auto max-w-full truncate p-0 text-start text-sm font-medium text-foreground"
+                                                        data-tooltip="Open actor details"
+                                                        {...getAnalyticsDebugAttributes('admin__audit--open_actor')}
+                                                    >
+                                                        {actorEmail || 'Unknown actor'}
+                                                    </Button>
                                                 ) : (
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {actorEmail === 'Paddle' ? 'Paddle system' : (actorEmail || 'unknown')}
+                                                    <span className="block truncate text-sm text-muted-foreground">
+                                                        {actorEmail === 'Paddle' ? 'Paddle system' : (actorEmail || 'Unknown actor')}
                                                     </span>
                                                 )}
+                                                <span className="mt-0.5 block truncate text-xs text-muted-foreground">{details.originLabel}</span>
                                             </td>
                                         )}
                                         {isColumnVisible('action') && (
-                                            <td className="px-3 py-2 text-xs">
-                                            <span
-                                                className={`inline-flex max-w-full items-center truncate rounded-full border px-2 py-0.5 text-xs font-medium ${actionPresentation.className}`}
-                                                title={log.action}
-                                            >
-                                                {actionPresentation.label}
-                                            </span>
-                                            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                                <AdminStatusBadge tone="neutral" dot={false}>
-                                                    {eventTypeLabel}
-                                                </AdminStatusBadge>
-                                                <span className="min-w-0 max-w-[220px] truncate font-mono" title={log.action}>
-                                                    {log.action}
-                                                </span>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="xs"
-                                                    onClick={() => void copyToClipboard(log.action, `action-${timelineEntry.kind}-${log.id}`)}
-                                                    title="Copy raw action code"
-                                                    aria-label="Copy raw action code"
-                                                    className="text-muted-foreground"
+                                            <td className="px-3 py-2.5">
+                                                <span
+                                                    className={`inline-flex max-w-full items-center truncate rounded-full border px-2 py-0.5 text-xs font-medium ${actionPresentation.className}`}
+                                                    data-tooltip={log.action}
                                                 >
-                                                    <CopySimple />
-                                                    Copy
-                                                </Button>
-                                                {copiedToken === `action-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700 dark:text-emerald-200" role="status">Copied</span>}
-                                            </div>
-                                            {secondaryFacets.length > 0 && (
-                                                <div className="mt-1 flex flex-wrap items-center gap-1">
-                                                    {secondaryFacets.map((facet, facetIndex) => (
-                                                        <span
-                                                            key={`${timelineEntry.kind}-${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
-                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${facet.className}`}
-                                                            title={facet.code}
-                                                        >
-                                                            {facet.label}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
+                                                    {actionPresentation.label}
+                                                </span>
+                                                {details.secondaryFacets.length > 0 && (
+                                                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                        {details.secondaryFacets.map((facet, facetIndex) => (
+                                                            <span
+                                                                key={`${entryKey}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
+                                                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${facet.className}`}
+                                                                data-tooltip={facet.code}
+                                                            >
+                                                                {facet.label}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </td>
                                         )}
                                         {isColumnVisible('target') && (
-                                            <td className="px-3 py-2 text-xs text-muted-foreground">
-                                            <div className="flex flex-wrap items-center gap-1.5">
-                                                <span
-                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${getTargetPillClass(log.target_type)}`}
-                                                    title={`Raw target type: ${log.target_type}`}
-                                                >
-                                                    {targetLabel}
-                                                </span>
-                                                {targetCanOpenDrawer && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="xs"
-                                                        onClick={() => openTargetDrawer(log)}
-                                                        title={`Open ${targetLabel.toLowerCase()} drawer`}
-                                                        aria-label={`Open ${targetLabel.toLowerCase()} details`}
+                                            <td className="px-3 py-2.5">
+                                                <div className="flex items-center gap-1">
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${getTargetPillClass(log.target_type)}`}
+                                                        data-tooltip={`Target type: ${log.target_type}`}
                                                     >
-                                                        Open
-                                                        <ArrowSquareOut />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                            <div className="mt-1 flex min-w-0 items-center gap-2 text-[11px] text-muted-foreground">
-                                                {log.target_id
-                                                    ? (
-                                                        <CopyableUuid
-                                                            value={log.target_id}
-                                                            textClassName="max-w-[150px] truncate text-[11px]"
-                                                            hintClassName="text-[9px]"
-                                                        />
-                                                    )
-                                                    : <span className="max-w-[150px] truncate font-mono">n/a</span>}
-                                            </div>
+                                                        {details.targetLabel}
+                                                    </span>
+                                                    {details.targetCanOpenDrawer && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon-xs"
+                                                            onClick={() => openTargetDetails(log)}
+                                                            aria-label={`Open ${details.targetLabel.toLowerCase()} details`}
+                                                            data-tooltip={`Open ${details.targetLabel.toLowerCase()} details`}
+                                                            {...getAnalyticsDebugAttributes('admin__audit--open_target')}
+                                                        >
+                                                            <ArrowSquareOut className="rtl:-scale-x-100" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <div className="mt-1 min-w-0 text-[11px] text-muted-foreground">
+                                                    {log.target_id
+                                                        ? (
+                                                            <CopyableUuid
+                                                                value={log.target_id}
+                                                                textClassName="max-w-[140px] truncate text-[11px]"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        )
+                                                        : <span>No target id</span>}
+                                                </div>
                                             </td>
                                         )}
                                         {isColumnVisible('diff') && (
-                                            <td className="px-3 py-2">
-                                            {visibleDiffEntries.length > 0 ? (
-                                                <div className="flex flex-col gap-2">
-                                                    {visibleDiffEntries.map((entry, entryIndex) => (
-                                                        <article key={`${timelineEntry.kind}-${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-border bg-muted/50 px-2 py-1.5">
-                                                            <p className="text-xs font-medium text-muted-foreground">
-                                                                {formatFieldLabel(entry.key)}
-                                                            </p>
-                                                            <div className="mt-1 grid gap-1 lg:grid-cols-2">
-                                                                <div className="min-w-0 rounded-sm border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                                                                    <span className="font-medium">Before: </span>
-                                                                    <span className="break-all">
-                                                                        {timelineEntry.kind === 'user'
-                                                                            ? formatUserChangeDiffValue(entry, entry.beforeValue)
-                                                                            : formatAuditValue(entry.beforeValue)}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="min-w-0 rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                                                                    <span className="font-medium">After: </span>
-                                                                    <span className="break-all">
-                                                                        {timelineEntry.kind === 'user'
-                                                                            ? formatUserChangeDiffValue(entry, entry.afterValue)
-                                                                            : formatAuditValue(entry.afterValue)}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </article>
-                                                    ))}
-                                                    {hiddenDiffCount > 0 && (
-                                                        <p className="text-xs font-medium text-muted-foreground tabular-nums">
-                                                            +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <p className="text-xs text-muted-foreground">No field diff recorded.</p>
-                                            )}
-                                            {canShowFullDiff && (
+                                            <td className="px-2 py-1.5">
                                                 <Button
                                                     type="button"
-                                                    variant="outline"
-                                                    size="xs"
-                                                    onClick={() => void openFullDiffModal(timelineEntry)}
-                                                    className="mt-2"
+                                                    variant="ghost"
+                                                    onClick={() => openEntrySheet(entryKey)}
+                                                    className="h-auto w-full flex-col items-stretch gap-0.5 whitespace-normal px-2 py-1 text-start text-xs font-normal"
+                                                    aria-label={`Open details for ${actionPresentation.label}`}
+                                                    {...getAnalyticsDebugAttributes('admin__audit--open_entry')}
                                                 >
-                                                    Show complete diff
+                                                    {summaryEntries.length > 0 ? (
+                                                        summaryEntries.map((entry, entryIndex) => (
+                                                            <span
+                                                                key={`${entryKey}-${buildDiffEntryRenderKey(entry, entryIndex)}`}
+                                                                className="block truncate text-foreground"
+                                                            >
+                                                                {renderDiffLine(details, entry)}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="block text-muted-foreground">No field changes recorded</span>
+                                                    )}
+                                                    {hiddenDiffCount > 0 && (
+                                                        <span className="block text-muted-foreground tabular-nums">
+                                                            +{hiddenDiffCount} more field{hiddenDiffCount === 1 ? '' : 's'}
+                                                        </span>
+                                                    )}
+                                                    {details.ownedTripsBeforeDelete !== null && (
+                                                        <span className="block font-medium text-red-700 dark:text-red-300 tabular-nums">
+                                                            {details.ownedTripsBeforeDelete} owned trip{details.ownedTripsBeforeDelete === 1 ? '' : 's'} deleted
+                                                        </span>
+                                                    )}
                                                 </Button>
-                                            )}
-                                            {timelineEntry.kind === 'admin' && log.action === 'admin.user.hard_delete' && ownedTripsBeforeDelete !== null && (
-                                                <p className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-200">
-                                                    Trip impact: {ownedTripsBeforeDelete} owned trip{ownedTripsBeforeDelete === 1 ? '' : 's'} deleted with this account.
-                                                </p>
-                                            )}
                                             </td>
                                         )}
                                         {isColumnVisible('rowActions') && (
-                                            <td className="px-3 py-2">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="xs"
-                                                        onClick={() => void exportSingleReplayEntry(timelineEntry)}
-                                                        disabled={isExportingReplay}
-                                                    >
-                                                        Export row
-                                                    </Button>
-                                                    {canUndo ? (
+                                            <td className="px-2 py-2 text-end">
+                                                <DropdownMenu modal={false}>
+                                                    <DropdownMenuTrigger asChild>
                                                         <Button
                                                             type="button"
-                                                            variant="outline"
-                                                            size="xs"
-                                                            onClick={() => void undoTimelineEntry(timelineEntry)}
-                                                            disabled={Boolean(revertingEntryKey)}
+                                                            variant="ghost"
+                                                            size="icon-sm"
+                                                            aria-label={`Actions for ${actionPresentation.label} entry`}
                                                             aria-busy={isUndoing || undefined}
-                                                            className="border-amber-300 text-amber-800 hover:bg-amber-50 hover:text-amber-900 dark:border-amber-400/30 dark:text-amber-200 dark:hover:bg-amber-400/12 dark:hover:text-amber-100"
+                                                            data-tooltip="Entry actions"
                                                         >
-                                                            {isUndoing ? 'Undoing…' : getUndoActionLabel(timelineEntry)}
+                                                            {isUndoing
+                                                                ? <SpinnerGap className="animate-spin" />
+                                                                : <DotsThreeVertical weight="bold" />}
                                                         </Button>
-                                                    ) : (
-                                                        <span className="inline-flex h-6 items-center justify-center text-xs text-muted-foreground">
-                                                            Undo not available
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="min-w-[200px]">
+                                                        <DropdownMenuItem onSelect={() => openEntrySheet(entryKey)}>
+                                                            View details
+                                                        </DropdownMenuItem>
+                                                        {details.canShowFullDiff && (
+                                                            <DropdownMenuItem onSelect={() => showFullDiff(timelineEntry)}>
+                                                                Show full diff
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        {details.targetCanOpenDrawer && (
+                                                            <DropdownMenuItem onSelect={() => openTargetDetails(log)}>
+                                                                Open {details.targetLabel.toLowerCase()}
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        {actorUserId && (
+                                                            <DropdownMenuItem onSelect={() => openActorDetails(actorUserId, log, actorEmail)}>
+                                                                Open actor
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        <DropdownMenuItem onSelect={() => void copyActionCode(log.action)}>
+                                                            Copy action code
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onSelect={() => void exportSingleReplayEntry(timelineEntry)}
+                                                            disabled={isExportingReplay}
+                                                        >
+                                                            Export entry
+                                                        </DropdownMenuItem>
+                                                        {details.canUndo && (
+                                                            <>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onSelect={() => requestUndo(timelineEntry)}
+                                                                    disabled={Boolean(revertingEntryKey)}
+                                                                >
+                                                                    {getUndoActionLabel(timelineEntry)}…
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                         )}
                                     </tr>
@@ -2118,7 +2156,7 @@ export const AdminAuditPage: React.FC = () => {
                                 <tr>
                                     <td className="p-4" colSpan={tableColumnCount}>
                                         <AdminEmptyState
-                                            title="No audit entries found for the current filters."
+                                            title="No audit entries match these filters."
                                             description="Widen the time range or reset the filters to see more entries."
                                         />
                                     </td>
@@ -2137,34 +2175,223 @@ export const AdminAuditPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <p className="tabular-nums">
-                        Showing {visibleLogs.length === 0 ? 0 : offset + 1}-{Math.min(offset + AUDIT_PAGE_SIZE, visibleLogs.length)} of {visibleLogs.length}
-                        {' '}matching entr{visibleLogs.length === 1 ? 'y' : 'ies'}
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setOffset((current) => Math.max(0, current - AUDIT_PAGE_SIZE))}
-                            disabled={!hasPreviousPage}
-                        >
-                            Previous 50
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setOffset((current) => current + AUDIT_PAGE_SIZE)}
-                            disabled={!hasNextPage}
-                        >
-                            Next 50
-                        </Button>
-                    </div>
-                </div>
+                <AdminPagination
+                    page={Math.floor(offset / AUDIT_PAGE_SIZE) + 1}
+                    pageSize={AUDIT_PAGE_SIZE}
+                    totalItems={visibleLogs.length}
+                    onPageChange={(page) => setOffset(Math.max(0, (page - 1) * AUDIT_PAGE_SIZE))}
+                    noun="entries"
+                    className="px-4 pb-3"
+                />
             </AdminSurfaceCard>
+
+            <AdminSelectionBar
+                count={selectedEntryKeys.length}
+                noun="entry"
+                pluralNoun="entries"
+                onClear={() => setSelectedEntryKeys([])}
+            >
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void exportSelectedReplayBundle()}
+                    disabled={isExportingReplay}
+                    aria-busy={isExportingReplay || undefined}
+                    {...getAnalyticsDebugAttributes('admin__audit--export_selected')}
+                >
+                    {isExportingReplay
+                        ? <SpinnerGap className="animate-spin" />
+                        : <DownloadSimple />}
+                    Export replay
+                </Button>
+            </AdminSelectionBar>
             </div>
+
+            <AdminDetailSheet
+                open={Boolean(selectedEntry && selectedEntryDetails)}
+                onOpenChange={(open) => {
+                    if (!open) setSelectedEntryKey(null);
+                }}
+                title={selectedEntryDetails?.actionPresentation.label ?? 'Audit entry'}
+                subtitle={selectedEntryDetails ? formatAuditValue(selectedEntryDetails.log.created_at) : undefined}
+                meta={selectedEntryDetails && (
+                    <>
+                        <AdminStatusBadge tone="neutral" dot={false}>{selectedEntryDetails.originLabel}</AdminStatusBadge>
+                        <span
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${getTargetPillClass(selectedEntryDetails.log.target_type)}`}
+                        >
+                            {selectedEntryDetails.targetLabel}
+                        </span>
+                    </>
+                )}
+                footer={selectedEntry && selectedEntryDetails && (
+                    <>
+                        {selectedEntryDetails.canShowFullDiff && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => showFullDiff(selectedEntry)}
+                                {...getAnalyticsDebugAttributes('admin__audit--show_diff')}
+                            >
+                                Show full diff
+                            </Button>
+                        )}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void exportSingleReplayEntry(selectedEntry)}
+                            disabled={isExportingReplay}
+                            aria-busy={isExportingReplay || undefined}
+                            {...getAnalyticsDebugAttributes('admin__audit--export_entry')}
+                        >
+                            <DownloadSimple />
+                            Export entry
+                        </Button>
+                        {selectedEntryDetails.canUndo && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => requestUndo(selectedEntry)}
+                                disabled={Boolean(revertingEntryKey)}
+                                aria-busy={revertingEntryKey === selectedEntryDetails.entryKey || undefined}
+                                className={`ms-auto ${undoButtonClassName}`}
+                                {...getAnalyticsDebugAttributes('admin__audit--undo')}
+                            >
+                                {revertingEntryKey === selectedEntryDetails.entryKey ? 'Undoing…' : getUndoActionLabel(selectedEntry)}
+                            </Button>
+                        )}
+                    </>
+                )}
+            >
+                {selectedEntry && selectedEntryDetails && (
+                    <>
+                        <section className="flex flex-col gap-2">
+                            <AdminSectionHeader as="h3" title="Event" />
+                            <dl className="divide-y divide-border">
+                                <AuditDetailRow label="When">
+                                    <span className="tabular-nums">{formatAuditValue(selectedEntryDetails.log.created_at)}</span>
+                                    <span className="text-muted-foreground"> · {formatAuditRelativeTime(selectedEntryDetails.log.created_at)}</span>
+                                </AuditDetailRow>
+                                <AuditDetailRow label="Actor">
+                                    {selectedEntryDetails.actorUserId ? (
+                                        <div className="flex flex-col gap-0.5">
+                                            <Button
+                                                type="button"
+                                                variant="link"
+                                                className="h-auto w-fit p-0 text-sm"
+                                                onClick={() => {
+                                                    if (!selectedEntryDetails.actorUserId) return;
+                                                    openActorDetails(selectedEntryDetails.actorUserId, selectedEntryDetails.log, selectedEntryDetails.actorEmail);
+                                                }}
+                                            >
+                                                {selectedEntryDetails.actorEmail || 'Unknown actor'}
+                                            </Button>
+                                            <CopyableUuid value={selectedEntryDetails.actorUserId} textClassName="break-all text-xs" />
+                                        </div>
+                                    ) : (
+                                        <span>{selectedEntryDetails.actorEmail === 'Paddle' ? 'Paddle system' : (selectedEntryDetails.actorEmail || 'Unknown actor')}</span>
+                                    )}
+                                </AuditDetailRow>
+                                <AuditDetailRow label="Action code">
+                                    <span className="inline-flex max-w-full items-center gap-1">
+                                        <code className="truncate font-mono text-xs">{selectedEntryDetails.log.action}</code>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            onClick={() => void copyActionCode(selectedEntryDetails.log.action)}
+                                            aria-label="Copy action code"
+                                            data-tooltip="Copy action code"
+                                        >
+                                            <CopySimple />
+                                        </Button>
+                                    </span>
+                                </AuditDetailRow>
+                                <AuditDetailRow label="Target">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="inline-flex items-center gap-1">
+                                            {selectedEntryDetails.targetLabel}
+                                            {selectedEntryDetails.targetCanOpenDrawer && (
+                                                <Button
+                                                    type="button"
+                                                    variant="link"
+                                                    className="h-auto p-0 text-sm"
+                                                    onClick={() => openTargetDetails(selectedEntryDetails.log)}
+                                                >
+                                                    Open details
+                                                </Button>
+                                            )}
+                                        </span>
+                                        {selectedEntryDetails.log.target_id && (
+                                            <CopyableUuid value={selectedEntryDetails.log.target_id} textClassName="break-all text-xs" />
+                                        )}
+                                    </div>
+                                </AuditDetailRow>
+                                <AuditDetailRow label="Event id">
+                                    <CopyableUuid value={selectedEntryDetails.log.id} textClassName="break-all text-xs" />
+                                </AuditDetailRow>
+                                {selectedEntryDetails.secondaryFacets.length > 0 && (
+                                    <AuditDetailRow label="Also changed">
+                                        <span className="flex flex-wrap gap-1">
+                                            {selectedEntryDetails.secondaryFacets.map((facet, facetIndex) => (
+                                                <span
+                                                    key={`sheet-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
+                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${facet.className}`}
+                                                    data-tooltip={facet.code}
+                                                >
+                                                    {facet.label}
+                                                </span>
+                                            ))}
+                                        </span>
+                                    </AuditDetailRow>
+                                )}
+                            </dl>
+                        </section>
+
+                        <section className="flex flex-col gap-2">
+                            <AdminSectionHeader
+                                as="h3"
+                                title="Changes"
+                                description={selectedEntryDetails.diffEntries.length > 0
+                                    ? `${selectedEntryDetails.diffEntries.length} changed field${selectedEntryDetails.diffEntries.length === 1 ? '' : 's'}`
+                                    : 'No field changes were recorded for this event.'}
+                            />
+                            {selectedEntryDetails.ownedTripsBeforeDelete !== null && (
+                                <Alert variant="destructive">
+                                    <Warning weight="fill" />
+                                    <AlertDescription>
+                                        <p>
+                                            {selectedEntryDetails.ownedTripsBeforeDelete} owned trip{selectedEntryDetails.ownedTripsBeforeDelete === 1 ? ' was' : 's were'} deleted with this account.
+                                        </p>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            {selectedEntryDetails.diffEntries.map((entry, entryIndex) => (
+                                <article
+                                    key={`sheet-${buildDiffEntryRenderKey(entry, entryIndex)}`}
+                                    className="rounded-md border border-border px-3 py-2"
+                                >
+                                    <p className="text-xs font-medium text-muted-foreground">{formatFieldLabel(entry.key)}</p>
+                                    <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+                                        <div className="min-w-0 rounded-sm border border-rose-200 bg-rose-50 px-2 py-1 text-xs text-rose-900 dark:border-rose-400/30 dark:bg-rose-400/12 dark:text-rose-200">
+                                            <span className="font-medium">Before: </span>
+                                            <span className="break-all">{selectedEntryDetails.formatValue(entry, entry.beforeValue)}</span>
+                                        </div>
+                                        <div className="min-w-0 rounded-sm border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-400/12 dark:text-emerald-200">
+                                            <span className="font-medium">After: </span>
+                                            <span className="break-all">{selectedEntryDetails.formatValue(entry, entry.afterValue)}</span>
+                                        </div>
+                                    </div>
+                                </article>
+                            ))}
+                        </section>
+                    </>
+                )}
+            </AdminDetailSheet>
 
             <AdminJsonDiffModal
                 isOpen={isDiffModalOpen}
@@ -2183,7 +2410,7 @@ export const AdminAuditPage: React.FC = () => {
                 errorMessage={diffModalError}
             />
 
-            <Drawer
+            <AdminDetailSheet
                 open={isUserDrawerOpen}
                 onOpenChange={(open) => {
                     setIsUserDrawerOpen(open);
@@ -2192,103 +2419,86 @@ export const AdminAuditPage: React.FC = () => {
                     setSelectedUserProfile(null);
                     setUserDrawerError(null);
                 }}
-                direction="right"
+                size="md"
+                title={userIdentity.name || userIdentity.email || 'User'}
+                accessibleTitle="User details"
+                subtitle={userIdentity.name ? (userIdentity.email || undefined) : undefined}
+                meta={resolvedUserAccountStatus && (
+                    <AdminStatusBadge
+                        tone={resolvedUserAccountStatus === 'active' ? 'success' : resolvedUserAccountStatus === 'deleted' ? 'danger' : 'warning'}
+                    >
+                        {formatAccountStatusLabel(resolvedUserAccountStatus)}
+                    </AdminStatusBadge>
+                )}
+                headerActions={userIdentity.userId !== 'n/a' && (
+                    <Button asChild variant="outline" size="sm">
+                        <Link
+                            to={`/admin/users?user=${encodeURIComponent(userIdentity.userId)}&drawer=user`}
+                            onClick={() => trackEvent('admin__audit--open_in_users')}
+                            {...getAnalyticsDebugAttributes('admin__audit--open_in_users')}
+                        >
+                            Open in Users
+                        </Link>
+                    </Button>
+                )}
+                footer={resolvedUserAccountStatus === 'deleted' && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            trackEvent('admin__audit--restore_user');
+                            void restoreUserFromAudit();
+                        }}
+                        disabled={isRestoringUser || !selectedUserLog?.target_id || !selectedUserProfile}
+                        aria-busy={isRestoringUser || undefined}
+                        className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-400/30 dark:text-emerald-200 dark:hover:bg-emerald-400/12 dark:hover:text-emerald-100"
+                        {...getAnalyticsDebugAttributes('admin__audit--restore_user')}
+                    >
+                        {isRestoringUser ? 'Restoring…' : 'Restore user'}
+                    </Button>
+                )}
             >
-                <DrawerContent
-                    side="right"
-                    className="w-[min(96vw,560px)] p-0"
-                    accessibleTitle="User details"
-                    accessibleDescription="Inspect user identity details directly from the audit log."
-                >
-                    <div className="flex h-full flex-col">
-                        <div className="border-b border-border px-5 py-4">
-                            <h2 className="text-base font-semibold text-foreground">User details</h2>
-                            <p className="truncate text-sm text-muted-foreground">
-                                {userIdentity.email || (
-                                    <CopyableUuid value={userIdentity.userId} textClassName="max-w-[360px] truncate text-sm" />
-                                )}
-                            </p>
-                        </div>
-                        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-                            {userDrawerError && (
-                                <Alert variant="warning">
-                                    <Warning weight="fill" />
-                                    <AlertDescription>
-                                        <p>{userDrawerError}</p>
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-                            {isLoadingUserProfile ? (
-                                <div role="status" className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                    Loading user profile…
-                                </div>
-                            ) : (
-                                <>
-                                    <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
-                                        <h3 className="text-sm font-semibold text-foreground">Identity</h3>
-                                        <div className="flex flex-col gap-1 text-sm text-foreground">
-                                            <div><span className="font-semibold text-foreground">Name:</span> {userIdentity.name || 'n/a'}</div>
-                                            <div><span className="font-semibold text-foreground">Email:</span> {userIdentity.email || 'No email'}</div>
-                                            <div className="break-all">
-                                                <span className="font-semibold text-foreground">User ID:</span>{' '}
-                                                <CopyableUuid value={userIdentity.userId} textClassName="break-all text-sm" />
-                                            </div>
-                                            <div><span className="font-semibold text-foreground">Role:</span> {userIdentity.role || 'n/a'}</div>
-                                            <div><span className="font-semibold text-foreground">Tier:</span> {userIdentity.tier || 'n/a'}</div>
-                                            <div>
-                                                <span className="font-semibold text-foreground">Status:</span>{' '}
-                                                {resolvedUserAccountStatus ? formatAccountStatusLabel(resolvedUserAccountStatus) : 'n/a'}
-                                            </div>
-                                            {userIdentity.totalTrips !== null && (
-                                                <div>
-                                                    <span className="font-semibold text-foreground">Trips:</span>{' '}
-                                                    {userIdentity.activeTrips ?? 0} active / {userIdentity.totalTrips} total
-                                                </div>
-                                            )}
-                                        </div>
-                                    </section>
-
-                                    <section className="rounded-lg border border-border p-3">
-                                        <h3 className="text-sm font-semibold text-foreground">Actions</h3>
-                                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => void restoreUserFromAudit()}
-                                                disabled={
-                                                    isRestoringUser
-                                                    || resolvedUserAccountStatus !== 'deleted'
-                                                    || !selectedUserLog?.target_id
-                                                    || !selectedUserProfile
-                                                }
-                                                aria-busy={isRestoringUser || undefined}
-                                                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-400/30 dark:text-emerald-200 dark:hover:bg-emerald-400/12 dark:hover:text-emerald-100"
-                                            >
-                                                {isRestoringUser ? 'Restoring…' : 'Restore user'}
-                                            </Button>
-                                        </div>
-                                        {resolvedUserAccountStatus !== 'deleted' && (
-                                            <p className="mt-2 text-xs text-muted-foreground">Restore is available only for soft-deleted users.</p>
-                                        )}
-                                    </section>
-
-                                    {Object.keys(selectedUserSnapshot).length > 0 && (
-                                        <details className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
-                                            <summary className="cursor-pointer font-medium text-foreground">Audit snapshot</summary>
-                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 dark:bg-slate-950">
-                                                {JSON.stringify(selectedUserSnapshot, null, 2)}
-                                            </pre>
-                                        </details>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                {userDrawerError && (
+                    <Alert variant="warning">
+                        <Warning weight="fill" />
+                        <AlertDescription>
+                            <p>{userDrawerError}</p>
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {isLoadingUserProfile ? (
+                    <div role="status" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                        <SpinnerGap size={14} className="animate-spin" />
+                        Loading user profile…
                     </div>
-                </DrawerContent>
-            </Drawer>
+                ) : (
+                    <>
+                        <section className="flex flex-col gap-2">
+                            <AdminSectionHeader as="h3" title="Profile" />
+                            <dl className="divide-y divide-border">
+                                <AuditDetailRow label="Name">{userIdentity.name || '—'}</AuditDetailRow>
+                                <AuditDetailRow label="Email">{userIdentity.email || 'No email'}</AuditDetailRow>
+                                <AuditDetailRow label="User id">
+                                    <CopyableUuid value={userIdentity.userId} textClassName="break-all text-xs" />
+                                </AuditDetailRow>
+                                <AuditDetailRow label="Role">{userIdentity.role || '—'}</AuditDetailRow>
+                                <AuditDetailRow label="Tier">{userIdentity.tier || '—'}</AuditDetailRow>
+                                {userIdentity.totalTrips !== null && (
+                                    <AuditDetailRow label="Trips">
+                                        <span className="tabular-nums">{userIdentity.activeTrips ?? 0} active / {userIdentity.totalTrips} total</span>
+                                    </AuditDetailRow>
+                                )}
+                            </dl>
+                        </section>
+                        {Object.keys(selectedUserSnapshot).length > 0 && (
+                            <SnapshotDisclosure snapshot={selectedUserSnapshot} />
+                        )}
+                    </>
+                )}
+            </AdminDetailSheet>
 
-            <Drawer
+            <AdminDetailSheet
                 open={isTripDrawerOpen}
                 onOpenChange={(open) => {
                     setIsTripDrawerOpen(open);
@@ -2297,111 +2507,112 @@ export const AdminAuditPage: React.FC = () => {
                     setSelectedTripRecord(null);
                     setTripDrawerError(null);
                 }}
-                direction="right"
+                size="md"
+                title={tripIdentity.title || 'Trip'}
+                accessibleTitle="Trip details"
+                subtitle={tripIdentity.ownerEmail || undefined}
+                meta={tripIdentity.status && (
+                    <AdminStatusBadge
+                        tone={tripIdentity.status === 'active' ? 'success' : tripIdentity.status === 'archived' ? 'neutral' : 'warning'}
+                    >
+                        {tripIdentity.status.charAt(0).toUpperCase() + tripIdentity.status.slice(1)}
+                    </AdminStatusBadge>
+                )}
+                headerActions={tripIdentity.tripId !== 'n/a' && (
+                    <Button asChild variant="outline" size="sm">
+                        <a
+                            href={`/trip/${encodeURIComponent(tripIdentity.tripId)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => trackEvent('admin__audit--open_trip')}
+                            {...getAnalyticsDebugAttributes('admin__audit--open_trip')}
+                        >
+                            Open trip
+                            <ArrowSquareOut className="rtl:-scale-x-100" />
+                        </a>
+                    </Button>
+                )}
+                footer={tripIdentity.tripId !== 'n/a' && (
+                    <>
+                        <Button asChild variant="outline" size="sm">
+                            <Link
+                                to={`/admin/trips?trip=${encodeURIComponent(tripIdentity.tripId)}&drawer=trip`}
+                                onClick={() => trackEvent('admin__audit--open_in_trips')}
+                                {...getAnalyticsDebugAttributes('admin__audit--open_in_trips')}
+                            >
+                                Open in Trips
+                            </Link>
+                        </Button>
+                        {tripIdentity.ownerId && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    if (!tripIdentity.ownerId) return;
+                                    trackEvent('admin__audit--open_owner');
+                                    openTargetDrawer({
+                                        id: selectedTripLog?.id || `audit-owner-${tripIdentity.ownerId}`,
+                                        actor_user_id: null,
+                                        actor_email: null,
+                                        action: 'audit.open_owner_from_trip',
+                                        target_type: 'user',
+                                        target_id: tripIdentity.ownerId,
+                                        before_data: null,
+                                        after_data: null,
+                                        metadata: null,
+                                        created_at: selectedTripLog?.created_at || tripIdentity.createdAt || FALLBACK_AUDIT_TIMESTAMP,
+                                    });
+                                }}
+                                {...getAnalyticsDebugAttributes('admin__audit--open_owner')}
+                            >
+                                Open owner
+                            </Button>
+                        )}
+                    </>
+                )}
             >
-                <DrawerContent
-                    side="right"
-                    className="w-[min(96vw,560px)] p-0"
-                    accessibleTitle="Trip details"
-                    accessibleDescription="Inspect trip details directly from the audit log."
-                >
-                    <div className="flex h-full flex-col">
-                        <div className="border-b border-border px-5 py-4">
-                            <h2 className="text-base font-semibold text-foreground">Trip details</h2>
-                            <p className="truncate text-sm text-muted-foreground">
-                                {tripIdentity.title || (
-                                    <CopyableUuid value={tripIdentity.tripId} textClassName="max-w-[360px] truncate text-sm" />
-                                )}
-                            </p>
-                        </div>
-                        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-                            {tripDrawerError && (
-                                <Alert variant="warning">
-                                    <Warning weight="fill" />
-                                    <AlertDescription>
-                                        <p>{tripDrawerError}</p>
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-                            {isLoadingTripRecord ? (
-                                <div role="status" className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
-                                    Loading trip details…
-                                </div>
-                            ) : (
-                                <>
-                                    <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
-                                        <h3 className="text-sm font-semibold text-foreground">Trip metadata</h3>
-                                        <div className="flex flex-col gap-1 text-sm text-foreground">
-                                            <div className="break-all">
-                                                <span className="font-semibold text-foreground">Trip ID:</span>{' '}
-                                                <CopyableUuid value={tripIdentity.tripId} textClassName="break-all text-sm" />
-                                            </div>
-                                            <div><span className="font-semibold text-foreground">Status:</span> {tripIdentity.status || 'n/a'}</div>
-                                            <div><span className="font-semibold text-foreground">Owner:</span> {tripIdentity.ownerEmail || tripIdentity.ownerId || 'n/a'}</div>
-                                            {tripIdentity.ownerId && (
-                                                <div className="break-all">
-                                                    <span className="font-semibold text-foreground">Owner ID:</span>{' '}
-                                                    <CopyableUuid value={tripIdentity.ownerId} textClassName="break-all text-sm" />
-                                                </div>
-                                            )}
-                                            <div><span className="font-semibold text-foreground">Expires at:</span> {tripIdentity.expiresAt ? formatAuditValue(tripIdentity.expiresAt) : 'Not set'}</div>
-                                            <div><span className="font-semibold text-foreground">Source:</span> {tripIdentity.sourceKind || 'n/a'}</div>
-                                            <div><span className="font-semibold text-foreground">Created:</span> {tripIdentity.createdAt ? formatAuditValue(tripIdentity.createdAt) : 'n/a'}</div>
-                                            <div><span className="font-semibold text-foreground">Updated:</span> {tripIdentity.updatedAt ? formatAuditValue(tripIdentity.updatedAt) : 'n/a'}</div>
-                                        </div>
-                                        {tripIdentity.ownerId && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-fit"
-                                                onClick={() => {
-                                                    if (!tripIdentity.ownerId) return;
-                                                    openTargetDrawer({
-                                                        id: selectedTripLog?.id || `audit-owner-${tripIdentity.ownerId}`,
-                                                        actor_user_id: null,
-                                                        actor_email: null,
-                                                        action: 'audit.open_owner_from_trip',
-                                                        target_type: 'user',
-                                                        target_id: tripIdentity.ownerId,
-                                                        before_data: null,
-                                                        after_data: null,
-                                                        metadata: null,
-                                                        created_at: selectedTripLog?.created_at || tripIdentity.createdAt || FALLBACK_AUDIT_TIMESTAMP,
-                                                    });
-                                                }}
-                                            >
-                                                Open owner details
-                                            </Button>
-                                        )}
-                                        {tripIdentity.tripId && (
-                                            <Button asChild variant="outline" size="sm" className="w-fit">
-                                                <a
-                                                    href={`/trip/${encodeURIComponent(tripIdentity.tripId)}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                >
-                                                    Open trip
-                                                    <ArrowSquareOut />
-                                                </a>
-                                            </Button>
-                                        )}
-                                    </section>
-
-                                    {Object.keys(selectedTripSnapshot).length > 0 && (
-                                        <details className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
-                                            <summary className="cursor-pointer font-medium text-foreground">Audit snapshot</summary>
-                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 dark:bg-slate-950">
-                                                {JSON.stringify(selectedTripSnapshot, null, 2)}
-                                            </pre>
-                                        </details>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                {tripDrawerError && (
+                    <Alert variant="warning">
+                        <Warning weight="fill" />
+                        <AlertDescription>
+                            <p>{tripDrawerError}</p>
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {isLoadingTripRecord ? (
+                    <div role="status" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                        <SpinnerGap size={14} className="animate-spin" />
+                        Loading trip details…
                     </div>
-                </DrawerContent>
-            </Drawer>
+                ) : (
+                    <>
+                        <section className="flex flex-col gap-2">
+                            <AdminSectionHeader as="h3" title="Trip" />
+                            <dl className="divide-y divide-border">
+                                <AuditDetailRow label="Trip id">
+                                    <CopyableUuid value={tripIdentity.tripId} textClassName="break-all text-xs" />
+                                </AuditDetailRow>
+                                <AuditDetailRow label="Owner">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span>{tripIdentity.ownerEmail || (tripIdentity.ownerId ? 'No email' : '—')}</span>
+                                        {tripIdentity.ownerId && (
+                                            <CopyableUuid value={tripIdentity.ownerId} textClassName="break-all text-xs" />
+                                        )}
+                                    </div>
+                                </AuditDetailRow>
+                                <AuditDetailRow label="Expires">{tripIdentity.expiresAt ? formatAuditValue(tripIdentity.expiresAt) : 'Not set'}</AuditDetailRow>
+                                <AuditDetailRow label="Source">{tripIdentity.sourceKind || '—'}</AuditDetailRow>
+                                <AuditDetailRow label="Created">{tripIdentity.createdAt ? formatAuditValue(tripIdentity.createdAt) : '—'}</AuditDetailRow>
+                                <AuditDetailRow label="Updated">{tripIdentity.updatedAt ? formatAuditValue(tripIdentity.updatedAt) : '—'}</AuditDetailRow>
+                            </dl>
+                        </section>
+                        {Object.keys(selectedTripSnapshot).length > 0 && (
+                            <SnapshotDisclosure snapshot={selectedTripSnapshot} />
+                        )}
+                    </>
+                )}
+            </AdminDetailSheet>
         </AdminShell>
     );
 };

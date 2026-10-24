@@ -1,4 +1,7 @@
 ## Summary
+
+> **Status (2026-10-24):** historical PR body. The admin billing and users screens were since rebuilt on the shared admin shell; status pills are now `AdminStatusBadge`s. Routes and checks below still apply.
+
 - completes the payment-provider spike and early Paddle implementation path for issue #174
 - keeps the rollout sandbox-first while making the later live cutover a configuration swap instead of a code rewrite
 - adds the dedicated checkout, admin billing visibility, targeted reconciliation, and upgrade-entry improvements needed to validate subscriptions in the current stack

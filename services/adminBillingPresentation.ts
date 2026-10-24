@@ -208,3 +208,90 @@ export const adminBillingStatusClassName = (tone: AdminBillingStatusTone): strin
     if (tone === 'danger') return 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
     return 'border-border bg-secondary text-foreground';
 };
+
+export type AdminBillingWebhookLinkFilter = 'linked' | 'unlinked';
+
+/** The lower-cased delivery status a webhook event is filtered and counted by. */
+export const resolveAdminBillingWebhookStatusKey = (record: Pick<AdminBillingWebhookEventRecord, 'status'>): string => (
+    (record.status || '').trim().toLowerCase() || 'unknown'
+);
+
+/** Webhook rows matching the status and user-link filters. An empty filter list matches everything. */
+export const filterAdminBillingWebhookEvents = (
+    records: AdminBillingWebhookEventRecord[],
+    filters: { statuses: string[]; links: string[] },
+): AdminBillingWebhookEventRecord[] => {
+    const statusSet = new Set(filters.statuses);
+    const linkSet = new Set(filters.links);
+    return records.filter((record) => {
+        if (statusSet.size > 0 && !statusSet.has(resolveAdminBillingWebhookStatusKey(record))) return false;
+        if (linkSet.size > 0 && !linkSet.has(record.user_id ? 'linked' : 'unlinked')) return false;
+        return true;
+    });
+};
+
+/**
+ * The Paddle subscription a webhook event is about, when the payload names one,
+ * so a failed event can be repaired with a targeted reconcile.
+ */
+export const extractAdminBillingWebhookSubscriptionId = (
+    record: Pick<AdminBillingWebhookEventRecord, 'payload' | 'event_type'>,
+): string | null => {
+    const payload = record.payload;
+    if (!payload || typeof payload !== 'object') return null;
+    const data = (payload as Record<string, unknown>).data;
+    if (!data || typeof data !== 'object') return null;
+    const candidates = [
+        (data as Record<string, unknown>).subscription_id,
+        (data as Record<string, unknown>).id,
+    ];
+    for (const candidate of candidates) {
+        if (typeof candidate === 'string' && /^sub_[a-z0-9]+$/i.test(candidate.trim())) return candidate.trim();
+    }
+    return null;
+};
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+/** "3 hours ago", "in 2 weeks", or a dash for a missing/invalid timestamp. */
+export const formatAdminBillingRelativeTime = (value: string | null | undefined, nowMs = Date.now()): string => {
+    if (!value) return '—';
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return '—';
+    const diffMs = parsed - nowMs;
+    const absDiffMs = Math.abs(diffMs);
+    const minuteMs = 60_000;
+    const hourMs = 60 * minuteMs;
+    const dayMs = 24 * hourMs;
+    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
+    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
+    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
+    if (absDiffMs < 7 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
+    if (absDiffMs < 30 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / (7 * dayMs)), 'week');
+    if (absDiffMs < 365 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / (30 * dayMs)), 'month');
+    return relativeTimeFormatter.format(Math.round(diffMs / (365 * dayMs)), 'year');
+};
+
+/** One client-side page of rows, with the page clamped into range. */
+export function sliceAdminBillingPage<T>(items: T[], page: number, pageSize: number): { items: T[]; page: number } {
+    const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+    const safePage = Math.min(Math.max(Math.floor(page) || 1, 1), pageCount);
+    const start = (safePage - 1) * pageSize;
+    return { items: items.slice(start, start + pageSize), page: safePage };
+}
+
+/**
+ * The MRR headline: the largest currency as the tile value, the rest named in
+ * the hint, so a second currency is never silently dropped.
+ */
+export const buildAdminBillingMrrHeadline = (
+    cards: Array<{ currency: string; amountLabel: string; subscriptions: number }>,
+): { value: string; subscriptions: number; otherCurrencies: string[] } => {
+    if (cards.length === 0) return { value: '—', subscriptions: 0, otherCurrencies: [] };
+    const [primary, ...rest] = cards;
+    return {
+        value: primary.amountLabel,
+        subscriptions: cards.reduce((sum, card) => sum + card.subscriptions, 0),
+        otherCurrencies: rest.map((card) => card.amountLabel),
+    };
+};

@@ -4,17 +4,22 @@ import { useSearchParams } from 'react-router-dom';
 import {
     AirplaneTakeoff,
     ArrowsClockwise,
+    Database,
+    DotsThreeVertical,
     FloppyDisk,
     MapPin,
     MagnifyingGlass,
+    PencilSimple,
     Plus,
     SpinnerGap,
+    Tag,
     Trash,
     WarningCircle,
 } from '@phosphor-icons/react';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { GoogleMapsLoader, useGoogleMaps } from '../components/GoogleMapsLoader';
 import { AdminAirportTesterMap } from '../components/admin/AdminAirportTesterMap';
+import { AdminAirportTicketLab } from '../components/admin/AdminAirportTicketLab';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminShell } from '../components/admin/AdminShell';
@@ -25,12 +30,46 @@ import { AdminStatCard } from '../components/admin/AdminStatCard';
 import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
+import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
+import { AdminPagination } from '../components/admin/AdminPagination';
+import {
+    ADMIN_AIRPORTS_TABS,
+    buildAirportBulkPatch,
+    EMPTY_AIRPORT_BULK_EDIT,
+    formatAirportCodes,
+    hasNearbyTesterQueryState,
+    resolveAdminAirportsTab,
+    summarizeAirportServiceTiers,
+    type AdminAirportsTab,
+    type AirportBulkEditChoices,
+    type BulkAirportTypeOption,
+    type BulkScheduledServiceOption,
+    type BulkTimezoneMode,
+} from '../components/admin/adminAirportsModel';
+import { formatAdminAbsoluteTime, formatAdminRelativeTime } from '../components/admin/adminContentEditorModel';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
 import { Input } from '../components/ui/input';
 import { showAppToast } from '../components/ui/appToast';
+import {
+    Dialog,
+    DialogBody,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '../components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import {
     Select,
     SelectContent,
@@ -47,7 +86,9 @@ import {
     TableHeader,
     TableRow,
 } from '../components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { cn } from '../lib/utils';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     adminBulkUpdateAirportCatalogRecords,
     adminCreateAirportCatalogRecord,
@@ -83,11 +124,6 @@ import {
     type AirportReference,
     type NearbyAirportsResponse,
 } from '../shared/airportReference';
-import {
-    buildFakeAirportTicket,
-    type FakeAirportTicket,
-    type FakeAirportTicketCabinClass,
-} from '../shared/fakeAirportTicket';
 
 type AirportCatalogSource = AdminAirportCatalogResponse['source'];
 type AirportTableTierFilter = 'all' | AirportCommercialServiceTier;
@@ -117,10 +153,7 @@ interface TesterOrigin {
     countryName: string | null;
 }
 
-type BulkAirportTypeOption = 'leave' | AirportReference['airportType'];
-type BulkScheduledServiceOption = 'leave' | 'enabled' | 'disabled';
-type BulkTimezoneMode = 'leave' | 'set' | 'clear';
-type AirportTableColumnId = 'code' | 'airport' | 'location' | 'tier' | 'type' | 'timezone';
+type AirportTableColumnId = 'airport' | 'location' | 'tier' | 'type' | 'timezone';
 
 interface AdminAirportTesterFilters {
     cityQuery: string;
@@ -165,14 +198,7 @@ const BULK_TIMEZONE_MODE_OPTIONS: Array<{ value: BulkTimezoneMode; label: string
     { value: 'set', label: 'Set timezone value' },
     { value: 'clear', label: 'Clear timezone' },
 ];
-const TICKET_CABIN_OPTIONS: Array<{ value: FakeAirportTicketCabinClass; label: string }> = [
-    { value: 'economy', label: 'Economy' },
-    { value: 'business', label: 'Business' },
-    { value: 'first', label: 'First' },
-];
-const TICKET_DESTINATION_PRIORITY = ['JFK', 'LHR', 'CDG', 'DXB', 'SIN', 'HND', 'LAX', 'SFO'];
 const AIRPORT_COLUMN_WIDTH_MIN: Record<AirportTableColumnId, number> = {
-    code: 120,
     airport: 240,
     location: 200,
     tier: 130,
@@ -180,12 +206,11 @@ const AIRPORT_COLUMN_WIDTH_MIN: Record<AirportTableColumnId, number> = {
     timezone: 180,
 };
 const AIRPORT_COLUMN_WIDTH_DEFAULT: Record<AirportTableColumnId, number> = {
-    code: 130,
-    airport: 280,
+    airport: 320,
     location: 240,
-    tier: 140,
-    type: 130,
-    timezone: 210,
+    tier: 130,
+    type: 120,
+    timezone: 200,
 };
 
 const parseAirportTableTierFilter = (value: string | null): AirportTableTierFilter => (
@@ -272,34 +297,9 @@ const areAdminAirportTesterFiltersEqual = (
     && left.sameCountryOnly === right.sameCountryOnly
     && left.lookupActive === right.lookupActive;
 
-const hasNearbyTesterQueryState = (searchParams: AdminAirportTesterSearchParams): boolean => (
-    [
-        'nearbyCity',
-        'nearbyLat',
-        'nearbyLng',
-        'nearbyLimit',
-        'nearbyTier',
-        'nearbyCountry',
-        'nearbySameCountry',
-        'nearbyLookup',
-    ].some((key) => Boolean(searchParams.get(key)?.trim()))
-);
-
 const formatRuntimeLocationTesterLabel = (
     location: RuntimeLocationStoreSnapshot['location'],
 ): string => [location.city, location.countryName].filter(Boolean).join(', ') || 'Runtime location';
-
-const adminAirportDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-});
-
-const formatDateTime = (value: string | null | undefined): string => {
-    if (!value) return '—';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return '—';
-    return adminAirportDateTimeFormatter.format(new Date(parsed));
-};
 
 const formatDistance = (value: number): string => `${value.toFixed(value >= 100 ? 0 : 1)} km`;
 
@@ -313,238 +313,6 @@ const formatServiceTierLabel = (tier: AirportCommercialServiceTier): string => {
     if (tier === 'major') return 'Major';
     if (tier === 'regional') return 'Regional';
     return 'Local';
-};
-
-const formatCabinClassLabel = (cabinClass: FakeAirportTicketCabinClass): string => {
-    if (cabinClass === 'first') return 'First';
-    if (cabinClass === 'business') return 'Business';
-    return 'Economy';
-};
-
-const formatAirportTicketLocationLabel = (airport: AirportReference): string => (
-    [airport.municipality, airport.countryName].filter(Boolean).join(', ') || airport.name
-);
-
-const TICKET_QR_FALLBACK_DOMAIN = 'https://travelflowapp.netlify.app';
-
-const buildTicketBarcodeBars = (token: string): Array<{ id: string; width: number; muted: boolean }> => {
-    const normalized = token.replace(/[^A-Z0-9]/gi, '').toUpperCase() || 'TRAVELFLOW';
-    return Array.from({ length: 64 }, (_, index) => {
-        const charCode = normalized.charCodeAt(index % normalized.length);
-        return {
-            id: `ticket-bar-${index}`,
-            width: 1 + (charCode % 3),
-            muted: index % 9 === 0,
-        };
-    });
-};
-
-const buildTicketQrCodeUrl = (url: string): string => (
-    `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=${encodeURIComponent(url)}`
-);
-
-const formatTicketMetaValue = (value: string): string => value.replace(/\s+/g, ' ').trim();
-
-const TICKET_CARD_SHADOW = 'shadow-[0_1px_0_rgba(255,255,255,0.72)_inset,0_30px_50px_-36px_rgba(15,23,42,0.46),0_14px_28px_-18px_rgba(15,23,42,0.18),0_0_0_1px_rgba(148,163,184,0.1)]';
-
-const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false }) => {
-    if (vertical) {
-        return (
-            <div className="relative flex h-24 items-center justify-center" aria-hidden="true">
-                <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-slate-300 dark:bg-slate-600" />
-                <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
-                    <AirplaneTakeoff size={18} weight="fill" className="-rotate-90" />
-                </span>
-            </div>
-        );
-    }
-
-    return (
-        <div className="relative flex h-12 items-center justify-center" aria-hidden="true">
-            <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300 dark:bg-slate-600" />
-            <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
-                <AirplaneTakeoff size={18} weight="fill" />
-            </span>
-        </div>
-    );
-};
-
-const TicketMetaPill: React.FC<{
-    label: string;
-    value: string;
-}> = ({ label, value }) => (
-    <div className="min-w-0 space-y-1">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{label}</div>
-        <div
-            className="font-heading truncate text-[1.05rem] font-black tracking-[-0.04em] text-foreground"
-            title={formatTicketMetaValue(value)}
-        >
-            {formatTicketMetaValue(value)}
-        </div>
-    </div>
-);
-
-const TicketBarcode: React.FC<{
-    bars: Array<{ id: string; width: number; muted: boolean }>;
-}> = ({ bars }) => (
-    // Always dark bars on white, as on a printed pass: on the dark-mode card
-    // fill the slate-950 bars were invisible.
-    <div className="overflow-hidden rounded-[10px] border border-border bg-white p-3">
-        <div className="flex h-[84px] items-stretch gap-px" aria-hidden="true">
-            {bars.map((bar) => (
-                <span
-                    key={bar.id}
-                    className={cn('block h-full', bar.muted ? 'bg-slate-500/65' : 'bg-slate-950')}
-                    style={{ width: `${bar.width}px` }}
-                />
-            ))}
-        </div>
-    </div>
-);
-
-const TicketQrBadge: React.FC<{
-    qrCodeUrl: string;
-}> = ({ qrCodeUrl }) => (
-    <div className="flex flex-col items-center gap-2 rounded-[10px] border border-border bg-card p-3">
-        <img
-            src={qrCodeUrl}
-            alt="TravelFlow QR code"
-            className="size-20 rounded-[8px] border border-border bg-secondary object-cover"
-            draggable={false}
-        />
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Scan</div>
-    </div>
-);
-
-const AirportTicketPreviewCard: React.FC<{
-    ticket: FakeAirportTicket;
-    barcodeBars: Array<{ id: string; width: number; muted: boolean }>;
-    qrCodeUrl: string;
-    variant: 'horizontal' | 'vertical';
-    isUsingFallbackDeparture: boolean;
-}> = ({ ticket, barcodeBars, qrCodeUrl, variant, isUsingFallbackDeparture }) => {
-    const isVertical = variant === 'vertical';
-    const departureCode = ticket.departureAirport.iataCode || ticket.departureAirport.ident;
-    const arrivalCode = ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident;
-    const footerStatusLabel = isUsingFallbackDeparture ? 'BER default' : 'Live airport';
-
-    if (isVertical) {
-        return (
-            <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)] dark:bg-[linear-gradient(180deg,var(--card)_0%,var(--background)_100%)]', TICKET_CARD_SHADOW)}>
-                <div className="h-2.5 bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)]" />
-                <div className="space-y-5 p-5">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Vertical style</div>
-                            <div className="font-heading mt-2 truncate text-xl font-black tracking-[-0.04em] text-foreground">{ticket.airlineName}</div>
-                        </div>
-                        <div className="rounded-full border border-border bg-card px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                            {ticket.flightNumber}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="min-w-0">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">From</div>
-                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-foreground">
-                                {departureCode}
-                            </div>
-                            <div className="mt-2 truncate text-sm font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
-                                {formatAirportTicketLocationLabel(ticket.departureAirport)}
-                            </div>
-                        </div>
-
-                        <TicketRouteLine vertical />
-
-                        <div className="min-w-0">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">To</div>
-                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-foreground">
-                                {arrivalCode}
-                            </div>
-                            <div className="mt-2 truncate text-sm font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
-                                {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-                        <TicketMetaPill label="Passenger" value={ticket.passengerName} />
-                        <TicketMetaPill label="Date" value={ticket.departureDateLabel} />
-                        <TicketMetaPill label="Gate" value={ticket.gate} />
-                        <TicketMetaPill label="Seat" value={ticket.seat} />
-                    </div>
-
-                    <div className="grid grid-cols-[minmax(0,1fr)_102px] gap-3">
-                        <TicketBarcode bars={barcodeBars} />
-                        <TicketQrBadge qrCodeUrl={qrCodeUrl} />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 border-t border-border pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                        <span>{ticket.departureTimeLabel} → {ticket.arrivalTimeLabel}</span>
-                        <span>{footerStatusLabel}</span>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)] dark:bg-[linear-gradient(180deg,var(--card)_0%,var(--background)_100%)]', TICKET_CARD_SHADOW)}>
-            <div className="flex items-center justify-between gap-3 border-b border-border bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)] px-5 py-3 text-white">
-                <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/60">Digital Boarding Pass</div>
-                    <div className="font-heading mt-1 truncate text-xl font-black tracking-[-0.04em]">{ticket.airlineName}</div>
-                </div>
-                <div className="rounded-full border border-white/15 bg-card/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
-                    {ticket.flightNumber}
-                </div>
-            </div>
-
-            <div className="space-y-5 p-5">
-                <div className="grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)]">
-                    <div className="min-w-0">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Departure</div>
-                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-foreground">
-                            {departureCode}
-                        </div>
-                        <div className="mt-2 truncate text-base font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
-                            {formatAirportTicketLocationLabel(ticket.departureAirport)}
-                        </div>
-                    </div>
-
-                    <TicketRouteLine />
-
-                    <div className="min-w-0 text-start md:text-end">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Arrival</div>
-                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-foreground">
-                            {arrivalCode}
-                        </div>
-                        <div className="mt-2 truncate text-base font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
-                            {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2 xl:grid-cols-4">
-                    <TicketMetaPill label="Passenger" value={ticket.passengerName} />
-                    <TicketMetaPill label="Date" value={ticket.departureDateLabel} />
-                    <TicketMetaPill label="Gate" value={ticket.gate} />
-                    <TicketMetaPill label="Seat" value={ticket.seat} />
-                </div>
-
-                <div className="grid gap-3 border-t border-border pt-5 md:grid-cols-[minmax(0,1fr)_112px]">
-                    <TicketBarcode bars={barcodeBars} />
-                    <TicketQrBadge qrCodeUrl={qrCodeUrl} />
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    <span>{ticket.departureTimeLabel} → {ticket.arrivalTimeLabel}</span>
-                    <span>{ticket.durationLabel}</span>
-                    <span>{footerStatusLabel}</span>
-                </div>
-            </div>
-        </div>
-    );
 };
 
 const sortAirports = (airports: AirportReference[]): AirportReference[] => Array.from(airports).sort((left, right) => (
@@ -642,22 +410,21 @@ const resolveSelectedAirport = (
         const preferredAirport = airports.find((airport) => airport.ident === preferredIdent) || null;
         if (preferredAirport) return preferredAirport;
     }
-    return airports[0] || null;
+    // The editor is a sheet now: nothing opens until an admin picks a row.
+    return null;
 };
 
-const AirportSourcePill: React.FC<{
-    source: AirportCatalogSource;
-    databaseAvailable: boolean;
-}> = ({ source, databaseAvailable }) => {
+/** How the catalog is being served, for the status tile and the editor gate. */
+const describeCatalogSource = (
+    source: AirportCatalogSource,
+    databaseAvailable: boolean,
+): { label: string; hint: string; tone: 'positive' | 'warning' | 'negative' } => {
     if (source === 'database') {
-        return <AdminStatusBadge tone="success">Database-backed</AdminStatusBadge>;
+        return { label: 'Database', hint: 'Edits are saved to the live catalog.', tone: 'positive' };
     }
-
-    return (
-        <AdminStatusBadge tone={databaseAvailable ? 'warning' : 'neutral'}>
-            {databaseAvailable ? 'Snapshot fallback' : 'Snapshot only'}
-        </AdminStatusBadge>
-    );
+    return databaseAvailable
+        ? { label: 'Snapshot fallback', hint: 'The database catalog is empty. Sync to enable edits.', tone: 'warning' }
+        : { label: 'Snapshot only', hint: 'The database is unavailable, so the catalog is read-only.', tone: 'negative' };
 };
 
 /** A small form label: sentence case, muted, no tracking (docs/DESIGN.md). */
@@ -667,7 +434,13 @@ const AdminAirportTester: React.FC<{
     filters: AdminAirportTesterFilters;
     onFiltersChange: (patch: Partial<AdminAirportTesterFilters>) => void;
     onLookupContextChange?: (context: { origin: TesterOrigin | null; lookupResult: NearbyAirportsResponse | null }) => void;
-}> = ({ filters, onFiltersChange, onLookupContextChange }) => {
+    /**
+     * The tester stays mounted behind its tab so the ticket lab keeps its
+     * result, but the map only mounts while visible: a map laid out in a
+     * hidden (0×0) panel fits its bounds to nothing.
+     */
+    mapVisible?: boolean;
+}> = ({ filters, onFiltersChange, onLookupContextChange, mapVisible = true }) => {
     const { isLoaded } = useGoogleMaps();
     const lookupRequestIdRef = useRef(0);
     const manualLookupInFlightRef = useRef(false);
@@ -889,7 +662,7 @@ const AdminAirportTester: React.FC<{
         <AdminSurfaceCard className="flex flex-col gap-4">
             <AdminSectionHeader
                 title="Nearby airport tester"
-                description="Search for a city with Google, run the shared nearby-airports endpoint, and preview the result set on a map."
+                description="Run the nearby-airports lookup travellers get for any city or coordinate, and check the result on a map."
             />
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
@@ -1133,501 +906,144 @@ const AdminAirportTester: React.FC<{
                     )}
                 </div>
 
-                <AdminAirportTesterMap origin={origin} result={displayLookupResult} />
+                {mapVisible ? <AdminAirportTesterMap origin={origin} result={displayLookupResult} /> : <div aria-hidden="true" />}
             </div>
         </AdminSurfaceCard>
     );
 };
 
-const AdminAirportBulkEditor: React.FC<{
+/**
+ * The bulk editor, opened from the selection bar. It used to be a permanent
+ * panel above the table with four always-zero tiles; now it only exists while
+ * rows are selected, and the tier breakdown is one line.
+ */
+const AdminAirportBulkEditDialog: React.FC<{
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
     selectedAirports: AirportReference[];
-    filteredAirportCount: number;
-    databaseBacked: boolean;
     isApplying: boolean;
-    isDeleting: boolean;
-    onApply: (patch: AdminAirportBulkUpdatePatch) => Promise<void>;
-    onDeleteSelected: () => Promise<void>;
-    onSelectFiltered: () => void;
-    onClearSelection: () => void;
-}> = ({
-    selectedAirports,
-    filteredAirportCount,
-    databaseBacked,
-    isApplying,
-    isDeleting,
-    onApply,
-    onDeleteSelected,
-    onSelectFiltered,
-    onClearSelection,
-}) => {
-    const [bulkAirportType, setBulkAirportType] = useState<BulkAirportTypeOption>('leave');
-    const [bulkScheduledService, setBulkScheduledService] = useState<BulkScheduledServiceOption>('leave');
-    const [bulkTimezoneMode, setBulkTimezoneMode] = useState<BulkTimezoneMode>('leave');
-    const [bulkTimezoneValue, setBulkTimezoneValue] = useState('');
-
+    /** Resolves true when the edit was applied (then the dialog closes). */
+    onApply: (patch: AdminAirportBulkUpdatePatch) => Promise<boolean>;
+}> = ({ open, onOpenChange, selectedAirports, isApplying, onApply }) => {
+    const [choices, setChoices] = useState<AirportBulkEditChoices>(EMPTY_AIRPORT_BULK_EDIT);
+    const bulkPatch = useMemo(() => buildAirportBulkPatch(choices), [choices]);
+    const tiers = useMemo(() => summarizeAirportServiceTiers(selectedAirports), [selectedAirports]);
     const selectedCount = selectedAirports.length;
-    const selectionSummary = useMemo(() => {
-        let major = 0;
-        let regional = 0;
-        let local = 0;
-        selectedAirports.forEach((airport) => {
-            if (airport.commercialServiceTier === 'major') major += 1;
-            else if (airport.commercialServiceTier === 'regional') regional += 1;
-            else local += 1;
-        });
-        return { major, regional, local };
-    }, [selectedAirports]);
 
-    const bulkPatch = useMemo(() => {
-        const nextPatch: AdminAirportBulkUpdatePatch = {};
-        if (bulkAirportType !== 'leave') {
-            nextPatch.airportType = bulkAirportType;
-        }
-        if (bulkScheduledService !== 'leave') {
-            nextPatch.scheduledService = bulkScheduledService === 'enabled';
-        }
-        if (bulkTimezoneMode === 'set') {
-            const trimmedTimezone = bulkTimezoneValue.trim();
-            if (!trimmedTimezone) return null;
-            nextPatch.timezone = trimmedTimezone;
-        }
-        if (bulkTimezoneMode === 'clear') {
-            nextPatch.timezone = null;
-        }
-        return Object.keys(nextPatch).length > 0 ? nextPatch : null;
-    }, [bulkAirportType, bulkScheduledService, bulkTimezoneMode, bulkTimezoneValue]);
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen) setChoices(EMPTY_AIRPORT_BULK_EDIT);
+        onOpenChange(nextOpen);
+    };
 
-    const canApply = databaseBacked && selectedCount > 0 && Boolean(bulkPatch) && !isApplying && !isDeleting;
+    const handleApply = async () => {
+        if (!bulkPatch) return;
+        const applied = await onApply(bulkPatch);
+        if (applied) handleOpenChange(false);
+    };
 
-    const handleApply = useCallback(async () => {
-        if (!bulkPatch) {
-            showAppToast({
-                title: 'Choose at least one bulk change',
-                description: 'Set an airport type, scheduled-service flag, or timezone action before applying bulk edits.',
-                tone: 'info',
-            });
-            return;
-        }
-        try {
-            await onApply(bulkPatch);
-            setBulkAirportType('leave');
-            setBulkScheduledService('leave');
-            setBulkTimezoneMode('leave');
-            setBulkTimezoneValue('');
-        } catch {
-            // The page-level handler already surfaced the failure state via toast.
-        }
-    }, [bulkPatch, onApply]);
+    const patchChoices = (patch: Partial<AirportBulkEditChoices>) => setChoices((current) => ({ ...current, ...patch }));
 
     return (
-        <AdminSurfaceCard className="flex flex-col gap-4">
-            <AdminSectionHeader
-                title="Bulk editor"
-                description="Apply the same airport-type, scheduled-service, or timezone correction to many selected airports at once."
-                actions={(
-                    <>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={onSelectFiltered}
-                            disabled={filteredAirportCount === 0}
-                        >
-                            Select filtered (<span className="tabular-nums">{filteredAirportCount}</span>)
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClearSelection}
-                            disabled={selectedCount === 0}
-                        >
-                            Clear selection
-                        </Button>
-                    </>
-                )}
-            />
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <AdminStatCard
-                    label="Selected airports"
-                    value={selectedCount}
-                    hint={selectedCount > 0 ? 'Bulk edits apply to all selected rows.' : 'Pick rows from the table below.'}
-                />
-                <AdminStatCard label="Major" value={selectionSummary.major} hint="Large commercial hubs." />
-                <AdminStatCard label="Regional" value={selectionSummary.regional} hint="Typical passenger airports." />
-                <AdminStatCard label="Local" value={selectionSummary.local} hint="Smaller scheduled commercial fields." />
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-                <div className="flex flex-col gap-1.5">
-                    <div id="admin-airports-bulk-airport-type-label" className={ADMIN_FIELD_LABEL_CLASS}>Airport type</div>
-                    <Select value={bulkAirportType} onValueChange={(value) => setBulkAirportType(value as BulkAirportTypeOption)}>
-                        <SelectTrigger aria-labelledby="admin-airports-bulk-airport-type-label" className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {BULK_AIRPORT_TYPE_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                    <div id="admin-airports-bulk-scheduled-service-label" className={ADMIN_FIELD_LABEL_CLASS}>Scheduled service</div>
-                    <Select value={bulkScheduledService} onValueChange={(value) => setBulkScheduledService(value as BulkScheduledServiceOption)}>
-                        <SelectTrigger aria-labelledby="admin-airports-bulk-scheduled-service-label" className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {BULK_SCHEDULED_SERVICE_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                    <div id="admin-airports-bulk-timezone-mode-label" className={ADMIN_FIELD_LABEL_CLASS}>Timezone action</div>
-                    <Select value={bulkTimezoneMode} onValueChange={(value) => setBulkTimezoneMode(value as BulkTimezoneMode)}>
-                        <SelectTrigger aria-labelledby="admin-airports-bulk-timezone-mode-label" className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {BULK_TIMEZONE_MODE_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-
-            {bulkTimezoneMode === 'set' && (
-                <div className="flex flex-col gap-1.5">
-                    <label htmlFor="admin-airports-bulk-timezone-value" className={ADMIN_FIELD_LABEL_CLASS}>Timezone value</label>
-                    <Input
-                        id="admin-airports-bulk-timezone-value"
-                        value={bulkTimezoneValue}
-                        onChange={(event) => setBulkTimezoneValue(event.target.value)}
-                        placeholder="Europe/Berlin"
-                    />
-                </div>
-            )}
-
-            <div className="flex flex-wrap items-center gap-2">
-                <Button
-                    type="button"
-                    onClick={() => void handleApply()}
-                    disabled={!canApply}
-                    aria-busy={isApplying || undefined}
-                >
-                    {isApplying ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
-                    Apply bulk edit
-                </Button>
-                <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => void onDeleteSelected()}
-                    disabled={!databaseBacked || selectedCount === 0 || isDeleting || isApplying}
-                    aria-busy={isDeleting || undefined}
-                >
-                    {isDeleting ? <SpinnerGap className="animate-spin" /> : <Trash />}
-                    Delete selected
-                </Button>
-                {!databaseBacked && (
-                    <span className="text-xs text-amber-700 dark:text-amber-300">Sync the database catalog first to enable bulk edits.</span>
-                )}
-            </div>
-        </AdminSurfaceCard>
-    );
-};
-
-const AdminAirportTicketLab: React.FC<{
-    catalogAirports: AirportReference[];
-    origin: TesterOrigin | null;
-    nearbyResult: NearbyAirportsResponse | null;
-}> = ({ catalogAirports, origin, nearbyResult }) => {
-    const [passengerName, setPassengerName] = useState('Alex Morgan');
-    const [cabinClass, setCabinClass] = useState<FakeAirportTicketCabinClass>('economy');
-    const [selectedDepartureIdent, setSelectedDepartureIdent] = useState<string>('');
-    const [selectedDestinationIdent, setSelectedDestinationIdent] = useState<string>('');
-    const [departureDate, setDepartureDate] = useState(() => {
-        const next = new Date();
-        next.setDate(next.getDate() + 14);
-        return next.toISOString().slice(0, 10);
-    });
-
-    const fallbackDepartureOption = useMemo(() => {
-        if (nearbyResult) return null;
-        const berlinAirport = catalogAirports.find((airport) => airport.iataCode === 'BER' && airport.isCommercial)
-            || catalogAirports.find((airport) => airport.ident === 'EDDB' && airport.isCommercial)
-            || null;
-        return berlinAirport ? {
-            airport: berlinAirport,
-            airportAccessDistanceKm: null,
-            isFallback: true,
-        } : null;
-    }, [catalogAirports, nearbyResult]);
-
-    const departureOptions = useMemo(
-        () => {
-            const nearbyOptions = (nearbyResult?.airports || []).map((entry) => ({
-                airport: entry.airport,
-                airportAccessDistanceKm: entry.airDistanceKm,
-                isFallback: false,
-            }));
-            if (nearbyOptions.length > 0) return nearbyOptions;
-            return fallbackDepartureOption ? [fallbackDepartureOption] : [];
-        },
-        [fallbackDepartureOption, nearbyResult],
-    );
-
-    const selectedDeparture = useMemo(
-        () => departureOptions.find((entry) => entry.airport.ident === selectedDepartureIdent) || departureOptions[0] || null,
-        [departureOptions, selectedDepartureIdent],
-    );
-
-    const destinationOptions = useMemo(() => {
-        const excludedIdent = selectedDeparture?.airport.ident || null;
-        const commercialOptions = catalogAirports.filter((airport) => (
-            airport.isCommercial
-            && airport.ident !== excludedIdent
-            && airport.iataCode
-            && (airport.commercialServiceTier === 'major' || airport.commercialServiceTier === 'regional')
-        ));
-        const byIdent = new Map<string, AirportReference>();
-        commercialOptions.forEach((airport) => {
-            byIdent.set(airport.ident, airport);
-        });
-
-        const prioritized: AirportReference[] = [];
-        TICKET_DESTINATION_PRIORITY.forEach((iataCode) => {
-            const match = commercialOptions.find((airport) => airport.iataCode === iataCode);
-            if (match && !prioritized.some((airport) => airport.ident === match.ident)) {
-                prioritized.push(match);
-            }
-        });
-
-        commercialOptions.forEach((airport) => {
-            if (!prioritized.some((entry) => entry.ident === airport.ident)) {
-                prioritized.push(airport);
-            }
-        });
-
-        return prioritized.slice(0, 16);
-    }, [catalogAirports, selectedDeparture?.airport.ident]);
-
-    const selectedDestination = useMemo(
-        () => destinationOptions.find((airport) => airport.ident === selectedDestinationIdent) || destinationOptions[0] || null,
-        [destinationOptions, selectedDestinationIdent],
-    );
-
-    const ticket = useMemo(() => {
-        if (!selectedDeparture || !selectedDestination) return null;
-        return buildFakeAirportTicket({
-            passengerName,
-            departureAirport: selectedDeparture.airport,
-            arrivalAirport: selectedDestination,
-            departureDate,
-            cabinClass,
-            originLabel: origin?.label || null,
-            airportAccessDistanceKm: selectedDeparture.airportAccessDistanceKm,
-        });
-    }, [cabinClass, departureDate, origin?.label, passengerName, selectedDeparture, selectedDestination]);
-
-    const ticketBarcodeBars = useMemo(
-        () => (ticket ? buildTicketBarcodeBars(`${ticket.ticketNumber}${ticket.bookingReference}${ticket.flightNumber}${ticket.seat}`) : []),
-        [ticket],
-    );
-    const ticketQrCodeUrl = useMemo(
-        () => buildTicketQrCodeUrl(typeof window !== 'undefined' ? window.location.origin : TICKET_QR_FALLBACK_DOMAIN),
-        [],
-    );
-
-    const isUsingFallbackDeparture = Boolean(selectedDeparture?.isFallback);
-
-    return (
-        <AdminSurfaceCard className="flex flex-col gap-4">
-            <AdminSectionHeader
-                title="Fake ticket lab"
-                description="Build a digital boarding-pass preview from the nearest commercial airport so we can validate the future ticket experience against real airport data."
-                actions={ticket ? (
-                    <Badge variant="secondary">{formatCabinClassLabel(ticket.cabinClass)} preview</Badge>
-                ) : null}
-            />
-
-            {!nearbyResult && fallbackDepartureOption && (
-                <Alert variant="warning">
-                    <WarningCircle weight="fill" />
-                    <AlertTitle>Testing fallback active</AlertTitle>
-                    <AlertDescription>
-                        <p>Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.</p>
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {!nearbyResult && !fallbackDepartureOption && (
-                <AdminEmptyState
-                    title="No departure airport yet"
-                    description="Run a nearby-airport lookup first, then this lab will use the closest commercial airport as the departure side of the fake ticket."
-                />
-            )}
-
-            {ticket && (
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(360px,1.08fr)]">
-                    <div className="flex min-w-0 flex-col gap-4">
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <div className="flex flex-col gap-1.5">
-                                <label htmlFor="admin-airports-ticket-passenger" className={ADMIN_FIELD_LABEL_CLASS}>Passenger name</label>
-                                <Input
-                                    id="admin-airports-ticket-passenger"
-                                    value={passengerName}
-                                    onChange={(event) => setPassengerName(event.target.value)}
-                                    placeholder="Alex Morgan"
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label htmlFor="admin-airports-ticket-date" className={ADMIN_FIELD_LABEL_CLASS}>Departure date</label>
-                                <Input
-                                    id="admin-airports-ticket-date"
-                                    type="date"
-                                    value={departureDate}
-                                    onChange={(event) => setDepartureDate(event.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <div className="flex min-w-0 flex-col gap-1.5">
-                                <div id="admin-airports-ticket-departure-label" className={ADMIN_FIELD_LABEL_CLASS}>Departure airport</div>
-                                <Select value={selectedDeparture?.airport.ident || ''} onValueChange={setSelectedDepartureIdent}>
-                                    <SelectTrigger aria-labelledby="admin-airports-ticket-departure-label" className="w-full">
-                                        <SelectValue placeholder="Choose a nearby airport" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {departureOptions.map((entry) => (
-                                            <SelectItem key={entry.airport.ident} value={entry.airport.ident}>
-                                                {(entry.airport.iataCode || entry.airport.ident)} · {entry.airport.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex min-w-0 flex-col gap-1.5">
-                                <div id="admin-airports-ticket-destination-label" className={ADMIN_FIELD_LABEL_CLASS}>Destination airport</div>
-                                <Select value={selectedDestination?.ident || ''} onValueChange={setSelectedDestinationIdent}>
-                                    <SelectTrigger aria-labelledby="admin-airports-ticket-destination-label" className="w-full">
-                                        <SelectValue placeholder="Choose a destination hub" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {destinationOptions.map((airport) => (
-                                            <SelectItem key={airport.ident} value={airport.ident}>
-                                                {(airport.iataCode || airport.ident)} · {airport.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                            <div id="admin-airports-ticket-cabin-label" className={ADMIN_FIELD_LABEL_CLASS}>Cabin class</div>
-                            <Select value={cabinClass} onValueChange={(value) => setCabinClass(value as FakeAirportTicketCabinClass)}>
-                                <SelectTrigger aria-labelledby="admin-airports-ticket-cabin-label" className="w-full">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {TICKET_CABIN_OPTIONS.map((option) => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {selectedDeparture && (
-                            <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground">
-                                <div className="text-xs font-medium text-muted-foreground">Departure context</div>
-                                <div className="mt-1">
-                                    {selectedDeparture.airport.name} · {selectedDeparture.airport.municipality || 'Unknown city'}
-                                    {selectedDeparture.airportAccessDistanceKm !== null ? ` · ${formatDistance(selectedDeparture.airportAccessDistanceKm)}` : ''}
-                                </div>
-                                {isUsingFallbackDeparture ? (
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                        BER stays available as a reliable test fallback until a nearby lookup runs.
-                                    </div>
-                                ) : origin && (
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                        Based on {origin.label}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent size="md" showCloseButton closeLabel="Close bulk edit">
+                <DialogHeader divided>
+                    <DialogTitle>Bulk edit {selectedCount.toLocaleString()} airport{selectedCount === 1 ? '' : 's'}</DialogTitle>
+                    <DialogDescription>
+                        <span className="tabular-nums">{tiers.major} major · {tiers.regional} regional · {tiers.local} local</span>.
+                        {' '}Fields left unchanged keep each airport&apos;s own value.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogBody className="flex flex-col gap-3 py-4">
+                    <div className="flex flex-col gap-1.5">
+                        <div id="admin-airports-bulk-airport-type-label" className={ADMIN_FIELD_LABEL_CLASS}>Airport type</div>
+                        <Select value={choices.airportType} onValueChange={(value) => patchChoices({ airportType: value as BulkAirportTypeOption })}>
+                            <SelectTrigger aria-labelledby="admin-airports-bulk-airport-type-label" className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {BULK_AIRPORT_TYPE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
-
-                    <div className="flex min-w-0 flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <div id="admin-airports-bulk-scheduled-service-label" className={ADMIN_FIELD_LABEL_CLASS}>Scheduled service</div>
+                        <Select value={choices.scheduledService} onValueChange={(value) => patchChoices({ scheduledService: value as BulkScheduledServiceOption })}>
+                            <SelectTrigger aria-labelledby="admin-airports-bulk-scheduled-service-label" className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {BULK_SCHEDULED_SERVICE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <div id="admin-airports-bulk-timezone-mode-label" className={ADMIN_FIELD_LABEL_CLASS}>Timezone action</div>
+                        <Select value={choices.timezoneMode} onValueChange={(value) => patchChoices({ timezoneMode: value as BulkTimezoneMode })}>
+                            <SelectTrigger aria-labelledby="admin-airports-bulk-timezone-mode-label" className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {BULK_TIMEZONE_MODE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {choices.timezoneMode === 'set' && (
                         <div className="flex flex-col gap-1.5">
-                            <div className={ADMIN_FIELD_LABEL_CLASS}>Horizontal style</div>
-                            <AirportTicketPreviewCard
-                                ticket={ticket}
-                                barcodeBars={ticketBarcodeBars}
-                                qrCodeUrl={ticketQrCodeUrl}
-                                variant="horizontal"
-                                isUsingFallbackDeparture={isUsingFallbackDeparture}
+                            <label htmlFor="admin-airports-bulk-timezone-value" className={ADMIN_FIELD_LABEL_CLASS}>Timezone value</label>
+                            <Input
+                                id="admin-airports-bulk-timezone-value"
+                                value={choices.timezoneValue}
+                                onChange={(event) => patchChoices({ timezoneValue: event.target.value })}
+                                placeholder="Europe/Berlin"
                             />
                         </div>
-                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
-                            <div className="h-fit rounded-md border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                    <span className="font-medium text-foreground">
-                                        {isUsingFallbackDeparture ? 'Testing airport:' : 'Closest airport:'}
-                                    </span>
-                                    <span>{ticket.departureAirport.name}</span>
-                                    <span aria-hidden="true">·</span>
-                                    <span className="tabular-nums">{ticket.durationLabel}</span>
-                                    <span aria-hidden="true">·</span>
-                                    <span className="tabular-nums">{formatDistance(ticket.routeDistanceKm)}</span>
-                                    {ticket.airportAccessDistanceKm !== null && (
-                                        <>
-                                            <span aria-hidden="true">·</span>
-                                            <span className="tabular-nums">{formatDistance(ticket.airportAccessDistanceKm)} from origin</span>
-                                        </>
-                                    )}
-                                </div>
-                                {isUsingFallbackDeparture ? (
-                                    <div className="mt-2 text-xs text-muted-foreground">
-                                        BER fallback stays visible until you run a nearby-airport lookup
-                                    </div>
-                                ) : ticket.originLabel && (
-                                    <div className="mt-2 text-xs text-muted-foreground">
-                                        Based on {ticket.originLabel}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <div className={ADMIN_FIELD_LABEL_CLASS}>Vertical style</div>
-                                <AirportTicketPreviewCard
-                                    ticket={ticket}
-                                    barcodeBars={ticketBarcodeBars}
-                                    qrCodeUrl={ticketQrCodeUrl}
-                                    variant="vertical"
-                                    isUsingFallbackDeparture={isUsingFallbackDeparture}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </AdminSurfaceCard>
+                    )}
+                </DialogBody>
+                <DialogFooter>
+                    {!bulkPatch && <span className="me-auto text-xs text-muted-foreground">Choose at least one change.</span>}
+                    <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>Cancel</Button>
+                    <Button
+                        type="button"
+                        onClick={() => void handleApply()}
+                        disabled={!bulkPatch || isApplying}
+                        aria-busy={isApplying || undefined}
+                        {...getAnalyticsDebugAttributes('admin__airports--bulk_apply')}
+                    >
+                        {isApplying ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
+                        Apply bulk edit
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
+};
+
+/** A field label + control pair for the airport editor sheet. */
+const EditorField: React.FC<{ htmlFor?: string; labelId?: string; label: string; className?: string; children: React.ReactNode }> = ({
+    htmlFor,
+    labelId,
+    label,
+    className,
+    children,
+}) => (
+    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+        {htmlFor
+            ? <label htmlFor={htmlFor} className={ADMIN_FIELD_LABEL_CLASS}>{label}</label>
+            : <div id={labelId} className={ADMIN_FIELD_LABEL_CLASS} aria-hidden={labelId ? undefined : true}>{label}</div>}
+        {children}
+    </div>
+);
+
+const TIER_TONE: Record<AirportCommercialServiceTier, 'success' | 'info' | 'neutral'> = {
+    major: 'success',
+    regional: 'info',
+    local: 'neutral',
 };
 
 export const AdminAirportsPage: React.FC = () => {
@@ -1640,7 +1056,13 @@ export const AdminAirportsPage: React.FC = () => {
     const [bulkSaving, setBulkSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<AdminAirportsTab>(() => resolveAdminAirportsTab(searchParams));
+    // The tester mounts the first time its tab (or the ticket lab, which reads
+    // its result) opens, then stays mounted so the lookup survives tab switches.
+    // Until then the catalog tab loads no maps and asks for no location.
+    const [testerMounted, setTesterMounted] = useState(() => resolveAdminAirportsTab(searchParams) !== 'catalog');
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const deferredSearchValue = useDeferredValue(searchValue);
     const [countryFilter, setCountryFilter] = useState(() => normalizeProfileCountryCode(searchParams.get('country')));
@@ -1655,6 +1077,8 @@ export const AdminAirportsPage: React.FC = () => {
     const [ticketTesterOrigin, setTicketTesterOrigin] = useState<TesterOrigin | null>(null);
     const [ticketTesterResult, setTicketTesterResult] = useState<NearbyAirportsResponse | null>(null);
     const selectedAirportIdentRef = useRef<string | null>(null);
+    // `?airport=<ident>` opens that airport's sheet once the catalog arrives.
+    const pendingAirportParamRef = useRef<string | null>(searchParams.get('airport'));
     const runtimeTesterBootstrapAttemptedRef = useRef(false);
     const resizeStateRef = useRef<{
         columnId: AirportTableColumnId;
@@ -1662,6 +1086,7 @@ export const AdminAirportsPage: React.FC = () => {
         startWidth: number;
     } | null>(null);
     const [columnWidths, setColumnWidths] = useState<Record<AirportTableColumnId, number>>(AIRPORT_COLUMN_WIDTH_DEFAULT);
+    const editorOpen = editorDraft !== null;
 
     useEffect(() => {
         selectedAirportIdentRef.current = selectedAirportIdent;
@@ -1708,31 +1133,40 @@ export const AdminAirportsPage: React.FC = () => {
         });
     }, []);
 
+    /** Puts the catalog in state and re-points the open sheet (if any) at the fresh row. */
+    const applyCatalog = useCallback((nextCatalog: AdminAirportCatalogResponse, preferredIdent: string | null) => {
+        const sortedAirports = sortAirports(nextCatalog.airports);
+        const nextSelectedAirport = resolveSelectedAirport(sortedAirports, preferredIdent);
+        setCatalog({
+            ...nextCatalog,
+            airports: sortedAirports,
+        });
+        setSelectedAirportIdents((current) => {
+            const validIdents = new Set<string>(sortedAirports.map((airport) => airport.ident));
+            const next = new Set<string>();
+            current.forEach((ident) => { if (validIdents.has(ident)) next.add(ident); });
+            return next;
+        });
+        setSelectedAirportIdent(nextSelectedAirport?.ident || null);
+        setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
+        setEditorDirty(false);
+        setEditorMode('edit');
+    }, []);
+
     const loadCatalog = useCallback(async () => {
         setLoading(true);
         setErrorMessage(null);
         try {
             const nextCatalog = await adminGetAirportCatalog();
-            const sortedAirports = sortAirports(nextCatalog.airports);
-            const nextSelectedAirport = resolveSelectedAirport(sortedAirports, selectedAirportIdentRef.current);
-            setCatalog({
-                ...nextCatalog,
-                airports: sortedAirports,
-            });
-            setSelectedAirportIdents((current) => {
-                const validIdents = new Set(sortedAirports.map((airport) => airport.ident));
-                return new Set(Array.from(current).filter((ident) => validIdents.has(ident)));
-            });
-            setSelectedAirportIdent(nextSelectedAirport?.ident || null);
-            setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
-            setEditorDirty(false);
-            setEditorMode('edit');
+            const preferredIdent = selectedAirportIdentRef.current ?? pendingAirportParamRef.current;
+            pendingAirportParamRef.current = null;
+            applyCatalog(nextCatalog, preferredIdent);
         } catch (error) {
             setErrorMessage(toAdminErrorMessage(error, 'Could not load airport catalog.', 'admin-airports'));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [applyCatalog]);
 
     useEffect(() => {
         void loadCatalog();
@@ -1775,6 +1209,7 @@ export const AdminAirportsPage: React.FC = () => {
     );
     const areAllVisibleAirportsSelected = pagedAirports.length > 0 && pagedAirports.every((airport) => selectedAirportIdents.has(airport.ident));
     const isVisibleAirportSelectionPartial = pagedAirports.some((airport) => selectedAirportIdents.has(airport.ident)) && !areAllVisibleAirportsSelected;
+    const allFilteredSelected = filteredAirports.length > 0 && filteredAirports.every((airport) => selectedAirportIdents.has(airport.ident));
 
     useEffect(() => {
         if (page !== safePage) {
@@ -1782,12 +1217,14 @@ export const AdminAirportsPage: React.FC = () => {
         }
     }, [page, safePage]);
 
+    // URL → state, for back/forward and pasted links.
     useEffect(() => {
         const nextSearchValue = searchParams.get('q') || '';
         const nextCountryFilter = normalizeProfileCountryCode(searchParams.get('country'));
         const nextServiceTierFilter = parseAirportTableTierFilter(searchParams.get('catalogTier'));
         const nextPage = parsePositivePage(searchParams.get('page'));
         const nextTesterFilters = buildAdminAirportTesterFiltersFromSearchParams(searchParams);
+        const nextTab = resolveAdminAirportsTab(searchParams);
 
         if (searchValue !== nextSearchValue) {
             setSearchValue(nextSearchValue);
@@ -1804,10 +1241,16 @@ export const AdminAirportsPage: React.FC = () => {
         if (!areAdminAirportTesterFiltersEqual(testerFilters, nextTesterFilters)) {
             setTesterFilters(nextTesterFilters);
         }
+        if (activeTab !== nextTab) {
+            setActiveTab(nextTab);
+            if (nextTab !== 'catalog') setTesterMounted(true);
+        }
     }, [searchParams]);
 
+    // Runtime location is the tester's default origin; fetch it only once the
+    // tester is actually open.
     useEffect(() => {
-        if (runtimeTesterBootstrapAttemptedRef.current) return;
+        if (!testerMounted || runtimeTesterBootstrapAttemptedRef.current) return;
         if (hasNearbyTesterQueryState(searchParams)) {
             runtimeTesterBootstrapAttemptedRef.current = true;
             return;
@@ -1846,8 +1289,9 @@ export const AdminAirportsPage: React.FC = () => {
                     : runtimeDefaultFilters;
             });
         })();
-    }, [searchParams]);
+    }, [searchParams, testerMounted]);
 
+    // State → URL, so every filter, the tab and the open airport survive a reload.
     useEffect(() => {
         const next = new URLSearchParams();
         const trimmedSearch = searchValue.trim();
@@ -1868,37 +1312,69 @@ export const AdminAirportsPage: React.FC = () => {
         if (testerFilters.countryFilter) next.set('nearbyCountry', testerFilters.countryFilter);
         if (testerFilters.sameCountryOnly) next.set('nearbySameCountry', '1');
         if (testerFilters.lookupActive) next.set('nearbyLookup', '1');
+        // Name the tab whenever leaving it out would resolve differently:
+        // tester parameters alone open the tester (older shared links).
+        if (activeTab !== 'catalog' || hasNearbyTesterQueryState(next)) next.set('tab', activeTab);
+        if (editorOpen && editorMode === 'edit' && selectedAirportIdent) next.set('airport', selectedAirportIdent);
+        else if (pendingAirportParamRef.current) next.set('airport', pendingAirportParamRef.current);
 
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
     }, [
+        activeTab,
         countryFilter,
+        editorMode,
+        editorOpen,
         safePage,
         searchParams,
         searchValue,
+        selectedAirportIdent,
         serviceTierFilter,
         setSearchParams,
         testerFilters,
     ]);
 
-    const handleSelectAirport = useCallback(async (ident: string) => {
-        if (ident === selectedAirportIdent) return;
-        if (editorDirty) {
-            const shouldDiscard = await confirmDialog({
-                title: 'Discard unsaved airport edits?',
-                message: 'Switching rows will discard your unsaved airport changes.',
-                confirmLabel: 'Discard changes',
-                cancelLabel: 'Keep editing',
-                tone: 'danger',
-            });
-            if (!shouldDiscard) return;
-        }
+    const handleTabChange = useCallback((value: string) => {
+        const nextTab = (ADMIN_AIRPORTS_TABS as readonly string[]).includes(value) ? value as AdminAirportsTab : 'catalog';
+        setActiveTab(nextTab);
+        if (nextTab !== 'catalog') setTesterMounted(true);
+        trackEvent('admin__airports--tab', { tab: nextTab });
+    }, []);
+
+    const confirmDiscardEdits = useCallback(async (message: string): Promise<boolean> => {
+        if (!editorDirty) return true;
+        return confirmDialog({
+            title: 'Discard unsaved airport edits?',
+            message,
+            confirmLabel: 'Discard changes',
+            cancelLabel: 'Keep editing',
+            tone: 'danger',
+        });
+    }, [confirmDialog, editorDirty]);
+
+    const handleOpenAirport = useCallback(async (ident: string) => {
+        if (editorOpen && ident === selectedAirportIdent) return;
+        if (!(await confirmDiscardEdits('Opening another airport will discard your unsaved changes.'))) return;
         const nextAirport = catalog?.airports.find((airport) => airport.ident === ident) || null;
         setSelectedAirportIdent(ident);
         setEditorDraft(nextAirport ? airportToDraft(nextAirport) : null);
         setEditorDirty(false);
         setEditorMode('edit');
-    }, [catalog?.airports, confirmDialog, editorDirty, selectedAirportIdent]);
+        trackEvent('admin__airports--open_airport');
+    }, [catalog?.airports, confirmDiscardEdits, editorOpen, selectedAirportIdent]);
+
+    const closeEditor = useCallback(() => {
+        setSelectedAirportIdent(null);
+        setEditorDraft(null);
+        setEditorDirty(false);
+        setEditorMode('edit');
+    }, []);
+
+    const handleEditorOpenChange = useCallback(async (open: boolean) => {
+        if (open) return;
+        if (!(await confirmDiscardEdits('Closing the editor will discard your unsaved airport changes.'))) return;
+        closeEditor();
+    }, [closeEditor, confirmDiscardEdits]);
 
     const handleTesterContextChange = useCallback((context: { origin: TesterOrigin | null; lookupResult: NearbyAirportsResponse | null }) => {
         setTicketTesterOrigin(context.origin);
@@ -1927,6 +1403,15 @@ export const AdminAirportsPage: React.FC = () => {
         setPage(1);
     }, []);
 
+    const hasActiveCatalogFilter = Boolean(countryFilter) || serviceTierFilter !== 'all' || searchValue.trim() !== '';
+    const handleResetCatalogFilters = useCallback(() => {
+        setCountryFilter('');
+        setServiceTierFilter('all');
+        setSearchValue('');
+        setPage(1);
+        trackEvent('admin__airports--reset_filters');
+    }, []);
+
     const toggleAirportSelection = useCallback((ident: string, checked: boolean) => {
         setSelectedAirportIdents((current) => {
             const next = new Set(current);
@@ -1949,6 +1434,7 @@ export const AdminAirportsPage: React.FC = () => {
 
     const handleSelectFilteredAirports = useCallback(() => {
         setSelectedAirportIdents(new Set(filteredAirports.map((airport) => airport.ident)));
+        trackEvent('admin__airports--select_all_matching', { count: filteredAirports.length });
     }, [filteredAirports]);
 
     const handleClearAirportSelection = useCallback(() => {
@@ -1956,38 +1442,26 @@ export const AdminAirportsPage: React.FC = () => {
     }, []);
 
     const handleSyncCatalog = useCallback(async () => {
+        const sources = catalog?.metadata?.sources;
         const shouldSync = await confirmDialog({
             title: 'Sync airports from upstream sources?',
-            message: 'This will replace the database airport catalog with a fresh generated snapshot from the configured free upstream feeds.',
+            message: `This will replace the database airport catalog with a fresh generated snapshot from the configured free upstream feeds${sources ? ` (${sources.primary} · ${sources.enrichment})` : ''}.`,
             confirmLabel: 'Sync now',
             cancelLabel: 'Cancel',
         });
         if (!shouldSync) return;
+        trackEvent('admin__airports--sync');
 
         const loadingToastId = showAppToast({
             title: 'Syncing airports',
             description: 'Fetching upstream airport sources and replacing the database catalog.',
-            tone: 'info',
-            persist: true,
+            tone: 'loading',
         });
 
         setSyncing(true);
         try {
             const nextCatalog = await adminSyncAirportCatalog();
-            const sortedAirports = sortAirports(nextCatalog.airports);
-            const nextSelectedAirport = resolveSelectedAirport(sortedAirports, selectedAirportIdent);
-            setCatalog({
-                ...nextCatalog,
-                airports: sortedAirports,
-            });
-            setSelectedAirportIdents((current) => {
-                const validIdents = new Set(sortedAirports.map((airport) => airport.ident));
-                return new Set(Array.from(current).filter((ident) => validIdents.has(ident)));
-            });
-            setSelectedAirportIdent(nextSelectedAirport?.ident || null);
-            setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
-            setEditorDirty(false);
-            setEditorMode('edit');
+            applyCatalog(nextCatalog, null);
             showAppToast({
                 id: loadingToastId,
                 title: 'Airport sync finished',
@@ -2004,25 +1478,17 @@ export const AdminAirportsPage: React.FC = () => {
         } finally {
             setSyncing(false);
         }
-    }, [confirmDialog, selectedAirportIdent]);
+    }, [applyCatalog, catalog?.metadata?.sources, confirmDialog]);
 
     const handleStartCreateAirport = useCallback(async () => {
-        if (editorDirty) {
-            const shouldDiscard = await confirmDialog({
-                title: 'Discard unsaved airport edits?',
-                message: 'Starting a new airport draft will discard the current unsaved changes.',
-                confirmLabel: 'Discard changes',
-                cancelLabel: 'Keep editing',
-                tone: 'danger',
-            });
-            if (!shouldDiscard) return;
-        }
+        if (!(await confirmDiscardEdits('Starting a new airport draft will discard the current unsaved changes.'))) return;
 
         setSelectedAirportIdent(null);
         setEditorDraft(buildEmptyAirportDraft());
         setEditorDirty(false);
         setEditorMode('create');
-    }, [confirmDialog, editorDirty]);
+        trackEvent('admin__airports--new_airport');
+    }, [confirmDiscardEdits]);
 
     const handleSaveAirport = useCallback(async () => {
         if (!editorDraft) return;
@@ -2050,8 +1516,7 @@ export const AdminAirportsPage: React.FC = () => {
             description: editorMode === 'create'
                 ? `Creating ${airport.ident} in the database catalog.`
                 : `Updating ${airport.ident} in the database catalog.`,
-            tone: 'info',
-            persist: true,
+            tone: 'loading',
         });
 
         setSaving(true);
@@ -2074,6 +1539,7 @@ export const AdminAirportsPage: React.FC = () => {
             setEditorDraft(airportToDraft(updatedAirport));
             setEditorDirty(false);
             setEditorMode('edit');
+            trackEvent(editorMode === 'create' ? 'admin__airports--create_airport' : 'admin__airports--save_airport');
             showAppToast({
                 id: loadingToastId,
                 title: editorMode === 'create' ? 'Airport created' : 'Airport saved',
@@ -2094,21 +1560,9 @@ export const AdminAirportsPage: React.FC = () => {
         }
     }, [catalog?.airports, editorDraft, editorMode]);
 
-    const handleBulkUpdateAirports = useCallback(async (patch: AdminAirportBulkUpdatePatch) => {
-        if (!catalog || selectedAirportIdents.size === 0) return;
-
-        if (editorDirty && selectedAirportIdent && selectedAirportIdents.has(selectedAirportIdent)) {
-            const shouldDiscard = await confirmDialog({
-                title: 'Discard unsaved airport edits?',
-                message: 'The selected airport is also part of this bulk edit, so your unsaved single-row changes would be replaced.',
-                confirmLabel: 'Discard and continue',
-                cancelLabel: 'Keep editing',
-                tone: 'danger',
-            });
-            if (!shouldDiscard) {
-                throw new Error('Bulk airport edit canceled.');
-            }
-        }
+    /** Resolves true when the patch was applied; false when cancelled or failed. */
+    const handleBulkUpdateAirports = useCallback(async (patch: AdminAirportBulkUpdatePatch): Promise<boolean> => {
+        if (!catalog || selectedAirportIdents.size === 0) return false;
 
         const selectedCount = selectedAirportIdents.size;
         const shouldApply = await confirmDialog({
@@ -2117,15 +1571,12 @@ export const AdminAirportsPage: React.FC = () => {
             confirmLabel: 'Apply bulk edit',
             cancelLabel: 'Cancel',
         });
-        if (!shouldApply) {
-            throw new Error('Bulk airport edit canceled.');
-        }
+        if (!shouldApply) return false;
 
         const loadingToastId = showAppToast({
             title: 'Applying bulk airport edits',
             description: `Updating ${selectedCount} selected airport row${selectedCount === 1 ? '' : 's'}.`,
-            tone: 'info',
-            persist: true,
+            tone: 'loading',
         });
 
         setBulkSaving(true);
@@ -2136,7 +1587,6 @@ export const AdminAirportsPage: React.FC = () => {
             });
             const updatedByIdent = new Map(updatedAirports.map((airport) => [airport.ident, airport] as const));
             const nextAirports = sortAirports(catalog.airports.map((airport) => updatedByIdent.get(airport.ident) || airport));
-            const nextSelectedAirport = resolveSelectedAirport(nextAirports, selectedAirportIdent);
 
             setCatalog((current) => current ? {
                 ...current,
@@ -2148,45 +1598,29 @@ export const AdminAirportsPage: React.FC = () => {
                     }
                     : current.metadata,
             } : current);
-            setSelectedAirportIdent(nextSelectedAirport?.ident || null);
-            setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
-            setEditorDirty(false);
-            setEditorMode('edit');
+            trackEvent('admin__airports--bulk_apply', { count: updatedAirports.length });
             showAppToast({
                 id: loadingToastId,
                 title: 'Bulk airport edit finished',
                 description: `Updated ${updatedAirports.length} airport row${updatedAirports.length === 1 ? '' : 's'}.`,
                 tone: 'add',
             });
+            return true;
         } catch (error) {
-            const message = toAdminErrorMessage(error, 'Bulk airport update failed.', 'admin-airports');
             showAppToast({
                 id: loadingToastId,
-                title: message === 'Bulk airport edit canceled.' ? 'Bulk airport edit canceled' : 'Bulk airport edit failed',
-                description: message === 'Bulk airport edit canceled.' ? 'No airport rows were changed.' : message,
-                tone: message === 'Bulk airport edit canceled.' ? 'info' : 'remove',
+                title: 'Bulk airport edit failed',
+                description: toAdminErrorMessage(error, 'Bulk airport update failed.', 'admin-airports'),
+                tone: 'remove',
             });
-            if (message !== 'Bulk airport edit canceled.') {
-                throw error;
-            }
+            return false;
         } finally {
             setBulkSaving(false);
         }
-    }, [catalog, confirmDialog, editorDirty, selectedAirportIdent, selectedAirportIdents]);
+    }, [catalog, confirmDialog, selectedAirportIdents]);
 
     const handleDeleteSelectedAirports = useCallback(async () => {
         if (!catalog || selectedAirportIdents.size === 0) return;
-
-        if (editorDirty && selectedAirportIdent && selectedAirportIdents.has(selectedAirportIdent)) {
-            const shouldDiscard = await confirmDialog({
-                title: 'Discard unsaved airport edits?',
-                message: 'The active editor row is part of this delete selection, so your unsaved changes would be discarded.',
-                confirmLabel: 'Discard and continue',
-                cancelLabel: 'Keep editing',
-                tone: 'danger',
-            });
-            if (!shouldDiscard) return;
-        }
 
         const deleteCount = selectedAirportIdents.size;
         const shouldDelete = await confirmDialog({
@@ -2197,12 +1631,12 @@ export const AdminAirportsPage: React.FC = () => {
             tone: 'danger',
         });
         if (!shouldDelete) return;
+        trackEvent('admin__airports--bulk_delete', { count: deleteCount });
 
         const loadingToastId = showAppToast({
             title: 'Deleting airports',
             description: `Removing ${deleteCount} selected airport row${deleteCount === 1 ? '' : 's'}.`,
-            tone: 'info',
-            persist: true,
+            tone: 'loading',
         });
 
         setBulkDeleting(true);
@@ -2210,8 +1644,6 @@ export const AdminAirportsPage: React.FC = () => {
             const deletedIdents = await adminDeleteAirportCatalogRecords(Array.from(selectedAirportIdents));
             const deletedIdentSet = new Set(deletedIdents);
             const nextAirports = sortAirports(catalog.airports.filter((airport) => !deletedIdentSet.has(airport.ident)));
-            const preferredIdent = selectedAirportIdent && !deletedIdentSet.has(selectedAirportIdent) ? selectedAirportIdent : null;
-            const nextSelectedAirport = resolveSelectedAirport(nextAirports, preferredIdent);
 
             setCatalog((current) => current ? {
                 ...current,
@@ -2224,10 +1656,6 @@ export const AdminAirportsPage: React.FC = () => {
                     : current.metadata,
             } : current);
             setSelectedAirportIdents(new Set());
-            setSelectedAirportIdent(nextSelectedAirport?.ident || null);
-            setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
-            setEditorDirty(false);
-            setEditorMode('edit');
             showAppToast({
                 id: loadingToastId,
                 title: 'Airports deleted',
@@ -2244,44 +1672,36 @@ export const AdminAirportsPage: React.FC = () => {
         } finally {
             setBulkDeleting(false);
         }
-    }, [catalog, confirmDialog, editorDirty, selectedAirportIdents, selectedAirportIdent]);
+    }, [catalog, confirmDialog, selectedAirportIdents]);
 
-    const handleDeleteAirport = useCallback(async () => {
-        if (!catalog || !selectedAirport) return;
+    /** Deletes one airport, from its row menu or from the open editor. */
+    const handleDeleteAirport = useCallback(async (airport: AirportReference) => {
+        if (!catalog) return;
+        const isOpenInEditor = editorOpen && selectedAirportIdent === airport.ident;
 
-        if (editorDirty) {
-            const shouldDiscard = await confirmDialog({
-                title: 'Discard unsaved airport edits?',
-                message: 'Deleting this airport will discard the current unsaved changes.',
-                confirmLabel: 'Discard and continue',
-                cancelLabel: 'Keep editing',
-                tone: 'danger',
-            });
-            if (!shouldDiscard) return;
-        }
+        if (isOpenInEditor && !(await confirmDiscardEdits('Deleting this airport will discard the current unsaved changes.'))) return;
 
         const shouldDelete = await confirmDialog({
             title: 'Delete this airport?',
-            message: `Remove ${selectedAirport.name} from the database catalog?`,
+            message: `Remove ${airport.name} from the database catalog?`,
             confirmLabel: 'Delete airport',
             cancelLabel: 'Cancel',
             tone: 'danger',
         });
         if (!shouldDelete) return;
+        trackEvent('admin__airports--delete_airport');
 
         const loadingToastId = showAppToast({
             title: 'Deleting airport',
-            description: `Removing ${selectedAirport.ident} from the catalog.`,
-            tone: 'info',
-            persist: true,
+            description: `Removing ${airport.ident} from the catalog.`,
+            tone: 'loading',
         });
 
         setDeleting(true);
         try {
-            const deletedIdents = await adminDeleteAirportCatalogRecords([selectedAirport.ident]);
+            const deletedIdents = await adminDeleteAirportCatalogRecords([airport.ident]);
             const deletedIdentSet = new Set(deletedIdents);
-            const nextAirports = sortAirports(catalog.airports.filter((airport) => !deletedIdentSet.has(airport.ident)));
-            const nextSelectedAirport = resolveSelectedAirport(nextAirports, null);
+            const nextAirports = sortAirports(catalog.airports.filter((entry) => !deletedIdentSet.has(entry.ident)));
 
             setCatalog((current) => current ? {
                 ...current,
@@ -2298,14 +1718,11 @@ export const AdminAirportsPage: React.FC = () => {
                 deletedIdents.forEach((ident) => next.delete(ident));
                 return next;
             });
-            setSelectedAirportIdent(nextSelectedAirport?.ident || null);
-            setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
-            setEditorDirty(false);
-            setEditorMode('edit');
+            if (isOpenInEditor) closeEditor();
             showAppToast({
                 id: loadingToastId,
                 title: 'Airport deleted',
-                description: `${selectedAirport.name} was removed from the catalog.`,
+                description: `${airport.name} was removed from the catalog.`,
                 tone: 'add',
             });
         } catch (error) {
@@ -2318,10 +1735,17 @@ export const AdminAirportsPage: React.FC = () => {
         } finally {
             setDeleting(false);
         }
-    }, [catalog, confirmDialog, editorDirty, selectedAirport]);
+    }, [catalog, closeEditor, confirmDialog, confirmDiscardEdits, editorOpen, selectedAirportIdent]);
 
     const databaseBacked = catalog?.source === 'database';
+    const catalogSource = catalog ? describeCatalogSource(catalog.source, catalog.databaseAvailable) : null;
     const editorPreviewAirport = editorDraft ? draftToAirport(editorDraft) : selectedAirport;
+    const metadata = catalog?.metadata;
+
+    const updateDraft = (patch: Partial<AirportEditorDraft>) => {
+        setEditorDraft((current) => current ? { ...current, ...patch } : current);
+        setEditorDirty(true);
+    };
 
     const renderResizableHead = (columnId: AirportTableColumnId, label: string) => (
         <TableHead className="relative text-start text-muted-foreground">
@@ -2344,150 +1768,113 @@ export const AdminAirportsPage: React.FC = () => {
         </TableHead>
     );
 
-    const visibleRangeStart = filteredAirports.length === 0 ? 0 : (safePage - 1) * AIRPORT_TABLE_PAGE_SIZE + 1;
-    const visibleRangeEnd = Math.min(safePage * AIRPORT_TABLE_PAGE_SIZE, filteredAirports.length);
-
     return (
         <AdminShell
             title="Airports"
-            description="Manage the commercial airport catalog, sync it from upstream datasets, and test nearby-airport lookups."
+            description="Maintain the commercial airport catalog behind nearby-airport lookups, and test those lookups."
             searchValue={searchValue}
             onSearchValueChange={handleSearchValueChange}
+            // The search filters the catalog table; the other tabs have their own inputs.
+            showGlobalSearch={activeTab === 'catalog'}
             showDateRange={false}
             actions={(
                 <>
+                    <AdminReloadButton onClick={() => void loadCatalog()} isLoading={loading} label="Reload catalog" />
+                    <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="outline" size="icon" aria-label="More catalog actions" data-tooltip="More catalog actions">
+                                {syncing ? <SpinnerGap className="animate-spin" /> : <DotsThreeVertical weight="bold" />}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[220px]">
+                            <DropdownMenuItem
+                                disabled={syncing}
+                                onSelect={() => void handleSyncCatalog()}
+                                {...getAnalyticsDebugAttributes('admin__airports--sync')}
+                            >
+                                <ArrowsClockwise /> Sync from upstream
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button
                         type="button"
-                        variant="outline"
                         onClick={() => void handleStartCreateAirport()}
+                        {...getAnalyticsDebugAttributes('admin__airports--new_airport')}
                     >
                         <Plus />
                         New airport
                     </Button>
-                    <AdminReloadButton onClick={() => void loadCatalog()} isLoading={loading} label="Reload catalog" />
-                    <Button
-                        type="button"
-                        onClick={() => void handleSyncCatalog()}
-                        disabled={syncing}
-                        aria-busy={syncing || undefined}
-                    >
-                        {syncing ? <SpinnerGap className="animate-spin" /> : <ArrowsClockwise />}
-                        Sync from upstream
-                    </Button>
                 </>
             )}
         >
-            <div className="flex flex-col gap-4">
-                {errorMessage && <AdminErrorAlert title="Could not load the airport catalog" message={errorMessage} />}
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="gap-4">
+                <TabsList variant="line" className="w-full justify-start">
+                    <TabsTrigger value="catalog" {...getAnalyticsDebugAttributes('admin__airports--tab', { tab: 'catalog' })}>
+                        Catalog
+                        {catalog && <span className="tabular-nums font-normal text-muted-foreground">{catalog.airports.length.toLocaleString()}</span>}
+                    </TabsTrigger>
+                    <TabsTrigger value="tester" {...getAnalyticsDebugAttributes('admin__airports--tab', { tab: 'tester' })}>
+                        Nearby tester
+                    </TabsTrigger>
+                    <TabsTrigger value="ticket" {...getAnalyticsDebugAttributes('admin__airports--tab', { tab: 'ticket' })}>
+                        Ticket lab
+                    </TabsTrigger>
+                </TabsList>
 
-                <AdminSurfaceCard className="flex flex-col gap-4">
-                    <AdminSectionHeader
-                        title={(
-                            <span className="flex flex-wrap items-center gap-2">
-                                Catalog status
-                                {catalog && (
-                                    <AirportSourcePill source={catalog.source} databaseAvailable={catalog.databaseAvailable} />
-                                )}
-                            </span>
-                        )}
-                        description="Service tiers are derived from airport size so we can distinguish smaller local commercial airports from regional passenger airports and major commercial hubs."
-                        actions={editorPreviewAirport ? (
-                            <>
-                                <Badge variant="outline">{formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}</Badge>
-                                <Badge variant="outline">{formatAirportTypeLabel(editorPreviewAirport.airportType)}</Badge>
-                                <AdminStatusBadge tone={editorPreviewAirport.isCommercial ? 'success' : 'warning'}>
-                                    {editorPreviewAirport.isCommercial ? 'Commercial lookup eligible' : 'Excluded from commercial lookup'}
-                                </AdminStatusBadge>
-                            </>
-                        ) : null}
-                    />
+                <TabsContent value="catalog" forceMount className="flex flex-col gap-4 data-[state=inactive]:hidden">
+                    {errorMessage && <AdminErrorAlert title="Could not load the airport catalog" message={errorMessage} />}
 
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="grid gap-4 sm:grid-cols-3">
                         <AdminStatCard
-                            label="Catalog airports"
-                            value={catalog?.airports.length ?? '—'}
-                            hint="Current rows available to the admin UI."
-                            isLoading={loading}
-                        />
-                        <AdminStatCard
-                            label="Data version"
-                            value={<span className="block truncate text-xl">{catalog?.metadata?.dataVersion ?? 'unknown'}</span>}
-                            hint="Version string returned by nearby-airport responses."
-                            isLoading={loading}
-                        />
-                        <AdminStatCard
-                            label="Generated"
-                            value={<span className="block text-base">{formatDateTime(catalog?.metadata?.generatedAt)}</span>}
-                            hint="When the upstream generator snapshot was built."
+                            label="Airports in catalog"
+                            icon={<Database />}
+                            value={catalog ? catalog.airports.length.toLocaleString() : '—'}
+                            hint={catalogSource?.hint}
+                            hintTone={catalogSource?.tone}
                             isLoading={loading}
                         />
                         <AdminStatCard
                             label="Last synced"
-                            value={<span className="block text-base">{formatDateTime(catalog?.metadata?.syncedAt)}</span>}
-                            hint="When the database catalog was last touched."
+                            icon={<ArrowsClockwise />}
+                            value={(
+                                <span className="block truncate text-xl" data-tooltip={metadata?.syncedAt ? formatAdminAbsoluteTime(metadata.syncedAt) : undefined}>
+                                    {formatAdminRelativeTime(metadata?.syncedAt, Date.now(), '—')}
+                                </span>
+                            )}
+                            hint={metadata?.syncedBy ? `By ${metadata.syncedBy}` : 'Not synced to the database yet.'}
                             isLoading={loading}
                         />
                         <AdminStatCard
-                            label="Synced by"
-                            value={<span className="block truncate text-base">{catalog?.metadata?.syncedBy || '—'}</span>}
-                            hint="Actor or source that last wrote the database catalog."
+                            label="Data version"
+                            icon={<Tag />}
+                            value={<span className="block truncate text-xl">{metadata?.dataVersion ?? 'Unknown'}</span>}
+                            hint={(
+                                <span data-tooltip={metadata?.generatedAt ? formatAdminAbsoluteTime(metadata.generatedAt) : undefined}>
+                                    Generated {formatAdminRelativeTime(metadata?.generatedAt, Date.now(), 'at an unknown time')}
+                                    {metadata?.sources ? ` from ${metadata.sources.primary} · ${metadata.sources.enrichment}` : ''}
+                                </span>
+                            )}
                             isLoading={loading}
                         />
                     </div>
 
-                    <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Upstream sources:</span>{' '}
-                        {catalog?.metadata
-                            ? `${catalog.metadata.sources.primary} · ${catalog.metadata.sources.enrichment}`
-                            : 'Waiting for airport metadata.'}
-                    </div>
-                </AdminSurfaceCard>
+                    {catalog && !databaseBacked && (
+                        <Alert variant="warning">
+                            <WarningCircle weight="fill" />
+                            <AlertTitle>Edits are off until the database catalog is synced</AlertTitle>
+                            <AlertDescription>
+                                <p>The page is reading the bundled snapshot. Sync from upstream to load the catalog into the database; saving, bulk edits and deletes then work.</p>
+                                <Button type="button" size="sm" className="mt-2" onClick={() => void handleSyncCatalog()} disabled={syncing} aria-busy={syncing || undefined}>
+                                    {syncing ? <SpinnerGap className="animate-spin" /> : <ArrowsClockwise />}
+                                    Sync from upstream
+                                </Button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
-                <GoogleMapsLoader>
-                    <div className="flex flex-col gap-4">
-                        <AdminAirportTester
-                            filters={testerFilters}
-                            onFiltersChange={handleTesterFiltersChange}
-                            onLookupContextChange={handleTesterContextChange}
-                        />
-                        <AdminAirportTicketLab
-                            catalogAirports={catalog?.airports || []}
-                            origin={ticketTesterOrigin}
-                            nearbyResult={ticketTesterResult}
-                        />
-                    </div>
-                </GoogleMapsLoader>
-
-                <AdminAirportBulkEditor
-                    selectedAirports={selectedAirports}
-                    filteredAirportCount={filteredAirports.length}
-                    databaseBacked={Boolean(databaseBacked)}
-                    isApplying={bulkSaving}
-                    isDeleting={bulkDeleting}
-                    onApply={handleBulkUpdateAirports}
-                    onDeleteSelected={handleDeleteSelectedAirports}
-                    onSelectFiltered={handleSelectFilteredAirports}
-                    onClearSelection={handleClearAirportSelection}
-                />
-
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.9fr)]">
                     <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader
-                            title="Airport catalog"
-                            description="Browse the full commercial-airport table, filter it by tier or country, and pick a row to edit."
-                            actions={(
-                                <div className="flex flex-col items-start gap-0.5 text-xs text-muted-foreground sm:items-end">
-                                    <span className="tabular-nums">
-                                        Showing {visibleRangeStart}-{visibleRangeEnd} of {filteredAirports.length}
-                                    </span>
-                                    <span className="tabular-nums">{selectedAirports.length} selected</span>
-                                    <span>Drag column handles to resize</span>
-                                </div>
-                            )}
-                        />
-
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            <div className="flex min-w-0 flex-col gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="w-full min-w-0 sm:w-64">
                                 <ProfileCountryRegionSelect
                                     value={countryFilter}
                                     ariaLabel="Airport catalog country filter"
@@ -2496,76 +1883,69 @@ export const AdminAirportsPage: React.FC = () => {
                                     toggleLabel="Toggle country filter"
                                     onValueChange={handleCountryFilterChange}
                                 />
-                                <div className="text-xs text-muted-foreground">
-                                    {countryFilter ? (
-                                        <Button
-                                            type="button"
-                                            variant="link"
-                                            size="xs"
-                                            onClick={() => handleCountryFilterChange('')}
-                                            className="h-auto px-0 text-foreground"
-                                        >
-                                            Clear country filter
-                                        </Button>
-                                    ) : 'Filter the table by country with the shared flag picker.'}
-                                </div>
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <div id="admin-airports-service-tier-filter-label" className={ADMIN_FIELD_LABEL_CLASS}>Service tier</div>
-                                <Select value={serviceTierFilter} onValueChange={handleServiceTierFilterChange}>
-                                    <SelectTrigger aria-labelledby="admin-airports-service-tier-filter-label" className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All tiers</SelectItem>
-                                        {SERVICE_TIER_OPTIONS.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <p className="self-end text-xs text-muted-foreground md:col-span-2 xl:col-span-1">
-                                Search matches IATA, ICAO, ident, airport name, city, subdivision, and country.
-                            </p>
+                            <Select value={serviceTierFilter} onValueChange={handleServiceTierFilterChange}>
+                                <SelectTrigger aria-label="Service tier" className="w-auto min-w-40">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All tiers</SelectItem>
+                                    {SERVICE_TIER_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {hasActiveCatalogFilter && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleResetCatalogFilters}
+                                    {...getAnalyticsDebugAttributes('admin__airports--reset_filters')}
+                                >
+                                    Reset
+                                </Button>
+                            )}
                         </div>
 
-                        <div className="overflow-hidden rounded-lg border border-border">
-                            <Table className="min-w-[980px] table-fixed">
+                        <div className="overflow-x-auto rounded-lg border border-border">
+                            <Table className="min-w-[900px] table-fixed">
                                 <colgroup>
-                                    <col style={{ width: 52 }} />
-                                    <col style={{ width: `${columnWidths.code}px` }} />
+                                    <col style={{ width: 44 }} />
                                     <col style={{ width: `${columnWidths.airport}px` }} />
                                     <col style={{ width: `${columnWidths.location}px` }} />
                                     <col style={{ width: `${columnWidths.tier}px` }} />
                                     <col style={{ width: `${columnWidths.type}px` }} />
                                     <col style={{ width: `${columnWidths.timezone}px` }} />
+                                    <col style={{ width: 52 }} />
                                 </colgroup>
                                 <TableHeader className="bg-muted/50">
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className="w-[52px]">
+                                        <TableHead>
                                             <Checkbox
                                                 checked={areAllVisibleAirportsSelected ? true : (isVisibleAirportSelectionPartial ? 'indeterminate' : false)}
                                                 onCheckedChange={(checked) => toggleSelectAllVisibleAirports(Boolean(checked))}
-                                                aria-label="Select all visible airports"
+                                                aria-label="Select all airports on this page"
+                                                disabled={pagedAirports.length === 0}
                                             />
                                         </TableHead>
-                                        {renderResizableHead('code', 'Code')}
                                         {renderResizableHead('airport', 'Airport')}
                                         {renderResizableHead('location', 'Location')}
                                         {renderResizableHead('tier', 'Tier')}
                                         {renderResizableHead('type', 'Type')}
                                         {renderResizableHead('timezone', 'Timezone')}
+                                        <TableHead><span className="sr-only">Actions</span></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {pagedAirports.map((airport) => (
                                         <TableRow
                                             key={airport.ident}
-                                            data-state={airport.ident === selectedAirportIdent ? 'selected' : undefined}
+                                            data-state={selectedAirportIdents.has(airport.ident) || (editorOpen && airport.ident === selectedAirportIdent) ? 'selected' : undefined}
                                             className={cn(ADMIN_TABLE_ROW_SURFACE_CLASS, 'cursor-pointer')}
-                                            onClick={() => void handleSelectAirport(airport.ident)}
+                                            onClick={() => void handleOpenAirport(airport.ident)}
                                         >
                                             <TableCell onClick={(event) => event.stopPropagation()}>
                                                 <Checkbox
@@ -2575,30 +1955,66 @@ export const AdminAirportsPage: React.FC = () => {
                                                 />
                                             </TableCell>
                                             <TableCell>
-                                                <div className="truncate font-medium text-foreground">{airport.iataCode || airport.ident}</div>
-                                                <div className="truncate text-xs text-muted-foreground">{airport.icaoCode || 'No ICAO'}</div>
-                                            </TableCell>
-                                            <TableCell>
                                                 <div className="truncate font-medium text-foreground" title={airport.name}>{airport.name}</div>
-                                                <div className="truncate text-xs text-muted-foreground">{airport.ident}</div>
+                                                <div className="truncate font-mono text-xs text-muted-foreground">{formatAirportCodes(airport)}</div>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="truncate text-foreground">{airport.municipality || 'Unknown city'}</div>
                                                 <div className="truncate text-xs text-muted-foreground">{airport.countryName}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <AdminStatusBadge tone={airport.commercialServiceTier === 'major' ? 'success' : airport.commercialServiceTier === 'regional' ? 'info' : 'neutral'}>
+                                                <AdminStatusBadge tone={TIER_TONE[airport.commercialServiceTier]}>
                                                     {formatServiceTierLabel(airport.commercialServiceTier)}
                                                 </AdminStatusBadge>
                                             </TableCell>
                                             <TableCell><div className="truncate">{formatAirportTypeLabel(airport.airportType)}</div></TableCell>
                                             <TableCell><div className="truncate" title={airport.timezone || undefined}>{airport.timezone || '—'}</div></TableCell>
+                                            <TableCell className="px-1 text-end" onClick={(event) => event.stopPropagation()}>
+                                                <DropdownMenu modal={false}>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Actions for ${airport.name}`} data-tooltip="Airport actions">
+                                                            <DotsThreeVertical weight="bold" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="min-w-[180px]">
+                                                        <DropdownMenuItem onSelect={() => void handleOpenAirport(airport.ident)}>
+                                                            <PencilSimple /> Edit airport
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => toggleAirportSelection(airport.ident, !selectedAirportIdents.has(airport.ident))}>
+                                                            {selectedAirportIdents.has(airport.ident) ? 'Remove from selection' : 'Add to selection'}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            variant="destructive"
+                                                            disabled={!databaseBacked || deleting}
+                                                            onSelect={() => void handleDeleteAirport(airport)}
+                                                        >
+                                                            <Trash /> Delete airport
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                     {pagedAirports.length === 0 && (
                                         <TableRow className="hover:bg-transparent">
-                                            <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                                                {loading ? 'Loading airports…' : 'No airports match the current filters.'}
+                                            <TableCell colSpan={7} className="py-6">
+                                                {loading ? (
+                                                    <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground" role="status">
+                                                        <SpinnerGap className="size-4 animate-spin" /> Loading airports…
+                                                    </div>
+                                                ) : (
+                                                    <AdminEmptyState
+                                                        className="border-0"
+                                                        title={catalog?.airports.length ? 'No airports match these filters' : 'The catalog is empty'}
+                                                        description={catalog?.airports.length
+                                                            ? 'Search matches codes, names, cities, regions and countries. Reset the filters to see every airport.'
+                                                            : 'Sync from upstream to load the commercial airport catalog.'}
+                                                        action={hasActiveCatalogFilter ? (
+                                                            <Button type="button" variant="outline" size="sm" onClick={handleResetCatalogFilters}>Reset filters</Button>
+                                                        ) : undefined}
+                                                    />
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -2606,270 +2022,248 @@ export const AdminAirportsPage: React.FC = () => {
                             </Table>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="text-sm tabular-nums text-muted-foreground">
-                                Page {safePage} of {pageCount}
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                                    disabled={safePage <= 1}
-                                >
-                                    Previous
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
-                                    disabled={safePage >= pageCount}
-                                >
-                                    Next
-                                </Button>
-                            </div>
-                        </div>
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader
-                            title="Airport editor"
-                            description={editorMode === 'create'
-                                ? 'Create a new airport row in the database catalog. Commercial flags are derived automatically.'
-                                : 'Edit a selected row and save it back to the database catalog. Commercial flags are derived automatically.'}
-                            actions={(editorMode === 'create' || !databaseBacked) ? (
-                                <>
-                                    {editorMode === 'create' && (
-                                        <AdminStatusBadge tone="info">New row draft</AdminStatusBadge>
-                                    )}
-                                    {!databaseBacked && (
-                                        <AdminStatusBadge tone="warning">Sync DB first to enable saves</AdminStatusBadge>
-                                    )}
-                                </>
-                            ) : null}
+                        <AdminPagination
+                            page={safePage}
+                            pageSize={AIRPORT_TABLE_PAGE_SIZE}
+                            totalItems={filteredAirports.length}
+                            onPageChange={setPage}
+                            noun="airports"
                         />
-
-                        {!editorDraft && (
-                            <AdminEmptyState
-                                title="No airport selected"
-                                description="Select an airport row to inspect and edit its catalog details, or start a new airport draft from the toolbar."
-                            />
-                        )}
-
-                        {editorDraft && (
-                            <>
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-ident" className={ADMIN_FIELD_LABEL_CLASS}>Ident</label>
-                                        <Input
-                                            id="admin-airports-editor-ident"
-                                            value={editorDraft.ident}
-                                            disabled={editorMode !== 'create'}
-                                            onChange={(event) => {
-                                                setEditorDraft((current) => current ? { ...current, ident: event.target.value.toUpperCase() } : current);
-                                                setEditorDirty(true);
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <div id="admin-airports-editor-type-label" className={ADMIN_FIELD_LABEL_CLASS}>Airport type</div>
-                                        <Select
-                                            value={editorDraft.airportType}
-                                            onValueChange={(value) => {
-                                                setEditorDraft((current) => current ? {
-                                                    ...current,
-                                                    airportType: value as AirportReference['airportType'],
-                                                } : current);
-                                                setEditorDirty(true);
-                                            }}
-                                        >
-                                            <SelectTrigger aria-labelledby="admin-airports-editor-type-label" className="w-full">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {AIRPORT_TYPE_OPTIONS.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-iata" className={ADMIN_FIELD_LABEL_CLASS}>IATA code</label>
-                                        <Input id="admin-airports-editor-iata" value={editorDraft.iataCode} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, iataCode: event.target.value.toUpperCase() } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-icao" className={ADMIN_FIELD_LABEL_CLASS}>ICAO code</label>
-                                        <Input id="admin-airports-editor-icao" value={editorDraft.icaoCode} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, icaoCode: event.target.value.toUpperCase() } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-1.5">
-                                    <label htmlFor="admin-airports-editor-name" className={ADMIN_FIELD_LABEL_CLASS}>Airport name</label>
-                                    <Input id="admin-airports-editor-name" value={editorDraft.name} onChange={(event) => {
-                                        setEditorDraft((current) => current ? { ...current, name: event.target.value } : current);
-                                        setEditorDirty(true);
-                                    }} />
-                                </div>
-
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-municipality" className={ADMIN_FIELD_LABEL_CLASS}>Municipality</label>
-                                        <Input id="admin-airports-editor-municipality" value={editorDraft.municipality} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, municipality: event.target.value } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-subdivision" className={ADMIN_FIELD_LABEL_CLASS}>Subdivision name</label>
-                                        <Input id="admin-airports-editor-subdivision" value={editorDraft.subdivisionName} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, subdivisionName: event.target.value } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-region" className={ADMIN_FIELD_LABEL_CLASS}>Region code</label>
-                                        <Input id="admin-airports-editor-region" value={editorDraft.regionCode} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, regionCode: event.target.value.toUpperCase() } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-timezone" className={ADMIN_FIELD_LABEL_CLASS}>Timezone</label>
-                                        <Input id="admin-airports-editor-timezone" value={editorDraft.timezone} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, timezone: event.target.value } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="flex min-w-0 flex-col gap-1.5">
-                                        <div className={ADMIN_FIELD_LABEL_CLASS} aria-hidden="true">Country or region</div>
-                                        <ProfileCountryRegionSelect
-                                            value={editorDraft.countryCode}
-                                            ariaLabel="Country or region"
-                                            placeholder="Select country or region"
-                                            emptyLabel="No matching countries"
-                                            toggleLabel="Toggle country options"
-                                            onValueChange={(value) => {
-                                                setEditorDraft((current) => current ? updateDraftCountry(current, value) : current);
-                                                setEditorDirty(true);
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-country-name" className={ADMIN_FIELD_LABEL_CLASS}>Country name</label>
-                                        <Input
-                                            id="admin-airports-editor-country-name"
-                                            value={editorDraft.countryName}
-                                            readOnly
-                                            className="bg-muted/50 text-muted-foreground"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-latitude" className={ADMIN_FIELD_LABEL_CLASS}>Latitude</label>
-                                        <Input id="admin-airports-editor-latitude" type="number" step="0.000001" className="tabular-nums" value={editorDraft.latitude} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, latitude: event.target.value } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label htmlFor="admin-airports-editor-longitude" className={ADMIN_FIELD_LABEL_CLASS}>Longitude</label>
-                                        <Input id="admin-airports-editor-longitude" type="number" step="0.000001" className="tabular-nums" value={editorDraft.longitude} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, longitude: event.target.value } : current);
-                                            setEditorDirty(true);
-                                        }} />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/50 px-3 py-2">
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium text-foreground">Scheduled passenger service</div>
-                                        <div className="text-xs text-muted-foreground">Controls whether the airport stays eligible for nearby commercial lookups.</div>
-                                    </div>
-                                    <Switch
-                                        checked={editorDraft.scheduledService}
-                                        onCheckedChange={(checked) => {
-                                            setEditorDraft((current) => current ? { ...current, scheduledService: Boolean(checked) } : current);
-                                            setEditorDirty(true);
-                                        }}
-                                        aria-label="Scheduled passenger service"
-                                    />
-                                </div>
-
-                                {editorPreviewAirport && (
-                                    <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground">
-                                        <div className="text-xs font-medium text-muted-foreground">Derived commercial status</div>
-                                        <div className="mt-2 flex flex-wrap gap-1.5">
-                                            <Badge variant="outline">{formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}</Badge>
-                                            <AdminStatusBadge tone={editorPreviewAirport.isCommercial ? 'success' : 'warning'}>
-                                                {editorPreviewAirport.isCommercial ? 'Included in nearby-airport results' : 'Excluded from nearby-airport results'}
-                                            </AdminStatusBadge>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-wrap gap-2">
-                                    <Button
-                                        type="button"
-                                        onClick={() => void handleSaveAirport()}
-                                        disabled={!databaseBacked || saving || deleting}
-                                        aria-busy={saving || undefined}
-                                    >
-                                        {saving ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
-                                        {editorMode === 'create' ? 'Create airport' : 'Save airport'}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => {
-                                            setEditorDraft(editorMode === 'create' || !selectedAirport
-                                                ? buildEmptyAirportDraft()
-                                                : airportToDraft(selectedAirport));
-                                            setEditorDirty(false);
-                                        }}
-                                        disabled={!editorDirty}
-                                    >
-                                        {editorMode === 'create' ? 'Reset draft' : 'Reset changes'}
-                                    </Button>
-                                    {editorMode !== 'create' && (
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            className="ms-auto"
-                                            onClick={() => void handleDeleteAirport()}
-                                            disabled={!databaseBacked || deleting}
-                                            aria-busy={deleting || undefined}
-                                        >
-                                            {deleting ? <SpinnerGap className="animate-spin" /> : <Trash />}
-                                            Delete airport
-                                        </Button>
-                                    )}
-                                </div>
-                            </>
-                        )}
                     </AdminSurfaceCard>
-                </div>
-            </div>
+
+                    <AdminSelectionBar count={selectedAirports.length} noun="airport" onClear={handleClearAirportSelection}>
+                        {!allFilteredSelected && (
+                            <Button type="button" variant="ghost" size="sm" onClick={handleSelectFilteredAirports}>
+                                Select all <span className="tabular-nums">{filteredAirports.length.toLocaleString()}</span> matching
+                            </Button>
+                        )}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setBulkDialogOpen(true);
+                                trackEvent('admin__airports--bulk_edit');
+                            }}
+                            disabled={!databaseBacked || bulkSaving || bulkDeleting}
+                            data-tooltip={databaseBacked ? undefined : 'Sync the database catalog first'}
+                            {...getAnalyticsDebugAttributes('admin__airports--bulk_edit')}
+                        >
+                            <PencilSimple /> Bulk edit
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => void handleDeleteSelectedAirports()}
+                            disabled={!databaseBacked || bulkDeleting || bulkSaving}
+                            aria-busy={bulkDeleting || undefined}
+                            data-tooltip={databaseBacked ? undefined : 'Sync the database catalog first'}
+                            {...getAnalyticsDebugAttributes('admin__airports--bulk_delete')}
+                        >
+                            {bulkDeleting ? <SpinnerGap className="animate-spin" /> : <Trash />}
+                            Delete selected
+                        </Button>
+                    </AdminSelectionBar>
+                </TabsContent>
+
+                {testerMounted && (
+                    <>
+                        <TabsContent value="tester" forceMount className="data-[state=inactive]:hidden">
+                            <GoogleMapsLoader>
+                                <AdminAirportTester
+                                    filters={testerFilters}
+                                    onFiltersChange={handleTesterFiltersChange}
+                                    onLookupContextChange={handleTesterContextChange}
+                                    mapVisible={activeTab === 'tester'}
+                                />
+                            </GoogleMapsLoader>
+                        </TabsContent>
+                        <TabsContent value="ticket" forceMount className="data-[state=inactive]:hidden">
+                            <AdminAirportTicketLab
+                                catalogAirports={catalog?.airports || []}
+                                origin={ticketTesterOrigin}
+                                nearbyResult={ticketTesterResult}
+                                onChangeOrigin={() => handleTabChange('tester')}
+                            />
+                        </TabsContent>
+                    </>
+                )}
+            </Tabs>
+
+            <AdminAirportBulkEditDialog
+                open={bulkDialogOpen}
+                onOpenChange={setBulkDialogOpen}
+                selectedAirports={selectedAirports}
+                isApplying={bulkSaving}
+                onApply={handleBulkUpdateAirports}
+            />
+
+            <AdminDetailSheet
+                open={editorOpen}
+                onOpenChange={(open) => void handleEditorOpenChange(open)}
+                size="md"
+                title={editorMode === 'create' ? (editorDraft?.name.trim() || 'New airport') : (selectedAirport?.name || editorDraft?.name || 'Airport')}
+                subtitle={editorMode === 'create'
+                    ? 'New row in the database catalog'
+                    : (selectedAirport ? `${formatAirportCodes(selectedAirport)} · ${[selectedAirport.municipality, selectedAirport.countryName].filter(Boolean).join(', ')}` : undefined)}
+                meta={editorPreviewAirport ? (
+                    <>
+                        <AdminStatusBadge tone={TIER_TONE[editorPreviewAirport.commercialServiceTier]}>{formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}</AdminStatusBadge>
+                        <AdminStatusBadge tone={editorPreviewAirport.isCommercial ? 'success' : 'warning'}>
+                            {editorPreviewAirport.isCommercial ? 'In nearby results' : 'Excluded from nearby results'}
+                        </AdminStatusBadge>
+                    </>
+                ) : null}
+                footer={editorDraft ? (
+                    <>
+                        <Button
+                            type="button"
+                            onClick={() => void handleSaveAirport()}
+                            disabled={!databaseBacked || saving || deleting}
+                            aria-busy={saving || undefined}
+                            {...getAnalyticsDebugAttributes(editorMode === 'create' ? 'admin__airports--create_airport' : 'admin__airports--save_airport')}
+                        >
+                            {saving ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
+                            {editorMode === 'create' ? 'Create airport' : 'Save airport'}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setEditorDraft(editorMode === 'create' || !selectedAirport
+                                    ? buildEmptyAirportDraft()
+                                    : airportToDraft(selectedAirport));
+                                setEditorDirty(false);
+                            }}
+                            disabled={!editorDirty}
+                        >
+                            {editorMode === 'create' ? 'Reset draft' : 'Reset changes'}
+                        </Button>
+                        {editorMode !== 'create' && selectedAirport && (
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                className="ms-auto"
+                                onClick={() => void handleDeleteAirport(selectedAirport)}
+                                disabled={!databaseBacked || deleting}
+                                aria-busy={deleting || undefined}
+                                {...getAnalyticsDebugAttributes('admin__airports--delete_airport')}
+                            >
+                                {deleting ? <SpinnerGap className="animate-spin" /> : <Trash />}
+                                Delete airport
+                            </Button>
+                        )}
+                    </>
+                ) : undefined}
+            >
+                {editorDraft && (
+                    <>
+                        {!databaseBacked && (
+                            <Alert variant="warning">
+                                <WarningCircle weight="fill" />
+                                <AlertDescription><p>Saving is off until the database catalog is synced.</p></AlertDescription>
+                            </Alert>
+                        )}
+
+                        <section className="flex flex-col gap-3">
+                            <AdminSectionHeader as="h3" title="Identity" />
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <EditorField htmlFor="admin-airports-editor-ident" label="Ident">
+                                    <Input
+                                        id="admin-airports-editor-ident"
+                                        value={editorDraft.ident}
+                                        disabled={editorMode !== 'create'}
+                                        onChange={(event) => updateDraft({ ident: event.target.value.toUpperCase() })}
+                                    />
+                                </EditorField>
+                                <EditorField labelId="admin-airports-editor-type-label" label="Airport type">
+                                    <Select
+                                        value={editorDraft.airportType}
+                                        onValueChange={(value) => updateDraft({ airportType: value as AirportReference['airportType'] })}
+                                    >
+                                        <SelectTrigger aria-labelledby="admin-airports-editor-type-label" className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {AIRPORT_TYPE_OPTIONS.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-iata" label="IATA code">
+                                    <Input id="admin-airports-editor-iata" value={editorDraft.iataCode} onChange={(event) => updateDraft({ iataCode: event.target.value.toUpperCase() })} />
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-icao" label="ICAO code">
+                                    <Input id="admin-airports-editor-icao" value={editorDraft.icaoCode} onChange={(event) => updateDraft({ icaoCode: event.target.value.toUpperCase() })} />
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-name" label="Airport name" className="sm:col-span-2">
+                                    <Input id="admin-airports-editor-name" value={editorDraft.name} onChange={(event) => updateDraft({ name: event.target.value })} />
+                                </EditorField>
+                            </div>
+                        </section>
+
+                        <section className="flex flex-col gap-3">
+                            <AdminSectionHeader as="h3" title="Location" />
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <EditorField htmlFor="admin-airports-editor-municipality" label="Municipality">
+                                    <Input id="admin-airports-editor-municipality" value={editorDraft.municipality} onChange={(event) => updateDraft({ municipality: event.target.value })} />
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-subdivision" label="Subdivision name">
+                                    <Input id="admin-airports-editor-subdivision" value={editorDraft.subdivisionName} onChange={(event) => updateDraft({ subdivisionName: event.target.value })} />
+                                </EditorField>
+                                <EditorField label="Country or region">
+                                    <ProfileCountryRegionSelect
+                                        value={editorDraft.countryCode}
+                                        ariaLabel="Country or region"
+                                        placeholder="Select country or region"
+                                        emptyLabel="No matching countries"
+                                        toggleLabel="Toggle country options"
+                                        onValueChange={(value) => {
+                                            setEditorDraft((current) => current ? updateDraftCountry(current, value) : current);
+                                            setEditorDirty(true);
+                                        }}
+                                    />
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-region" label="Region code">
+                                    <Input id="admin-airports-editor-region" value={editorDraft.regionCode} onChange={(event) => updateDraft({ regionCode: event.target.value.toUpperCase() })} />
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-latitude" label="Latitude">
+                                    <Input id="admin-airports-editor-latitude" type="number" step="0.000001" className="tabular-nums" value={editorDraft.latitude} onChange={(event) => updateDraft({ latitude: event.target.value })} />
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-longitude" label="Longitude">
+                                    <Input id="admin-airports-editor-longitude" type="number" step="0.000001" className="tabular-nums" value={editorDraft.longitude} onChange={(event) => updateDraft({ longitude: event.target.value })} />
+                                </EditorField>
+                                <EditorField htmlFor="admin-airports-editor-timezone" label="Timezone" className="sm:col-span-2">
+                                    <Input id="admin-airports-editor-timezone" value={editorDraft.timezone} placeholder="Europe/Berlin" onChange={(event) => updateDraft({ timezone: event.target.value })} />
+                                </EditorField>
+                            </div>
+                        </section>
+
+                        <section className="flex flex-col gap-3">
+                            <AdminSectionHeader
+                                as="h3"
+                                title="Nearby lookups"
+                                description="Tier and eligibility follow from the airport type and scheduled service."
+                            />
+                            <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/50 px-3 py-2">
+                                <div className="min-w-0">
+                                    <div className="text-sm font-medium text-foreground">Scheduled passenger service</div>
+                                    <div className="text-xs text-muted-foreground">Controls whether the airport stays eligible for nearby commercial lookups.</div>
+                                </div>
+                                <Switch
+                                    checked={editorDraft.scheduledService}
+                                    onCheckedChange={(checked) => updateDraft({ scheduledService: Boolean(checked) })}
+                                    aria-label="Scheduled passenger service"
+                                />
+                            </div>
+                        </section>
+                    </>
+                )}
+            </AdminDetailSheet>
         </AdminShell>
     );
 };

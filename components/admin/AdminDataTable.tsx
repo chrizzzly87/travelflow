@@ -26,7 +26,7 @@ export const AdminSortHeaderButton: React.FC<AdminSortHeaderButtonProps> = ({
             isActive ? 'text-accent-800 dark:text-accent-200' : 'text-muted-foreground hover:text-foreground',
             className,
         )}
-        title={`Sort by ${label}`}
+        data-tooltip={`Sort by ${label}`}
         data-state={isActive ? direction : undefined}
     >
         <span className="truncate">{label}</span>

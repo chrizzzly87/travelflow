@@ -121,7 +121,7 @@ const ModelSearchList: React.FC<{
                                             aria-pressed={selected}
                                             onMouseEnter={() => setActiveIndex(flat.indexOf(model))}
                                             onClick={() => onPick(model)}
-                                            className={`flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-start outline-none transition focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+                                            className={`flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-start outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                                                 active?.id === model.id ? 'bg-secondary' : 'hover:bg-secondary'
                                             }`}
                                         >
@@ -182,7 +182,7 @@ export const AiModelPicker: React.FC<{
                 type="button"
                 onClick={openPicker}
                 aria-haspopup="dialog"
-                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground transition hover:border-slate-400 hover:bg-secondary/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:hover:border-slate-500"
+                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground transition-colors hover:border-slate-400 hover:bg-secondary/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:hover:border-slate-500"
             >
                 <span className="flex min-w-0 items-center gap-2">
                     <AiProviderLogo provider={selected?.provider || provider} model={selected?.model || model} size={18} />
@@ -309,7 +309,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                                 variant="ghost"
                                 size="icon-xs"
                                 aria-label={`Remove ${model}`}
-                                title={`Remove ${model}`}
+                                data-tooltip={`Remove ${model}`}
                                 onClick={() => onChange(value.filter((entry) => entry !== model))}
                                 className="rounded-full text-muted-foreground hover:text-foreground"
                             >

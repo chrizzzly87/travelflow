@@ -1428,7 +1428,7 @@ const useTripViewRender = ({
     );
     const ownerUsersUrl = useMemo(() => {
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
-        return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
+        return `/admin/users?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
     }, [adminAccess?.ownerId, isAdminFallbackView]);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;

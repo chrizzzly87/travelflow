@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { SpinnerGap, Warning } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 if (typeof window !== 'undefined') {
@@ -165,15 +165,16 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
         });
     };
 
-    useEffect(() => {
-        if (isOpen) return;
+    // Reopening always starts collapsed; reset on close instead of syncing in an effect.
+    const handleClose = () => {
         setFocusedOnly(true);
-    }, [isOpen]);
+        onClose();
+    };
 
     return (
         <AppModal
             isOpen={isOpen}
-            onClose={onClose}
+            onClose={handleClose}
             title={title}
             description={description}
             size="xl"
@@ -207,20 +208,25 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                             </Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground">
+                            <label className="inline-flex h-8 cursor-pointer items-center gap-2 text-sm text-foreground">
                                 <Checkbox
                                     checked={!focusedOnly}
                                     onCheckedChange={(checked) => setFocusedOnly(!Boolean(checked))}
-                                    aria-label="Show full diff"
+                                    aria-label="Show unchanged lines"
                                 />
-                                Show full diff
+                                Show unchanged lines
                             </label>
                         </div>
                     </div>
 
-                    {focusedOnly && (
+                    {focusedOnly && diff.changedRowCount > 0 && (
                         <p className="text-xs text-muted-foreground">
-                            Showing focused context around changed lines
+                            Showing changed lines with two lines of context. Unchanged runs are collapsed.
+                        </p>
+                    )}
+                    {diff.changedRowCount === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                            Both snapshots are identical.
                         </p>
                     )}
 

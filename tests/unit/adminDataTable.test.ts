@@ -1,3 +1,7 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { AdminSortHeaderButton } from '../../components/admin/AdminDataTable';
 import { describe, expect, it } from 'vitest';
 import {
   ADMIN_TABLE_SORTED_CELL_CLASS,
@@ -62,5 +66,13 @@ describe('admin data table sticky class helpers', () => {
     expect(trailing).toContain('before:end-0');
     expect(trailing).toContain('after:-end-3');
     expect(trailing).not.toMatch(/border-r\b|before:right-0|after:-right-3/);
+  });
+
+  it('labels sort headers through the shared tooltip layer, not a native title', () => {
+    render(React.createElement(AdminSortHeaderButton, { label: 'Owner', isActive: true, direction: 'asc', onClick: () => {} }));
+    const button = screen.getByRole('button', { name: 'Owner' });
+    expect(button).toHaveAttribute('data-tooltip', 'Sort by Owner');
+    expect(button).not.toHaveAttribute('title');
+    expect(button).toHaveAttribute('data-state', 'asc');
   });
 });

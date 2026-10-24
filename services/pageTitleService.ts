@@ -61,6 +61,27 @@ const humanizeSegment = (segment: string): string => {
         .replace(/\b\p{L}/gu, (char) => char.toUpperCase());
 };
 
+/** Admin screen names for the document title, by route. */
+export const ADMIN_SCREEN_TITLES: Record<string, string> = {
+    '/admin/dashboard': 'Overview',
+    '/admin/settings': 'Settings',
+    '/admin/users': 'Users',
+    '/admin/trips': 'Trips',
+    '/admin/tiers': 'Plans',
+    '/admin/billing': 'Billing',
+    '/admin/audit': 'Audit log',
+    '/admin/airports': 'Airports',
+    '/admin/destinations': 'Destinations',
+    '/admin/recommendations': 'Recommendations',
+    '/admin/legal': 'Legal terms',
+    '/admin/ai-benchmark': 'AI benchmark',
+    '/admin/ai-benchmark/telemetry': 'AI telemetry',
+    '/admin/ai-benchmark/worker-health': 'Worker health',
+    '/admin/og-tools': 'OG tools',
+    '/admin/design-system-playground': 'Design system',
+    '/admin/component-playground': 'Component playground',
+};
+
 export const resolvePageTitle = ({
     pathname,
     appName,
@@ -122,15 +143,11 @@ export const resolvePageTitle = ({
     if (normalizedPath.startsWith('/u/')) return titleWithAppName(labels.profile, appName);
 
     if (normalizedPath.startsWith('/admin')) {
-        if (normalizedPath === '/admin/dashboard') return titleWithAppName(`${labels.admin} · Dashboard`, appName);
-        if (normalizedPath === '/admin/users') return titleWithAppName(`${labels.admin} · Users`, appName);
-        if (normalizedPath === '/admin/trips') return titleWithAppName(`${labels.admin} · Trips`, appName);
-        if (normalizedPath === '/admin/tiers') return titleWithAppName(`${labels.admin} · Tiers`, appName);
-        if (normalizedPath === '/admin/billing') return titleWithAppName(`${labels.admin} · Billing`, appName);
-        if (normalizedPath === '/admin/audit') return titleWithAppName(`${labels.admin} · Audit`, appName);
-        if (normalizedPath === '/admin/ai-benchmark') return titleWithAppName(`${labels.admin} · AI Benchmark`, appName);
-        if (normalizedPath === '/admin/ai-benchmark/telemetry') return titleWithAppName(`${labels.admin} · AI Telemetry`, appName);
-        if (normalizedPath === '/admin/ai-benchmark/worker-health') return titleWithAppName(`${labels.admin} · Worker Health`, appName);
+        // Mirrors the nav labels in components/admin/adminNavConfig.ts (kept as a
+        // literal map so shared code does not pull admin config into its bundle;
+        // tests/unit/pageTitleService.test.ts checks the two stay in step).
+        const adminScreen = ADMIN_SCREEN_TITLES[normalizedPath];
+        if (adminScreen) return titleWithAppName(`${labels.admin} · ${adminScreen}`, appName);
         return titleWithAppName(labels.admin, appName);
     }
 

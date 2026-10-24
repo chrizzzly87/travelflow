@@ -14,6 +14,7 @@ describe('components/ui/alert tones', () => {
     ['success', 'emerald'],
     ['warning', 'amber'],
     ['danger', 'red'],
+    ['info', 'sky'],
   ] as const)('gives the %s description its own dark-mode ink', (variant, colour) => {
     render(h(Alert, { variant }, h(AlertDescription, null, 'Body')));
     const className = screen.getByRole('alert').className;

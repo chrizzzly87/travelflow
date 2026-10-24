@@ -121,10 +121,10 @@ const labelFromPath = (pathname: string): string => {
     if (pathname.startsWith('/admin/dashboard')) return 'Overview';
     if (pathname.startsWith('/admin/users')) return 'Users';
     if (pathname.startsWith('/admin/trips')) return 'Trips';
-    if (pathname.startsWith('/admin/tiers')) return 'Tiers';
-    if (pathname.startsWith('/admin/audit')) return 'Audit';
-    if (pathname.startsWith('/admin/legal')) return 'Legal Terms';
-    if (pathname.startsWith('/admin/ai-benchmark')) return 'AI Benchmark';
+    if (pathname.startsWith('/admin/tiers')) return 'Plans';
+    if (pathname.startsWith('/admin/audit')) return 'Audit log';
+    if (pathname.startsWith('/admin/legal')) return 'Legal terms';
+    if (pathname.startsWith('/admin/ai-benchmark')) return 'AI benchmark';
     if (pathname.startsWith('/profile/settings')) return 'Settings';
     if (pathname.startsWith('/profile')) return 'Profile';
     if (pathname.startsWith('/admin')) return 'Admin';

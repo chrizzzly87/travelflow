@@ -1,7 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
-import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
-import { Link, useSearchParams } from 'react-router-dom';
+import {
+    ArrowsClockwise,
+    CreditCard,
+    CurrencyCircleDollar,
+    DotsThreeVertical,
+    ShieldCheck,
+    SpinnerGap,
+    WarningCircle,
+} from '@phosphor-icons/react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
@@ -17,11 +25,27 @@ import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminBarChart } from '../components/admin/AdminBarChart';
-import { CopyableUuid } from '../components/admin/CopyableUuid';
+import { AdminPagination } from '../components/admin/AdminPagination';
+import {
+    AdminBillingStatusBadge,
+    AdminBillingSubscriptionSheet,
+    AdminBillingWebhookEventSheet,
+    formatAdminBillingDateTime,
+    humanizeAdminBillingEventType,
+} from '../components/admin/AdminBillingSheets';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { showAppToast } from '../components/ui/appToast';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     adminListBillingSubscriptions,
     adminReconcilePaddleSubscriptions,
@@ -36,34 +60,24 @@ import {
     buildAdminBillingAtRiskChartData,
     buildAdminBillingCurrentMrrCards,
     buildAdminBillingMrrByTierChartData,
+    buildAdminBillingMrrHeadline,
     buildAdminBillingStatusMixChartData,
     buildAdminBillingTierMixChartData,
     filterAdminBillingSubscriptionsByRange,
+    filterAdminBillingWebhookEvents,
     filterAdminBillingWebhookEventsByRange,
     formatAdminBillingAmount,
+    formatAdminBillingRelativeTime,
     humanizeAdminBillingStatus,
     humanizeTierKey,
     normalizeAdminBillingStatus,
     resolveAdminBillingLifecycleStatus,
+    resolveAdminBillingWebhookStatusKey,
+    sliceAdminBillingPage,
     summarizeAdminBilling,
-    resolveAdminBillingStatusTone,
 } from '../services/adminBillingPresentation';
 
-const adminBillingDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-});
-
-const adminBillingDateFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-});
-
-const formatDateTime = (value: string | null | undefined): string => {
-    if (!value) return '—';
-    const timestamp = Date.parse(value);
-    if (!Number.isFinite(timestamp)) return '—';
-    return adminBillingDateTimeFormatter.format(new Date(timestamp));
-};
+const adminBillingDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
 const formatCompactDate = (value: string | null | undefined): string => {
     if (!value) return '—';
@@ -71,27 +85,6 @@ const formatCompactDate = (value: string | null | undefined): string => {
     if (!Number.isFinite(timestamp)) return '—';
     return adminBillingDateFormatter.format(new Date(timestamp));
 };
-
-const humanizeEventType = (value: string | null | undefined): string => {
-    const normalized = (value || '').trim();
-    if (!normalized) return 'Unknown';
-    return normalized.replace(/[._]+/g, ' ');
-};
-
-const formatPayloadJson = (value: Record<string, unknown> | null | undefined): string => {
-    if (!value) return '';
-    try {
-        return JSON.stringify(value, null, 2);
-    } catch {
-        return '{}';
-    }
-};
-
-const BillingStatusBadge: React.FC<{ status: string | null | undefined }> = ({ status }) => (
-    <AdminStatusBadge tone={resolveAdminBillingStatusTone(normalizeAdminBillingStatus(status))}>
-        {humanizeAdminBillingStatus(status)}
-    </AdminStatusBadge>
-);
 
 const formatMajorAmount = (value: number): string => Number(value).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -108,46 +101,66 @@ const toShareItems = (rows: Array<{ label: string; count: number }>): AdminBarLi
     }));
 };
 
-const webhookMessageClassName = (status: string | null | undefined) => {
-    const normalizedStatus = normalizeAdminBillingStatus(status);
-    if (normalizedStatus === 'failed') {
-        return 'mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
-    }
-    if (normalizedStatus === 'past_due' || normalizedStatus === 'paused' || normalizedStatus === 'ignored') {
-        return 'mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    }
-    if (normalizedStatus === 'processed' || normalizedStatus === 'received') {
-        return 'mt-3 rounded-md border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-foreground dark:bg-accent-400/12 dark:border-accent-400/30';
-    }
-    return 'mt-3 rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground';
+const countOptions = (keys: string[], label: (key: string) => string): AdminFilterMenuOption[] => {
+    const counts = new Map<string, number>();
+    keys.forEach((key) => counts.set(key, (counts.get(key) || 0) + 1));
+    return Array.from(counts.entries())
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([value, count]) => ({ value, label: label(value), count }));
 };
 
-const webhookMessageLabel = (status: string | null | undefined): string => {
-    const normalizedStatus = normalizeAdminBillingStatus(status);
-    if (normalizedStatus === 'failed') return 'Delivery error';
-    if (normalizedStatus === 'past_due' || normalizedStatus === 'paused' || normalizedStatus === 'ignored') return 'Needs attention';
-    if (normalizedStatus === 'processed' || normalizedStatus === 'received') return 'Sync note';
-    return 'Event note';
-};
+/** A relative timestamp with the absolute one in the tooltip. */
+const RelativeTime: React.FC<{ value: string | null | undefined }> = ({ value }) => (
+    <time
+        dateTime={value || undefined}
+        data-tooltip={value ? formatAdminBillingDateTime(value) : undefined}
+        className="tabular-nums"
+    >
+        {formatAdminBillingRelativeTime(value)}
+    </time>
+);
+
+const LoadingRow: React.FC<{ colSpan: number; label: string }> = ({ colSpan, label }) => (
+    <TableRow>
+        <TableCell colSpan={colSpan} className="py-10 text-center text-sm text-muted-foreground">
+            <span role="status" className="inline-flex items-center gap-2">
+                <SpinnerGap className="size-4 animate-spin" aria-hidden="true" />
+                {label}
+            </span>
+        </TableCell>
+    </TableRow>
+);
+
+type RecordsView = 'subscriptions' | 'events';
 
 const SUBSCRIPTIONS_CACHE_LIMIT = 250;
 const EVENTS_CACHE_LIMIT = 250;
+const PAGE_SIZE = 25;
+const LINK_FILTER_OPTIONS_LABEL: Record<string, string> = { linked: 'Linked to a user', unlinked: 'No linked user' };
+
+const parseDateRange = (value: string | null): AdminDateRange => (
+    value === '7d' || value === '30d' || value === '90d' || value === 'all' ? value : '30d'
+);
 
 export const AdminBillingPage: React.FC = () => {
     const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
-    const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
-        const value = searchParams.get('range');
-        if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
-        return '30d';
-    });
+    const [dateRange, setDateRange] = useState<AdminDateRange>(() => parseDateRange(searchParams.get('range')));
+    const [recordsView, setRecordsView] = useState<RecordsView>(() => (searchParams.get('view') === 'events' ? 'events' : 'subscriptions'));
     const [dashboard, setDashboard] = useState<AdminBillingDashboardRecord | null>(null);
     const [subscriptions, setSubscriptions] = useState<AdminBillingSubscriptionRecord[]>([]);
     const [events, setEvents] = useState<AdminBillingWebhookEventRecord[]>([]);
     const [selectedSubscriptionStatuses, setSelectedSubscriptionStatuses] = useState<string[]>([]);
     const [selectedEventStatuses, setSelectedEventStatuses] = useState<string[]>([]);
+    const [selectedEventLinks, setSelectedEventLinks] = useState<string[]>([]);
+    const [subscriptionPage, setSubscriptionPage] = useState(1);
+    const [eventPage, setEventPage] = useState(1);
+    const [openSubscription, setOpenSubscription] = useState<AdminBillingSubscriptionRecord | null>(null);
+    const [openEvent, setOpenEvent] = useState<AdminBillingWebhookEventRecord | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const [isReconciling, setIsReconciling] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [lastReconcileSummary, setLastReconcileSummary] = useState<AdminBillingPaddleReconcileSummary | null>(null);
@@ -158,9 +171,10 @@ export const AdminBillingPage: React.FC = () => {
         const trimmedSearch = searchValue.trim();
         if (trimmedSearch) next.set('q', trimmedSearch);
         if (dateRange !== '30d') next.set('range', dateRange);
+        if (recordsView === 'events') next.set('view', 'events');
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [dateRange, searchParams, searchValue, setSearchParams]);
+    }, [dateRange, recordsView, searchParams, searchValue, setSearchParams]);
 
     const loadData = async () => {
         setIsLoading(true);
@@ -178,138 +192,151 @@ export const AdminBillingPage: React.FC = () => {
             setErrorMessage(toAdminErrorMessage(error, 'Could not load billing workspace.', 'admin-billing'));
         } finally {
             setIsLoading(false);
+            setHasLoaded(true);
         }
     };
 
+    // The date range is applied client-side, so only the search refetches.
     useEffect(() => {
         const timer = window.setTimeout(() => {
             void loadData();
         }, 160);
         return () => window.clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateRange, searchValue]);
+    }, [searchValue]);
 
-    const subscriptionStatusOptions = useMemo<AdminFilterMenuOption[]>(() => {
-        const counts = new Map<string, number>();
-        subscriptions.forEach((record) => {
-            const key = resolveAdminBillingLifecycleStatus(record);
-            counts.set(key, (counts.get(key) || 0) + 1);
-        });
-        return Array.from(counts.entries())
-            .sort(([left], [right]) => left.localeCompare(right))
-            .map(([value, count]) => ({
-                value,
-                label: humanizeAdminBillingStatus(value),
-                count,
-            }));
-    }, [subscriptions]);
+    const handleSearchChange = (value: string) => {
+        setSearchValue(value);
+        setSubscriptionPage(1);
+        setEventPage(1);
+    };
 
-    const eventStatusOptions = useMemo<AdminFilterMenuOption[]>(() => {
-        const counts = new Map<string, number>();
-        events.forEach((record) => {
-            const key = (record.status || 'unknown').trim().toLowerCase() || 'unknown';
-            counts.set(key, (counts.get(key) || 0) + 1);
-        });
-        return Array.from(counts.entries())
-            .sort(([left], [right]) => left.localeCompare(right))
-            .map(([value, count]) => ({
-                value,
-                label: humanizeAdminBillingStatus(value),
-                count,
-            }));
-    }, [events]);
+    const handleDateRangeChange = (value: AdminDateRange) => {
+        setDateRange(value);
+        setSubscriptionPage(1);
+        setEventPage(1);
+    };
 
     const rangedSubscriptions = useMemo(
         () => filterAdminBillingSubscriptionsByRange(subscriptions, dateRange),
         [dateRange, subscriptions],
     );
-
     const rangedEvents = useMemo(
         () => filterAdminBillingWebhookEventsByRange(events, dateRange),
         [dateRange, events],
     );
 
+    const subscriptionStatusOptions = useMemo(
+        () => countOptions(rangedSubscriptions.map((record) => resolveAdminBillingLifecycleStatus(record)), humanizeAdminBillingStatus),
+        [rangedSubscriptions],
+    );
+    const eventStatusOptions = useMemo(
+        () => countOptions(rangedEvents.map(resolveAdminBillingWebhookStatusKey), humanizeAdminBillingStatus),
+        [rangedEvents],
+    );
+    const eventLinkOptions = useMemo(
+        () => countOptions(rangedEvents.map((record) => (record.user_id ? 'linked' : 'unlinked')), (key) => LINK_FILTER_OPTIONS_LABEL[key] ?? key),
+        [rangedEvents],
+    );
+
     const filteredSubscriptions = useMemo(() => {
         if (selectedSubscriptionStatuses.length === 0) return rangedSubscriptions;
         const selectedSet = new Set(selectedSubscriptionStatuses);
-        return rangedSubscriptions.filter((record) => {
-            const key = resolveAdminBillingLifecycleStatus(record);
-            return selectedSet.has(key);
-        });
+        return rangedSubscriptions.filter((record) => selectedSet.has(resolveAdminBillingLifecycleStatus(record)));
     }, [rangedSubscriptions, selectedSubscriptionStatuses]);
 
-    const filteredEvents = useMemo(() => {
-        if (selectedEventStatuses.length === 0) return rangedEvents;
-        const selectedSet = new Set(selectedEventStatuses);
-        return rangedEvents.filter((record) => selectedSet.has(((record.status || 'unknown').trim().toLowerCase() || 'unknown')));
-    }, [rangedEvents, selectedEventStatuses]);
+    const filteredEvents = useMemo(
+        () => filterAdminBillingWebhookEvents(rangedEvents, { statuses: selectedEventStatuses, links: selectedEventLinks }),
+        [rangedEvents, selectedEventLinks, selectedEventStatuses],
+    );
 
+    const subscriptionPageSlice = sliceAdminBillingPage<AdminBillingSubscriptionRecord>(filteredSubscriptions, subscriptionPage, PAGE_SIZE);
+    const eventPageSlice = sliceAdminBillingPage<AdminBillingWebhookEventRecord>(filteredEvents, eventPage, PAGE_SIZE);
+
+    // KPIs describe the whole range, not whatever the table filters currently show.
     const metrics = useMemo(
-        () => summarizeAdminBilling(filteredSubscriptions, filteredEvents),
-        [filteredEvents, filteredSubscriptions],
+        () => summarizeAdminBilling(rangedSubscriptions, rangedEvents),
+        [rangedEvents, rangedSubscriptions],
     );
-    const dashboardCurrentMrrCards = useMemo(
-        () => dashboard ? buildAdminBillingCurrentMrrCards(dashboard) : [],
+    const mrrHeadline = useMemo(
+        () => buildAdminBillingMrrHeadline(dashboard ? buildAdminBillingCurrentMrrCards(dashboard) : []),
         [dashboard],
     );
-    const dashboardMrrByTierData = useMemo(
-        () => dashboard ? buildAdminBillingMrrByTierChartData(dashboard) : [],
-        [dashboard],
-    );
-    const dashboardTierMixData = useMemo(
-        () => dashboard ? buildAdminBillingTierMixChartData(dashboard) : [],
-        [dashboard],
-    );
-    const dashboardStatusMixData = useMemo(
-        () => dashboard ? buildAdminBillingStatusMixChartData(dashboard) : [],
-        [dashboard],
-    );
-    const dashboardAtRiskData = useMemo(
-        () => dashboard ? buildAdminBillingAtRiskChartData(dashboard) : [],
-        [dashboard],
-    );
-    // Chart and list adapters: a readable series name for the tooltip, share labels for the mixes.
     const mrrByTierChartData = useMemo(
-        () => dashboardMrrByTierData.map((row) => ({ label: row.label, MRR: row.amount })),
-        [dashboardMrrByTierData],
+        () => (dashboard ? buildAdminBillingMrrByTierChartData(dashboard) : []).map((row) => ({ label: row.label, MRR: row.amount })),
+        [dashboard],
     );
     const atRiskListItems = useMemo<AdminBarListItem[]>(
-        () => dashboardAtRiskData.map((row) => ({
+        () => (dashboard ? buildAdminBillingAtRiskChartData(dashboard) : []).map((row) => ({
             key: row.label,
             label: row.label,
             value: row.amount,
             valueLabel: formatMajorAmount(row.amount),
         })),
-        [dashboardAtRiskData],
+        [dashboard],
     );
-    const tierMixListItems = useMemo(() => toShareItems(dashboardTierMixData.map((row) => ({ label: row.tier, count: row.count }))), [dashboardTierMixData]);
-    const statusMixListItems = useMemo(() => toShareItems(dashboardStatusMixData.map((row) => ({ label: row.status, count: row.count }))), [dashboardStatusMixData]);
+    const tierMixListItems = useMemo(
+        () => toShareItems((dashboard ? buildAdminBillingTierMixChartData(dashboard) : []).map((row) => ({ label: row.tier, count: row.count }))),
+        [dashboard],
+    );
+    const statusMixListItems = useMemo(
+        () => toShareItems((dashboard ? buildAdminBillingStatusMixChartData(dashboard) : []).map((row) => ({ label: row.status, count: row.count }))),
+        [dashboard],
+    );
 
-    const handleReconcile = async () => {
-        const suggestedSubscriptionId = (() => {
+    const scheduledCancellations = dashboard?.scheduled_cancellations ?? 0;
+    const graceSubscriptions = dashboard?.grace_subscriptions ?? metrics.graceSubscriptions;
+    const failedEvents = metrics.failedWebhookEvents;
+    const failedEventsAllTime = dashboard?.failed_webhook_events ?? failedEvents;
+    const unlinkedEvents = metrics.unlinkedWebhookEvents;
+    const syncIssues = failedEvents + unlinkedEvents;
+
+    const switchView = (view: RecordsView) => {
+        setRecordsView(view);
+        trackEvent('admin__billing_view--switch', { view });
+    };
+
+    const reviewEvents = (filter: 'failed' | 'unlinked') => {
+        setRecordsView('events');
+        setEventPage(1);
+        if (filter === 'failed') {
+            setSelectedEventStatuses(['failed']);
+            setSelectedEventLinks([]);
+        } else {
+            setSelectedEventStatuses([]);
+            setSelectedEventLinks(['unlinked']);
+        }
+        trackEvent(`admin__billing--review_${filter}`);
+    };
+
+    const hasSubscriptionFilters = selectedSubscriptionStatuses.length > 0;
+    const hasEventFilters = selectedEventStatuses.length > 0 || selectedEventLinks.length > 0;
+
+    const handleReconcile = async (presetSubscriptionId?: string) => {
+        let subscriptionId: string | null = presetSubscriptionId ?? null;
+
+        if (!presetSubscriptionId) {
             const trimmedSearch = searchValue.trim();
-            return trimmedSearch.startsWith('sub_') ? trimmedSearch : '';
-        })();
+            const subscriptionInput = await promptDialog({
+                title: 'Optional Paddle subscription ID',
+                message: 'Leave this blank to scan recent Paddle subscriptions. Enter a specific sub_... ID when you want to repair one subscription without hitting Paddle list rate limits.',
+                label: 'Subscription ID',
+                placeholder: 'sub_01...',
+                defaultValue: trimmedSearch.startsWith('sub_') ? trimmedSearch : '',
+                confirmLabel: 'Continue',
+                cancelLabel: 'Cancel',
+                validate: (value) => {
+                    const trimmedValue = value.trim();
+                    if (!trimmedValue) return null;
+                    return /^sub_[a-z0-9]+$/i.test(trimmedValue)
+                        ? null
+                        : 'Use a Paddle subscription ID that starts with sub_.';
+                },
+            });
+            if (subscriptionInput === null) return;
+            subscriptionId = subscriptionInput.trim() || null;
+        }
 
-        const subscriptionInput = await promptDialog({
-            title: 'Optional Paddle subscription ID',
-            message: 'Leave this blank to scan recent Paddle subscriptions. Enter a specific sub_... ID when you want to repair one subscription without hitting Paddle list rate limits.',
-            label: 'Subscription ID',
-            placeholder: 'sub_01...',
-            defaultValue: suggestedSubscriptionId,
-            confirmLabel: 'Continue',
-            cancelLabel: 'Cancel',
-            validate: (value) => {
-                const trimmedValue = value.trim();
-                if (!trimmedValue) return null;
-                return /^sub_[a-z0-9]+$/i.test(trimmedValue)
-                    ? null
-                    : 'Use a Paddle subscription ID that starts with sub_.';
-            },
-        });
-        if (subscriptionInput === null) return;
-
-        const subscriptionId = subscriptionInput.trim() || null;
         const confirmed = await confirmDialog({
             title: subscriptionId ? 'Reconcile Paddle subscription' : 'Reconcile Paddle subscriptions',
             message: subscriptionId
@@ -320,6 +347,7 @@ export const AdminBillingPage: React.FC = () => {
         });
         if (!confirmed) return;
 
+        trackEvent('admin__billing--reconcile', { scope: subscriptionId ? 'single' : 'scan' });
         setIsReconciling(true);
         const loadingToastId = showAppToast({
             tone: 'loading',
@@ -336,6 +364,8 @@ export const AdminBillingPage: React.FC = () => {
             });
             setLastReconcileSummary(result.summary);
             setLastReconcileSubscriptionId(subscriptionId);
+            setOpenSubscription(null);
+            setOpenEvent(null);
             await loadData();
 
             showAppToast({
@@ -362,15 +392,16 @@ export const AdminBillingPage: React.FC = () => {
     const reconcileNeedsAttention = Boolean(
         lastReconcileSummary && (lastReconcileSummary.failed > 0 || lastReconcileSummary.unresolved > 0),
     );
+    const showInitialLoading = isLoading && !hasLoaded;
 
     return (
         <AdminShell
             title="Billing"
-            description="Subscription state, webhook delivery and Paddle sync issues."
+            description="Keep Paddle subscriptions in sync, repair failed webhooks and watch recurring revenue."
             searchValue={searchValue}
-            onSearchValueChange={setSearchValue}
+            onSearchValueChange={handleSearchChange}
             dateRange={dateRange}
-            onDateRangeChange={setDateRange}
+            onDateRangeChange={handleDateRangeChange}
             actions={(
                 <>
                     <Button
@@ -378,6 +409,7 @@ export const AdminBillingPage: React.FC = () => {
                         onClick={() => void handleReconcile()}
                         disabled={isReconciling}
                         aria-busy={isReconciling || undefined}
+                        {...getAnalyticsDebugAttributes('admin__billing--reconcile')}
                     >
                         {isReconciling ? <SpinnerGap className="animate-spin" /> : <ArrowsClockwise weight="bold" />}
                         Reconcile Paddle
@@ -417,56 +449,381 @@ export const AdminBillingPage: React.FC = () => {
                     </Alert>
                 ) : null}
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Billing health">
+                    <AdminStatCard
+                        label="Sync issues"
+                        icon={<WarningCircle />}
+                        value={<AdminCountUpNumber value={syncIssues} />}
+                        hint={syncIssues > 0
+                            ? `${failedEvents} failed · ${unlinkedEvents} without a user`
+                            : 'Every webhook in range was processed and linked'}
+                        hintTone={failedEvents > 0 ? 'negative' : unlinkedEvents > 0 ? 'warning' : 'neutral'}
+                        isLoading={isLoading}
+                    >
+                        {syncIssues > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {failedEvents > 0 ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => reviewEvents('failed')}
+                                        {...getAnalyticsDebugAttributes('admin__billing--review_failed')}
+                                    >
+                                        Review failed
+                                    </Button>
+                                ) : null}
+                                {unlinkedEvents > 0 ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => reviewEvents('unlinked')}
+                                        {...getAnalyticsDebugAttributes('admin__billing--review_unlinked')}
+                                    >
+                                        Review unlinked
+                                    </Button>
+                                ) : null}
+                            </div>
+                        ) : failedEventsAllTime > failedEvents ? (
+                            <p className="text-xs text-muted-foreground tabular-nums">{failedEventsAllTime} failed outside this range</p>
+                        ) : null}
+                    </AdminStatCard>
+                    <AdminStatCard
+                        label="Current MRR"
+                        icon={<CurrencyCircleDollar />}
+                        value={mrrHeadline.value}
+                        hint={mrrHeadline.otherCurrencies.length > 0
+                            ? `Also ${mrrHeadline.otherCurrencies.join(', ')}`
+                            : `${mrrHeadline.subscriptions} running subscriptions`}
+                        isLoading={isLoading}
+                    />
                     <AdminStatCard
                         label="Active paid"
                         icon={<ShieldCheck />}
                         value={<AdminCountUpNumber value={dashboard?.active_subscriptions ?? metrics.activeSubscriptions} />}
-                        hint="MRR-eligible subscriptions after the latest billing sync."
+                        hint="Paying or trialing after the latest sync"
                         isLoading={isLoading}
                     />
                     <AdminStatCard
-                        label="Scheduled cancellations"
+                        label="Cancelling"
                         icon={<CreditCard />}
-                        value={<AdminCountUpNumber value={(dashboard?.scheduled_cancellations ?? 0) + (dashboard?.grace_subscriptions ?? metrics.graceSubscriptions)} />}
-                        hint="Includes subscriptions scheduled to cancel and grace-access accounts."
+                        value={<AdminCountUpNumber value={scheduledCancellations + graceSubscriptions} />}
+                        hint={`${scheduledCancellations} scheduled · ${graceSubscriptions} in grace`}
+                        hintTone={scheduledCancellations + graceSubscriptions > 0 ? 'warning' : 'neutral'}
                         isLoading={isLoading}
                     />
-                    <AdminStatCard
-                        label="Failed webhooks"
-                        icon={<WarningCircle />}
-                        value={<AdminCountUpNumber value={dashboard?.failed_webhook_events ?? metrics.failedWebhookEvents} />}
-                        hint="Events that need replay or payload inspection."
-                        hintTone={(dashboard?.failed_webhook_events ?? metrics.failedWebhookEvents) > 0 ? 'negative' : 'neutral'}
-                        isLoading={isLoading}
-                    />
-                    <AdminStatCard
-                        label="Unlinked events"
-                        icon={<LinkBreak />}
-                        value={<AdminCountUpNumber value={metrics.unlinkedWebhookEvents} />}
-                        hint="Webhook records that did not resolve to a TravelFlow user."
-                        hintTone={metrics.unlinkedWebhookEvents > 0 ? 'warning' : 'neutral'}
-                        isLoading={isLoading}
-                    />
-                </div>
+                </section>
+
+                <AdminSurfaceCard className="flex min-w-0 flex-col p-0">
+                    <Tabs value={recordsView} onValueChange={(value) => switchView(value as RecordsView)} className="gap-0">
+                        <div className="flex flex-col gap-3 border-b border-border px-4 pt-1 sm:flex-row sm:items-end sm:justify-between">
+                            <TabsList variant="line" aria-label="Billing records">
+                                <TabsTrigger value="subscriptions" className="py-3">
+                                    Subscriptions
+                                    <span className="tabular-nums text-muted-foreground">{rangedSubscriptions.length}</span>
+                                </TabsTrigger>
+                                <TabsTrigger value="events" className="py-3">
+                                    Webhook events
+                                    {failedEvents > 0 ? (
+                                        <AdminStatusBadge tone="danger" className="tabular-nums">{failedEvents} failed</AdminStatusBadge>
+                                    ) : (
+                                        <span className="tabular-nums text-muted-foreground">{rangedEvents.length}</span>
+                                    )}
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <TabsContent value="subscriptions" className="flex flex-col gap-3 pt-3">
+                            <div className="flex flex-wrap items-center gap-2 px-4">
+                                <AdminFilterMenu
+                                    label="Subscription status"
+                                    options={subscriptionStatusOptions}
+                                    selectedValues={selectedSubscriptionStatuses}
+                                    onSelectedValuesChange={(values) => {
+                                        setSelectedSubscriptionStatuses(values);
+                                        setSubscriptionPage(1);
+                                    }}
+                                />
+                                {hasSubscriptionFilters ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setSelectedSubscriptionStatuses([]);
+                                            setSubscriptionPage(1);
+                                        }}
+                                    >
+                                        Reset
+                                    </Button>
+                                ) : null}
+                            </div>
+
+                            {!showInitialLoading && filteredSubscriptions.length === 0 ? (
+                                <AdminEmptyState
+                                    className="mx-4 mb-4"
+                                    icon={<CreditCard />}
+                                    title="No subscriptions match"
+                                    description={searchValue.trim() || hasSubscriptionFilters
+                                        ? 'Clear the search or the status filter to see every subscription.'
+                                        : 'If a sandbox checkout already completed, replay the latest Paddle notification and confirm this deploy can receive simulation events.'}
+                                />
+                            ) : (
+                                <>
+                                    <Table className="min-w-[860px]">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="ps-4">Customer</TableHead>
+                                                <TableHead>Plan</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-end">Amount</TableHead>
+                                                <TableHead>Renews</TableHead>
+                                                <TableHead>Last event</TableHead>
+                                                <TableHead className="w-12 pe-4"><span className="sr-only">Actions</span></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {showInitialLoading ? (
+                                                <LoadingRow colSpan={7} label="Loading subscriptions…" />
+                                            ) : subscriptionPageSlice.items.map((record) => {
+                                                const lifecycle = resolveAdminBillingLifecycleStatus(record);
+                                                const appStatus = normalizeAdminBillingStatus(record.subscription_status);
+                                                const appStatusDiffers = appStatus !== 'none' && appStatus !== normalizeAdminBillingStatus(record.provider_status);
+                                                return (
+                                                    <TableRow key={record.user_id} className="align-top">
+                                                        <TableCell className="max-w-[280px] py-3 ps-4">
+                                                            {record.user_id ? (
+                                                                <Link
+                                                                    to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
+                                                                    className="block truncate font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                                >
+                                                                    {record.email || 'Unknown user'}
+                                                                </Link>
+                                                            ) : (
+                                                                <span className="block truncate font-medium text-foreground">{record.email || 'Unknown user'}</span>
+                                                            )}
+                                                            <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                                                                {record.provider_subscription_id || 'No subscription ID'}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="py-3 font-medium text-foreground">{humanizeTierKey(record.tier_key)}</TableCell>
+                                                        <TableCell className="py-3">
+                                                            <div className="flex flex-col items-start gap-1">
+                                                                <AdminBillingStatusBadge status={lifecycle} />
+                                                                {appStatusDiffers ? (
+                                                                    <span className="text-xs text-amber-700 dark:text-amber-200">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
+                                                                ) : null}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="py-3 text-end font-medium tabular-nums text-foreground">
+                                                            {formatAdminBillingAmount(record.amount, record.currency)}
+                                                        </TableCell>
+                                                        <TableCell className="py-3">
+                                                            <div className="tabular-nums text-foreground">{formatCompactDate(record.current_period_end)}</div>
+                                                            {record.grace_ends_at ? (
+                                                                <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">Grace until {formatCompactDate(record.grace_ends_at)}</div>
+                                                            ) : record.cancel_at ? (
+                                                                <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">Cancels {formatCompactDate(record.cancel_at)}</div>
+                                                            ) : null}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-[220px] py-3">
+                                                            <div className="truncate text-foreground">{humanizeAdminBillingEventType(record.last_event_type)}</div>
+                                                            <div className="mt-1 text-xs text-muted-foreground"><RelativeTime value={record.last_event_at} /></div>
+                                                        </TableCell>
+                                                        <TableCell className="py-2 pe-4 text-end">
+                                                            <DropdownMenu modal={false}>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon-sm"
+                                                                        aria-label={`Open actions for ${record.email || 'this subscription'}`}
+                                                                        data-tooltip="Subscription actions"
+                                                                    >
+                                                                        <DotsThreeVertical weight="bold" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end" className="min-w-[200px]">
+                                                                    <DropdownMenuItem
+                                                                        onSelect={() => {
+                                                                            setOpenSubscription(record);
+                                                                            trackEvent('admin__billing_subscription--details');
+                                                                        }}
+                                                                        {...getAnalyticsDebugAttributes('admin__billing_subscription--details')}
+                                                                    >
+                                                                        View details
+                                                                    </DropdownMenuItem>
+                                                                    {record.user_id ? (
+                                                                        <DropdownMenuItem
+                                                                            onSelect={() => {
+                                                                                trackEvent('admin__billing_subscription--open_user');
+                                                                                navigate(`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`);
+                                                                            }}
+                                                                            {...getAnalyticsDebugAttributes('admin__billing_subscription--open_user')}
+                                                                        >
+                                                                            Open user
+                                                                        </DropdownMenuItem>
+                                                                    ) : null}
+                                                                    {record.provider_subscription_id ? (
+                                                                        <>
+                                                                            <DropdownMenuSeparator />
+                                                                            <DropdownMenuItem
+                                                                                disabled={isReconciling}
+                                                                                onSelect={() => void handleReconcile(record.provider_subscription_id as string)}
+                                                                                {...getAnalyticsDebugAttributes('admin__billing_subscription--reconcile')}
+                                                                            >
+                                                                                Reconcile with Paddle
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    ) : null}
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                    <AdminPagination
+                                        className="px-4 pb-4"
+                                        page={subscriptionPageSlice.page}
+                                        pageSize={PAGE_SIZE}
+                                        totalItems={filteredSubscriptions.length}
+                                        onPageChange={setSubscriptionPage}
+                                        noun="subscriptions"
+                                    />
+                                </>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="events" className="flex flex-col gap-3 pt-3">
+                            <div className="flex flex-wrap items-center gap-2 px-4">
+                                <AdminFilterMenu
+                                    label="Webhook status"
+                                    options={eventStatusOptions}
+                                    selectedValues={selectedEventStatuses}
+                                    onSelectedValuesChange={(values) => {
+                                        setSelectedEventStatuses(values);
+                                        setEventPage(1);
+                                    }}
+                                />
+                                <AdminFilterMenu
+                                    label="User link"
+                                    options={eventLinkOptions}
+                                    selectedValues={selectedEventLinks}
+                                    onSelectedValuesChange={(values) => {
+                                        setSelectedEventLinks(values);
+                                        setEventPage(1);
+                                    }}
+                                />
+                                {hasEventFilters ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setSelectedEventStatuses([]);
+                                            setSelectedEventLinks([]);
+                                            setEventPage(1);
+                                        }}
+                                    >
+                                        Reset
+                                    </Button>
+                                ) : null}
+                            </div>
+
+                            {!showInitialLoading && filteredEvents.length === 0 ? (
+                                <AdminEmptyState
+                                    className="mx-4 mb-4"
+                                    icon={<WarningCircle />}
+                                    title="No webhook events match"
+                                    description={searchValue.trim() || hasEventFilters
+                                        ? 'Clear the search or the filters to see every stored event.'
+                                        : 'Paddle may never have reached the webhook endpoint, the notification was not sent for simulation traffic, or signature verification failed before the event could be stored.'}
+                                />
+                            ) : (
+                                <>
+                                    <Table className="min-w-[820px]">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="ps-4">Event</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>User</TableHead>
+                                                <TableHead>Occurred</TableHead>
+                                                <TableHead className="w-24 pe-4"><span className="sr-only">Actions</span></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {showInitialLoading ? (
+                                                <LoadingRow colSpan={5} label="Loading webhook events…" />
+                                            ) : eventPageSlice.items.map((record) => {
+                                                const isFailed = resolveAdminBillingWebhookStatusKey(record) === 'failed';
+                                                return (
+                                                    <TableRow key={record.event_id} className="align-top">
+                                                        <TableCell className="max-w-[300px] py-3 ps-4">
+                                                            <div className="truncate font-medium text-foreground">{humanizeAdminBillingEventType(record.event_type)}</div>
+                                                            <div className="mt-1 truncate font-mono text-xs text-muted-foreground">{record.event_id}</div>
+                                                        </TableCell>
+                                                        <TableCell className="max-w-[280px] py-3">
+                                                            <AdminBillingStatusBadge status={record.status} />
+                                                            {isFailed && record.error_message ? (
+                                                                <p className="mt-1 line-clamp-2 text-xs text-rose-700 dark:text-rose-300">{record.error_message}</p>
+                                                            ) : null}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-[240px] py-3">
+                                                            {record.user_id ? (
+                                                                <Link
+                                                                    to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
+                                                                    className="block truncate text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                                >
+                                                                    {record.user_email || 'Linked user'}
+                                                                </Link>
+                                                            ) : (
+                                                                <AdminStatusBadge tone="warning">No linked user</AdminStatusBadge>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="py-3 text-sm text-muted-foreground">
+                                                            <RelativeTime value={record.occurred_at} />
+                                                        </TableCell>
+                                                        <TableCell className="py-2 pe-4 text-end">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                aria-label={`Inspect ${humanizeAdminBillingEventType(record.event_type)} event ${record.event_id}`}
+                                                                onClick={() => {
+                                                                    setOpenEvent(record);
+                                                                    trackEvent('admin__billing_event--details');
+                                                                }}
+                                                                {...getAnalyticsDebugAttributes('admin__billing_event--details')}
+                                                            >
+                                                                Inspect
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                    <AdminPagination
+                                        className="px-4 pb-4"
+                                        page={eventPageSlice.page}
+                                        pageSize={PAGE_SIZE}
+                                        totalItems={filteredEvents.length}
+                                        onPageChange={setEventPage}
+                                        noun="events"
+                                    />
+                                </>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </AdminSurfaceCard>
 
                 {dashboard ? (
                     <>
-                        {dashboardCurrentMrrCards.length > 0 ? (
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                {dashboardCurrentMrrCards.map((card) => (
-                                    <AdminStatCard
-                                        key={`mrr-${card.currency}`}
-                                        label={`Current MRR (${card.currency})`}
-                                        value={card.amountLabel}
-                                        hint={`${card.subscriptions} running subscriptions`}
-                                    />
-                                ))}
-                            </div>
-                        ) : null}
-
-                        <div className="grid gap-4 xl:grid-cols-2">
-                            <AdminSurfaceCard className="flex flex-col gap-4">
+                        <div className="grid gap-4 xl:grid-cols-3">
+                            <AdminSurfaceCard className="flex flex-col gap-4 xl:col-span-2">
                                 <AdminSectionHeader
                                     title="Current MRR by tier"
                                     description="Monthly recurring revenue by tier and currency. Canceled access grace is excluded."
@@ -482,222 +839,60 @@ export const AdminBillingPage: React.FC = () => {
                                         ariaLabel="Bar chart of current monthly recurring revenue by tier and currency"
                                     />
                                 ) : (
-                                    <AdminEmptyState title="No MRR chart data yet" />
+                                    <AdminEmptyState title="No recurring revenue yet" description="MRR appears after the first paid subscription syncs." />
                                 )}
                             </AdminSurfaceCard>
 
                             <AdminSurfaceCard className="flex flex-col gap-4">
                                 <AdminSectionHeader
                                     title="At-risk revenue"
-                                    description="Revenue exposed to churn or collection risk, by status bucket."
+                                    description="Revenue exposed to churn or collection risk, by status."
                                 />
                                 {atRiskListItems.length > 0 ? (
                                     <AdminBarList items={atRiskListItems} color="var(--chart-5)" ariaLabel="At-risk revenue by status" />
                                 ) : (
-                                    <AdminEmptyState title="No at-risk revenue recorded in the selected data set" />
+                                    <AdminEmptyState title="No revenue at risk" />
                                 )}
                             </AdminSurfaceCard>
                         </div>
 
-                        <div className="grid gap-4 xl:grid-cols-2">
-                            <AdminSurfaceCard className="flex flex-col gap-4">
-                                <AdminSectionHeader title="Subscription mix" description="Paid subscriptions by plan tier." />
-                                {tierMixListItems.length > 0 ? (
-                                    <AdminBarList items={tierMixListItems} ariaLabel="Paid subscriptions by plan tier" />
-                                ) : (
-                                    <AdminEmptyState title="No subscription mix data yet" />
-                                )}
-                            </AdminSurfaceCard>
-
-                            <AdminSurfaceCard className="flex flex-col gap-4">
-                                <AdminSectionHeader title="Status mix" description="Billing lifecycle across synced subscriptions." />
-                                {statusMixListItems.length > 0 ? (
-                                    <AdminBarList items={statusMixListItems} ariaLabel="Subscriptions by billing lifecycle status" />
-                                ) : (
-                                    <AdminEmptyState title="No status mix data yet" />
-                                )}
-                            </AdminSurfaceCard>
-                        </div>
+                        <AdminSurfaceCard className="flex flex-col gap-4">
+                            <AdminSectionHeader title="Subscription mix" description="Synced subscriptions by plan and by billing status." />
+                            <div className="grid gap-6 md:grid-cols-2">
+                                <div className="flex flex-col gap-2">
+                                    <h3 className="text-xs font-medium text-muted-foreground">By plan</h3>
+                                    {tierMixListItems.length > 0 ? (
+                                        <AdminBarList items={tierMixListItems} ariaLabel="Paid subscriptions by plan tier" />
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">No paid subscriptions yet.</p>
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <h3 className="text-xs font-medium text-muted-foreground">By status</h3>
+                                    {statusMixListItems.length > 0 ? (
+                                        <AdminBarList items={statusMixListItems} ariaLabel="Subscriptions by billing lifecycle status" />
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">No synced subscriptions yet.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </AdminSurfaceCard>
                     </>
                 ) : null}
-
-                <div className="flex flex-wrap items-center gap-2">
-                    <AdminFilterMenu
-                        label="Subscription status"
-                        options={subscriptionStatusOptions}
-                        selectedValues={selectedSubscriptionStatuses}
-                        onSelectedValuesChange={setSelectedSubscriptionStatuses}
-                    />
-                    <AdminFilterMenu
-                        label="Webhook status"
-                        options={eventStatusOptions}
-                        selectedValues={selectedEventStatuses}
-                        onSelectedValuesChange={setSelectedEventStatuses}
-                    />
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-3 p-0">
-                        <AdminSectionHeader
-                            className="px-4 pt-4"
-                            title="Subscriptions"
-                            description="Current billing state per user after webhook sync."
-                            actions={<span className="text-sm tabular-nums text-muted-foreground">{filteredSubscriptions.length} rows</span>}
-                        />
-
-                        {filteredSubscriptions.length === 0 ? (
-                            <AdminEmptyState
-                                className="mx-4 mb-4"
-                                icon={<CreditCard />}
-                                title="No billing subscriptions found for this filter set"
-                                description={searchValue.trim() || selectedSubscriptionStatuses.length > 0
-                                    ? undefined
-                                    : 'If a sandbox checkout already completed, replay the latest Paddle notification and confirm this deploy can receive simulation events.'}
-                            />
-                        ) : (
-                            <Table className="min-w-[860px]">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="ps-4 text-muted-foreground">User</TableHead>
-                                        <TableHead className="text-muted-foreground">Plan</TableHead>
-                                        <TableHead className="text-muted-foreground">Status</TableHead>
-                                        <TableHead className="text-muted-foreground">Amount</TableHead>
-                                        <TableHead className="text-muted-foreground">Renews</TableHead>
-                                        <TableHead className="pe-4 text-muted-foreground">Last event</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredSubscriptions.map((record) => (
-                                        <TableRow key={record.user_id} className="align-top hover:bg-muted/50">
-                                            <TableCell className="max-w-[260px] py-3 ps-4">
-                                                <div className="min-w-0">
-                                                    {record.user_id ? (
-                                                        <Link
-                                                            to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                            className="block truncate font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
-                                                        >
-                                                            {record.email || 'Unknown user'}
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="block truncate font-medium text-foreground">{record.email || 'Unknown user'}</span>
-                                                    )}
-                                                    <div className="mt-1">
-                                                        <CopyableUuid value={record.user_id} textClassName="text-xs text-muted-foreground" hintClassName="text-[10px]" />
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-3">
-                                                <div className="font-medium text-foreground">{humanizeTierKey(record.tier_key)}</div>
-                                                <div className="mt-1 font-mono text-xs text-muted-foreground">{record.provider_price_id || 'No price id'}</div>
-                                            </TableCell>
-                                            <TableCell className="py-3">
-                                                <div className="flex flex-col gap-2">
-                                                    <BillingStatusBadge status={resolveAdminBillingLifecycleStatus(record)} />
-                                                    <span className="text-xs text-muted-foreground">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-3">
-                                                <div className="font-medium tabular-nums text-foreground">{formatAdminBillingAmount(record.amount, record.currency)}</div>
-                                                <div className="mt-1 text-xs text-muted-foreground">{record.provider || 'Provider unknown'}</div>
-                                            </TableCell>
-                                            <TableCell className="py-3">
-                                                <div className="tabular-nums text-foreground">{formatCompactDate(record.current_period_end)}</div>
-                                                {record.grace_ends_at ? (
-                                                    <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">Grace until {formatCompactDate(record.grace_ends_at)}</div>
-                                                ) : null}
-                                            </TableCell>
-                                            <TableCell className="max-w-[240px] py-3 pe-4">
-                                                <div className="text-foreground">{humanizeEventType(record.last_event_type)}</div>
-                                                <div className="mt-1 text-xs tabular-nums text-muted-foreground">{formatDateTime(record.last_event_at)}</div>
-                                                <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">{record.provider_subscription_id || 'No subscription id'}</div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-3">
-                        <AdminSectionHeader
-                            title="Webhook events"
-                            description="Recent Paddle delivery records stored for replay and debugging."
-                            actions={<span className="text-sm tabular-nums text-muted-foreground">{filteredEvents.length} rows</span>}
-                        />
-
-                        {filteredEvents.length === 0 ? (
-                            <AdminEmptyState
-                                icon={<WarningCircle />}
-                                title="No billing webhook events found for this filter set"
-                                description={searchValue.trim() || selectedEventStatuses.length > 0
-                                    ? undefined
-                                    : 'Paddle may never have reached the webhook endpoint, the notification was not sent for simulation traffic, or signature verification failed before the event could be stored.'}
-                            />
-                        ) : (
-                            <div className="divide-y divide-border border-t border-border">
-                                {filteredEvents.map((record) => (
-                                    <article key={record.event_id} className="py-4 last:pb-0">
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="font-medium text-foreground">{humanizeEventType(record.event_type)}</span>
-                                                <BillingStatusBadge status={record.status} />
-                                            </div>
-                                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                                <span className="tabular-nums">{formatDateTime(record.occurred_at)}</span>
-                                                <span>{record.provider}</span>
-                                                {record.user_email && record.user_id ? (
-                                                    <Link
-                                                        to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                        className="min-w-0 truncate font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
-                                                    >
-                                                        {record.user_email}
-                                                    </Link>
-                                                ) : (
-                                                    <span>No linked user</span>
-                                                )}
-                                            </div>
-                                            <div className="rounded-md border border-border bg-secondary px-3 py-2">
-                                                <div className="text-xs font-medium text-muted-foreground">Event ID</div>
-                                                <div className="mt-1 break-all font-mono text-xs leading-5 text-foreground">
-                                                    {record.event_id}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {record.error_message ? (
-                                            <div className={webhookMessageClassName(record.status)}>
-                                                <p className="text-xs font-medium opacity-80">{webhookMessageLabel(record.status)}</p>
-                                                <p className="mt-1 break-words">{record.error_message}</p>
-                                            </div>
-                                        ) : null}
-
-                                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                                            <div className="tabular-nums">
-                                                <span className="font-medium text-foreground">Processed:</span> {formatDateTime(record.processed_at)}
-                                            </div>
-                                            <div className="min-w-0 truncate">
-                                                <span className="font-medium text-foreground">User ID:</span>{' '}
-                                                {record.user_id ? <CopyableUuid value={record.user_id} textClassName="text-xs text-muted-foreground" hintClassName="text-[10px]" /> : '—'}
-                                            </div>
-                                        </div>
-
-                                        {record.payload ? (
-                                            <details className="mt-3 rounded-md border border-border bg-secondary px-3 py-2">
-                                                <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
-                                                    Payload JSON
-                                                </summary>
-                                                <pre className="mt-3 max-h-56 overflow-auto rounded-md border border-border bg-slate-900 p-3 text-[10px] text-slate-100 dark:bg-slate-950">
-                                                    {formatPayloadJson(record.payload)}
-                                                </pre>
-                                            </details>
-                                        ) : null}
-                                    </article>
-                                ))}
-                            </div>
-                        )}
-                    </AdminSurfaceCard>
-                </div>
             </div>
+
+            <AdminBillingSubscriptionSheet
+                record={openSubscription}
+                onOpenChange={(open) => { if (!open) setOpenSubscription(null); }}
+                isReconciling={isReconciling}
+                onReconcile={(subscriptionId) => void handleReconcile(subscriptionId)}
+            />
+            <AdminBillingWebhookEventSheet
+                record={openEvent}
+                onOpenChange={(open) => { if (!open) setOpenEvent(null); }}
+                isReconciling={isReconciling}
+                onReconcile={(subscriptionId) => void handleReconcile(subscriptionId)}
+            />
         </AdminShell>
     );
 };

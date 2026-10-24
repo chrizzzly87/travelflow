@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import { cn } from '../../lib/utils';
 
-const copyToClipboard = async (value: string): Promise<boolean> => {
+/** Copies text, falling back to a hidden textarea where the Clipboard API is unavailable. */
+export const copyTextToClipboard = async (value: string): Promise<boolean> => {
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
         try {
             await navigator.clipboard.writeText(value);
@@ -81,7 +82,7 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
             event.stopPropagation();
         }
         selectText();
-        const didCopy = await copyToClipboard(value);
+        const didCopy = await copyTextToClipboard(value);
         if (didCopy) setCopied(true);
     };
 
@@ -105,7 +106,7 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
                 'hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50',
                 className
             )}
-            title={copied ? 'Copied' : 'Click to select and copy UUID'}
+            data-tooltip={copied ? 'Copied' : 'Copy'}
             aria-label={ariaLabel || `Copy UUID ${value}`}
         >
             <span ref={textRef} className={cn('min-w-0 select-all font-mono', textClassName)}>

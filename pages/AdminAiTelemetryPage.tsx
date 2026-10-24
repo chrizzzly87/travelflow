@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
-import { ArrowLeft } from '@phosphor-icons/react';
-import { Area, Bar, CartesianGrid, Cell, ComposedChart, Pie, PieChart, XAxis, YAxis } from 'recharts';
-import { AdminBarList, type AdminBarListItem } from '../components/admin/AdminBarList';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { ArrowRight, X } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
+import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from 'recharts';
+import { AdminBarList } from '../components/admin/AdminBarList';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
@@ -12,6 +14,11 @@ import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminBarChart } from '../components/admin/AdminBarChart';
+import { AdminPagination } from '../components/admin/AdminPagination';
+import { AdminFilterMenu } from '../components/admin/AdminFilterMenu';
+import { AdminSortHeaderButton } from '../components/admin/AdminDataTable';
+import { ADMIN_TABLE_SORTED_CELL_CLASS, ADMIN_TABLE_SORTED_HEADER_CLASS } from '../components/admin/AdminDataTableUtils';
+import { formatAdminAbsoluteTime, formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
 import { Button } from '../components/ui/button';
 import {
     ChartContainer,
@@ -21,6 +28,7 @@ import {
     type ChartConfig,
 } from '../components/ui/chart';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { cn } from '../lib/utils';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -30,11 +38,13 @@ import { useAuth } from '../hooks/useAuth';
 import {
     buildFailureCodeBarListData,
     buildCurrentMonthDailyCostHistory,
-    buildProviderCostPerSuccessChartData,
-    buildProviderDonutEntries,
-    buildProviderModelDonutEntries,
-    buildProviderSuccessRateChartData,
-    type TelemetryDonutColor,
+    buildProviderTableRows,
+    formatTelemetryUsd,
+    pickTelemetryLeaders,
+    sortTelemetryModels,
+    type TelemetryLeaderKind,
+    type TelemetryModelSortColumn,
+    type TelemetrySortDirection,
 } from '../services/adminAiTelemetryChartData';
 
 type TelemetrySourceFilter = 'all' | 'create_trip' | 'benchmark';
@@ -143,38 +153,16 @@ const TELEMETRY_WINDOW_OPTIONS: Array<{ value: number; label: string }> = [
     { value: 24 * 30, label: 'Last 30d' },
 ];
 
-const RANK_LIMIT_OPTIONS: Array<{ value: number; label: string }> = [
-    { value: 3, label: 'Top 3' },
-    { value: 5, label: 'Top 5' },
-];
-
-const DONUT_COLOR_DOT_CLASS: Record<TelemetryDonutColor, string> = {
-    blue: 'bg-blue-500',
-    cyan: 'bg-cyan-500',
-    indigo: 'bg-indigo-500',
-    violet: 'bg-violet-500',
-    fuchsia: 'bg-fuchsia-500',
-    rose: 'bg-rose-500',
-    emerald: 'bg-emerald-500',
-    amber: 'bg-amber-500',
-};
-
-// Tremor colour names from the chart-data service, as fills. The matching `bg-*-500`
-// classes above make Tailwind emit these theme variables.
-const DONUT_COLOR_FILL: Record<TelemetryDonutColor, string> = {
-    blue: 'var(--color-blue-500)',
-    cyan: 'var(--color-cyan-500)',
-    indigo: 'var(--color-indigo-500)',
-    violet: 'var(--color-violet-500)',
-    fuchsia: 'var(--color-fuchsia-500)',
-    rose: 'var(--color-rose-500)',
-    emerald: 'var(--color-emerald-500)',
-    amber: 'var(--color-amber-500)',
-};
+const DEFAULT_WINDOW_HOURS = 24 * 7;
+// The telemetry endpoint reads at most this many rows per request (ai-benchmark.ts).
+const TELEMETRY_ROW_CAP = 2000;
+const MODEL_PAGE_SIZE = 10;
+const RECENT_PAGE_SIZE = 20;
 
 const CALL_TREND_COLORS = { Success: 'var(--chart-2)', Failed: 'var(--chart-5)' } as const;
-const PROVIDER_VOLUME_COLORS = { Calls: 'var(--chart-1)', Failures: 'var(--chart-5)' } as const;
-const PROVIDER_SUCCESS_COLORS = { 'Success rate': 'var(--chart-2)' } as const;
+
+type TrendTab = 'calls' | 'success' | 'latency' | 'cost';
+type BreakdownTab = 'models' | 'providers';
 
 const formatDuration = (ms: number | null | undefined): string => {
     if (!Number.isFinite(ms)) return '—';
@@ -183,10 +171,7 @@ const formatDuration = (ms: number | null | undefined): string => {
     return `${(value / 1000).toFixed(2)} s`;
 };
 
-const formatUsd = (value: number | null | undefined): string => {
-    if (!Number.isFinite(value)) return '—';
-    return `$${Number(value).toFixed(6)}`;
-};
+const formatUsd = formatTelemetryUsd;
 
 const formatPercent = (value: number | null | undefined): string => {
     if (!Number.isFinite(value)) return '—';
@@ -199,12 +184,6 @@ const formatCallCount = (value: number | null | undefined): string => {
     return `${count.toLocaleString()} ${count === 1 ? 'call' : 'calls'}`;
 };
 
-const formatTimestamp = (value?: string | null): string => {
-    if (!value) return '—';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return '—';
-    return new Date(parsed).toLocaleString();
-};
 
 const ProviderLabel: React.FC<{
     provider: string;
@@ -231,18 +210,6 @@ const ProviderLabel: React.FC<{
                     / {model}
                 </span>
             ) : null}
-        </span>
-    );
-};
-
-const compactModelLabelNode = (provider: string, model: string): React.ReactNode => {
-    const metadata = getAiProviderMetadata(provider);
-    return (
-        <span className="inline-flex min-w-0 max-w-[270px] items-center gap-1.5">
-            <AiProviderLogo provider={provider} model={model} size={12} />
-            <span className="truncate text-foreground" title={`${metadata.shortName} / ${model}`}>
-                {metadata.shortName} / {model}
-            </span>
         </span>
     );
 };
@@ -352,17 +319,48 @@ const TelemetrySeriesChart = <TDatum extends Record<string, unknown>>({
     );
 };
 
-const TelemetryEmpty: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <AdminEmptyState className="py-6" title={children} />
+const TelemetryEmpty: React.FC<{ children: React.ReactNode; description?: React.ReactNode }> = ({ children, description }) => (
+    <AdminEmptyState className="py-6" title={children} description={description} />
 );
+
+const LEADER_LABELS: Record<TelemetryLeaderKind, string> = {
+    fastest: 'Fastest',
+    cheapest: 'Cheapest',
+    bestValue: 'Best value',
+    mostReliable: 'Most reliable',
+};
+
+const MODEL_COLUMNS: ReadonlyArray<{ column: TelemetryModelSortColumn; label: string; numeric: boolean; tooltip?: string }> = [
+    { column: 'model', label: 'Model', numeric: false },
+    { column: 'total', label: 'Calls', numeric: true },
+    { column: 'successRate', label: 'Success', numeric: true },
+    { column: 'averageLatencyMs', label: 'Avg duration', numeric: true, tooltip: 'Mean duration of successful calls.' },
+    { column: 'averageCostUsd', label: 'Cost / success', numeric: true, tooltip: 'Mean estimated cost of a successful call.' },
+    { column: 'costPerSecondUsd', label: 'Cost / sec', numeric: true, tooltip: 'Cost per second of generation. Lower is better value.' },
+    { column: 'totalCostUsd', label: 'Total cost', numeric: true },
+];
+
+const RECENT_STATUS_OPTIONS = [
+    { value: 'success', label: 'Success' },
+    { value: 'failed', label: 'Failed' },
+] as const;
+
+const formatLeaderValue = (kind: TelemetryLeaderKind, model: AiTelemetryModelPoint): string => {
+    switch (kind) {
+    case 'fastest': return formatDuration(model.averageLatencyMs);
+    case 'cheapest': return formatUsd(model.averageCostUsd);
+    case 'bestValue': return `${formatUsd(model.costPerSecondUsd)} / sec`;
+    case 'mostReliable': return formatPercent(model.successRate);
+    default: return '';
+    }
+};
 
 export const AdminAiTelemetryPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
     const [accessToken, setAccessToken] = useState<string | null>(null);
-    const [telemetryWindowHours, setTelemetryWindowHours] = useState<number>(24 * 7);
+    const [telemetryWindowHours, setTelemetryWindowHours] = useState<number>(DEFAULT_WINDOW_HOURS);
     const [telemetrySource, setTelemetrySource] = useState<TelemetrySourceFilter>('all');
     const [telemetryProviderFilter, setTelemetryProviderFilter] = useState<string>('all');
-    const [rankLimit, setRankLimit] = useState<number>(5);
 
     const [telemetryLoading, setTelemetryLoading] = useState(false);
     const [telemetryError, setTelemetryError] = useState<string | null>(null);
@@ -375,11 +373,14 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const [telemetryCommentTotal, setTelemetryCommentTotal] = useState(0);
     const [telemetryCommentGroups, setTelemetryCommentGroups] = useState<AiTelemetryRunCommentGroup[]>([]);
     const [telemetryProviderOptions, setTelemetryProviderOptions] = useState<string[]>([]);
-    const [fastestModels, setFastestModels] = useState<AiTelemetryModelPoint[]>([]);
-    const [cheapestModels, setCheapestModels] = useState<AiTelemetryModelPoint[]>([]);
-    const [bestValueModels, setBestValueModels] = useState<AiTelemetryModelPoint[]>([]);
-    const [selectedProviderShare, setSelectedProviderShare] = useState<string | null>(null);
-    const [selectedModelShare, setSelectedModelShare] = useState<string | null>(null);
+
+    const [trendTab, setTrendTab] = useState<TrendTab>('calls');
+    const [breakdownTab, setBreakdownTab] = useState<BreakdownTab>('models');
+    const [modelSortColumn, setModelSortColumn] = useState<TelemetryModelSortColumn>('total');
+    const [modelSortDirection, setModelSortDirection] = useState<TelemetrySortDirection>('desc');
+    const [modelPage, setModelPage] = useState(1);
+    const [recentStatusFilters, setRecentStatusFilters] = useState<string[]>([]);
+    const [recentPage, setRecentPage] = useState(1);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -452,9 +453,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryRecent(Array.isArray(payload.recent) ? payload.recent : []);
             setTelemetryCommentTotal(Number(payload.comments?.total) || 0);
             setTelemetryCommentGroups(Array.isArray(payload.comments?.groups) ? payload.comments?.groups : []);
-            setFastestModels(Array.isArray(payload.rankings?.fastest) ? payload.rankings?.fastest : []);
-            setCheapestModels(Array.isArray(payload.rankings?.cheapest) ? payload.rankings?.cheapest : []);
-            setBestValueModels(Array.isArray(payload.rankings?.bestValue) ? payload.rankings?.bestValue : []);
+            setModelPage(1);
+            setRecentPage(1);
 
             const providerOptions = Array.isArray(payload.availableProviders) ? [...payload.availableProviders] : [];
             providerOptions.sort((left, right) => {
@@ -476,9 +476,6 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryRecent([]);
             setTelemetryCommentTotal(0);
             setTelemetryCommentGroups([]);
-            setFastestModels([]);
-            setCheapestModels([]);
-            setBestValueModels([]);
         } finally {
             setTelemetryLoading(false);
         }
@@ -489,115 +486,29 @@ export const AdminAiTelemetryPage: React.FC = () => {
         void loadTelemetry();
     }, [accessToken, loadTelemetry]);
 
-    useEffect(() => {
-        if (!selectedProviderShare) return;
-        const providerStillVisible = telemetryProviders.some((row) => row.provider === selectedProviderShare);
-        if (!providerStillVisible) {
-            setSelectedProviderShare(null);
-            setSelectedModelShare(null);
-        }
-    }, [selectedProviderShare, telemetryProviders]);
+    const hasActiveFilters = telemetryWindowHours !== DEFAULT_WINDOW_HOURS
+        || telemetrySource !== 'all'
+        || telemetryProviderFilter !== 'all';
 
-    const successfulModels = useMemo(
-        () => telemetryModels.filter((row) => row.success > 0),
-        [telemetryModels],
-    );
+    const resetFilters = () => {
+        trackEvent('admin__ai_telemetry--reset_filters');
+        setTelemetryWindowHours(DEFAULT_WINDOW_HOURS);
+        setTelemetrySource('all');
+        setTelemetryProviderFilter('all');
+    };
 
-    const successRateLeaders = useMemo(() => {
-        return Array.from(successfulModels)
-            .sort((left, right) => right.successRate - left.successRate || right.total - left.total)
-            .slice(0, rankLimit);
-    }, [rankLimit, successfulModels]);
-
-    const limitedFastest = useMemo(
-        () => fastestModels.filter((row) => row.success > 0).slice(0, rankLimit),
-        [fastestModels, rankLimit],
-    );
-    const limitedCheapest = useMemo(
-        () => cheapestModels.filter((row) => row.success > 0).slice(0, rankLimit),
-        [cheapestModels, rankLimit],
-    );
-    const limitedBestValue = useMemo(
-        () => bestValueModels.filter((row) => row.success > 0).slice(0, rankLimit),
-        [bestValueModels, rankLimit],
-    );
-
-    const fastestBarListData = useMemo(() => {
-        return limitedFastest.map((model) => ({
-            key: model.key,
-            name: compactModelLabelNode(model.provider, model.model),
-            value: model.averageLatencyMs || 0,
-        }));
-    }, [limitedFastest]);
-
-    const cheapestBarListData = useMemo(() => {
-        return limitedCheapest.map((model) => ({
-            key: model.key,
-            name: compactModelLabelNode(model.provider, model.model),
-            value: model.averageCostUsd || 0,
-        }));
-    }, [limitedCheapest]);
-
-    const bestValueBarListData = useMemo(() => {
-        return limitedBestValue.map((model) => ({
-            key: model.key,
-            name: compactModelLabelNode(model.provider, model.model),
-            value: model.costPerSecondUsd || 0,
-        }));
-    }, [limitedBestValue]);
-
-    const successRateBarListData = useMemo(() => {
-        return successRateLeaders.map((model) => ({
-            key: model.key,
-            name: compactModelLabelNode(model.provider, model.model),
-            value: model.successRate,
-        }));
-    }, [successRateLeaders]);
-
-    const callsTrendChartData = useMemo(() => {
-        return telemetrySeries.map((point) => ({
-            Time: new Date(point.bucketStart).toLocaleString([], {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-            }),
-            Success: point.success,
-            Failed: point.failed,
-        }));
-    }, [telemetrySeries]);
-
-    const successRateTrendChartData = useMemo(() => {
-        return telemetrySeries.map((point) => ({
-            Time: new Date(point.bucketStart).toLocaleString([], {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-            }),
-            'Success rate': point.total > 0 ? Number(((point.success / point.total) * 100).toFixed(1)) : 0,
-        }));
-    }, [telemetrySeries]);
-
-    const latencyTrendChartData = useMemo(() => {
-        return telemetrySeries.map((point) => ({
-            Time: new Date(point.bucketStart).toLocaleString([], {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-            }),
-            'Avg latency (ms)': point.averageLatencyMs || 0,
-        }));
-    }, [telemetrySeries]);
-
-    const costTrendChartData = useMemo(() => {
-        return telemetrySeries.map((point) => ({
-            Time: new Date(point.bucketStart).toLocaleString([], {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-            }),
-            'Total cost (USD)': point.totalCostUsd,
-        }));
-    }, [telemetrySeries]);
+    const trendChartData = useMemo(() => telemetrySeries.map((point) => ({
+        Time: new Date(point.bucketStart).toLocaleString([], {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+        }),
+        Success: point.success,
+        Failed: point.failed,
+        'Success rate': point.total > 0 ? Number(((point.success / point.total) * 100).toFixed(1)) : 0,
+        'Avg latency': point.averageLatencyMs || 0,
+        Cost: point.totalCostUsd,
+    })), [telemetrySeries]);
 
     const monthlyCostHistorySeries = useMemo(
         () => buildCurrentMonthDailyCostHistory(monthlyCostSeries),
@@ -616,404 +527,293 @@ export const AdminAiTelemetryPage: React.FC = () => {
         return monthlyCostHistorySeries.reduce((sum, item) => sum + item.cost, 0);
     }, [monthlyCostHistorySeries]);
 
-    const providerVolumeChartData = useMemo(() => {
-        return Array.from(telemetryProviders)
-            .sort((left, right) => right.total - left.total)
-            .slice(0, 10)
-            .map((row) => ({
-                providerId: row.provider,
-                Provider: getAiProviderMetadata(row.provider).shortName,
-                Calls: row.total,
-                Failures: row.failed,
-            }));
-    }, [telemetryProviders]);
-
-    const providerDonutEntries = useMemo(
-        () => buildProviderDonutEntries(telemetryProviders, 8),
-        [telemetryProviders],
-    );
-
-    const providerModelDonutEntries = useMemo(() => {
-        if (!selectedProviderShare) return [];
-        return buildProviderModelDonutEntries(telemetryModels, selectedProviderShare, 10);
-    }, [selectedProviderShare, telemetryModels]);
-
-    const activeDonutEntries = selectedProviderShare ? providerModelDonutEntries : providerDonutEntries;
-
-    useEffect(() => {
-        if (!selectedProviderShare || !selectedModelShare) return;
-        const modelStillVisible = providerModelDonutEntries.some((entry) => entry.model === selectedModelShare);
-        if (!modelStillVisible) {
-            setSelectedModelShare(null);
-        }
-    }, [providerModelDonutEntries, selectedModelShare, selectedProviderShare]);
-
-    const providerShareDonutData = useMemo(() => {
-        return activeDonutEntries.map((entry) => ({
-            key: entry.key,
-            Segment: selectedProviderShare
-                ? entry.label
-                : (entry.provider === 'other' ? entry.label : getAiProviderMetadata(entry.provider).shortName),
-            Calls: entry.calls,
-            provider: entry.provider,
-            model: entry.model,
-        }));
-    }, [activeDonutEntries, selectedProviderShare]);
-
-    const providerShareChartConfig = useMemo<ChartConfig>(
-        () => Object.fromEntries(activeDonutEntries.map((entry) => [
-            entry.key,
-            { label: entry.label, color: DONUT_COLOR_FILL[entry.color] },
-        ])),
-        [activeDonutEntries],
-    );
-
-    const providerSuccessRateChartData = useMemo(
-        () => buildProviderSuccessRateChartData(telemetryProviders, 8).map((row) => ({
-            providerId: row.Provider,
-            ...row,
-            Provider: getAiProviderMetadata(row.Provider).shortName,
-        })),
-        [telemetryProviders],
-    );
-
-    const providerCostPerSuccessChartData = useMemo(
-        () => buildProviderCostPerSuccessChartData(telemetryProviders, 8).map((row) => ({
-            providerId: row.Provider,
-            ...row,
-            Provider: getAiProviderMetadata(row.Provider).shortName,
-        })),
-        [telemetryProviders],
-    );
-
     const failureCodeBarListData = useMemo(
         () => buildFailureCodeBarListData(telemetryRecent, 8),
         [telemetryRecent],
     );
 
-    const selectedProviderStats = useMemo(() => {
-        if (!selectedProviderShare) return null;
-        return telemetryProviders.find((row) => row.provider === selectedProviderShare) || null;
-    }, [selectedProviderShare, telemetryProviders]);
+    const leaders = useMemo(() => pickTelemetryLeaders(telemetryModels), [telemetryModels]);
 
-    const selectedModelStats = useMemo(() => {
-        if (!selectedProviderShare || !selectedModelShare) return null;
-        return telemetryModels.find((row) => row.provider === selectedProviderShare && row.model === selectedModelShare) || null;
-    }, [selectedModelShare, selectedProviderShare, telemetryModels]);
+    const sortedModels = useMemo(
+        () => sortTelemetryModels(telemetryModels, modelSortColumn, modelSortDirection),
+        [modelSortColumn, modelSortDirection, telemetryModels],
+    );
+    const modelPageCount = Math.max(1, Math.ceil(sortedModels.length / MODEL_PAGE_SIZE));
+    const safeModelPage = Math.min(modelPage, modelPageCount);
+    const pagedModels = sortedModels.slice((safeModelPage - 1) * MODEL_PAGE_SIZE, safeModelPage * MODEL_PAGE_SIZE);
+    const totalModelCalls = useMemo(() => telemetryModels.reduce((sum, row) => sum + row.total, 0), [telemetryModels]);
 
-    const handleProviderShareSliceSelect = useCallback((value: unknown) => {
-        if (!value || typeof value !== 'object') {
-            setSelectedModelShare(null);
-            return;
+    const providerRows = useMemo(() => buildProviderTableRows(telemetryProviders), [telemetryProviders]);
+
+    const filteredRecent = useMemo(
+        () => (recentStatusFilters.length === 0
+            ? telemetryRecent
+            : telemetryRecent.filter((row) => recentStatusFilters.includes(row.status))),
+        [recentStatusFilters, telemetryRecent],
+    );
+    const recentPageCount = Math.max(1, Math.ceil(filteredRecent.length / RECENT_PAGE_SIZE));
+    const safeRecentPage = Math.min(recentPage, recentPageCount);
+    const pagedRecent = filteredRecent.slice((safeRecentPage - 1) * RECENT_PAGE_SIZE, safeRecentPage * RECENT_PAGE_SIZE);
+    const recentStatusOptions = useMemo(() => RECENT_STATUS_OPTIONS.map((option) => ({
+        value: option.value,
+        label: option.label,
+        count: telemetryRecent.filter((row) => row.status === option.value).length,
+    })), [telemetryRecent]);
+
+    const handleModelSort = (column: TelemetryModelSortColumn) => {
+        if (modelSortColumn === column) {
+            setModelSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setModelSortColumn(column);
+            // Counts and rates read best high-to-low; durations and costs low-to-high.
+            setModelSortDirection(column === 'total' || column === 'successRate' || column === 'totalCostUsd' ? 'desc' : 'asc');
         }
-        const payload = value as { provider?: unknown; model?: unknown };
-        const provider = typeof payload.provider === 'string' ? payload.provider : null;
-        const model = typeof payload.model === 'string' ? payload.model : null;
+        setModelPage(1);
+    };
 
-        if (!provider || provider === 'other') return;
+    const focusLeader = (kind: TelemetryLeaderKind, column: TelemetryModelSortColumn, direction: TelemetrySortDirection) => {
+        trackEvent('admin__ai_telemetry--leader', { leader: kind });
+        setBreakdownTab('models');
+        setModelSortColumn(column);
+        setModelSortDirection(direction);
+        setModelPage(1);
+    };
 
-        if (!selectedProviderShare) {
-            setSelectedProviderShare(provider);
-            setSelectedModelShare(null);
-            return;
-        }
+    const focusProvider = (provider: string) => {
+        trackEvent('admin__ai_telemetry--focus_provider', { provider });
+        setTelemetryProviderFilter(provider);
+        setBreakdownTab('models');
+    };
 
-        if (selectedProviderShare !== provider) {
-            setSelectedProviderShare(provider);
-            setSelectedModelShare(null);
-            return;
-        }
-
-        if (model) {
-            setSelectedModelShare((current) => (current === model ? null : model));
-        }
-    }, [selectedProviderShare]);
-
-    const modelVolumeBarListData = useMemo(() => {
-        return Array.from(telemetryModels)
-            .sort((left, right) => right.total - left.total)
-            .slice(0, 12)
-            .map((row) => ({
-                key: row.key,
-                name: compactModelLabelNode(row.provider, row.model),
-                value: row.total,
-            }));
-    }, [telemetryModels]);
-
-    const failureRate = useMemo(() => {
-        if (!telemetrySummary) return null;
-        return Number((100 - telemetrySummary.successRate).toFixed(1));
-    }, [telemetrySummary]);
-
-    const successfulModelCoverage = useMemo(() => {
-        if (telemetryModels.length === 0) return null;
-        return Number(((successfulModels.length / telemetryModels.length) * 100).toFixed(1));
-    }, [successfulModels.length, telemetryModels.length]);
+    const isCapped = Boolean(telemetrySummary && telemetrySummary.total >= TELEMETRY_ROW_CAP);
+    const windowLabel = TELEMETRY_WINDOW_OPTIONS.find((option) => option.value === telemetryWindowHours)?.label || 'Selected window';
+    const nowMs = Date.now();
 
     return (
         <AdminShell
             title="AI telemetry"
-            description="Latency, reliability and cost across benchmark and runtime AI calls."
+            description="Is AI generation healthy, how fast is it, and what does it cost? Runtime and benchmark calls."
             showGlobalSearch={false}
             showDateRange={false}
             actions={(
-                <AdminReloadButton onClick={() => void loadTelemetry()} isLoading={telemetryLoading} />
+                <>
+                    <Button asChild variant="ghost">
+                        <Link
+                            to="/admin/ai-benchmark/worker-health"
+                            onClick={() => trackEvent('admin__ai_telemetry--worker_health')}
+                            {...getAnalyticsDebugAttributes('admin__ai_telemetry--worker_health')}
+                        >
+                            Worker health
+                            <ArrowRight className="rtl:rotate-180" />
+                        </Link>
+                    </Button>
+                    <AdminReloadButton onClick={() => void loadTelemetry()} isLoading={telemetryLoading} />
+                </>
             )}
         >
             <div className="flex flex-col gap-4">
+                {/* One toolbar scopes everything below; it is the first thing an admin changes. */}
+                <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Telemetry filters">
+                    <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
+                        <SelectTrigger className="h-8 w-auto min-w-32 text-sm" aria-label="Window">
+                            <SelectValue placeholder="Window" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {TELEMETRY_WINDOW_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={String(option.value)}>
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={telemetrySource} onValueChange={(value) => setTelemetrySource(value as TelemetrySourceFilter)}>
+                        <SelectTrigger className="h-8 w-auto min-w-36 text-sm" aria-label="Source">
+                            <SelectValue placeholder="Source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All sources</SelectItem>
+                            <SelectItem value="create_trip">Trip generation</SelectItem>
+                            <SelectItem value="benchmark">Benchmark runs</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={telemetryProviderFilter} onValueChange={setTelemetryProviderFilter}>
+                        <SelectTrigger className="h-8 w-auto min-w-36 text-sm" aria-label="Provider">
+                            <SelectValue placeholder="Provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All providers</SelectItem>
+                            {telemetryProviderOptions.map((provider) => (
+                                <SelectItem key={provider} value={provider}>
+                                    <ProviderLabel
+                                        provider={provider}
+                                        providerClassName="text-foreground"
+                                        logoSize={12}
+                                    />
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {hasActiveFilters ? (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={resetFilters}
+                            {...getAnalyticsDebugAttributes('admin__ai_telemetry--reset_filters')}
+                        >
+                            <X />
+                            Reset
+                        </Button>
+                    ) : null}
+                </div>
+
                 {telemetryError && <AdminErrorAlert title="Could not load AI telemetry" message={telemetryError} />}
 
-                <AdminSurfaceCard className="flex flex-col gap-4">
-                    <AdminSectionHeader title="Filters" description="Scope every chart and ranking below." />
-
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Window</span>
-                            <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
-                                <SelectTrigger className="h-9 text-sm" aria-label="Window">
-                                    <SelectValue placeholder="Window" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {TELEMETRY_WINDOW_OPTIONS.map((option) => (
-                                        <SelectItem key={option.value} value={String(option.value)}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Source</span>
-                            <Select value={telemetrySource} onValueChange={(value) => setTelemetrySource(value as TelemetrySourceFilter)}>
-                                <SelectTrigger className="h-9 text-sm" aria-label="Source">
-                                    <SelectValue placeholder="Source" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All sources</SelectItem>
-                                    <SelectItem value="create_trip">Create-trip runtime</SelectItem>
-                                    <SelectItem value="benchmark">Benchmark runs</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Provider</span>
-                            <Select value={telemetryProviderFilter} onValueChange={setTelemetryProviderFilter}>
-                                <SelectTrigger className="h-9 text-sm" aria-label="Provider">
-                                    <SelectValue placeholder="Provider" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All providers</SelectItem>
-                                    {telemetryProviderOptions.map((provider) => (
-                                        <SelectItem key={provider} value={provider}>
-                                            <ProviderLabel
-                                                provider={provider}
-                                                providerClassName="text-foreground"
-                                                logoSize={12}
-                                            />
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground" aria-hidden="true">Ranking size</span>
-                            <Select value={String(rankLimit)} onValueChange={(value) => setRankLimit(Number(value))}>
-                                <SelectTrigger className="h-9 text-sm" aria-label="Ranking size">
-                                    <SelectValue placeholder="Top X" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {RANK_LIMIT_OPTIONS.map((option) => (
-                                        <SelectItem key={option.value} value={String(option.value)}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                </AdminSurfaceCard>
-
-                {/* Five KPIs read as one row on wide screens, so this grid goes to five columns. */}
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <AdminStatCard
-                        label="Total calls"
+                        label="Calls"
                         value={telemetrySummary ? telemetrySummary.total.toLocaleString() : '—'}
-                        hint="Selected filter scope"
+                        hint={isCapped
+                            ? `Capped at the latest ${TELEMETRY_ROW_CAP.toLocaleString()}; narrow the window for exact totals`
+                            : windowLabel}
+                        hintTone={isCapped ? 'warning' : 'neutral'}
                         isLoading={telemetryLoading}
                     />
                     <AdminStatCard
                         label="Success rate"
                         value={telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}
-                        hint={`Failed: ${telemetrySummary ? telemetrySummary.failed.toLocaleString() : '—'}`}
-                        isLoading={telemetryLoading}
-                    />
-                    <AdminStatCard
-                        label="Failure rate"
-                        value={formatPercent(failureRate)}
-                        hint="Quick reliability read"
-                        hintTone={failureRate !== null && failureRate > 0 ? 'warning' : 'neutral'}
+                        hint={telemetrySummary
+                            ? (telemetrySummary.failed > 0
+                                ? `${telemetrySummary.failed.toLocaleString()} failed; see failure codes`
+                                : 'No failed calls')
+                            : undefined}
+                        hintTone={telemetrySummary && telemetrySummary.failed > 0 ? 'warning' : 'neutral'}
                         isLoading={telemetryLoading}
                     />
                     <AdminStatCard
                         label="Avg duration"
                         value={telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}
-                        hint="Across all calls"
+                        hint="Mean across all calls"
                         isLoading={telemetryLoading}
                     />
                     <AdminStatCard
-                        label="Total cost (est.)"
+                        label="Cost (est.)"
                         value={telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}
-                        hint={`Models with success: ${formatPercent(successfulModelCoverage)}`}
+                        hint={telemetrySummary ? `${formatUsd(telemetrySummary.averageCostUsd)} per call` : undefined}
                         isLoading={telemetryLoading}
                     />
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Top models by speed" description="Only models with successful calls are listed." />
-                        {fastestBarListData.length > 0 ? (
-                            <AdminBarList
-                                color="var(--chart-1)"
-                                items={fastestBarListData}
-                                sortOrder="ascending"
-                                valueFormatter={(value) => formatDuration(value)}
-                                ariaLabel="Fastest models by average duration"
+                <div className="grid gap-4 lg:grid-cols-3">
+                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4 lg:col-span-2">
+                        <Tabs
+                            value={trendTab}
+                            onValueChange={(value) => {
+                                setTrendTab(value as TrendTab);
+                                trackEvent('admin__ai_telemetry--trend_tab', { tab: value });
+                            }}
+                        >
+                            <AdminSectionHeader
+                                title="Over time"
+                                description="Hourly buckets across the selected window."
+                                actions={(
+                                    <TabsList aria-label="Trend metric">
+                                        <TabsTrigger value="calls">Calls</TabsTrigger>
+                                        <TabsTrigger value="success">Success rate</TabsTrigger>
+                                        <TabsTrigger value="latency">Latency</TabsTrigger>
+                                        <TabsTrigger value="cost">Cost</TabsTrigger>
+                                    </TabsList>
+                                )}
                             />
-                        ) : (
-                            <TelemetryEmpty>No successful speed data</TelemetryEmpty>
-                        )}
+                            {trendChartData.length === 0 ? (
+                                <TelemetryEmpty description="Widen the window or clear the source and provider filters.">
+                                    No calls in this scope
+                                </TelemetryEmpty>
+                            ) : (
+                                <>
+                                    <TabsContent value="calls">
+                                        <AdminBarChart
+                                            data={trendChartData}
+                                            index="Time"
+                                            categories={['Success', 'Failed']}
+                                            colors={CALL_TREND_COLORS}
+                                            stacked
+                                            ariaLabel="Stacked bar chart of successful and failed calls per time bucket"
+                                        />
+                                    </TabsContent>
+                                    <TabsContent value="success">
+                                        <TelemetrySeriesChart
+                                            kind="area"
+                                            className="h-64"
+                                            data={trendChartData}
+                                            index="Time"
+                                            category="Success rate"
+                                            color="var(--chart-2)"
+                                            domain={[0, 100]}
+                                            valueFormatter={(value) => formatPercent(value)}
+                                            tickFormatter={(value) => `${value}%`}
+                                            yAxisWidth={44}
+                                            ariaLabel="Area chart of success rate per time bucket"
+                                        />
+                                    </TabsContent>
+                                    <TabsContent value="latency">
+                                        <TelemetrySeriesChart
+                                            kind="area"
+                                            className="h-64"
+                                            data={trendChartData}
+                                            index="Time"
+                                            category="Avg latency"
+                                            color="var(--chart-4)"
+                                            valueFormatter={(value) => formatDuration(value)}
+                                            ariaLabel="Area chart of average latency per time bucket"
+                                        />
+                                    </TabsContent>
+                                    <TabsContent value="cost">
+                                        <TelemetrySeriesChart
+                                            kind="area"
+                                            className="h-64"
+                                            data={trendChartData}
+                                            index="Time"
+                                            category="Cost"
+                                            color="var(--chart-3)"
+                                            valueFormatter={(value) => formatUsd(value)}
+                                            tickFormatter={formatUsdTick}
+                                            yAxisWidth={64}
+                                            ariaLabel="Area chart of total estimated cost per time bucket"
+                                        />
+                                    </TabsContent>
+                                </>
+                            )}
+                        </Tabs>
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Top models by cost" description="Average cost per successful call." />
-                        {cheapestBarListData.length > 0 ? (
+                        <AdminSectionHeader
+                            title="Top failure codes"
+                            description={`Among the latest ${telemetryRecent.length.toLocaleString()} calls in this scope.`}
+                        />
+                        {failureCodeBarListData.length > 0 ? (
                             <AdminBarList
-                                color="var(--chart-1)"
-                                items={cheapestBarListData}
-                                sortOrder="ascending"
-                                valueFormatter={(value) => formatUsd(value)}
-                                ariaLabel="Cheapest models by average cost"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No successful cost data</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Top models by value" description="Lower cost per second is better." />
-                        {bestValueBarListData.length > 0 ? (
-                            <AdminBarList
-                                color="var(--chart-1)"
-                                items={bestValueBarListData}
-                                sortOrder="ascending"
-                                valueFormatter={(value) => `${formatUsd(value)} / sec`}
-                                ariaLabel="Best-value models by cost per second"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No successful value data</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Top models by success rate" description="Success-rate leaderboard." />
-                        {successRateBarListData.length > 0 ? (
-                            <AdminBarList
-                                items={successRateBarListData}
+                                items={failureCodeBarListData.map((row) => ({
+                                    key: row.key,
+                                    label: <span className="font-mono text-xs text-foreground">{row.name}</span>,
+                                    value: row.value,
+                                }))}
                                 sortOrder="descending"
-                                valueFormatter={(value) => formatPercent(value)}
-                                color="var(--chart-2)"
-                                ariaLabel="Models by success rate"
+                                valueFormatter={(value) => formatCallCount(value)}
+                                color="var(--chart-5)"
+                                ariaLabel="Recent failures by error code"
                             />
                         ) : (
-                            <TelemetryEmpty>No success-rate data</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Call trend" description="Successful and failed calls across the selected window." />
-                        {callsTrendChartData.length > 0 ? (
-                            <AdminBarChart
-                                data={callsTrendChartData}
-                                index="Time"
-                                categories={['Success', 'Failed']}
-                                colors={CALL_TREND_COLORS}
-                                stacked
-                                ariaLabel="Stacked bar chart of successful and failed calls per time bucket"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No time-series call data for this filter set</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Success-rate trend" description="Share of successful calls per bucket." />
-                        {successRateTrendChartData.length > 0 ? (
-                            <TelemetrySeriesChart
-                                kind="area"
-                                className="h-64"
-                                data={successRateTrendChartData}
-                                index="Time"
-                                category="Success rate"
-                                color="var(--chart-1)"
-                                domain={[0, 100]}
-                                valueFormatter={(value) => formatPercent(value)}
-                                tickFormatter={(value) => `${value}%`}
-                                yAxisWidth={44}
-                                ariaLabel="Area chart of success rate per time bucket"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No success-rate trend data for this filter set</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Latency trend" description="Average latency per bucket." />
-                        {latencyTrendChartData.length > 0 ? (
-                            <TelemetrySeriesChart
-                                kind="area"
-                                data={latencyTrendChartData}
-                                index="Time"
-                                category="Avg latency (ms)"
-                                color="var(--chart-4)"
-                                valueFormatter={(value) => formatDuration(value)}
-                                ariaLabel="Area chart of average latency per time bucket"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No latency trend data for this filter set</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Cost trend" description="Total estimated cost per bucket." />
-                        {costTrendChartData.length > 0 ? (
-                            <TelemetrySeriesChart
-                                kind="area"
-                                data={costTrendChartData}
-                                index="Time"
-                                category="Total cost (USD)"
-                                color="var(--chart-3)"
-                                valueFormatter={(value) => formatUsd(value)}
-                                tickFormatter={formatUsdTick}
-                                yAxisWidth={64}
-                                ariaLabel="Area chart of total estimated cost per time bucket"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No cost trend data for this filter set</TelemetryEmpty>
+                            <TelemetryEmpty>No recent failures</TelemetryEmpty>
                         )}
                     </AdminSurfaceCard>
                 </div>
 
                 <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
                     <AdminSectionHeader
-                        title="Cost per day this month"
-                        description="Daily API cost for the current calendar month."
+                        title="Spend this month"
+                        description="Estimated API cost per day for the current calendar month (UTC), across every source and provider."
                         actions={(
                             <span className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
                                 {formatUsd(currentMonthCostTotal)}
@@ -1038,303 +838,289 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     )}
                 </AdminSurfaceCard>
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Provider breakdown" description="Calls and failures by provider." />
-                        {providerVolumeChartData.length > 0 ? (
-                            <AdminBarChart
-                                data={providerVolumeChartData}
-                                index="Provider"
-                                categories={['Calls', 'Failures']}
-                                colors={PROVIDER_VOLUME_COLORS}
-                                ariaLabel="Bar chart of calls and failures by provider"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No provider breakdown in this filter set</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader
-                            title="Provider share"
-                            description={selectedProviderShare
-                                ? `Model split inside ${getAiProviderMetadata(selectedProviderShare).shortName}. Pick a model for details.`
-                                : 'Share of total call volume. Pick a provider to drill down.'}
-                            actions={selectedProviderShare ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSelectedProviderShare(null);
-                                        setSelectedModelShare(null);
-                                    }}
-                                >
-                                    <ArrowLeft className="rtl:rotate-180" />
-                                    Providers
-                                </Button>
-                            ) : null}
-                        />
-
-                        {providerShareDonutData.length > 0 ? (
-                            <div className="grid items-center gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,250px)]">
-                                <ChartContainer
-                                    config={providerShareChartConfig}
-                                    className="mx-auto aspect-square h-64 max-w-full"
-                                    role="img"
-                                    aria-label={selectedProviderShare
-                                        ? `Donut chart of call share by model inside ${getAiProviderMetadata(selectedProviderShare).shortName}`
-                                        : 'Donut chart of call share by provider'}
-                                >
-                                    <PieChart>
-                                        <ChartTooltip
-                                            content={<ChartTooltipContent hideLabel valueFormatter={(value) => formatCallCount(Number(value))} />}
-                                        />
-                                        <Pie
-                                            data={providerShareDonutData}
-                                            dataKey="Calls"
-                                            nameKey="Segment"
-                                            innerRadius="58%"
-                                            outerRadius="85%"
-                                            paddingAngle={1}
-                                            strokeWidth={0}
-                                            isAnimationActive={false}
-                                            onClick={(_, sliceIndex) => handleProviderShareSliceSelect(providerShareDonutData[sliceIndex])}
-                                        >
-                                            {providerShareDonutData.map((entry) => (
-                                                <Cell
-                                                    key={entry.key}
-                                                    fill={chartColor(entry.key)}
-                                                    fillOpacity={selectedModelShare && entry.model !== selectedModelShare ? 0.35 : 1}
-                                                    className={entry.provider === 'other' && !selectedProviderShare ? undefined : 'cursor-pointer'}
-                                                />
-                                            ))}
-                                        </Pie>
-                                    </PieChart>
-                                </ChartContainer>
-
-                                <div className="flex flex-col gap-2">
-                                    <p className="text-xs font-medium text-muted-foreground">
-                                        {selectedProviderShare ? 'Models' : 'Providers'}
-                                    </p>
-
-                                    <div className="flex flex-col gap-1.5">
-                                        {activeDonutEntries.map((entry) => {
-                                            const isSelected = Boolean(
-                                                selectedProviderShare &&
-                                                selectedModelShare &&
-                                                entry.model === selectedModelShare,
-                                            );
-                                            const isDisabled = !selectedProviderShare && entry.provider === 'other';
-                                            const dotClass = DONUT_COLOR_DOT_CLASS[entry.color];
-                                            const providerMetadata = getAiProviderMetadata(entry.provider);
-                                            const displayLabel = selectedProviderShare
-                                                ? entry.label
-                                                : (entry.provider === 'other' ? entry.label : providerMetadata.shortName);
-                                            return (
-                                                // A whole-row toggle, so a plain button rather than `Button`.
-                                                <button
-                                                    key={entry.key}
-                                                    type="button"
-                                                    disabled={isDisabled}
-                                                    aria-pressed={selectedProviderShare ? isSelected : undefined}
-                                                    onClick={() => {
-                                                        if (!selectedProviderShare) {
-                                                            if (entry.provider === 'other') return;
-                                                            setSelectedProviderShare(entry.provider);
-                                                            setSelectedModelShare(null);
-                                                            return;
-                                                        }
-                                                        if (!entry.model) {
-                                                            setSelectedModelShare(null);
-                                                            return;
-                                                        }
-                                                        setSelectedModelShare((current) => (current === entry.model ? null : entry.model));
-                                                    }}
-                                                    className={cn(
-                                                        'flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-start text-xs outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                                                        isSelected
-                                                            ? 'border-accent-300 bg-accent-50 text-accent-900 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200'
-                                                            : 'border-border bg-card text-foreground hover:bg-secondary',
-                                                        isDisabled && 'cursor-not-allowed opacity-60 hover:bg-card',
-                                                    )}
-                                                >
-                                                    <span className="inline-flex min-w-0 items-center gap-2">
-                                                        <span className={cn('size-2.5 shrink-0 rounded-full', dotClass)} aria-hidden="true" />
-                                                        {entry.provider !== 'other' && (
-                                                            <AiProviderLogo provider={entry.provider} size={12} />
-                                                        )}
-                                                        <span className="truncate">{displayLabel}</span>
-                                                    </span>
-                                                    <span className="shrink-0 tabular-nums text-muted-foreground">
-                                                        {entry.calls.toLocaleString()} · {formatPercent(entry.sharePercent)}
-                                                    </span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <TelemetryEmpty>No provider-share data in this filter set</TelemetryEmpty>
-                        )}
-
-                        {selectedProviderStats && (
-                            <div className="rounded-md border border-border bg-secondary px-3 py-2 text-xs text-foreground">
-                                <p className="font-medium text-foreground">
-                                    Provider details: <ProviderLabel provider={selectedProviderStats.provider} providerClassName="font-semibold text-foreground" logoSize={12} />
-                                </p>
-                                <p className="mt-1 tabular-nums">
-                                    Calls {selectedProviderStats.total.toLocaleString()} · Success {formatPercent(
-                                        selectedProviderStats.total > 0
-                                            ? (selectedProviderStats.success / selectedProviderStats.total) * 100
-                                            : null,
-                                    )} · Avg duration {formatDuration(selectedProviderStats.averageLatencyMs)} · Total cost {formatUsd(selectedProviderStats.totalCostUsd)}
-                                </p>
-                            </div>
-                        )}
-
-                        {selectedModelStats && (
-                            <div className="rounded-md border border-accent-200 bg-accent-50 px-3 py-2 text-xs text-accent-900 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200">
-                                <p className="font-medium">
-                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-accent-900 dark:text-accent-200" modelClassName="text-accent-800 dark:text-accent-200" logoSize={12} />
-                                </p>
-                                <p className="mt-1 tabular-nums">
-                                    Calls {selectedModelStats.total.toLocaleString()} · Success {formatPercent(selectedModelStats.successRate)} · Avg duration {formatDuration(selectedModelStats.averageLatencyMs)} · Avg cost {formatUsd(selectedModelStats.averageCostUsd)}
-                                </p>
-                            </div>
-                        )}
-                    </AdminSurfaceCard>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-3">
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Provider success rate" description="Top providers by successful call ratio." />
-                        {providerSuccessRateChartData.length > 0 ? (
-                            <AdminBarChart
-                                data={providerSuccessRateChartData}
-                                index="Provider"
-                                categories={['Success rate']}
-                                colors={PROVIDER_SUCCESS_COLORS}
-                                layout="vertical"
-                                valueFormatter={(value) => formatPercent(value)}
-                                className="h-56"
-                                ariaLabel="Bar chart of success rate by provider"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No provider success-rate data available</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Provider cost per success" description="Average estimated cost per successful call." />
-                        {providerCostPerSuccessChartData.length > 0 ? (
-                            <TelemetrySeriesChart
-                                kind="bar"
-                                data={providerCostPerSuccessChartData}
-                                index="Provider"
-                                category="Avg cost / success (USD)"
-                                color="var(--chart-4)"
-                                valueFormatter={(value) => formatUsd(value)}
-                                tickFormatter={formatUsdTick}
-                                yAxisWidth={64}
-                                ariaLabel="Bar chart of average cost per successful call by provider"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No provider cost-per-success data available</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Top failure codes" description="Most frequent recent error categories." />
-                        {failureCodeBarListData.length > 0 ? (
-                            <AdminBarList
-                                items={failureCodeBarListData.map((row) => ({
-                                    key: row.key,
-                                    label: <span className="font-mono text-xs text-foreground">{row.name}</span>,
-                                    value: row.value,
-                                }))}
-                                sortOrder="descending"
-                                valueFormatter={(value) => formatCallCount(value)}
-                                color="var(--chart-5)"
-                                ariaLabel="Recent failures by error code"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No recent failures in the selected filter scope</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-4">
-                        <AdminSectionHeader title="Model call volume" description="Most active provider and model combinations." />
-                        {modelVolumeBarListData.length > 0 ? (
-                            <AdminBarList
-                                color="var(--chart-1)"
-                                items={modelVolumeBarListData}
-                                sortOrder="descending"
-                                valueFormatter={(value) => formatCallCount(value)}
-                                ariaLabel="Models by call volume"
-                            />
-                        ) : (
-                            <TelemetryEmpty>No model activity data in this filter set</TelemetryEmpty>
-                        )}
-                    </AdminSurfaceCard>
-
-                    <AdminSurfaceCard className="flex min-w-0 flex-col gap-3 p-0">
+                <AdminSurfaceCard className="flex min-w-0 flex-col gap-4 p-0">
+                    <Tabs
+                        value={breakdownTab}
+                        onValueChange={(value) => {
+                            setBreakdownTab(value as BreakdownTab);
+                            trackEvent('admin__ai_telemetry--breakdown_tab', { tab: value });
+                        }}
+                    >
                         <AdminSectionHeader
                             className="px-4 pt-4"
-                            title="Recent calls"
-                            description="Latest rows with status, duration and error code."
+                            title="Compare"
+                            description={breakdownTab === 'models'
+                                ? 'Every model in this scope. Sort a column, or pick a leader, to rank them.'
+                                : 'Call share, reliability and cost per provider. Focus one to scope the whole page.'}
+                            actions={(
+                                <TabsList aria-label="Breakdown">
+                                    <TabsTrigger value="models">Models</TabsTrigger>
+                                    <TabsTrigger value="providers">Providers</TabsTrigger>
+                                </TabsList>
+                            )}
                         />
 
-                        <div className="max-h-80 overflow-y-auto border-t border-border">
-                            <Table className="text-xs">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="ps-4 text-muted-foreground">Time</TableHead>
-                                        <TableHead className="text-muted-foreground">Model</TableHead>
-                                        <TableHead className="text-muted-foreground">Status</TableHead>
-                                        <TableHead className="text-end text-muted-foreground">Duration</TableHead>
-                                        <TableHead className="text-end text-muted-foreground">Cost</TableHead>
-                                        <TableHead className="pe-4 text-muted-foreground">Error</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {telemetryRecent.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="px-4 py-6 text-center text-sm text-muted-foreground">
-                                                {telemetryLoading ? 'Loading telemetry…' : 'No telemetry rows yet.'}
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
+                        <TabsContent value="models" className="flex flex-col gap-3">
+                            {leaders.length > 0 ? (
+                                <div className="flex flex-wrap gap-2 px-4" aria-label="Model leaders" role="group">
+                                    {leaders.map((leader) => {
+                                        const isActive = modelSortColumn === leader.sortColumn && modelSortDirection === leader.sortDirection;
+                                        return (
+                                            <Button
+                                                key={leader.kind}
+                                                type="button"
+                                                variant={isActive ? 'secondary' : 'outline'}
+                                                size="sm"
+                                                aria-pressed={isActive}
+                                                className="h-auto min-h-8 max-w-full justify-start py-1 text-start"
+                                                onClick={() => focusLeader(leader.kind, leader.sortColumn, leader.sortDirection)}
+                                                {...getAnalyticsDebugAttributes('admin__ai_telemetry--leader', { leader: leader.kind })}
+                                            >
+                                                <span className="text-muted-foreground">{LEADER_LABELS[leader.kind]}</span>
+                                                <AiProviderLogo provider={leader.model.provider} model={leader.model.model} size={12} />
+                                                <span className="truncate font-medium">{leader.model.model}</span>
+                                                <span className="tabular-nums text-muted-foreground">{formatLeaderValue(leader.kind, leader.model)}</span>
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            ) : null}
 
-                                    {telemetryRecent.map((row) => (
-                                        <TableRow key={row.id} className="hover:bg-muted/50">
-                                            <TableCell className="ps-4 tabular-nums text-muted-foreground">{formatTimestamp(row.created_at)}</TableCell>
-                                            <TableCell className="max-w-[220px] truncate text-foreground">
-                                                <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
-                                            </TableCell>
-                                            <TableCell>
-                                                <AdminStatusBadge tone={row.status === 'success' ? 'success' : 'danger'}>
-                                                    {row.status === 'success' ? 'Success' : 'Failed'}
-                                                </AdminStatusBadge>
-                                            </TableCell>
-                                            <TableCell className="text-end tabular-nums text-foreground">{formatDuration(row.latency_ms)}</TableCell>
-                                            <TableCell className="text-end tabular-nums text-foreground">{formatUsd(row.estimated_cost_usd)}</TableCell>
-                                            <TableCell className="pe-4 font-mono text-muted-foreground">{row.error_code || '—'}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </AdminSurfaceCard>
-                </div>
+                            {sortedModels.length === 0 ? (
+                                <div className="px-4 pb-4">
+                                    <TelemetryEmpty description="Widen the window or clear the source and provider filters.">
+                                        No model activity in this scope
+                                    </TelemetryEmpty>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="overflow-x-auto border-t border-border">
+                                        <Table className="text-xs">
+                                            <TableHeader>
+                                                <TableRow>
+                                                    {MODEL_COLUMNS.map(({ column, label, numeric, tooltip }) => {
+                                                        const isActive = modelSortColumn === column;
+                                                        return (
+                                                            <TableHead
+                                                                key={column}
+                                                                className={cn('px-4', numeric && 'text-end', isActive && ADMIN_TABLE_SORTED_HEADER_CLASS)}
+                                                                aria-sort={isActive ? (modelSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                                                data-tooltip={tooltip}
+                                                            >
+                                                                <AdminSortHeaderButton
+                                                                    label={label}
+                                                                    isActive={isActive}
+                                                                    direction={modelSortDirection}
+                                                                    onClick={() => handleModelSort(column)}
+                                                                />
+                                                            </TableHead>
+                                                        );
+                                                    })}
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {pagedModels.map((row) => {
+                                                    const cellClass = (column: TelemetryModelSortColumn) => cn(
+                                                        'px-4 py-2 tabular-nums',
+                                                        column !== 'model' && 'text-end',
+                                                        modelSortColumn === column && ADMIN_TABLE_SORTED_CELL_CLASS,
+                                                    );
+                                                    const share = totalModelCalls > 0 ? (row.total / totalModelCalls) * 100 : null;
+                                                    return (
+                                                        <TableRow key={row.key} className="hover:bg-muted/50">
+                                                            <TableCell className={cellClass('model')}>
+                                                                <span className="inline-flex min-w-0 max-w-[280px] items-center gap-2">
+                                                                    <AiProviderLogo provider={row.provider} model={row.model} size={14} />
+                                                                    <span className="min-w-0">
+                                                                        <span className="block truncate font-medium text-foreground">{row.model}</span>
+                                                                        <span className="block truncate text-muted-foreground">{getAiProviderMetadata(row.provider).shortName}</span>
+                                                                    </span>
+                                                                </span>
+                                                            </TableCell>
+                                                            <TableCell className={cellClass('total')}>
+                                                                <div className="text-foreground">{row.total.toLocaleString()}</div>
+                                                                <div className="text-muted-foreground">{formatPercent(share)} of calls</div>
+                                                            </TableCell>
+                                                            <TableCell className={cellClass('successRate')}>
+                                                                <div className={row.failed > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground'}>
+                                                                    {formatPercent(row.successRate)}
+                                                                </div>
+                                                                {row.failed > 0 ? <div className="text-muted-foreground">{row.failed.toLocaleString()} failed</div> : null}
+                                                            </TableCell>
+                                                            <TableCell className={cellClass('averageLatencyMs')}>{formatDuration(row.averageLatencyMs)}</TableCell>
+                                                            <TableCell className={cellClass('averageCostUsd')}>{formatUsd(row.averageCostUsd)}</TableCell>
+                                                            <TableCell className={cellClass('costPerSecondUsd')}>{formatUsd(row.costPerSecondUsd)}</TableCell>
+                                                            <TableCell className={cellClass('totalCostUsd')}>{formatUsd(row.totalCostUsd)}</TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    <AdminPagination
+                                        className="px-4 pb-4"
+                                        page={safeModelPage}
+                                        pageSize={MODEL_PAGE_SIZE}
+                                        totalItems={sortedModels.length}
+                                        onPageChange={setModelPage}
+                                        noun="models"
+                                    />
+                                </>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="providers">
+                            {providerRows.length === 0 ? (
+                                <div className="px-4 pb-4">
+                                    <TelemetryEmpty>No provider activity in this scope</TelemetryEmpty>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto border-t border-border">
+                                    <Table className="text-xs">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="ps-4 text-muted-foreground">Provider</TableHead>
+                                                <TableHead className="text-muted-foreground">Call share</TableHead>
+                                                <TableHead className="text-end text-muted-foreground">Success</TableHead>
+                                                <TableHead className="text-end text-muted-foreground">Avg duration</TableHead>
+                                                <TableHead className="text-end text-muted-foreground">Cost / success</TableHead>
+                                                <TableHead className="pe-4 text-end text-muted-foreground">Total cost</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {providerRows.map((row) => {
+                                                const isFocused = telemetryProviderFilter === row.provider;
+                                                return (
+                                                    <TableRow key={row.provider} className="hover:bg-muted/50">
+                                                        <TableCell className="ps-4">
+                                                            {isFocused ? (
+                                                                <ProviderLabel provider={row.provider} logoSize={14} />
+                                                            ) : (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="link"
+                                                                    size="sm"
+                                                                    className="h-auto p-0 text-xs"
+                                                                    data-tooltip="Scope the whole page to this provider"
+                                                                    onClick={() => focusProvider(row.provider)}
+                                                                    {...getAnalyticsDebugAttributes('admin__ai_telemetry--focus_provider', { provider: row.provider })}
+                                                                >
+                                                                    <ProviderLabel provider={row.provider} logoSize={14} />
+                                                                </Button>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="min-w-40">
+                                                            <div className="flex items-center gap-2 tabular-nums">
+                                                                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                                                                    <div className="h-full rounded-full bg-[var(--chart-1)]" style={{ width: `${row.sharePercent}%` }} />
+                                                                </div>
+                                                                <span className="w-24 shrink-0 text-end text-foreground">
+                                                                    {row.total.toLocaleString()} · {formatPercent(row.sharePercent)}
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-end tabular-nums">
+                                                            <span className={row.failed > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground'}>
+                                                                {formatPercent(row.successRate)}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="text-end tabular-nums text-foreground">{formatDuration(row.averageLatencyMs)}</TableCell>
+                                                        <TableCell className="text-end tabular-nums text-foreground">{formatUsd(row.costPerSuccessUsd)}</TableCell>
+                                                        <TableCell className="pe-4 text-end tabular-nums text-foreground">{formatUsd(row.totalCostUsd)}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </AdminSurfaceCard>
+
+                <AdminSurfaceCard className="flex min-w-0 flex-col gap-3 p-0">
+                    <AdminSectionHeader
+                        className="px-4 pt-4"
+                        title="Recent calls"
+                        description="The newest calls in this scope, for tracing a single failure."
+                        actions={(
+                            <AdminFilterMenu
+                                label="Status"
+                                options={recentStatusOptions}
+                                selectedValues={recentStatusFilters}
+                                onSelectedValuesChange={(next) => {
+                                    setRecentStatusFilters(next);
+                                    setRecentPage(1);
+                                }}
+                            />
+                        )}
+                    />
+
+                    <div className="overflow-x-auto border-t border-border">
+                        <Table className="text-xs">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="ps-4 text-muted-foreground">Time</TableHead>
+                                    <TableHead className="text-muted-foreground">Model</TableHead>
+                                    <TableHead className="text-muted-foreground">Status</TableHead>
+                                    <TableHead className="text-end text-muted-foreground">Duration</TableHead>
+                                    <TableHead className="text-end text-muted-foreground">Cost</TableHead>
+                                    <TableHead className="pe-4 text-muted-foreground">Error</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {pagedRecent.length === 0 && (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={6}
+                                            className="px-4 py-6 text-center text-sm text-muted-foreground"
+                                            role={telemetryLoading ? 'status' : undefined}
+                                        >
+                                            {telemetryLoading
+                                                ? 'Loading telemetry…'
+                                                : recentStatusFilters.length > 0 ? 'No calls match this status.' : 'No calls in this scope yet.'}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+
+                                {pagedRecent.map((row) => (
+                                    <TableRow key={row.id} className="hover:bg-muted/50">
+                                        <TableCell className="ps-4 tabular-nums text-muted-foreground">
+                                            <span data-tooltip={formatAdminAbsoluteTime(row.created_at)}>
+                                                {formatAdminRelativeTime(row.created_at, nowMs)}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="max-w-[260px] truncate text-foreground">
+                                            <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
+                                        </TableCell>
+                                        <TableCell>
+                                            <AdminStatusBadge tone={row.status === 'success' ? 'success' : 'danger'}>
+                                                {row.status === 'success' ? 'Success' : 'Failed'}
+                                            </AdminStatusBadge>
+                                        </TableCell>
+                                        <TableCell className="text-end tabular-nums text-foreground">{formatDuration(row.latency_ms)}</TableCell>
+                                        <TableCell className="text-end tabular-nums text-foreground">{formatUsd(row.estimated_cost_usd)}</TableCell>
+                                        <TableCell className="pe-4 font-mono text-muted-foreground">{row.error_code || '—'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    <AdminPagination
+                        className="px-4 pb-4"
+                        page={safeRecentPage}
+                        pageSize={RECENT_PAGE_SIZE}
+                        totalItems={filteredRecent.length}
+                        onPageChange={setRecentPage}
+                        noun="calls"
+                    />
+                </AdminSurfaceCard>
 
                 <AdminSurfaceCard className="flex flex-col gap-4">
                     <AdminSectionHeader
                         title="Benchmark run comments"
-                        description="Notes captured per run, grouped by provider and model in the current window."
+                        description="Notes left on benchmark runs in this window, grouped by model."
                         actions={(
                             <span className="text-sm tabular-nums text-muted-foreground">
                                 {telemetryCommentTotal.toLocaleString()} {telemetryCommentTotal === 1 ? 'comment' : 'comments'}
@@ -1343,8 +1129,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     />
 
                     {telemetryCommentGroups.length === 0 ? (
-                        <TelemetryEmpty>
-                            {telemetryLoading ? 'Loading comments…' : 'No benchmark run comments in this filter window'}
+                        <TelemetryEmpty description={telemetryLoading ? undefined : 'Comments come from rating runs on the AI benchmark screen.'}>
+                            {telemetryLoading ? 'Loading comments…' : 'No benchmark run comments in this window'}
                         </TelemetryEmpty>
                     ) : (
                         <div className="flex max-h-[500px] flex-col gap-3 overflow-y-auto">
@@ -1359,7 +1145,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                         </span>
                                     </div>
                                     <p className="mt-0.5 text-xs text-muted-foreground">
-                                        Latest: {formatTimestamp(group.latestCommentAt)}
+                                        Latest <span data-tooltip={formatAdminAbsoluteTime(group.latestCommentAt)}>{formatAdminRelativeTime(group.latestCommentAt, nowMs)}</span>
                                     </p>
 
                                     <div className="mt-2 flex flex-col gap-2">
@@ -1367,7 +1153,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                             <div key={`${group.key}-${comment.runId}-${comment.updatedAt}`} className="rounded-md bg-secondary px-2.5 py-2 text-xs">
                                                 <p className="whitespace-pre-wrap break-words text-foreground">{comment.comment}</p>
                                                 <p className="mt-1 text-[11px] text-muted-foreground">
-                                                    Run {comment.runId.slice(0, 8)} · {comment.status || 'unknown'} · {comment.satisfactionRating || 'unrated'} · {formatTimestamp(comment.updatedAt)}
+                                                    Run {comment.runId.slice(0, 8)} · {comment.status || 'unknown'} · {comment.satisfactionRating || 'unrated'} · {formatAdminAbsoluteTime(comment.updatedAt)}
                                                 </p>
                                             </div>
                                         ))}

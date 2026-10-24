@@ -1,15 +1,22 @@
 # Admin Dashboard Plan
 
-This document defines the purpose and scope of the future authenticated admin dashboard.
+This document defines the purpose and the longer-term scope of the admin Overview.
+
+**Status (2026-10-24):** the Overview ships at `/admin/dashboard` as the first item in the admin
+sidebar, behind the admin route guard. It covers group 1 and part of group 2 below from
+Supabase data (KPI tiles, new users and trips, user mix by plan level, trips by status, recent
+users). Group 3 (infrastructure and API usage) lives on the AI telemetry and Worker health
+screens instead of here. What each admin screen does today is in
+[`ADMIN_SCREENS.md`](./ADMIN_SCREENS.md); this file keeps the plan for what is still missing.
 
 All dashboard surfaces follow the shared interaction and visual rules in [`DESIGN.md`](./DESIGN.md).
 
 ## Primary goal
 Give admins one at-a-glance view of product health, growth, and usage risk so issues can be detected before they become outages or runaway cost spikes.
 
-## Planned route
-- `/admin/dashboard` (no nav link for now)
-- Must be protected once auth/roles are ready.
+## Route
+- `/admin/dashboard` — "Overview", first item in the admin sidebar and the `⌘K` palette.
+- Protected by the admin route guard (`AdminRoute` in `app/routes/DeferredAppRoutes.tsx`).
 
 ## Core metric groups
 
@@ -57,8 +64,9 @@ Potential data source:
 - Rate-limited backend metric endpoints
 
 ## Rollout checklist
-1. Add role claims and secure route guard.
-2. Add backend aggregation endpoints/views.
-3. Build charts + tables from stable API contracts.
-4. Add alerting for quota/cost thresholds.
-5. Validate with synthetic load and production-like traffic.
+1. [x] Add role claims and secure route guard.
+2. [ ] Add backend aggregation endpoints/views (the Overview still aggregates up to 500 users and trips client-side).
+3. [x] Build charts + tables (shadcn charts on Recharts, `components/admin/AdminBarChart.tsx`).
+4. [ ] Add alerting for quota/cost thresholds.
+5. [ ] Validate with synthetic load and production-like traffic.
+6. [ ] Active users (DAU/WAU/MAU) and sharing usage — needs session/event aggregation first.

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../../components/admin/AdminShell', () => ({
@@ -80,35 +80,65 @@ describe('pages/AdminAiTelemetryPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders KPIs, rankings and charts from the telemetry API', async () => {
+  it('renders four KPIs, the trend chart, leaders and failure codes', async () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: 'AI telemetry' })).toBeInTheDocument();
     expect(await screen.findByText('93.3%')).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: 'Fastest models by average duration' })).toHaveTextContent('1.20 s');
+    expect(screen.getByText('2 failed; see failure codes')).toBeInTheDocument();
+    // The failure-rate tile restated the success rate and is gone.
+    expect(screen.queryByText('Failure rate')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Fastest.*gpt-test.*1\.20 s/ })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Recent failures by error code' })).toHaveTextContent('TIMEOUT');
 
     const callTrend = screen.getByRole('img', { name: /successful and failed calls/i });
     expect(callTrend.querySelectorAll('.recharts-bar-rectangle').length).toBeGreaterThan(0);
-    const share = screen.getByRole('img', { name: 'Donut chart of call share by provider' });
-    expect(share.querySelectorAll('.recharts-pie-sector').length).toBe(2);
     // An empty month still renders one zero bar per elapsed day.
     expect(screen.getByRole('img', { name: 'Bar chart of API cost per day this month' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Worker health' })).toHaveAttribute('href', '/admin/ai-benchmark/worker-health');
   });
 
-  it('drills into a provider from the share legend and back out again', async () => {
+  it('ranks models in one sortable table, re-sorted by a leader', async () => {
     renderPage();
 
-    const legendButton = await screen.findByRole('button', { name: /OpenAI.*20 · 66\.7%/ });
-    fireEvent.click(legendButton);
+    const modelHeader = await screen.findByRole('columnheader', { name: 'Calls' });
+    expect(modelHeader).toHaveAttribute('aria-sort', 'descending');
+    expect(screen.getByText('Showing 1–2 of 2 models')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Cheapest/ }));
+    expect(screen.getByRole('columnheader', { name: 'Cost / success' })).toHaveAttribute('aria-sort', 'ascending');
+    expect(screen.getByRole('button', { name: /Cheapest/ })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('scopes the page to a provider from the providers tab', async () => {
+    const fetchMock = vi.mocked(fetch);
+    renderPage();
+    await screen.findByText('93.3%');
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Providers' }), { button: 0 });
+    const focusButton = await screen.findByRole('button', { name: /OpenAI/ });
+    expect(screen.getByText(/20 · 66\.7%/)).toBeInTheDocument();
+    fireEvent.click(focusButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('img', { name: /call share by model inside/i })).toBeInTheDocument();
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('provider=openai'))).toBe(true);
     });
-    expect(screen.getByText(/^Provider details:/)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Reset' })).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Providers' }));
-    expect(screen.getByRole('img', { name: 'Donut chart of call share by provider' })).toBeInTheDocument();
+  it('pages recent calls twenty at a time', async () => {
+    const recent = Array.from({ length: 25 }, (_, index) => ({
+      ...telemetryPayload.recent[0],
+      id: `r${index}`,
+      status: index % 5 === 0 ? 'failed' : 'success',
+    }));
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ...telemetryPayload, recent }), { status: 200 })));
+    renderPage();
+
+    expect(await screen.findByText('Showing 1–20 of 25 calls')).toBeInTheDocument();
+    const recentPager = screen.getByText('Showing 1–20 of 25 calls').closest('nav') as HTMLElement;
+    fireEvent.click(within(recentPager).getByRole('button', { name: 'Next page' }));
+    expect(screen.getByText('Showing 21–25 of 25 calls')).toBeInTheDocument();
   });
 
   it('shows an authored alert when the telemetry request fails', async () => {

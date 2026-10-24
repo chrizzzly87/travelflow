@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { ArrowRight, Info, X } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
-import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminPagination } from '../components/admin/AdminPagination';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
 import { Button } from '../components/ui/button';
@@ -34,12 +36,21 @@ import {
     type AdminAsyncWorkerHealthCheckType,
     type AdminAsyncWorkerHealthResponse,
     type AdminAsyncWorkerHealthStatus,
+    type AdminAsyncWorkerHealthSummary,
 } from '../services/adminService';
+import { formatAdminAbsoluteTime, formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
+import {
+    WORKER_HEALTH_VERDICT,
+    buildWorkerHealthSignals,
+    formatWorkerDuration,
+    type WorkerHealthSignalKey,
+} from '../components/admin/adminWorkerHealthStatus';
 
+// The endpoint caps a read at 50 rows; that is the whole history this screen can show.
 const WORKER_CHECK_FETCH_LIMIT = 50;
 const WORKER_CHECK_PAGE_SIZE = 10;
 
-type WorkerHealthSortColumn = 'checkType' | 'status' | 'startedAt' | 'staleQueuedCount' | 'dispatch' | 'failure';
+type WorkerHealthSortColumn = 'startedAt' | 'checkType' | 'status' | 'staleQueuedCount' | 'dispatch' | 'failure';
 type WorkerHealthSortDirection = 'asc' | 'desc';
 
 const DEFAULT_SORT_COLUMN: WorkerHealthSortColumn = 'startedAt';
@@ -61,34 +72,19 @@ const STATUS_ORDER: Record<AdminAsyncWorkerHealthStatus, number> = {
     warning: 1,
     failed: 2,
 };
+// A single check passes or fails; the page-level verdict (Healthy/Degraded/Failing) is separate.
 const STATUS_META: Record<AdminAsyncWorkerHealthStatus, { label: string; tone: AdminStatusTone }> = {
-    ok: { label: 'Healthy', tone: 'success' },
+    ok: { label: 'Passed', tone: 'success' },
     warning: { label: 'Warning', tone: 'warning' },
     failed: { label: 'Failed', tone: 'danger' },
 };
 
-const WORKER_HEALTH_TOOLTIPS = {
-    overallStatus: 'Combines the latest heartbeat, stale-queue watchdog, and canary signal into one production-readiness badge.',
-    heartbeat: 'A heartbeat is the scheduled cron check. Healthy means the scheduler is still running and can reach the async worker dispatcher.',
-    staleQueued: 'Counts queued jobs whose run time has already passed and that have still not moved for at least five minutes.',
-    selfHeal: 'A self-heal is the watchdog’s bounded re-kick. It only appears when stale queued jobs were detected and the normal worker path was nudged once.',
-    canary: 'The canary is a safe synthetic probe. It enqueues an intentionally invalid async job that should fail in a known way, proving queueing, dispatch, worker claim, execution, and terminal writes all work end to end.',
-    canaryLatency: 'Canary latency is how long that synthetic probe took to reach a terminal worker result after it was created.',
-} as const;
-
-const formatTimestamp = (value?: string | null): string => {
-    if (!value) return '—';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return '—';
-    return new Date(parsed).toLocaleString();
-};
-
-const formatDuration = (value?: number | null): string => {
-    if (!Number.isFinite(value)) return '—';
-    const normalized = Number(value);
-    if (normalized < 1000) return `${Math.round(normalized)} ms`;
-    if (normalized < 60_000) return `${(normalized / 1000).toFixed(1)} s`;
-    return `${(normalized / 60_000).toFixed(1)} min`;
+const WORKER_HEALTH_TOOLTIPS: Record<WorkerHealthSignalKey | 'overallStatus', string> = {
+    overallStatus: 'Combines the latest heartbeat, stale-queue watchdog and canary into one verdict. A stale heartbeat or a failed canary means failing; an overdue canary or stuck jobs mean degraded.',
+    heartbeat: 'The scheduled cron check, every minute. Fresh means the scheduler is running and can reach the worker dispatcher; if heartbeats stop, the worker loop itself may be down.',
+    queue: 'Queued jobs whose run time has passed and that have not moved for at least five minutes, as of the latest heartbeat.',
+    selfHeal: 'The watchdog’s bounded re-kick. It only happens when stale queued jobs were detected, and nudges the normal worker path once.',
+    canary: 'A safe synthetic probe, about every 15 minutes. It enqueues an intentionally invalid job that should fail in a known way, proving queueing, dispatch, worker claim, execution and terminal writes all work end to end.',
 };
 
 const formatDispatchStatus = (row: AdminAsyncWorkerHealthCheckRecord): string => {
@@ -160,17 +156,6 @@ const WorkerHealthInfoButton: React.FC<{
     </Button>
 );
 
-const WorkerHealthLabel: React.FC<{
-    text: string;
-    tooltip: string;
-    ariaLabel: string;
-}> = ({ text, tooltip, ariaLabel }) => (
-    <span className="inline-flex items-center gap-1.5">
-        <span>{text}</span>
-        <WorkerHealthInfoButton ariaLabel={ariaLabel} tooltip={tooltip} />
-    </span>
-);
-
 const StatusBadge: React.FC<{
     status: AdminAsyncWorkerHealthStatus;
 }> = ({ status }) => (
@@ -179,14 +164,77 @@ const StatusBadge: React.FC<{
     </AdminStatusBadge>
 );
 
+const SIGNAL_ARIA_LABELS: Record<WorkerHealthSignalKey, string> = {
+    heartbeat: 'What a worker heartbeat means',
+    queue: 'What stale queued jobs means',
+    canary: 'What the canary proves',
+    selfHeal: 'What worker self-heal means',
+};
+
 const SORT_COLUMNS: ReadonlyArray<{ column: WorkerHealthSortColumn; label: string }> = [
-    { column: 'checkType', label: 'Type' },
-    { column: 'status', label: 'Status' },
     { column: 'startedAt', label: 'Started' },
+    { column: 'checkType', label: 'Type' },
+    { column: 'status', label: 'Result' },
     { column: 'staleQueuedCount', label: 'Stale queued' },
     { column: 'dispatch', label: 'Dispatch' },
     { column: 'failure', label: 'Failure' },
 ];
+
+const WorkerHealthStatusHeader: React.FC<{
+    summary: AdminAsyncWorkerHealthSummary | null;
+    loading: boolean;
+}> = ({ summary, loading }) => {
+    if (!summary) {
+        return (
+            <AdminSurfaceCard role="status" aria-busy={loading || undefined} className="text-sm text-muted-foreground">
+                {loading ? 'Loading worker status…' : 'No worker health rows yet. The first cron heartbeat creates one within a minute.'}
+            </AdminSurfaceCard>
+        );
+    }
+    const verdict = WORKER_HEALTH_VERDICT[summary.overallStatus];
+    const signals = buildWorkerHealthSignals(summary);
+    return (
+        <AdminSurfaceCard className="flex flex-col gap-4" aria-busy={loading || undefined}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <AdminStatusBadge tone={verdict.tone}>{verdict.label}</AdminStatusBadge>
+                        <h2 className="text-base font-semibold leading-6 text-foreground">{verdict.headline}</h2>
+                        <WorkerHealthInfoButton ariaLabel="What overall worker status means" tooltip={WORKER_HEALTH_TOOLTIPS.overallStatus} />
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">{summary.statusReason}</p>
+                </div>
+                {summary.lastHeartbeatAt ? (
+                    <span
+                        className="shrink-0 text-xs tabular-nums text-muted-foreground"
+                        data-tooltip={formatAdminAbsoluteTime(summary.lastHeartbeatAt)}
+                    >
+                        Last checked {formatAdminRelativeTime(summary.lastHeartbeatAt)}
+                    </span>
+                ) : null}
+            </div>
+            <dl className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
+                {signals.map((signal) => (
+                    <div key={signal.key} className="flex min-w-0 flex-col gap-1">
+                        <dt className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                            {signal.label}
+                            <WorkerHealthInfoButton ariaLabel={SIGNAL_ARIA_LABELS[signal.key]} tooltip={WORKER_HEALTH_TOOLTIPS[signal.key]} />
+                        </dt>
+                        <dd className="flex flex-col gap-1">
+                            <AdminStatusBadge tone={signal.tone}>{signal.state}</AdminStatusBadge>
+                            <span
+                                className="text-xs text-muted-foreground"
+                                data-tooltip={signal.observedAt ? formatAdminAbsoluteTime(signal.observedAt) : undefined}
+                            >
+                                {signal.detail}
+                            </span>
+                        </dd>
+                    </div>
+                ))}
+            </dl>
+        </AdminSurfaceCard>
+    );
+};
 
 export const AdminAiWorkerHealthPage: React.FC = () => {
     const [data, setData] = useState<AdminAsyncWorkerHealthResponse | null>(null);
@@ -217,7 +265,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
     }, [loadWorkerHealth]);
 
     const summary = data?.summary || null;
-    const checks = data?.checks || [];
+    const checks = useMemo(() => data?.checks || [], [data]);
     const normalizedSearchQuery = normalizeSearchText(searchQuery);
 
     const typeFilterOptions = useMemo<AdminFilterMenuOption[]>(
@@ -258,17 +306,16 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
         return next;
     }, [filteredChecks, sortColumn, sortDirection]);
 
+    // Clamp at render time instead of syncing state in an effect after the list shrinks.
     const pageCount = Math.max(Math.ceil(sortedChecks.length / WORKER_CHECK_PAGE_SIZE), 1);
+    const safePage = Math.min(page, pageCount);
     const pagedChecks = useMemo(() => {
-        const startIndex = (page - 1) * WORKER_CHECK_PAGE_SIZE;
+        const startIndex = (safePage - 1) * WORKER_CHECK_PAGE_SIZE;
         return sortedChecks.slice(startIndex, startIndex + WORKER_CHECK_PAGE_SIZE);
-    }, [page, sortedChecks]);
-
-    useEffect(() => {
-        if (page > pageCount) setPage(pageCount);
-    }, [page, pageCount]);
+    }, [safePage, sortedChecks]);
 
     const resetTableState = useCallback(() => {
+        trackEvent('admin__worker_health--reset_filters');
         setSearchQuery('');
         setTypeFilters([]);
         setStatusFilters([]);
@@ -287,21 +334,27 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
         setPage(1);
     }, [sortColumn]);
 
-    const hasActiveTableControls = normalizedSearchQuery.length > 0 || typeFilters.length > 0 || statusFilters.length > 0;
-    const showingFrom = sortedChecks.length === 0 ? 0 : ((page - 1) * WORKER_CHECK_PAGE_SIZE) + 1;
-    const showingTo = sortedChecks.length === 0 ? 0 : Math.min(page * WORKER_CHECK_PAGE_SIZE, sortedChecks.length);
+    const hasActiveFilters = normalizedSearchQuery.length > 0 || typeFilters.length > 0 || statusFilters.length > 0;
+    const hasCustomTableState = hasActiveFilters
+        || sortColumn !== DEFAULT_SORT_COLUMN
+        || sortDirection !== DEFAULT_SORT_DIRECTION;
+    const nowMs = Date.now();
 
     return (
         <AdminShell
             title="Worker health"
-            description="Async trip generation heartbeat: stale queued jobs, recent self-heals and canary regressions."
+            description="Is async trip generation draining its queue? Heartbeat, stuck jobs, self-heals and the end-to-end canary."
             showGlobalSearch={false}
             showDateRange={false}
             actions={(
                 <>
                     <Button asChild variant="ghost">
-                        <Link to="/admin/ai-benchmark/telemetry">
-                            Open AI telemetry
+                        <Link
+                            to="/admin/ai-benchmark/telemetry"
+                            onClick={() => trackEvent('admin__worker_health--ai_telemetry')}
+                            {...getAnalyticsDebugAttributes('admin__worker_health--ai_telemetry')}
+                        >
+                            AI telemetry
                             <ArrowRight className="rtl:rotate-180" />
                         </Link>
                     </Button>
@@ -312,123 +365,13 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
             <div className="flex flex-col gap-4">
                 {error ? <AdminErrorAlert title="Could not load worker health" message={error} /> : null}
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <AdminStatCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Overall status"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.overallStatus}
-                                ariaLabel="What overall worker status means"
-                            />
-                        )}
-                        value={summary ? <StatusBadge status={summary.overallStatus} /> : '—'}
-                        hint={summary?.statusReason || (loading ? 'Loading worker status…' : 'No worker health rows yet.')}
-                        isLoading={loading && !summary}
-                    />
-                    <AdminStatCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Last heartbeat"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.heartbeat}
-                                ariaLabel="What a worker heartbeat means"
-                            />
-                        )}
-                        value={<span className="text-lg">{summary ? formatTimestamp(summary.lastHeartbeatAt) : '—'}</span>}
-                        hint={summary?.heartbeatFresh ? 'Cron heartbeat is fresh.' : 'Cron heartbeat is stale or missing.'}
-                        hintTone={summary && !summary.heartbeatFresh ? 'warning' : 'neutral'}
-                        isLoading={loading && !summary}
-                    />
-                    <AdminStatCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Stale queued jobs"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.staleQueued}
-                                ariaLabel="What stale queued jobs means"
-                            />
-                        )}
-                        value={summary ? summary.staleQueuedCount.toLocaleString() : '—'}
-                        hint={summary?.oldestQueuedAgeMs != null ? `Oldest queued age: ${formatDuration(summary.oldestQueuedAgeMs)}` : 'No stale queued jobs recorded in the latest heartbeat.'}
-                        hintTone={summary && summary.staleQueuedCount > 0 ? 'warning' : 'neutral'}
-                        isLoading={loading && !summary}
-                    />
-                    <AdminStatCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Last self-heal"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.selfHeal}
-                                ariaLabel="What worker self-heal means"
-                            />
-                        )}
-                        value={summary?.lastSelfHealStatus ? <StatusBadge status={summary.lastSelfHealStatus} /> : '—'}
-                        hint={summary?.lastSelfHealAt ? formatTimestamp(summary.lastSelfHealAt) : 'No bounded re-kick recorded yet.'}
-                        isLoading={loading && !summary}
-                    />
-                    <AdminStatCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Last canary"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.canary}
-                                ariaLabel="What the canary proves"
-                            />
-                        )}
-                        value={summary?.lastCanaryStatus ? <StatusBadge status={summary.lastCanaryStatus} /> : '—'}
-                        hint={summary?.lastCanaryAt ? formatTimestamp(summary.lastCanaryAt) : 'No canary run recorded yet.'}
-                        isLoading={loading && !summary}
-                    />
-                    <AdminStatCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Canary latency"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.canaryLatency}
-                                ariaLabel="What canary latency means"
-                            />
-                        )}
-                        value={summary ? formatDuration(summary.lastCanaryLatencyMs) : '—'}
-                        hint={summary?.canaryDue ? 'Another canary is due soon.' : 'Recent successful canary is still within the target window.'}
-                        isLoading={loading && !summary}
-                    />
-                </div>
-
-                <AdminSurfaceCard className="grid gap-4 md:grid-cols-3">
-                    <div className="flex flex-col gap-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                            <span>Heartbeat</span>
-                            <WorkerHealthInfoButton ariaLabel="Explain heartbeat checks" tooltip={WORKER_HEALTH_TOOLTIPS.heartbeat} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Scheduled cron proof. If heartbeats stop, the worker loop itself may no longer be running.
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                            <span>Watchdog</span>
-                            <WorkerHealthInfoButton ariaLabel="Explain watchdog checks" tooltip={WORKER_HEALTH_TOOLTIPS.selfHeal} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Stale-queue detector. It only records when queued work looked stuck and the normal worker path was re-kicked once.
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                            <span>Canary</span>
-                            <WorkerHealthInfoButton ariaLabel="Explain canary checks" tooltip={WORKER_HEALTH_TOOLTIPS.canary} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Safe end-to-end probe. Healthy means queueing, dispatch, claiming, execution, and terminal writes all completed on the live path.
-                        </p>
-                    </div>
-                </AdminSurfaceCard>
+                <WorkerHealthStatusHeader summary={summary} loading={loading} />
 
                 <AdminSurfaceCard className="flex flex-col gap-4 p-0">
                     <AdminSectionHeader
                         className="px-4 pt-4"
                         title="Recent checks"
-                        description="Newest first. Heartbeats show cron health, watchdog rows capture stale-queue incidents, and canaries prove the drain path end to end."
-                        actions={(
-                            <span className="text-sm tabular-nums text-muted-foreground">
-                                {checks.length.toLocaleString()} rows loaded
-                            </span>
-                        )}
+                        description={`The latest ${WORKER_CHECK_FETCH_LIMIT} checks. Filter to failed rows to see what broke and when.`}
                     />
 
                     <div className="flex flex-wrap items-center gap-2 px-4">
@@ -442,7 +385,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                 setSearchQuery('');
                                 setPage(1);
                             }}
-                            placeholder="Search type, dispatch, or failure text"
+                            placeholder="Search type, dispatch or failure"
                             aria-label="Search worker health checks"
                             containerClassName="h-8 w-full sm:w-72"
                         />
@@ -456,7 +399,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                             }}
                         />
                         <AdminFilterMenu
-                            label="Status"
+                            label="Result"
                             options={statusFilterOptions}
                             selectedValues={statusFilters}
                             onSelectedValuesChange={(next) => {
@@ -464,10 +407,18 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                 setPage(1);
                             }}
                         />
-                        <Button type="button" variant="ghost" size="sm" onClick={resetTableState}>
-                            <X />
-                            Reset
-                        </Button>
+                        {hasCustomTableState ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={resetTableState}
+                                {...getAnalyticsDebugAttributes('admin__worker_health--reset_filters')}
+                            >
+                                <X />
+                                Reset
+                            </Button>
+                        ) : null}
                     </div>
 
                     <Table>
@@ -493,85 +444,85 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {pagedChecks.length === 0 && !loading ? (
+                            {loading && checks.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                        {hasActiveTableControls ? 'No checks match your filters.' : 'No worker health rows yet.'}
+                                    <TableCell colSpan={SORT_COLUMNS.length} className="px-4 py-8 text-center text-sm text-muted-foreground" role="status">
+                                        Loading worker health…
                                     </TableCell>
                                 </TableRow>
                             ) : null}
-                            {loading && checks.length === 0 ? (
+                            {pagedChecks.length === 0 && !loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                        Loading worker health…
+                                    <TableCell colSpan={SORT_COLUMNS.length} className="p-4">
+                                        <AdminEmptyState
+                                            className="py-6"
+                                            title={hasActiveFilters ? 'No checks match your filters.' : 'No worker health rows yet.'}
+                                            description={hasActiveFilters
+                                                ? 'Clear the search or filters to see every loaded check.'
+                                                : 'The cron heartbeat writes the first row within a minute of a deploy.'}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ) : null}
                             {pagedChecks.map((row) => (
                                 <TableRow key={row.id} className={`${ADMIN_TABLE_ROW_SURFACE_CLASS} align-top`}>
+                                    <TableCell className={`px-4 py-3 tabular-nums text-foreground ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <div data-tooltip={formatAdminAbsoluteTime(row.startedAt)}>
+                                            {formatAdminRelativeTime(row.startedAt, nowMs)}
+                                        </div>
+                                        {row.finishedAt ? (
+                                            <div className="text-xs text-muted-foreground">
+                                                Took {formatWorkerDuration(Date.parse(row.finishedAt) - Date.parse(row.startedAt))}
+                                            </div>
+                                        ) : null}
+                                    </TableCell>
                                     <TableCell className={`px-4 py-3 font-medium text-foreground ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                         {CHECK_TYPE_LABELS[row.checkType]}
                                     </TableCell>
                                     <TableCell className={`px-4 py-3 ${sortColumn === 'status' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                         <StatusBadge status={row.status} />
                                     </TableCell>
-                                    <TableCell className={`px-4 py-3 tabular-nums text-foreground ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                        <div>{formatTimestamp(row.startedAt)}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Finished: {formatTimestamp(row.finishedAt)}
-                                        </div>
-                                    </TableCell>
                                     <TableCell className={`px-4 py-3 tabular-nums text-foreground ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                         <div>{row.staleQueuedCount.toLocaleString()}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Oldest: {formatDuration(row.oldestQueuedAgeMs)}
-                                        </div>
+                                        {row.staleQueuedCount > 0 ? (
+                                            <div className="text-xs text-muted-foreground">
+                                                Oldest {formatWorkerDuration(row.oldestQueuedAgeMs)}
+                                            </div>
+                                        ) : null}
                                     </TableCell>
                                     <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                         <div>{formatDispatchStatus(row)}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Canary latency: {formatDuration(row.canaryLatencyMs)}
-                                        </div>
+                                        {row.checkType === 'canary' ? (
+                                            <div className="text-xs text-muted-foreground">
+                                                Canary latency {formatWorkerDuration(row.canaryLatencyMs)}
+                                            </div>
+                                        ) : null}
                                     </TableCell>
                                     <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                        <div className="font-mono text-xs">{row.failureCode || '—'}</div>
-                                        <div className="max-w-[340px] whitespace-normal break-words text-xs text-muted-foreground">
-                                            {row.failureMessage || 'No failure recorded.'}
-                                        </div>
+                                        {row.failureCode || row.failureMessage ? (
+                                            <>
+                                                <div className="font-mono text-xs">{row.failureCode || '—'}</div>
+                                                <div className="max-w-[340px] whitespace-normal break-words text-xs text-muted-foreground">
+                                                    {row.failureMessage}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-4 text-sm text-muted-foreground">
-                        <span className="tabular-nums">
-                            {sortedChecks.length === 0
-                                ? 'Showing 0 checks'
-                                : `Showing ${showingFrom}-${showingTo} of ${sortedChecks.length}`}
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                                disabled={page === 1}
-                            >
-                                Previous
-                            </Button>
-                            <span className="tabular-nums">Page {page} / {pageCount}</span>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage((current) => Math.min(current + 1, pageCount))}
-                                disabled={page >= pageCount}
-                            >
-                                Next
-                            </Button>
-                        </div>
-                    </div>
+                    <AdminPagination
+                        className="px-4 pb-4"
+                        page={safePage}
+                        pageSize={WORKER_CHECK_PAGE_SIZE}
+                        totalItems={sortedChecks.length}
+                        onPageChange={setPage}
+                        noun="checks"
+                    />
                 </AdminSurfaceCard>
             </div>
         </AdminShell>

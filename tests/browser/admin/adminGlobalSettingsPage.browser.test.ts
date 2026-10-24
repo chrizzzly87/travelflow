@@ -136,6 +136,26 @@ describe('AdminGlobalSettingsPage', () => {
     expect(screen.queryByText(/internal\.example/)).toBeNull();
   });
 
+  it('retries a failed load from the error itself', async () => {
+    mocks.refreshPublicAiRuntimeSettings.mockRejectedValueOnce(new Error('TypeError: Failed to fetch'));
+    const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
+    render(React.createElement(AdminGlobalSettingsPage));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reload' }));
+    await screen.findByRole('heading', { level: 2, name: 'Trip Agent' });
+    expect(mocks.refreshPublicAiRuntimeSettings).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
+  });
+
+  it('describes the last change relative to now', async () => {
+    const { formatSettingsChangedAt } = await import('../../../pages/AdminGlobalSettingsPage');
+    const now = Date.parse('2026-09-10T10:01:07Z');
+    expect(formatSettingsChangedAt('2026-09-08T10:01:07Z', now)).toBe('2 days ago');
+    expect(formatSettingsChangedAt('2026-09-10T09:01:07Z', now)).toBe('1 hour ago');
+    expect(formatSettingsChangedAt('2026-09-10T10:01:00Z', now)).toBe('just now');
+    expect(formatSettingsChangedAt('not a date', now)).toBe('not a date');
+  });
+
   it('shows an authored sentence instead of the raw save error', async () => {
     mocks.updateAppRuntimeSettings.mockRejectedValueOnce(new Error('permission denied for table app_runtime_settings'));
     await renderPage();
