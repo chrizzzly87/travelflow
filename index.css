@@ -2,7 +2,7 @@
 @import "./styles/flagpack.css";
 @import "./styles/document.css";
 @import "./styles/loading-shell.css";
-@import "./styles/tremor-theme.css";
+@import "./styles/admin-charts.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -23,7 +23,6 @@
 @source not "./test/**";
 @source not "./scripts/**";
 @source not "./src/routeTree.gen.ts";
-@source "./node_modules/@tremor/react/dist/**/*.{js,cjs}";
 
 /*
  * Featured country route cards read their palette from data/countryRoutes.json,

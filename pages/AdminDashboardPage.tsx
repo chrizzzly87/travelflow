@@ -15,7 +15,9 @@ import {
     filterDashboardUsersByRange,
     TRIP_STATUS_STACKED_CATEGORIES,
 } from '../components/admin/adminDashboardChartData';
-import { Card, Metric, Text, Flex, Grid, ProgressBar, BarChart, Title } from '@tremor/react';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
+import { AdminMetric, AdminProgressBar, AdminText, AdminTitle } from '../components/admin/AdminText';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 
 const adminDashboardNumberFormatter = new Intl.NumberFormat();
 
@@ -158,49 +160,54 @@ export const AdminDashboardPage: React.FC = () => {
                 </section>
             )}
 
-            <Grid numItemsSm={2} numItemsLg={4} className="gap-6 mt-6">
-                <Card decoration="top" decorationColor="indigo">
-                    <Text>Total Users</Text>
-                    <Metric><AdminCountUpNumber value={metrics.totalUsers} /></Metric>
+            <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <AdminSurfaceCard className="border-t-4 border-t-[var(--admin-chart-indigo)]">
+                    <AdminText>Total Users</AdminText>
+                    <AdminMetric><AdminCountUpNumber value={metrics.totalUsers} /></AdminMetric>
                     <div className="mt-4 space-y-2">
                         {userLevelBreakdown.map((level) => (
-                            <Flex
+                            <div
                                 key={`total-users-level-${level.key}`}
-                                className="rounded-md border border-border bg-secondary px-2 py-1.5"
+                                className="flex items-center justify-between rounded-md border border-border bg-secondary px-2 py-1.5"
                                 data-tooltip={level.tooltip}
                             >
-                                <Text>{level.label}</Text>
-                                <Text>{formatValue(level.count)} ({level.shareLabel})</Text>
-                            </Flex>
+                                <AdminText>{level.label}</AdminText>
+                                <AdminText>{formatValue(level.count)} ({level.shareLabel})</AdminText>
+                            </div>
                         ))}
                     </div>
-                </Card>
-                <Card decoration="top" decorationColor="emerald">
-                    <Text>Total Trips</Text>
-                    <Metric><AdminCountUpNumber value={metrics.totalTrips} /></Metric>
-                    <Flex className="mt-4">
-                        <Text>Active / Total</Text>
-                        <Text>{formatValue(metrics.activeTrips)} / {formatValue(metrics.totalTrips)}</Text>
-                    </Flex>
-                    <ProgressBar value={metrics.totalTrips ? (metrics.activeTrips / metrics.totalTrips) * 100 : 0} className="mt-2" />
-                </Card>
-                <Card decoration="top" decorationColor="amber">
-                    <Text>Expired Trips</Text>
-                    <Metric><AdminCountUpNumber value={metrics.expiredTrips} /></Metric>
-                    <Text className="mt-4">Lifecycle pressure point</Text>
-                </Card>
-                <Card decoration="top" decorationColor="slate">
-                    <Text>Suspended Users</Text>
-                    <Metric><AdminCountUpNumber value={metrics.disabledUsers} /></Metric>
-                    <Text className="mt-4">Accounts blocked or locked</Text>
-                </Card>
-            </Grid>
+                </AdminSurfaceCard>
+                <AdminSurfaceCard className="border-t-4 border-t-[var(--admin-chart-emerald)]">
+                    <AdminText>Total Trips</AdminText>
+                    <AdminMetric><AdminCountUpNumber value={metrics.totalTrips} /></AdminMetric>
+                    <div className="mt-4 flex items-center justify-between">
+                        <AdminText>Active / Total</AdminText>
+                        <AdminText>{formatValue(metrics.activeTrips)} / {formatValue(metrics.totalTrips)}</AdminText>
+                    </div>
+                    <AdminProgressBar
+                        label="Active share of total trips"
+                        value={metrics.totalTrips ? (metrics.activeTrips / metrics.totalTrips) * 100 : 0}
+                        className="mt-2"
+                    />
+                </AdminSurfaceCard>
+                <AdminSurfaceCard className="border-t-4 border-t-[var(--admin-chart-amber)]">
+                    <AdminText>Expired Trips</AdminText>
+                    <AdminMetric><AdminCountUpNumber value={metrics.expiredTrips} /></AdminMetric>
+                    <AdminText className="mt-4">Lifecycle pressure point</AdminText>
+                </AdminSurfaceCard>
+                <AdminSurfaceCard className="border-t-4 border-t-[var(--admin-chart-slate)]">
+                    <AdminText>Suspended Users</AdminText>
+                    <AdminMetric><AdminCountUpNumber value={metrics.disabledUsers} /></AdminMetric>
+                    <AdminText className="mt-4">Accounts blocked or locked</AdminText>
+                </AdminSurfaceCard>
+            </div>
 
-            <Grid numItemsLg={2} className="gap-6 mt-6">
-                <Card>
-                    <Title>User Levels Over Time</Title>
-                    <Text className="mt-1">Cumulative total users by level for each day in the selected range.</Text>
-                    <BarChart
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <AdminSurfaceCard>
+                    <AdminTitle>User Levels Over Time</AdminTitle>
+                    <AdminText className="mt-1">Cumulative total users by level for each day in the selected range.</AdminText>
+                    <AdminBarChart
+                        ariaLabel="User levels over time"
                         className="mt-6 h-72"
                         data={userLevelTrendStackedChartData}
                         index="date"
@@ -208,12 +215,13 @@ export const AdminDashboardPage: React.FC = () => {
                         stack
                         yAxisWidth={48}
                     />
-                </Card>
+                </AdminSurfaceCard>
 
-                <Card>
-                    <Title>Trips by Status Over Time</Title>
-                    <Text className="mt-1">Single stacked view of active, expired, and archived trips by creation day.</Text>
-                    <BarChart
+                <AdminSurfaceCard>
+                    <AdminTitle>Trips by Status Over Time</AdminTitle>
+                    <AdminText className="mt-1">Single stacked view of active, expired, and archived trips by creation day.</AdminText>
+                    <AdminBarChart
+                        ariaLabel="Trips by status over time"
                         className="mt-6 h-72"
                         data={tripStatusStackedChartData}
                         index="date"
@@ -221,14 +229,15 @@ export const AdminDashboardPage: React.FC = () => {
                         stack
                         yAxisWidth={48}
                     />
-                </Card>
-            </Grid>
+                </AdminSurfaceCard>
+            </div>
 
             <section className="mt-6">
-                <Card>
-                    <Title>New Users vs New Trips</Title>
-                    <Text className="mt-1">Acquisition and planning throughput trend within the selected date range.</Text>
-                    <BarChart
+                <AdminSurfaceCard>
+                    <AdminTitle>New Users vs New Trips</AdminTitle>
+                    <AdminText className="mt-1">Acquisition and planning throughput trend within the selected date range.</AdminText>
+                    <AdminBarChart
+                        ariaLabel="New users vs new trips"
                         className="mt-6 h-72"
                         data={usersVsTripsStackedChartData}
                         index="date"
@@ -236,11 +245,11 @@ export const AdminDashboardPage: React.FC = () => {
                         stack
                         yAxisWidth={48}
                     />
-                </Card>
+                </AdminSurfaceCard>
             </section>
 
             <section className="mt-6">
-                <Card>
+                <AdminSurfaceCard>
                     <div className="flex flex-col gap-y-1.5 pb-4">
                         <h3 className="font-semibold leading-none tracking-tight">Recent Users</h3>
                         <p className="text-sm text-muted-foreground">Most recently created accounts with identity and sign-in context.</p>
@@ -273,7 +282,7 @@ export const AdminDashboardPage: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </Card>
+                </AdminSurfaceCard>
             </section>
         </AdminShell>
     );
