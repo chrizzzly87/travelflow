@@ -9,6 +9,9 @@ import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, getStoredAppLanguage, norm
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisualsUtils';
 import { AppModal } from './ui/app-modal';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 
 interface AddActivityModalProps {
     isOpen: boolean;
@@ -277,14 +280,14 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor={titleInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">Title</label>
-                                <input 
+                                <Input
                                     id={titleInputId}
                                     ref={manualTitleInputRef}
-                                    type="text" 
+                                    type="text"
                                     aria-label="Title"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    className="w-full p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
+                                    className="rounded-lg"
                                     placeholder={isDayTripKind ? t('tripView.activityPlan.dayTripTitlePlaceholder') : 'e.g. Visit Louvre Museum'}
                                 />
                             </div>
@@ -307,38 +310,39 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             </fieldset>
                             <div>
                                 <label htmlFor={descriptionInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">Description</label>
-                                <textarea 
+                                <Textarea
                                     id={descriptionInputId}
                                     aria-label="Description"
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
-                                    className="w-full p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
+                                    className="field-sizing-fixed h-24 resize-none rounded-lg bg-card dark:bg-card"
                                     placeholder="Notes..."
                                 />
                             </div>
-                            <button 
+                            <Button
                                 type="button"
                                 onClick={() => { void handleManualAdd(); }}
-                                disabled={!canSubmitManual || isResolvingDestination}
-                                className="w-full py-3 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors disabled:opacity-50"
+                                disabled={!canSubmitManual}
+                                loading={isResolvingDestination}
+                                className="h-auto w-full rounded-xl py-3 font-bold"
                             >
                                 {isResolvingDestination
                                     ? t('tripView.activityPlan.findingPlace')
                                     : (isDayTripKind ? t('tripView.activityPlan.submitDayTrip') : 'Add Activity')}
-                            </button>
+                            </Button>
                         </div>
                     ) : (
                         <div className="space-y-6">
                             <div className="relative">
                                 <label htmlFor={promptInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">What are you looking for?</label>
                                 <div className="flex gap-2">
-                                    <input 
+                                    <Input
                                         id={promptInputId}
-                                        type="text" 
+                                        type="text"
                                         aria-label="What are you looking for?"
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
-                                        className="flex-1 p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
+                                        className="flex-1 rounded-lg"
                                         placeholder="e.g. Something romantic for dinner, or kid-friendly park"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && !isGenerating) {
@@ -346,14 +350,16 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                             }
                                         }}
                                     />
-                                    <button 
+                                    <Button
                                         type="button"
+                                        size="lg"
                                         onClick={handleGenerate}
-                                        disabled={!prompt || isGenerating}
-                                        className="px-4 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors disabled:opacity-50"
+                                        disabled={!prompt}
+                                        loading={isGenerating}
+                                        className="rounded-lg px-4 font-normal has-[>svg]:px-4"
                                     >
                                         {isGenerating ? 'Thinking...' : 'Generate'}
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
 

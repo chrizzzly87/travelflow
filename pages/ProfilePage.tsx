@@ -11,6 +11,7 @@ import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSk
 import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
 import { PASSPORT_FEATURE_ENABLED } from '../services/passportService';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import {
     getPinnedTrips,
@@ -38,11 +39,16 @@ import {
 import { normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import type { ITrip } from '../types';
+import { cn } from '../lib/utils';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
 import { showAppToast } from '../components/ui/appToast';
 import { isTripExpiredByTimestamp } from '../config/productLimits';
 
 const PROFILE_TRIPS_PAGE_SIZE = 6;
+// Selection toolbar actions: the shared small `Button`, kept at the toolbar's
+// compact text size. Tinted ones layer their status colour on `outline`.
+const profileSelectionActionClassName = 'rounded-lg text-xs font-semibold';
+const profileSelectionAmberClassName = 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/12 dark:text-amber-200 dark:hover:bg-amber-400/20 dark:hover:text-amber-200';
 const PROFILE_PASSPORT_QUERY_KEY = 'passport';
 const PROFILE_PASSPORT_QUERY_VALUE = 'open';
 
@@ -894,71 +900,85 @@ export const ProfilePage: React.FC = () => {
                                         total: tabCounts[tab] ?? tripsForTab.length,
                                     })}
                                 </span>
-                                <button
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleSelectVisibleTrips}
-                                    className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
+                                    className={profileSelectionActionClassName}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--visible', { tab })}
                                 >
                                     {t('selection.selectVisible')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleSelectExpiredTrips}
-                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                                    className={cn(profileSelectionActionClassName, profileSelectionAmberClassName)}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--expired', { tab })}
                                 >
                                     {t('selection.selectExpired')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleSelectExampleTrips}
-                                    className="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30"
+                                    className={cn(profileSelectionActionClassName, 'border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100 hover:text-sky-800 dark:border-sky-400/30 dark:bg-sky-400/12 dark:text-sky-200 dark:hover:bg-sky-400/20 dark:hover:text-sky-200')}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--examples', { tab })}
                                 >
                                     {t('selection.selectExamples')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleToggleFavoriteSelectedTrips}
-                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                                    className={cn(profileSelectionActionClassName, profileSelectionAmberClassName)}
                                     {...getAnalyticsDebugAttributes('profile__trip_favorite--batch_toggle', {
                                         tab,
                                         selected_count: selectedTripCount,
                                     })}
                                 >
                                     {t('selection.toggleFavorites')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="secondary"
                                     onClick={handleToggleVisibilitySelectedTrips}
-                                    className="inline-flex items-center rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-slate-200"
+                                    className={cn(profileSelectionActionClassName, 'border border-border')}
                                     {...getAnalyticsDebugAttributes('profile__trip_visibility--batch_toggle', {
                                         tab,
                                         selected_count: selectedTripCount,
                                     })}
                                 >
                                     {t('selection.toggleVisibility')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={() => void handleArchiveSelectedTrips()}
-                                    className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
+                                    className={cn(profileSelectionActionClassName, 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 hover:text-rose-800 dark:border-rose-400/30 dark:bg-rose-400/12 dark:text-rose-200 dark:hover:bg-rose-400/20 dark:hover:text-rose-200')}
                                     {...getAnalyticsDebugAttributes('profile__trip_archive--batch', {
                                         tab,
                                         selected_count: selectedTripCount,
                                     })}
                                 >
                                     {t('selection.archiveSelected')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleEndSelection}
-                                    className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
+                                    className={profileSelectionActionClassName}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--end', { tab })}
                                 >
                                     {t('selection.end')}
-                                </button>
+                                </Button>
                                 <span className="text-[11px] text-muted-foreground">{t('selection.hotkeyHint')}</span>
                             </div>
                         )}

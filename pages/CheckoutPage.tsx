@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SpinnerGap, SuitcaseRolling, UserCircle, X } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SuitcaseRolling, UserCircle, X } from '@phosphor-icons/react';
 import { Link, useLocation, useNavigate } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
+import { Button, buttonVariants } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
+import { Input } from '../components/ui/input';
+import { Spinner } from '../components/ui/spinner';
 import { showAppToast } from '../components/ui/appToast';
 import { PLAN_CATALOG } from '../config/planCatalog';
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
@@ -196,9 +199,14 @@ const resolveDiscountBadgeLabel = (
     return fallbackCode ? fallbackCode.toUpperCase() : null;
 };
 
-const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200 dark:shadow-none';
+// Layered on the shared `Input`: the checkout fields are 44px tall and flag native
+// constraint failures (`:user-invalid`) once the user has interacted with them.
+const checkoutInputClassName = 'mt-1 h-11 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200';
 const checkoutFieldLabelClassName = 'text-sm font-medium text-foreground';
-const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+// Checkout actions are the shared `Button` at the page's 44px action height.
+const checkoutActionClassName = 'h-11 px-4 font-semibold has-[>svg]:px-4';
+const checkoutPrimaryLinkClassName = cn(buttonVariants({ variant: 'default' }), checkoutActionClassName);
+const checkoutSecondaryLinkClassName = cn(buttonVariants({ variant: 'outline' }), checkoutActionClassName);
 const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground';
 
 const normalizeAuthErrorCode = (error: unknown): string => {
@@ -962,7 +970,7 @@ export const CheckoutPage: React.FC = () => {
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'syncing' ? (
                     <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
-                        <SpinnerGap size={16} className="animate-spin text-accent-600 dark:text-accent-300" />
+                        <Spinner className="text-accent-600 dark:text-accent-300" />
                         <span>{t('checkout.paymentSyncingMessage', { ns: 'pricing' })}</span>
                     </div>
                 ) : null}
@@ -983,7 +991,7 @@ export const CheckoutPage: React.FC = () => {
 
                 {postPaymentClaimState === 'processing' ? (
                     <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
-                        <SpinnerGap size={16} className="animate-spin text-accent-600 dark:text-accent-300" />
+                        <Spinner className="text-accent-600 dark:text-accent-300" />
                         <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
                     </div>
                 ) : null}
@@ -999,7 +1007,7 @@ export const CheckoutPage: React.FC = () => {
                     {shouldShowPostPaymentTripAction ? (
                         <Link
                             to={buildPath('tripDetail', { tripId: postPaymentTripId! })}
-                            className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                            className={checkoutPrimaryLinkClassName}
                             onClick={() => trackEvent('checkout__success_cta--trip', { tier: selectedTierKey, source })}
                             {...getAnalyticsDebugAttributes('checkout__success_cta--trip')}
                         >
@@ -1011,7 +1019,7 @@ export const CheckoutPage: React.FC = () => {
                     {shouldShowTripReturnAction ? (
                         <Link
                             to={returnToPath}
-                            className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
+                            className={checkoutSecondaryLinkClassName}
                             onClick={() => trackEvent('checkout__success_cta--return_trip', { tier: selectedTierKey, source })}
                             {...getAnalyticsDebugAttributes('checkout__success_cta--return_trip')}
                         >
@@ -1022,7 +1030,7 @@ export const CheckoutPage: React.FC = () => {
 
                     <Link
                         to={createTripPath}
-                        className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-border bg-card text-foreground hover:bg-secondary' : 'bg-accent-600 text-white hover:bg-accent-700')}
+                        className={shouldShowPostPaymentTripAction ? checkoutSecondaryLinkClassName : checkoutPrimaryLinkClassName}
                         onClick={() => trackEvent('checkout__success_cta--create_trip', { tier: selectedTierKey, source })}
                         {...getAnalyticsDebugAttributes('checkout__success_cta--create_trip')}
                     >
@@ -1033,7 +1041,7 @@ export const CheckoutPage: React.FC = () => {
                     {shouldShowProfileAction ? (
                         <Link
                             to={profileActionPath}
-                            className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
+                            className={checkoutSecondaryLinkClassName}
                             onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
                             {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
                         >
@@ -1685,7 +1693,7 @@ export const CheckoutPage: React.FC = () => {
                                         <div className="grid gap-4 md:grid-cols-2">
                                             <label className="block">
                                                 <span className={checkoutFieldLabelClassName}>{t('labels.email', { ns: 'auth' })}</span>
-                                                <input
+                                                <Input
 	                                                    name="email"
 	                                                    type="email"
 	                                                    aria-label={t('labels.email', { ns: 'auth' })}
@@ -1702,7 +1710,7 @@ export const CheckoutPage: React.FC = () => {
                                             </label>
                                             <label className="block">
                                                 <span className={checkoutFieldLabelClassName}>{t('labels.password', { ns: 'auth' })}</span>
-                                                <input
+                                                <Input
 	                                                    name="password"
 	                                                    type="password"
 	                                                    aria-label={t('labels.password', { ns: 'auth' })}
@@ -1764,19 +1772,19 @@ export const CheckoutPage: React.FC = () => {
                                             </div>
                                         ) : null}
 
-                                        <button
+                                        <Button
                                             type="submit"
-                                            disabled={isAuthSubmitting || isAuthLoading}
-                                            className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
+                                            disabled={isAuthLoading}
+                                            loading={isAuthSubmitting}
+                                            className={cn(checkoutActionClassName, 'w-full sm:w-auto')}
                                             {...getAnalyticsDebugAttributes(`checkout__auth--${authMode}`)}
                                         >
-                                            {isAuthSubmitting ? <SpinnerGap size={16} className="animate-spin" /> : null}
                                             {isAuthSubmitting
                                                 ? t('actions.submitting', { ns: 'auth' })
                                                 : authMode === 'login'
                                                     ? t('actions.submitLogin', { ns: 'auth' })
                                                     : t('actions.submitRegister', { ns: 'auth' })}
-                                        </button>
+                                        </Button>
                                     </form>
                                 </div>
                             ) : (
@@ -1824,7 +1832,7 @@ export const CheckoutPage: React.FC = () => {
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.firstName', { ns: 'profile' })}</span>
-	                                            <input
+	                                            <Input
 	                                                aria-label={t('settings.fields.firstName', { ns: 'profile' })}
 	                                                value={form.firstName}
                                                 onChange={(event) => setField('firstName', event.target.value)}
@@ -1835,7 +1843,7 @@ export const CheckoutPage: React.FC = () => {
                                         </label>
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.lastName', { ns: 'profile' })}</span>
-	                                            <input
+	                                            <Input
 	                                                aria-label={t('settings.fields.lastName', { ns: 'profile' })}
 	                                                value={form.lastName}
                                                 onChange={(event) => setField('lastName', event.target.value)}
@@ -1862,7 +1870,7 @@ export const CheckoutPage: React.FC = () => {
                                         </div>
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.city', { ns: 'profile' })}</span>
-	                                            <input
+	                                            <Input
 	                                                aria-label={t('settings.fields.city', { ns: 'profile' })}
 	                                                value={form.city}
                                                 onChange={(event) => setField('city', event.target.value)}
@@ -1884,41 +1892,44 @@ export const CheckoutPage: React.FC = () => {
                                             </div>
                                             {!hasInlineCheckout ? (
                                                 <div className="flex flex-wrap gap-3">
-                                                    <button
+                                                    <Button
                                                         type="button"
-                                                        disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier || isTravelerDetailsSaving}
+                                                        disabled={isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier || isTravelerDetailsSaving}
+                                                        loading={isSubmitting}
+                                                        icon={<CreditCard size={18} weight="duotone" />}
                                                         onClick={() => void handleContinueToPayment()}
-                                                        className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
+                                                        className={cn(checkoutActionClassName, 'w-full sm:w-auto')}
                                                         {...getAnalyticsDebugAttributes('checkout__payment--resume')}
                                                     >
-                                                        {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
                                                         {checkoutButtonLabel}
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             ) : null}
                                         </div>
                                     ) : (
                                         <div className="flex flex-wrap gap-3">
-                                            <button
+                                            <Button
                                                 type="button"
-                                                disabled={isTravelerDetailsSaving || isSubmitting}
+                                                variant="outline"
+                                                disabled={isSubmitting}
+                                                loading={isTravelerDetailsSaving}
                                                 onClick={() => void handleSaveTravelerDetails()}
-                                                className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
+                                                className={checkoutActionClassName}
                                                 {...getAnalyticsDebugAttributes('checkout__traveler_details--save')}
                                             >
-                                                {isTravelerDetailsSaving ? <SpinnerGap size={18} className="animate-spin" /> : null}
                                                 {t('checkout.travelerDetailsSaveCta', { ns: 'pricing' })}
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
                                                 type="button"
-                                                disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier || isTravelerDetailsSaving}
+                                                disabled={isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier || isTravelerDetailsSaving}
+                                                loading={isSubmitting}
+                                                icon={<CreditCard size={18} weight="duotone" />}
                                                 onClick={() => void handleContinueToPayment()}
-                                                className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
+                                                className={cn(checkoutActionClassName, 'w-full sm:w-auto')}
                                                 {...getAnalyticsDebugAttributes(hasInlineCheckout ? 'checkout__payment--refresh' : 'checkout__payment--start')}
                                             >
-                                                {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
                                                 {checkoutButtonLabel}
-                                            </button>
+                                            </Button>
                                         </div>
                                     )}
                                 </div>
@@ -1941,7 +1952,7 @@ export const CheckoutPage: React.FC = () => {
                                             <div className="pointer-events-none absolute inset-0 z-10 bg-card/95">
                                                 <div className="flex h-full flex-col gap-4 p-6">
                                                     <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                                                        <SpinnerGap size={16} className="animate-spin" />
+                                                        <Spinner />
                                                         {t('checkout.loading', { ns: 'pricing' })}
                                                     </div>
                                                     <div className="h-12 w-full animate-pulse rounded-md bg-secondary" />
@@ -1962,7 +1973,7 @@ export const CheckoutPage: React.FC = () => {
                             {isSubscriptionSummaryLoading ? (
                                 <div className="rounded-2xl border border-border bg-card px-6 py-8 shadow-sm dark:shadow-none">
                                     <div className="inline-flex items-center gap-3 text-sm font-medium text-muted-foreground">
-                                        <SpinnerGap size={18} className="animate-spin" />
+                                        <Spinner className="size-[18px]" />
                                         {t('checkout.loadingSubscriptionState', { ns: 'pricing' })}
                                     </div>
                                 </div>
@@ -2017,26 +2028,28 @@ export const CheckoutPage: React.FC = () => {
                                         ) : null}
 
                                         <div className="flex flex-wrap gap-3">
-                                            <button
+                                            <Button
                                                 type="button"
                                                 onClick={() => void handleApplyUpgrade()}
-                                                disabled={isUpgradeSubmitting || isUpgradePreviewLoading}
-                                                className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                disabled={isUpgradePreviewLoading}
+                                                loading={isUpgradeSubmitting}
+                                                icon={<CreditCard size={18} weight="duotone" />}
+                                                className={checkoutActionClassName}
                                                 {...getAnalyticsDebugAttributes('checkout__upgrade--confirm')}
                                             >
-                                                {isUpgradeSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
                                                 {t('checkout.upgradeConfirmCta', { ns: 'pricing' })}
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
                                                 type="button"
+                                                variant="outline"
                                                 onClick={() => void handleOpenBillingManagement('manage')}
-                                                disabled={isBillingManagementLoading}
-                                                className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
+                                                loading={isBillingManagementLoading}
+                                                icon={<ArrowSquareOut size={18} weight="duotone" />}
+                                                className={checkoutActionClassName}
                                                 {...getAnalyticsDebugAttributes('checkout__upgrade--manage_billing')}
                                             >
-                                                {isBillingManagementLoading ? <SpinnerGap size={18} className="animate-spin" /> : <ArrowSquareOut size={18} weight="duotone" />}
                                                 {t('checkout.manageBillingCta', { ns: 'pricing' })}
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 </CheckoutStepSection>
@@ -2067,24 +2080,25 @@ export const CheckoutPage: React.FC = () => {
 
                                         <div className="flex flex-wrap gap-3">
                                             {isCurrentPlanFlow ? (
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    variant="soft"
                                                     disabled
-                                                    className={cn(checkoutActionClassName, 'cursor-not-allowed border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30')}
+                                                    className={checkoutActionClassName}
                                                 >
                                                     {t('checkout.currentPlanCta', { ns: 'pricing' })}
-                                                </button>
+                                                </Button>
                                             ) : null}
-                                            <button
+                                            <Button
                                                 type="button"
                                                 onClick={() => void handleOpenBillingManagement('manage')}
-                                                disabled={isBillingManagementLoading}
-                                                className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                loading={isBillingManagementLoading}
+                                                icon={<ArrowSquareOut size={18} weight="duotone" />}
+                                                className={checkoutActionClassName}
                                                 {...getAnalyticsDebugAttributes('checkout__manage_billing--cta')}
                                             >
-                                                {isBillingManagementLoading ? <SpinnerGap size={18} className="animate-spin" /> : <ArrowSquareOut size={18} weight="duotone" />}
                                                 {t('checkout.manageBillingCta', { ns: 'pricing' })}
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 </CheckoutStepSection>
@@ -2159,7 +2173,7 @@ export const CheckoutPage: React.FC = () => {
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                         {isDiscountPreviewLoading ? (
-                                                            <SpinnerGap size={12} className="animate-spin" />
+                                                            <Spinner className="size-3" />
                                                         ) : null}
                                                         <span className="truncate">{appliedDiscountBadgeLabel || normalizedAppliedDiscountCode}</span>
                                                         <button
@@ -2175,29 +2189,26 @@ export const CheckoutPage: React.FC = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-3">
-	                                                    <input
-	                                                        type="text"
-	                                                        aria-label={t('voucher.placeholder', { ns: 'pricing' })}
-	                                                        value={discountInput}
+                                                    <Input
+                                                        type="text"
+                                                        aria-label={t('voucher.placeholder', { ns: 'pricing' })}
+                                                        value={discountInput}
                                                         onChange={(event) => handleDiscountInputChange(event.target.value)}
                                                         placeholder={t('voucher.placeholder', { ns: 'pricing' })}
                                                         autoCapitalize="characters"
-                                                        className="h-11 flex-1 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none"
+                                                        className="h-11 flex-1 font-medium"
                                                     />
-                                                    <button
+                                                    <Button
                                                         type="button"
                                                         onClick={handleApplyVoucher}
-                                                        disabled={isDiscountPreviewLoading}
-                                                        className={cn(checkoutActionClassName, 'shrink-0 bg-accent-600 text-white hover:bg-accent-700')}
+                                                        loading={isDiscountPreviewLoading}
+                                                        className={cn(checkoutActionClassName, 'shrink-0')}
                                                         {...getAnalyticsDebugAttributes('checkout__voucher--apply')}
                                                     >
-                                                        {isDiscountPreviewLoading ? (
-                                                            <>
-                                                                <SpinnerGap size={16} className="animate-spin" />
-                                                                {t('voucher.applying', { ns: 'pricing' })}
-                                                            </>
-                                                        ) : t('voucher.applyCta', { ns: 'pricing' })}
-                                                    </button>
+                                                        {isDiscountPreviewLoading
+                                                            ? t('voucher.applying', { ns: 'pricing' })
+                                                            : t('voucher.applyCta', { ns: 'pricing' })}
+                                                    </Button>
                                                 </div>
                                             )}
                                             {!hasAppliedDiscountCode && normalizedDiscountInput && !isDiscountPreviewLoading && activeDiscountErrorMessage ? (

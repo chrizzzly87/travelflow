@@ -414,6 +414,40 @@ describe('pages/CheckoutPage', () => {
     expect(mocks.startPaddleCheckoutSession).not.toHaveBeenCalled();
   });
 
+  it('marks the inline login action busy and disabled while signing in', async () => {
+    const user = userEvent.setup();
+    mocks.auth.session = null;
+    mocks.auth.isAuthenticated = false;
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
+    mocks.auth.loginWithPassword.mockImplementationOnce(() => new Promise(() => {}));
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByRole('textbox', { name: 'labels.email' }), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    const submitButton = screen.getByRole('button', { name: 'actions.submitLogin' });
+    expect(submitButton).not.toHaveAttribute('aria-busy');
+    await user.click(submitButton);
+
+    const busyButton = await screen.findByRole('button', { name: 'actions.submitting' });
+    expect(busyButton).toHaveAttribute('aria-busy', 'true');
+    expect(busyButton).toBeDisabled();
+  });
+
   it('shows a support banner when checkout auth config is missing', async () => {
     const user = userEvent.setup();
     mocks.auth.session = null;

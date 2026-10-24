@@ -12,7 +12,10 @@ import {
 } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { FaqAccordionList } from '../components/marketing/FaqAccordionList';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE } from '../config/locales';
 import { CONTACT_FAQ_EXCERPT_ITEM_IDS, type FaqItemWithSection } from '../data/faqContent';
@@ -649,7 +652,7 @@ export const ContactPage: React.FC = () => {
                                 <label htmlFor="contact-name" className="text-sm font-semibold text-foreground">
                                     {t('contact.form.nameLabel')}
                                 </label>
-                                <input
+                                <Input
                                     id="contact-name"
                                     name="name"
                                     type="text"
@@ -658,7 +661,7 @@ export const ContactPage: React.FC = () => {
                                     onChange={handleNameChange}
                                     autoComplete="name"
                                     placeholder={t('contact.form.namePlaceholder')}
-                                    className="h-11 w-full rounded-lg border border-border px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                    className="h-11 rounded-lg"
                                 />
                             </div>
 
@@ -667,7 +670,7 @@ export const ContactPage: React.FC = () => {
                                     {t('contact.form.emailLabel')}
                                     <span aria-hidden="true" className="ml-1 text-rose-600">*</span>
                                 </label>
-                                <input
+                                <Input
                                     id="contact-email"
                                     name="email"
                                     type="email"
@@ -677,7 +680,7 @@ export const ContactPage: React.FC = () => {
                                     autoComplete="email"
                                     required
                                     placeholder={t('contact.form.emailPlaceholder')}
-                                    className="h-11 w-full rounded-lg border border-border px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                    className="h-11 rounded-lg"
                                 />
                             </div>
                         </div>
@@ -687,7 +690,7 @@ export const ContactPage: React.FC = () => {
                                 {t('contact.form.messageLabel')}
                                 <span aria-hidden="true" className="ml-1 text-rose-600">*</span>
                             </label>
-                            <textarea
+                            <Textarea
                                 id="contact-message"
                                 name="message"
                                 aria-label={t('contact.form.messageLabel')}
@@ -697,7 +700,7 @@ export const ContactPage: React.FC = () => {
                                 maxLength={MESSAGE_MAX_LENGTH}
                                 rows={6}
                                 placeholder={t('contact.form.messagePlaceholder')}
-                                className="w-full rounded-lg border border-border px-3 py-2 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                className="field-sizing-fixed rounded-lg bg-card text-sm shadow-sm md:text-sm dark:bg-card"
                             />
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{t('contact.form.messageLimitHint', { max: MESSAGE_MAX_LENGTH })}</span>
@@ -760,10 +763,11 @@ export const ContactPage: React.FC = () => {
                             </div>
                         )}
 
-                        <button
+                        <Button
                             type="submit"
-                            disabled={submitStatus === 'submitting'}
-                            className="inline-flex h-10 items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
+                            size="lg"
+                            loading={submitStatus === 'submitting'}
+                            className="rounded-lg px-4 font-semibold shadow-sm has-[>svg]:px-4"
                             {...getAnalyticsDebugAttributes(CONTACT_FORM_SUBMIT_EVENT, {
                                 reason: isValidReason(formState.reason) ? formState.reason : null,
                                 sub_reason: selectedSubReason || null,
@@ -773,7 +777,7 @@ export const ContactPage: React.FC = () => {
                             })}
                         >
                             {submitStatus === 'submitting' ? t('contact.form.submitting') : t('contact.form.submit')}
-                        </button>
+                        </Button>
                         <p className="text-xs text-muted-foreground">{t('contact.form.requiredFieldsNote')}</p>
                     </form>
                 </div>
