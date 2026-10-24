@@ -791,7 +791,7 @@ const AdminAirportTester: React.FC<{
         const snapshot = await ensureRuntimeLocationLoaded();
         const latitude = snapshot.location.latitude;
         const longitude = snapshot.location.longitude;
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        if (typeof latitude !== 'number' || typeof longitude !== 'number' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
             setLookupError('Runtime location is unavailable for this session.');
             return;
         }
@@ -1986,7 +1986,7 @@ export const AdminAirportsPage: React.FC = () => {
             title: 'Syncing airports',
             description: 'Fetching upstream airport sources and replacing the database catalog.',
             tone: 'info',
-            persist: true,
+            duration: Infinity,
         });
 
         setSyncing(true);
@@ -2069,7 +2069,7 @@ export const AdminAirportsPage: React.FC = () => {
                 ? `Creating ${airport.ident} in the database catalog.`
                 : `Updating ${airport.ident} in the database catalog.`,
             tone: 'info',
-            persist: true,
+            duration: Infinity,
         });
 
         setSaving(true);
@@ -2143,7 +2143,7 @@ export const AdminAirportsPage: React.FC = () => {
             title: 'Applying bulk airport edits',
             description: `Updating ${selectedCount} selected airport row${selectedCount === 1 ? '' : 's'}.`,
             tone: 'info',
-            persist: true,
+            duration: Infinity,
         });
 
         setBulkSaving(true);
@@ -2220,7 +2220,7 @@ export const AdminAirportsPage: React.FC = () => {
             title: 'Deleting airports',
             description: `Removing ${deleteCount} selected airport row${deleteCount === 1 ? '' : 's'}.`,
             tone: 'info',
-            persist: true,
+            duration: Infinity,
         });
 
         setBulkDeleting(true);
@@ -2291,7 +2291,7 @@ export const AdminAirportsPage: React.FC = () => {
             title: 'Deleting airport',
             description: `Removing ${selectedAirport.ident} from the catalog.`,
             tone: 'info',
-            persist: true,
+            duration: Infinity,
         });
 
         setDeleting(true);

@@ -4,7 +4,7 @@
  * TanStack APIs directly; components share these URL-oriented link helpers.
  */
 import React, { useCallback, useMemo } from 'react';
-import { Link as StartLink, Navigate as StartNavigate, useMatch, useRouter, useRouterState } from '@tanstack/react-router';
+import { Link as StartLink, Navigate as StartNavigate, useMatch, useRouter, useRouterState, type RegisteredRouter } from '@tanstack/react-router';
 import { stringifyRouteSearch } from './routing/search';
 export interface Location { pathname: string; search: string; hash: string; state: any; key: string }
 export type NavigateFunction = ReturnType<typeof useNavigate>;
@@ -92,7 +92,7 @@ export const useSearchParams = (initial?: ConstructorParameters<typeof URLSearch
 };
 
 export const Link = React.forwardRef<HTMLAnchorElement, any>(({ to, state, replace, preventScrollReset, reloadDocument, ...props }, ref) => (
-    <StartLink {...props} ref={ref} href={hrefFor(to)} state={{ usr: state ?? null } as any} replace={replace} resetScroll={!preventScrollReset} reloadDocument={reloadDocument} preload="intent" />
+    <StartLink<RegisteredRouter, string, string> {...props} ref={ref} href={hrefFor(to)} state={{ usr: state ?? null } as any} replace={replace} resetScroll={!preventScrollReset} reloadDocument={reloadDocument} preload="intent" />
 ));
 Link.displayName = 'MigrationLink';
 export const NavLink = React.forwardRef<HTMLAnchorElement, any>(({ to, end, className, style, children, ...props }, ref) => {
@@ -106,4 +106,4 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, any>(({ to, end, clas
     return <Link {...props} ref={ref} to={to} aria-current={isActive ? 'page' : undefined} className={typeof className === 'function' ? className(status) : className} style={typeof style === 'function' ? style(status) : style}>{typeof children === 'function' ? children(status) : children}</Link>;
 });
 NavLink.displayName = 'MigrationNavLink';
-export const Navigate = ({ to, state, replace }: any) => <StartNavigate href={hrefFor(to)} state={{ usr: state ?? null } as any} replace={replace} />;
+export const Navigate = ({ to, state, replace }: any) => <StartNavigate<RegisteredRouter, string, string> href={hrefFor(to)} state={{ usr: state ?? null } as any} replace={replace} />;

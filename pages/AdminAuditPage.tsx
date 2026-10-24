@@ -270,10 +270,11 @@ const isIsoDateInAuditRange = (
     return timestamp >= endTs && timestamp <= startTs;
 };
 
-const asRecord = (value: Record<string, unknown> | null | undefined): Record<string, unknown> => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-    return value;
-};
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const asRecord = (value: unknown): Record<string, unknown> => (isPlainRecord(value) ? value : {});
 
 const toComparableValue = (value: unknown): string => JSON.stringify(value ?? null);
 
@@ -581,7 +582,7 @@ const canUndoTimelineEntry = (entry: AuditTimelineEntry): boolean => {
 
     if (!log.target_id) return false;
     if (action === 'admin.trip.override_commit') {
-        const sourceEventId = parseUndoSourceEventId(log);
+        const sourceEventId = entry.kind === 'admin' ? parseUndoSourceEventId(entry.log) : null;
         if (sourceEventId) return true;
         const before = asRecord(log.before_data);
         return Object.keys(asRecord(before.data)).length > 0;

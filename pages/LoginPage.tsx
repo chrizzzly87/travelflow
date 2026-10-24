@@ -302,7 +302,7 @@ export const LoginPage: React.FC = () => {
                 const errorCode = normalizeErrorCode(response.error);
                 setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
             } else {
-                if (!response.data.session) {
+                if (!('session' in response.data) || !response.data.session) {
                     setInfoMessage(t('states.emailConfirmationSent'));
                 } else {
                     const acceptance = await acceptCurrentTerms({

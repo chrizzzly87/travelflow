@@ -4,6 +4,7 @@ import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { buildLocalizedMarketingPath } from '../../config/routes';
+import type { AppLanguage } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
     readSessionStorageItem,
@@ -27,7 +28,7 @@ const buildContactSearch = (): string => {
     return `?${params.toString()}`;
 };
 
-const buildContactTo = (activeLocale: string) => ({
+const buildContactTo = (activeLocale: AppLanguage) => ({
     pathname: buildLocalizedMarketingPath('contact', activeLocale),
     search: buildContactSearch(),
 });

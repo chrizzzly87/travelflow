@@ -410,7 +410,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 if (outcome.value.error) {
                     const errorCode = normalizeErrorCode(outcome.value.error);
                     setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
-                } else if (!outcome.value.data.session) {
+                } else if (!('session' in outcome.value.data) || !outcome.value.data.session) {
                     setInfoMessage(t('states.emailConfirmationSent'));
                 } else {
                     const acceptance = await acceptCurrentTerms({

@@ -353,6 +353,16 @@ describe('AdminAirportsPage', () => {
       expect(mocks.confirm).toHaveBeenCalled();
       expect(mocks.adminSyncAirportCatalog).toHaveBeenCalledTimes(1);
     });
+    // The progress toast stays until the result replaces it, instead of
+    // expiring after the default few seconds mid-sync.
+    expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Syncing airports',
+      duration: Infinity,
+    }));
+    expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'toast-id',
+      title: 'Airport sync finished',
+    }));
   });
 
   it('applies bulk edits to selected airports', async () => {

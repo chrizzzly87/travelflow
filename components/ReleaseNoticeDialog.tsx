@@ -48,7 +48,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
         }
     }, [latestInAppRelease]);
 
-    const isNoticeOpen = enabled && Boolean(latestInAppRelease) && dismissedReleaseId !== latestInAppRelease.id;
+    const isNoticeOpen = enabled && latestInAppRelease != null && dismissedReleaseId !== latestInAppRelease.id;
 
     const handleOpenChange = useCallback((nextOpen: boolean) => {
         if (!nextOpen) dismissReleaseNotice();

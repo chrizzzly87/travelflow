@@ -55,7 +55,9 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
 // Small negative offset into the city edge so connectors visually "touch" without a seam.
 const TRANSFER_CONNECTOR_CITY_OVERLAP_PX = 2;
-const TRANSFER_CONNECTOR_STYLE: 'straight' | 'rounded' = 'rounded';
+type TransferConnectorStyle = 'straight' | 'rounded';
+// Widened on purpose: a design switch, so both branches below stay type-checked.
+const TRANSFER_CONNECTOR_STYLE = 'rounded' as TransferConnectorStyle;
 const TRANSFER_CHIP_HEIGHT_PX = 32;
 const TRANSFER_CHIP_ROW_GAP_PX = 10;
 const TRANSFER_LANE_VERTICAL_PADDING_PX = 4;
@@ -216,7 +218,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       return maxCount;
   }, [cityStackLayout]);
   const cityStackCountStyle = React.useMemo<React.CSSProperties>(
-      () => ({ '--tf-city-stack-count': maxCityStackCount }),
+      () => ({ '--tf-city-stack-count': maxCityStackCount } as React.CSSProperties),
       [maxCityStackCount]
   );
   const connectorCities = React.useMemo(

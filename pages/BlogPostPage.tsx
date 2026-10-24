@@ -111,8 +111,8 @@ interface MarkdownCodeBlockPayload {
 
 const extractMarkdownCodeBlockPayload = (children: React.ReactNode): MarkdownCodeBlockPayload | null => {
     const elementChild = React.Children.toArray(children)
-        .find((child) => React.isValidElement<Record<string, unknown>>(child));
-    if (!elementChild || !React.isValidElement<Record<string, unknown>>(elementChild)) return null;
+        .find((child) => React.isValidElement<{ className?: unknown; children?: React.ReactNode }>(child));
+    if (!elementChild || !React.isValidElement<{ className?: unknown; children?: React.ReactNode }>(elementChild)) return null;
     const className = typeof elementChild.props?.className === 'string' ? elementChild.props.className : '';
     const rawCode = flattenNodeText(elementChild.props?.children).replace(/\n$/, '');
     if (!className && !rawCode) return null;
@@ -906,7 +906,7 @@ export const BlogPostPage: React.FC = () => {
     }, [post]);
 
     const handleBackToBlogClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
-        if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
+        if (!post || !viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
         warmResponsiveBlogImage({
             src: post.images.card.sources.large,

@@ -49,7 +49,8 @@ export const SettingsPanel = React.forwardRef<HTMLDivElement, React.ComponentPro
 SettingsPanel.displayName = 'SettingsPanel';
 
 interface SettingsHeadingProps {
-    title: React.ReactNode;
+    /** Usually set; a section directly under a tab whose label already names it may leave it out. */
+    title?: React.ReactNode;
     description?: React.ReactNode;
     icon?: React.ReactNode;
     aside?: React.ReactNode;

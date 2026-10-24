@@ -196,11 +196,14 @@ const getTripFlagCodes = (trip: ITrip): string[] => {
   });
 
   if (codes.length === 0 && trip.countryInfo) {
-    const fromCountryInfoCode = typeof (trip.countryInfo as { countryCode?: unknown }).countryCode === 'string'
-      ? getCountryFromToken((trip.countryInfo as { countryCode: string }).countryCode)
+    // Older trips stored the country code/name on countryInfo; ICountryInfo no longer declares them.
+    const legacyCountryInfo: Record<string, unknown> = { ...trip.countryInfo };
+    const { countryCode, countryName } = legacyCountryInfo;
+    const fromCountryInfoCode = typeof countryCode === 'string'
+      ? getCountryFromToken(countryCode)
       : null;
-    const fromCountryInfoName = typeof (trip.countryInfo as { countryName?: unknown }).countryName === 'string'
-      ? getCountryFromToken((trip.countryInfo as { countryName: string }).countryName)
+    const fromCountryInfoName = typeof countryName === 'string'
+      ? getCountryFromToken(countryName)
       : null;
     const fallbackMatch = fromCountryInfoCode || fromCountryInfoName;
     if (fallbackMatch && !seen.has(fallbackMatch.code)) {
