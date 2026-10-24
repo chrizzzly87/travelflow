@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Link, useLocation, useSearchParams } from '@/app/navigation';
 import { ArrowLeft, Confetti } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { useRenderNow } from '../../hooks/useRenderNow';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { FestivalCalendarCard } from '../../components/inspirations/FestivalCalendarCard';
 import { FestivalCalendarControls } from '../../components/inspirations/FestivalCalendarControls';
@@ -64,15 +65,16 @@ export const FestivalsPage: React.FC = () => {
   }, [setSearchParams]);
 
   /**
-   * Resolved once per mount: "soonest first" must not reshuffle mid-session, and a single clock
-   * value keeps every card consistent with every other one.
+   * One clock value keeps every card consistent with every other one. It is the render clock, so
+   * the server and hydration agree; the order can change once, right after hydration, and only
+   * when the visitor's date differs from the document's.
    */
+  const now = useRenderNow();
   const rankedFestivals = useMemo(() => {
-    const now = new Date();
     const entryByEvent = new Map(FESTIVAL_CATALOG.map((entry) => [entry.event, entry]));
     return sortFestivalsByNextOccurrence(FESTIVAL_CATALOG.map((entry) => entry.event), now)
       .map(({ event, occurrence }) => ({ entry: entryByEvent.get(event)!, occurrence }));
-  }, []);
+  }, [now]);
 
   const visibleFestivals = useMemo(
     () => applyFestivalFilterState(rankedFestivals, state),

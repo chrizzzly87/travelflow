@@ -37,6 +37,7 @@ import { stripLeadingFlagEmoji } from '../utils/flagUtils';
 import { destinationCardMedia, festivalCardMedia } from '../data/inspirationCardMedia';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE } from '../config/locales';
+import { useRenderNow } from '../hooks/useRenderNow';
 
 /* ── Festival date helpers ── */
 
@@ -63,15 +64,13 @@ const addDaysLocal = (d: Date, n: number): Date => {
     return r;
 };
 
-const nextSaturday = (): Date => {
-    const now = new Date();
+const nextSaturday = (now: Date): Date => {
     const day = now.getDay();
     const diff = (6 - day + 7) % 7 || 7;
     return addDaysLocal(now, diff);
 };
 
-const suggestedStartForDays = (days: number): Date => {
-    const now = new Date();
+const suggestedStartForDays = (days: number, now: Date): Date => {
     return addDaysLocal(now, Math.max(14, days));
 };
 
@@ -123,7 +122,8 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
     const media = destinationCardMedia[destination.title];
     const [hasImageError, setHasImageError] = useState(false);
     const showPhoto = Boolean(media) && !hasImageError;
-    const start = suggestedStartForDays(destination.durationDays);
+    const now = useRenderNow();
+    const start = suggestedStartForDays(destination.durationDays, now);
     const end = addDaysLocal(start, destination.durationDays - 1);
     const countries = resolveDestinationCodes(destination.destinationCodes);
     const prefillUrl = buildCreateTripUrl({
@@ -275,7 +275,7 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
 /* ── Weekend getaway card ── */
 
 const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => {
-    const start = nextSaturday();
+    const start = nextSaturday(useRenderNow());
     const end = addDaysLocal(start, getaway.durationDays - 1);
     const countries = resolveDestinationCodes(getaway.destinationCodes);
     const prefillUrl = buildCreateTripUrl({
@@ -350,7 +350,10 @@ export const InspirationsPage: React.FC = () => {
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const [search, setSearch] = useState('');
-    const [selectedMonthIndex, setSelectedMonthIndex] = useState(() => new Date().getMonth());
+    const now = useRenderNow();
+    // Until the visitor picks a month, follow the render clock's month.
+    const [pickedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+    const selectedMonthIndex = pickedMonthIndex ?? now.getMonth();
     const sections = useMemo(
         () => [
             { id: 'themes', label: t('inspirations.sections.byTheme'), icon: Compass },
@@ -406,7 +409,6 @@ export const InspirationsPage: React.FC = () => {
     // Selected month data
     const selectedMonth = monthEntries[selectedMonthIndex];
     const selectedMonthRouteDates = useMemo(() => {
-        const now = new Date();
         const monthNum = selectedMonthIndex;
         const year = monthNum >= now.getMonth() ? now.getFullYear() : now.getFullYear() + 1;
         const monthStart = new Date(year, monthNum, 1);
@@ -415,15 +417,14 @@ export const InspirationsPage: React.FC = () => {
             startDate: toIso(monthStart),
             endDate: toIso(addDaysLocal(monthStart, 13)),
         };
-    }, [selectedMonthIndex]);
+    }, [selectedMonthIndex, now]);
 
     // Upcoming festivals sorted by next occurrence
     const upcomingFestivals = useMemo(() => {
-        const now = new Date();
         return festivalEvents
             .map((event) => ({ ...event, nextDate: getNextOccurrence(event, now) }))
             .sort((a, b) => a.nextDate.getTime() - b.nextDate.getTime());
-    }, []);
+    }, [now]);
     const upcomingFestivalDateByName = useMemo(() => new Map(upcomingFestivals.map((event) => [event.name, event.nextDate])), [upcomingFestivals]);
 
     return (
@@ -530,7 +531,7 @@ export const InspirationsPage: React.FC = () => {
                         <div className="flex flex-wrap gap-2">
                             {quickIdeas.map((idea) => {
                                 const ideaLabel = stripLeadingFlagEmoji(idea.label);
-                                const start = suggestedStartForDays(idea.days);
+                                const start = suggestedStartForDays(idea.days, now);
                                 const end = addDaysLocal(start, idea.days - 1);
                                 const countries = resolveDestinationCodes([idea.destinationCode]);
                                 return (
