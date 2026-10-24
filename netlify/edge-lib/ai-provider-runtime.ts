@@ -743,13 +743,13 @@ const generateWithGemini = async (
   maxOutputTokens: number,
   jsonSchema?: StructuredOutputJsonSchema,
 ): Promise<ProviderGenerationResult> => {
-  const apiKey = readEnv("GEMINI_API_KEY") || readEnv("VITE_GEMINI_API_KEY");
+  const apiKey = readEnv("GEMINI_API_KEY");
   if (!apiKey) {
     return {
       ok: false,
       status: 500,
       value: {
-        error: "Gemini API key missing. Configure GEMINI_API_KEY (preferred) or VITE_GEMINI_API_KEY on Netlify.",
+        error: "Gemini API key missing. Configure GEMINI_API_KEY on Netlify.",
         code: "GEMINI_KEY_MISSING",
       },
     };

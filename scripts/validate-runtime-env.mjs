@@ -1,5 +1,6 @@
 import process from 'node:process';
 import { loadEnv } from 'vite';
+import { findClientSecretProblems } from './lib/clientSecretGuard.mjs';
 
 const fileEnv = loadEnv('production', process.cwd(), '');
 const env = { ...fileEnv, ...process.env };
@@ -25,6 +26,12 @@ try {
   }
 } catch {
   console.error('Production build blocked: VITE_SUPABASE_URL must be a valid HTTP(S) URL.');
+  process.exit(1);
+}
+
+const secretProblems = findClientSecretProblems(env);
+if (secretProblems.length > 0) {
+  console.error(`Production build blocked: a server secret would ship to the browser.\n- ${secretProblems.join('\n- ')}`);
   process.exit(1);
 }
 
