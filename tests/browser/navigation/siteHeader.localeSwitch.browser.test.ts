@@ -29,7 +29,7 @@ vi.mock('@/app/navigation', () => ({
     children: React.ReactNode;
     onClick?: React.MouseEventHandler<HTMLAnchorElement>;
     className?: string | ((state: { isActive: boolean }) => string);
-  } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => React.createElement('a', {
+  } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'className'>) => React.createElement('a', {
     href: to,
     onClick,
     className: typeof className === 'function' ? className({ isActive: false }) : className,

@@ -41,7 +41,8 @@ describe('native route loading and history', () => {
         const router = createRouter({ parseSearch: parseRouteSearch, stringifySearch: stringifyRouteSearch, routeTree: root.addChildren([list, detail]), history });
         render(<RouterProvider router={router} />);
         expect(await screen.findByRole('heading', { name: 'Articles' })).toBeVisible();
-        await router.navigate({ to: '/blog/$slug', params: { slug: 'japan' } });
+        // The local router is not the registered app router, so navigate by href rather than typed route ids.
+        await router.navigate({ href: '/blog/japan' });
         expect(await screen.findByRole('heading', { name: 'Article' })).toBeVisible();
         history.back();
         expect(await screen.findByRole('heading', { name: 'Articles' })).toBeVisible();

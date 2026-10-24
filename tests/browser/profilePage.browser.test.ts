@@ -6,6 +6,8 @@ import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
 import { makeTrip } from '../helpers/tripFixtures';
+import type { showAppToast } from '../../components/ui/appToast';
+import type { UserProfileRecord } from '../../services/profileService';
 
 const siteHeaderSpy = vi.hoisted(() => vi.fn());
 
@@ -21,7 +23,8 @@ const mocks = vi.hoisted(() => ({
         user_metadata: {},
       },
     },
-    profile: null,
+    // The page reads a subset of the profile; scenarios replace it per test.
+    profile: null as Partial<UserProfileRecord> | null,
     access: {
       email: 'traveler@example.com',
       tierKey: 'tier_free',
@@ -37,7 +40,7 @@ const mocks = vi.hoisted(() => ({
   dbArchiveTrip: vi.fn(),
   syncTripsFromDb: vi.fn(),
   confirmDialog: vi.fn(),
-  showAppToast: vi.fn(() => 'toast-id'),
+  showAppToast: vi.fn<typeof showAppToast>(() => 'toast-id'),
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
@@ -389,7 +392,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
     });
 
-    const toastPayloads = mocks.showAppToast.mock.calls.map((call) => call[0] as Record<string, unknown>);
+    const toastPayloads = mocks.showAppToast.mock.calls.map((call) => call[0]);
     const archiveToast = toastPayloads.find((payload) => payload.tone === 'remove' && typeof payload.action === 'object') as {
       action?: { onClick?: () => void };
     } | undefined;

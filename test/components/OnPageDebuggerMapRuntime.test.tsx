@@ -128,7 +128,6 @@ describe('components/OnPageDebugger map runtime controls', () => {
     expect(buildMapRuntimeDebugOverride({ preset: 'default' }, {
       ...runtime,
       override: { preset: 'mapbox_visual_google_services' },
-      requestedPreset: 'mapbox_visual_google_services',
       requestedSelection: {
         renderer: 'mapbox',
         routes: 'google',

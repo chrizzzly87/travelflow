@@ -28,7 +28,7 @@ describe('hooks/useNetworkStatus', () => {
         if (originalOnLineDescriptor) {
             Object.defineProperty(window.navigator, 'onLine', originalOnLineDescriptor);
         } else {
-            delete (window.navigator as Navigator & { onLine?: unknown }).onLine;
+            delete (window.navigator as { onLine?: unknown }).onLine;
         }
         if (originalConnectionDescriptor) {
             Object.defineProperty(window.navigator, 'connection', originalConnectionDescriptor);

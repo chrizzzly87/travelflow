@@ -248,7 +248,7 @@ describe('components/tripview/mobileDayPlanModel', () => {
                     title: 'Lisbon',
                     startDateOffset: 0,
                     duration: 1.5,
-                    hotels: [{ id: 'h1', name: 'Lisbon Hotel' }],
+                    hotels: [{ id: 'h1', name: 'Lisbon Hotel', address: 'Lisbon' }],
                 }),
                 item({ id: 'travel-a', type: 'travel', startDateOffset: 1.5, duration: 0.1, transportMode: 'train' }),
                 item({
@@ -257,7 +257,7 @@ describe('components/tripview/mobileDayPlanModel', () => {
                     title: 'Porto',
                     startDateOffset: 1.6,
                     duration: 1.4,
-                    hotels: [{ id: 'h2', name: 'Porto Hotel' }],
+                    hotels: [{ id: 'h2', name: 'Porto Hotel', address: 'Porto' }],
                 }),
             ]);
             const segments = buildMobileDayPlanSegments(buildMobileDayPlan(withHotels));

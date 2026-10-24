@@ -22,8 +22,7 @@ describe('SettingsPanel', () => {
     const { container } = render(
       h(SettingsPanel, null,
         h(SettingsSection, { title: 'Rollout', description: 'Who can reach a feature.' },
-          h(SettingsRow, { label: 'Trip Agent', description: 'The planning chat.' },
-            h(Switch, { checked: false, onCheckedChange: () => {}, 'aria-label': 'Trip Agent' })))),
+          h(SettingsRow, { label: 'Trip Agent', description: 'The planning chat.', children: h(Switch, { checked: false, onCheckedChange: () => {}, 'aria-label': 'Trip Agent' }) }))),
     );
 
     expect(container.querySelectorAll('[data-slot="settings-panel"]')).toHaveLength(1);
@@ -35,9 +34,8 @@ describe('SettingsPanel', () => {
     const { container } = render(
       h(SettingsPanel, null,
         h(SettingsSection, { title: 'AI model' },
-          h(SettingsRow, { label: 'Age limit' }, h('input', { 'aria-label': 'Age limit control' })),
-          h(SettingsRow, { label: 'Default model', layout: 'stacked' },
-            h('input', { 'aria-label': 'Default model control' })))),
+          h(SettingsRow, { label: 'Age limit', children: h('input', { 'aria-label': 'Age limit control' }) }),
+          h(SettingsRow, { label: 'Default model', layout: 'stacked', children: h('input', { 'aria-label': 'Default model control' }) }))),
     );
 
     const layouts = Array.from(container.querySelectorAll('[data-slot="settings-row"]'))
@@ -49,8 +47,7 @@ describe('SettingsPanel', () => {
     render(
       h(SettingsPanel, null,
         h(SettingsSection, { title: 'AI model' },
-          h(SettingsRow, { label: 'Age limit', htmlFor: 'age-limit' },
-            h('input', { id: 'age-limit' })))),
+          h(SettingsRow, { label: 'Age limit', htmlFor: 'age-limit', children: h('input', { id: 'age-limit' }) }))),
     );
 
     await userEvent.click(screen.getByText('Age limit'));
@@ -62,8 +59,7 @@ describe('SettingsPanel', () => {
     render(
       h(SettingsPanel, null,
         h(SettingsSection, { title: 'Rollout' },
-          h(SettingsRow, { label: 'Planner beta' },
-            h(Switch, { checked: false, onCheckedChange, 'aria-label': 'Planner beta' })))),
+          h(SettingsRow, { label: 'Planner beta', children: h(Switch, { checked: false, onCheckedChange, 'aria-label': 'Planner beta' }) }))),
     );
 
     // A <label> around a Radix trigger forwards a second click to the control,
@@ -77,11 +73,9 @@ describe('SettingsPanel', () => {
     const { container } = render(
       h(SettingsGroup, null,
         h(SettingsCard, { title: 'Trip Agent' },
-          h(SettingsRow, { label: 'Open to everyone' },
-            h(Switch, { checked: true, onCheckedChange: () => {}, 'aria-label': 'Open to everyone' }))),
+          h(SettingsRow, { label: 'Open to everyone', children: h(Switch, { checked: true, onCheckedChange: () => {}, 'aria-label': 'Open to everyone' }) })),
         h(SettingsCard, { title: 'Planner' },
-          h(SettingsRow, { label: 'Planner beta' },
-            h(Switch, { checked: false, onCheckedChange: () => {}, 'aria-label': 'Planner beta' })))),
+          h(SettingsRow, { label: 'Planner beta', children: h(Switch, { checked: false, onCheckedChange: () => {}, 'aria-label': 'Planner beta' }) }))),
     );
 
     const group = container.querySelector('[data-slot="settings-group"]');
@@ -98,8 +92,8 @@ describe('SettingsPanel', () => {
     const { container } = render(
       h(SettingsGroup, null,
         h(SettingsCard, { title: 'Map' },
-          h(SettingsRow, { label: 'Provider' }, h('button', { 'aria-label': 'Provider' })),
-          h(SettingsRow, { label: 'Default style' }, h('button', { 'aria-label': 'Default style' })))),
+          h(SettingsRow, { label: 'Provider', children: h('button', { 'aria-label': 'Provider' }) }),
+          h(SettingsRow, { label: 'Default style', children: h('button', { 'aria-label': 'Default style' }) }))),
     );
 
     // A fixed track, not `auto` - an auto track sizes to its own content, so
@@ -115,8 +109,7 @@ describe('SettingsPanel', () => {
     render(
       h(SettingsPanel, null,
         h(SettingsSection, { title: 'Map' },
-          h(SettingsRow, { label: 'Provider', note: 'Routing stays on Google.' },
-            h('input', { 'aria-label': 'Provider control' })))),
+          h(SettingsRow, { label: 'Provider', note: 'Routing stays on Google.', children: h('input', { 'aria-label': 'Provider control' }) }))),
     );
 
     expect(screen.getByText('Routing stays on Google.')).toBeTruthy();

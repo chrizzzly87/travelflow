@@ -90,7 +90,7 @@ describe('pages/FaqPage', () => {
     if (previousScrollIntoViewDescriptor) {
       Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', previousScrollIntoViewDescriptor);
     } else {
-      delete (HTMLElement.prototype as HTMLElement & { scrollIntoView?: unknown }).scrollIntoView;
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     }
   });
 

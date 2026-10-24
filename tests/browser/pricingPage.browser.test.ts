@@ -3,6 +3,10 @@ import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
+import type { UserAccessContext } from '../../types';
+
+// PricingPage reads only a few access fields; scenarios replace them freely.
+type AuthAccessMock = Partial<UserAccessContext>;
 
 const mocks = vi.hoisted(() => ({
   location: {
@@ -26,7 +30,7 @@ const mocks = vi.hoisted(() => ({
         accessUntil: null,
         lifecycleState: 'none',
       },
-    },
+    } as AuthAccessMock,
     refreshAccess: vi.fn().mockResolvedValue(undefined),
   },
   fetchPaddlePublicConfig: vi.fn().mockResolvedValue({
