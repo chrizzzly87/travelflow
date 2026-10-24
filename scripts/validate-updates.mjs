@@ -92,7 +92,16 @@ const bumpVersionCore = ({ major, minor, patch }) => (
  * truncated to the minute, pulled back to 22:59 when now falls in the hour the
  * site renders as the next day in CET.
  */
-const latestUsablePublishedAt = (nowMs = Date.now()) => {
+/**
+ * The validator's clock. Tests pin it with UPDATES_VALIDATE_NOW_MS so fixtures
+ * built relative to "now" never drift into the 23:00 UTC hour.
+ */
+const currentTimeMs = () => {
+  const pinned = Number(process.env.UPDATES_VALIDATE_NOW_MS);
+  return Number.isFinite(pinned) && pinned > 0 ? pinned : Date.now();
+};
+
+const latestUsablePublishedAt = (nowMs = currentTimeMs()) => {
   const stamp = new Date(Math.floor(nowMs / 60_000) * 60_000);
   if (stamp.getUTCHours() >= PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE) {
     stamp.setUTCHours(PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE - 1, 59, 0, 0);
@@ -146,12 +155,13 @@ const validateFile = async (filePath) => {
     const publishedAtMs = publishedAtDate.getTime();
     const status = (meta.status || '').trim().toLowerCase();
 
-    if (publishedAtDate.getUTCHours() >= PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE) {
+    // Drafts carry placeholders; the publish step stamps the real time.
+    if (status === 'published' && publishedAtDate.getUTCHours() >= PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE) {
       errors.push(`published_at must be before 23:00 UTC: ${meta.published_at}`);
     }
 
-    if (status === 'published' && publishedAtMs > Date.now() + 60_000) {
-      const aheadBy = publishedAtMs - Date.now();
+    if (status === 'published' && publishedAtMs > currentTimeMs() + 60_000) {
+      const aheadBy = publishedAtMs - currentTimeMs();
       if (aheadBy > FUTURE_PUBLISHED_AT_GRACE_MS) {
         errors.push(`published_at is more than a day in the future for a published release: ${meta.published_at}`);
       } else {
