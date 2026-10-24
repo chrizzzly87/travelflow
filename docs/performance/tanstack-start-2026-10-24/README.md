@@ -86,3 +86,69 @@ Total script counts (160–168) also include a varying number of Google Maps scr
   they arrive. `mapbox-gl` (~449 KB transferred) and Google Maps are the map runtime
   itself. `TripTimelineListView` is a persisted view mode, so splitting it would add a
   loading state for list-view users.
+
+# Tiny chunks: measured, not changed (2026-10-25)
+
+Follow-up to "Request count is not driven by the trip view" above. Question: can rolldown
+consolidate the tiny shared chunks (about 70 of the trip view's 146 app scripts decode to under
+2 KB, mostly one Lucide/Phosphor icon or helper each) so that trip pages make fewer requests, without
+landing pages downloading more JavaScript or preloading trip/planner code? Measured on a local
+built site from `main` `9baee733` (rolldown 1.2.13, Vite 8.3.4). Each candidate was applied only to
+the client environment. Raw samples and settings:
+[chunk-consolidation-raw.txt](chunk-consolidation-raw.txt).
+
+In this rolldown, `output.advancedChunks` is deprecated in favour of `output.codeSplitting`. A
+global `minSize`/`minShareCount` is only a fallback for `groups`, so it does nothing to automatic
+chunks by itself. Two candidates:
+
+- **group**: one `codeSplitting` group for `lucide-react` and `@phosphor-icons` with
+  `entriesAware: true` and `entriesAwareMergeThreshold: 4096`.
+- **inline**: `codeSplitting.experimentalInlineCommonChunks: { maxSize: 4096 }` (CSS excluded).
+  The option requires `preserveEntrySignatures: false` and turns on strict execution order.
+
+## Results
+
+Playwright (Chromium, cache disabled): app script requests / gzip KB transferred. Every run was
+identical.
+
+| page | baseline | group | inline |
+| --- | --- | --- | --- |
+| `/` | 79 / 409.3 | 77 / 427.3 (+18.0) | 47 / 412.7 (+3.4) |
+| `/features` | 71 / 377.6 | 71 / 383.3 (+5.7) | 44 / 381.3 (+3.7) |
+| `/pricing` | 73 / 396.9 | 72 / 400.0 (+3.1) | 47 / 402.7 (+5.8) |
+| `/blog` | 87 / 484.9 | 85 / 504.3 (+19.4) | 53 / 490.0 (+5.1) |
+| `/inspirations` | 82 / 493.3 | 78 / 509.5 (+16.2) | 71 / 598.5 (+105.2, planner code) |
+| `/example/portugal-coast` | 147 / 1,156.1 | 135 / 1,173.6 | 92 / 1,172.9 |
+| `/trip/<encoded>` | 146 / 1,155.9 | 134 / 1,173.7 | 91 / 1,172.0 |
+
+Lighthouse 12.8.2 mobile, medians of three runs (LCP / FCP / TBT):
+
+| page | baseline | group | inline |
+| --- | --- | --- | --- |
+| `/` | 6.01 s / 5.26 s / 3 ms | 6.00 s / 5.25 s / 3 ms | 5.33 s / 4.66 s / 11 ms |
+| `/features` | 5.63 s / 4.80 s / 4 ms | 5.80 s / 4.89 s / 1 ms | 5.11 s / 4.36 s / 6 ms |
+| example | 5.40 s / 4.95 s / 28 ms | 5.41 s / 4.96 s / 30 ms | 4.96 s / 4.51 s / 31 ms |
+| trip | 5.41 s / 4.96 s / 30 ms | 5.41 s / 4.96 s / 22 ms | 4.96 s / 4.51 s / 40 ms |
+
+Prerendered module-preload links on `/` and `/features`: baseline 76 and 68, group 74 and 68,
+inline 44 and 41.
+
+## Why neither ships
+
+- **group** removes only 12 trip requests (−8%). Merging icon subgroups gives every landing page
+  icons it does not use (+3 to +19 KB). LCP does not change.
+- **inline** halves request counts everywhere (trip 146 → 91) and moves Lighthouse's simulated
+  LCP/FCP by about 0.45–0.7 s on every page. But it breaks the landing-page rule:
+  `/inspirations` now preloads the `/create-trip/wizard` route chunk (92.9 KB raw), CreateTripRoute,
+  `useTripPersistence` and `tripSyncManager` (+105 KB transferred). `destinationService` imports a
+  common-chunk factory that rolldown printed into the wizard chunk, and that chunk statically
+  imports the planner. Turning off `experimental.chunkOptimization.mergeCommonChunks` does not
+  remove the leak. The other landing pages also download 3–6 KB more, because every consumer gets
+  its own copy of the factory. The option is marked experimental in rolldown 1.2.13.
+- The inline gain is a Lantern estimate. Lighthouse simulates per-request cost, and production
+  serves HTTP/2 from Netlify's CDN, so real-world latency gains will be smaller than the simulation
+  suggests. Real Chromium FCP on the local server did not change (about 90 ms in every build).
+
+Revisit this when rolldown's inline-common-chunks option leaves experimental and can be held to
+the route chunks that already own a module. Gate any retry on the same table: no planner chunks in
+any landing page's preload list, and no growth in landing-page transferred JavaScript.

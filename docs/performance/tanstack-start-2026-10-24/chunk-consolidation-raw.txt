@@ -1,0 +1,131 @@
+# Tiny-chunk consolidation experiment (#561), local built site, 2026-10-25.
+# Source: origin/main 9baee733 (v0.210.0). rolldown 1.2.13, Vite 8.3.4.
+# Build: `pnpm -s flags:sync && npx vite build`, served by scripts/serve-built-site.mjs on :4183
+# (server restarted after every build; it loads the SSR bundle once).
+# Candidates were applied to the client environment only (environments.client.build.rolldownOptions):
+#   baseline  = no chunking options (rolldown automatic chunking)
+#   group4k   = output.codeSplitting.groups: [{ name: 'shared', test: /node_modules[\\/](lucide-react|@phosphor-icons)/,
+#               entriesAware: true, entriesAwareMergeThreshold: 4096 }]
+#   inline4k  = output.codeSplitting.experimentalInlineCommonChunks: { maxSize: 4096, exclude: /\.(css|...)(\?|$)/ }
+#               plus preserveEntrySignatures: false (required by the option; strictExecutionOrder turns on)
+# `advancedChunks` is deprecated in this rolldown in favour of `codeSplitting`; a global `minSize` /
+# `minShareCount` is only a fallback for groups, so it does not change automatic chunks on its own.
+#
+# Emitted client JS files (all / under 2 KB): baseline 538 / 114, group4k 518 / 85, inline4k 421 / 41.
+# Prerendered modulepreload links (/, /features, /pricing, /blog, /inspirations):
+#   baseline 76, 68, 71, 70, 79
+#   group4k  74, 68, 70, 68, 75
+#   inline4k 44, 41 (/, /features); /inspirations preloads wizard, CreateTripRoute, useTripPersistence, tripSyncManager
+#   inline4k + experimental.chunkOptimization.mergeCommonChunks: false: 55, 52, 56, 54, 81, with the same four
+#   planner chunks on /inspirations
+# /inspirations reaches the planner because destinationService imports an inlined common-chunk factory that
+# rolldown printed into the /create-trip/wizard route chunk (92.9 KB raw), which statically imports
+# CreateTripRoute and trip persistence.
+#
+# Playwright Chromium, 1280x900, cache disabled, service workers blocked, load + network idle + 1.5 s.
+# appScript* = /assets/*.js on the local origin; KB = CDP encodedDataLength (server gzips); under2KB = decoded < 2 KB.
+# tripModules = landing-page chunk file names matching /Trip[A-Z]|TripView|planner|mapbox|tripAgent/. ExampleTripCard
+# and TripLaneDayTripMarks belong to the homepage's example card in every build; group4k's long "shared~...TripView..."
+# names list the entries sharing an icon chunk, not trip code.
+{"label":"baseline","page":"home","run":1,"fcpMs":116,"appScriptRequests":79,"under2KB":37,"appScriptKB":409.3,"decodedKB":1222.1,"tripModules":["ExampleTripCard-Cm7NRcmo.js","TripLaneDayTripMarks-opl2P6-1.js"]}
+{"label":"baseline","page":"features","run":1,"fcpMs":88,"appScriptRequests":71,"under2KB":34,"appScriptKB":377.6,"decodedKB":1135.6,"tripModules":[]}
+{"label":"baseline","page":"pricing","run":1,"fcpMs":84,"appScriptRequests":73,"under2KB":35,"appScriptKB":396.9,"decodedKB":1193.3,"tripModules":[]}
+{"label":"baseline","page":"blog","run":1,"fcpMs":96,"appScriptRequests":87,"under2KB":40,"appScriptKB":484.9,"decodedKB":1448.6,"tripModules":[]}
+{"label":"baseline","page":"inspirations","run":1,"fcpMs":120,"appScriptRequests":82,"under2KB":36,"appScriptKB":493.3,"decodedKB":1733.1,"tripModules":[]}
+{"label":"baseline","page":"example","run":1,"fcpMs":960,"appScriptRequests":147,"under2KB":71,"appScriptKB":1156.1,"decodedKB":3784.5}
+{"label":"baseline","page":"trip","run":1,"fcpMs":96,"appScriptRequests":146,"under2KB":71,"appScriptKB":1155.9,"decodedKB":3782}
+{"label":"baseline","page":"home","run":2,"fcpMs":104,"appScriptRequests":79,"under2KB":37,"appScriptKB":409.3,"decodedKB":1222.1,"tripModules":["ExampleTripCard-Cm7NRcmo.js","TripLaneDayTripMarks-opl2P6-1.js"]}
+{"label":"baseline","page":"features","run":2,"fcpMs":84,"appScriptRequests":71,"under2KB":34,"appScriptKB":377.6,"decodedKB":1135.6,"tripModules":[]}
+{"label":"baseline","page":"pricing","run":2,"fcpMs":84,"appScriptRequests":73,"under2KB":35,"appScriptKB":396.9,"decodedKB":1193.3,"tripModules":[]}
+{"label":"baseline","page":"blog","run":2,"fcpMs":96,"appScriptRequests":87,"under2KB":40,"appScriptKB":484.9,"decodedKB":1448.6,"tripModules":[]}
+{"label":"baseline","page":"inspirations","run":2,"fcpMs":120,"appScriptRequests":82,"under2KB":36,"appScriptKB":493.3,"decodedKB":1733.1,"tripModules":[]}
+{"label":"baseline","page":"example","run":2,"fcpMs":92,"appScriptRequests":147,"under2KB":71,"appScriptKB":1156.1,"decodedKB":3784.5}
+{"label":"baseline","page":"trip","run":2,"fcpMs":88,"appScriptRequests":146,"under2KB":71,"appScriptKB":1155.9,"decodedKB":3782}
+{"label":"baseline","page":"home","run":3,"fcpMs":104,"appScriptRequests":79,"under2KB":37,"appScriptKB":409.3,"decodedKB":1222.1,"tripModules":["ExampleTripCard-Cm7NRcmo.js","TripLaneDayTripMarks-opl2P6-1.js"]}
+{"label":"baseline","page":"features","run":3,"fcpMs":84,"appScriptRequests":71,"under2KB":34,"appScriptKB":377.6,"decodedKB":1135.6,"tripModules":[]}
+{"label":"baseline","page":"pricing","run":3,"fcpMs":84,"appScriptRequests":73,"under2KB":35,"appScriptKB":396.9,"decodedKB":1193.3,"tripModules":[]}
+{"label":"baseline","page":"blog","run":3,"fcpMs":96,"appScriptRequests":87,"under2KB":40,"appScriptKB":484.9,"decodedKB":1448.6,"tripModules":[]}
+{"label":"baseline","page":"inspirations","run":3,"fcpMs":120,"appScriptRequests":82,"under2KB":36,"appScriptKB":493.3,"decodedKB":1733.1,"tripModules":[]}
+{"label":"baseline","page":"example","run":3,"fcpMs":88,"appScriptRequests":147,"under2KB":71,"appScriptKB":1156.1,"decodedKB":3784.5}
+{"label":"baseline","page":"trip","run":3,"fcpMs":92,"appScriptRequests":146,"under2KB":71,"appScriptKB":1155.9,"decodedKB":3782}
+{"label":"group4k","page":"home","run":1,"fcpMs":108,"appScriptRequests":77,"under2KB":30,"appScriptKB":427.3,"decodedKB":1294.4,"tripModules":["shared~shared~owned~example~home~TripView~OnPageDebugger-BkmUyk1C.js","ExampleTripCard-DNMuAI2_.js","TripLaneDayTripMarks-C8nUjX3B.js"]}
+{"label":"group4k","page":"features","run":1,"fcpMs":96,"appScriptRequests":71,"under2KB":28,"appScriptKB":383.3,"decodedKB":1159.2,"tripModules":[]}
+{"label":"group4k","page":"pricing","run":1,"fcpMs":84,"appScriptRequests":72,"under2KB":30,"appScriptKB":400,"decodedKB":1208.2,"tripModules":[]}
+{"label":"group4k","page":"blog","run":1,"fcpMs":96,"appScriptRequests":85,"under2KB":30,"appScriptKB":504.3,"decodedKB":1526.6,"tripModules":["shared~BlogPostPage~shared~owned~example~blog-post~trips~component-playground~TripView~TripManager-CBuCW3ca.js"]}
+{"label":"group4k","page":"inspirations","run":1,"fcpMs":120,"appScriptRequests":78,"under2KB":28,"appScriptKB":509.5,"decodedKB":1805,"tripModules":[]}
+{"label":"group4k","page":"example","run":1,"fcpMs":92,"appScriptRequests":135,"under2KB":49,"appScriptKB":1173.6,"decodedKB":3867.8}
+{"label":"group4k","page":"trip","run":1,"fcpMs":92,"appScriptRequests":134,"under2KB":48,"appScriptKB":1173.7,"decodedKB":3866.6}
+{"label":"group4k","page":"home","run":2,"fcpMs":108,"appScriptRequests":77,"under2KB":30,"appScriptKB":427.3,"decodedKB":1294.4,"tripModules":["shared~shared~owned~example~home~TripView~OnPageDebugger-BkmUyk1C.js","ExampleTripCard-DNMuAI2_.js","TripLaneDayTripMarks-C8nUjX3B.js"]}
+{"label":"group4k","page":"features","run":2,"fcpMs":84,"appScriptRequests":71,"under2KB":28,"appScriptKB":383.3,"decodedKB":1159.2,"tripModules":[]}
+{"label":"group4k","page":"pricing","run":2,"fcpMs":84,"appScriptRequests":72,"under2KB":30,"appScriptKB":400,"decodedKB":1208.2,"tripModules":[]}
+{"label":"group4k","page":"blog","run":2,"fcpMs":96,"appScriptRequests":85,"under2KB":30,"appScriptKB":504.3,"decodedKB":1526.6,"tripModules":["shared~BlogPostPage~shared~owned~example~blog-post~trips~component-playground~TripView~TripManager-CBuCW3ca.js"]}
+{"label":"group4k","page":"inspirations","run":2,"fcpMs":120,"appScriptRequests":78,"under2KB":28,"appScriptKB":509.5,"decodedKB":1805,"tripModules":[]}
+{"label":"group4k","page":"example","run":2,"fcpMs":92,"appScriptRequests":135,"under2KB":49,"appScriptKB":1173.6,"decodedKB":3867.8}
+{"label":"group4k","page":"trip","run":2,"fcpMs":88,"appScriptRequests":134,"under2KB":48,"appScriptKB":1173.7,"decodedKB":3866.6}
+{"label":"group4k","page":"home","run":3,"fcpMs":108,"appScriptRequests":77,"under2KB":30,"appScriptKB":427.3,"decodedKB":1294.4,"tripModules":["shared~shared~owned~example~home~TripView~OnPageDebugger-BkmUyk1C.js","ExampleTripCard-DNMuAI2_.js","TripLaneDayTripMarks-C8nUjX3B.js"]}
+{"label":"group4k","page":"features","run":3,"fcpMs":84,"appScriptRequests":71,"under2KB":28,"appScriptKB":383.3,"decodedKB":1159.2,"tripModules":[]}
+{"label":"group4k","page":"pricing","run":3,"fcpMs":80,"appScriptRequests":72,"under2KB":30,"appScriptKB":400,"decodedKB":1208.2,"tripModules":[]}
+{"label":"group4k","page":"blog","run":3,"fcpMs":96,"appScriptRequests":85,"under2KB":30,"appScriptKB":504.3,"decodedKB":1526.6,"tripModules":["shared~BlogPostPage~shared~owned~example~blog-post~trips~component-playground~TripView~TripManager-CBuCW3ca.js"]}
+{"label":"group4k","page":"inspirations","run":3,"fcpMs":120,"appScriptRequests":78,"under2KB":28,"appScriptKB":509.5,"decodedKB":1805,"tripModules":[]}
+{"label":"group4k","page":"example","run":3,"fcpMs":88,"appScriptRequests":135,"under2KB":49,"appScriptKB":1173.6,"decodedKB":3867.8}
+{"label":"group4k","page":"trip","run":3,"fcpMs":88,"appScriptRequests":134,"under2KB":48,"appScriptKB":1173.7,"decodedKB":3866.6}
+{"label":"inline4k","page":"home","run":1,"fcpMs":104,"appScriptRequests":47,"under2KB":8,"appScriptKB":412.7,"decodedKB":1262.8,"tripModules":["ExampleTripCard-CsK3O7Jz.js"]}
+{"label":"inline4k","page":"features","run":1,"fcpMs":84,"appScriptRequests":44,"under2KB":8,"appScriptKB":381.3,"decodedKB":1171.8,"tripModules":[]}
+{"label":"inline4k","page":"pricing","run":1,"fcpMs":84,"appScriptRequests":47,"under2KB":8,"appScriptKB":402.7,"decodedKB":1233,"tripModules":[]}
+{"label":"inline4k","page":"blog","run":1,"fcpMs":92,"appScriptRequests":53,"under2KB":9,"appScriptKB":490,"decodedKB":1501.4,"tripModules":[]}
+{"label":"inline4k","page":"inspirations","run":1,"fcpMs":120,"appScriptRequests":71,"under2KB":8,"appScriptKB":598.5,"decodedKB":2105.8,"tripModules":["CreateTripRoute-C7CrebAN.js","useTripPersistence-Vj5liPLy.js"]}
+{"label":"inline4k","page":"example","run":1,"fcpMs":968,"appScriptRequests":92,"under2KB":9,"appScriptKB":1172.9,"decodedKB":3871.7}
+{"label":"inline4k","page":"trip","run":1,"fcpMs":92,"appScriptRequests":91,"under2KB":8,"appScriptKB":1172,"decodedKB":3867.9}
+{"label":"inline4k","page":"home","run":2,"fcpMs":104,"appScriptRequests":47,"under2KB":8,"appScriptKB":412.7,"decodedKB":1262.8,"tripModules":["ExampleTripCard-CsK3O7Jz.js"]}
+{"label":"inline4k","page":"features","run":2,"fcpMs":84,"appScriptRequests":44,"under2KB":8,"appScriptKB":381.3,"decodedKB":1171.8,"tripModules":[]}
+{"label":"inline4k","page":"pricing","run":2,"fcpMs":80,"appScriptRequests":47,"under2KB":8,"appScriptKB":402.7,"decodedKB":1233,"tripModules":[]}
+{"label":"inline4k","page":"blog","run":2,"fcpMs":104,"appScriptRequests":53,"under2KB":9,"appScriptKB":490,"decodedKB":1501.4,"tripModules":[]}
+{"label":"inline4k","page":"inspirations","run":2,"fcpMs":124,"appScriptRequests":71,"under2KB":8,"appScriptKB":598.5,"decodedKB":2105.8,"tripModules":["CreateTripRoute-C7CrebAN.js","useTripPersistence-Vj5liPLy.js"]}
+{"label":"inline4k","page":"example","run":2,"fcpMs":96,"appScriptRequests":92,"under2KB":9,"appScriptKB":1172.9,"decodedKB":3871.7}
+{"label":"inline4k","page":"trip","run":2,"fcpMs":88,"appScriptRequests":91,"under2KB":8,"appScriptKB":1172,"decodedKB":3867.9}
+{"label":"inline4k","page":"home","run":3,"fcpMs":100,"appScriptRequests":47,"under2KB":8,"appScriptKB":412.7,"decodedKB":1262.8,"tripModules":["ExampleTripCard-CsK3O7Jz.js"]}
+{"label":"inline4k","page":"features","run":3,"fcpMs":84,"appScriptRequests":44,"under2KB":8,"appScriptKB":381.3,"decodedKB":1171.8,"tripModules":[]}
+{"label":"inline4k","page":"pricing","run":3,"fcpMs":80,"appScriptRequests":47,"under2KB":8,"appScriptKB":402.7,"decodedKB":1233,"tripModules":[]}
+{"label":"inline4k","page":"blog","run":3,"fcpMs":92,"appScriptRequests":53,"under2KB":9,"appScriptKB":490,"decodedKB":1501.4,"tripModules":[]}
+{"label":"inline4k","page":"inspirations","run":3,"fcpMs":120,"appScriptRequests":71,"under2KB":8,"appScriptKB":598.5,"decodedKB":2105.8,"tripModules":["CreateTripRoute-C7CrebAN.js","useTripPersistence-Vj5liPLy.js"]}
+{"label":"inline4k","page":"example","run":3,"fcpMs":92,"appScriptRequests":92,"under2KB":9,"appScriptKB":1172.9,"decodedKB":3871.7}
+{"label":"inline4k","page":"trip","run":3,"fcpMs":92,"appScriptRequests":91,"under2KB":8,"appScriptKB":1172,"decodedKB":3867.9}
+
+# Lighthouse 12.8.2, mobile defaults (simulated throttling), --only-categories=performance, headless Chrome.
+# requests/scripts include Google Maps on the trip pages; appScripts/appScriptKB = /assets/ scripts.
+{"label":"baseline","page":"home","run":1,"score":65,"fcp":5256,"lcp":6006,"tbt":1,"requests":111,"scripts":79,"appScripts":79,"appScriptKB":409.3}
+{"label":"baseline","page":"features","run":1,"score":58,"fcp":4888,"lcp":5796,"tbt":353,"requests":87,"scripts":72,"appScripts":72,"appScriptKB":383.5}
+{"label":"baseline","page":"example","run":1,"score":66,"fcp":5043,"lcp":5582,"tbt":26,"requests":192,"scripts":163,"appScripts":147,"appScriptKB":1156.1}
+{"label":"baseline","page":"trip","run":1,"score":67,"fcp":4956,"lcp":5406,"tbt":30,"requests":200,"scripts":162,"appScripts":146,"appScriptKB":1155.9}
+{"label":"baseline","page":"home","run":2,"score":65,"fcp":5255,"lcp":6005,"tbt":3,"requests":111,"scripts":79,"appScripts":79,"appScriptKB":409.3}
+{"label":"baseline","page":"features","run":2,"score":67,"fcp":4804,"lcp":5629,"tbt":3,"requests":87,"scripts":72,"appScripts":72,"appScriptKB":383.5}
+{"label":"baseline","page":"example","run":2,"score":66,"fcp":4954,"lcp":5404,"tbt":28,"requests":184,"scripts":163,"appScripts":147,"appScriptKB":1156.1}
+{"label":"baseline","page":"trip","run":2,"score":67,"fcp":4955,"lcp":5405,"tbt":31,"requests":192,"scripts":162,"appScripts":146,"appScriptKB":1155.9}
+{"label":"baseline","page":"home","run":3,"score":65,"fcp":5254,"lcp":6004,"tbt":7,"requests":111,"scripts":79,"appScripts":79,"appScriptKB":409.3}
+{"label":"baseline","page":"features","run":3,"score":67,"fcp":4804,"lcp":5629,"tbt":4,"requests":87,"scripts":72,"appScripts":72,"appScriptKB":383.5}
+{"label":"baseline","page":"example","run":3,"score":67,"fcp":4954,"lcp":5404,"tbt":31,"requests":192,"scripts":163,"appScripts":147,"appScriptKB":1156.1}
+{"label":"baseline","page":"trip","run":3,"score":67,"fcp":4955,"lcp":5405,"tbt":29,"requests":200,"scripts":162,"appScripts":146,"appScriptKB":1155.9}
+{"label":"group4k","page":"home","run":1,"score":65,"fcp":5255,"lcp":5930,"tbt":0,"requests":109,"scripts":77,"appScripts":77,"appScriptKB":427.3}
+{"label":"group4k","page":"features","run":1,"score":66,"fcp":4887,"lcp":5795,"tbt":1,"requests":87,"scripts":72,"appScripts":72,"appScriptKB":389.3}
+{"label":"group4k","page":"example","run":1,"score":67,"fcp":4955,"lcp":5405,"tbt":30,"requests":180,"scripts":151,"appScripts":135,"appScriptKB":1173.6}
+{"label":"group4k","page":"trip","run":1,"score":67,"fcp":4956,"lcp":5406,"tbt":35,"requests":188,"scripts":150,"appScripts":134,"appScriptKB":1173.7}
+{"label":"group4k","page":"home","run":2,"score":65,"fcp":5254,"lcp":6004,"tbt":3,"requests":109,"scripts":77,"appScripts":77,"appScriptKB":427.3}
+{"label":"group4k","page":"features","run":2,"score":67,"fcp":4804,"lcp":5629,"tbt":1,"requests":87,"scripts":72,"appScripts":72,"appScriptKB":389.3}
+{"label":"group4k","page":"example","run":2,"score":67,"fcp":4955,"lcp":5405,"tbt":35,"requests":172,"scripts":151,"appScripts":135,"appScriptKB":1173.6}
+{"label":"group4k","page":"trip","run":2,"score":67,"fcp":4955,"lcp":5405,"tbt":19,"requests":180,"scripts":150,"appScripts":134,"appScriptKB":1173.7}
+{"label":"group4k","page":"home","run":3,"score":65,"fcp":5254,"lcp":6079,"tbt":3,"requests":109,"scripts":77,"appScripts":77,"appScriptKB":427.3}
+{"label":"group4k","page":"features","run":3,"score":66,"fcp":4887,"lcp":5794,"tbt":1,"requests":87,"scripts":72,"appScripts":72,"appScriptKB":389.3}
+{"label":"group4k","page":"example","run":3,"score":67,"fcp":4954,"lcp":5404,"tbt":19,"requests":172,"scripts":151,"appScripts":135,"appScriptKB":1173.6}
+{"label":"group4k","page":"trip","run":3,"score":67,"fcp":4955,"lcp":5405,"tbt":22,"requests":188,"scripts":150,"appScripts":134,"appScriptKB":1173.7}
+{"label":"inline4k","page":"home","run":1,"score":69,"fcp":4656,"lcp":5256,"tbt":12,"requests":79,"scripts":47,"appScripts":47,"appScriptKB":412.7}
+{"label":"inline4k","page":"features","run":1,"score":70,"fcp":4357,"lcp":5107,"tbt":6,"requests":60,"scripts":45,"appScripts":45,"appScriptKB":387.4}
+{"label":"inline4k","page":"example","run":1,"score":69,"fcp":4507,"lcp":4957,"tbt":31,"requests":137,"scripts":108,"appScripts":92,"appScriptKB":1172.9}
+{"label":"inline4k","page":"trip","run":1,"score":68,"fcp":4507,"lcp":4957,"tbt":79,"requests":145,"scripts":107,"appScripts":91,"appScriptKB":1172}
+{"label":"inline4k","page":"home","run":2,"score":68,"fcp":4655,"lcp":5330,"tbt":8,"requests":79,"scripts":47,"appScripts":47,"appScriptKB":412.7}
+{"label":"inline4k","page":"features","run":2,"score":70,"fcp":4356,"lcp":5106,"tbt":8,"requests":60,"scripts":45,"appScripts":45,"appScriptKB":387.4}
+{"label":"inline4k","page":"example","run":2,"score":67,"fcp":4357,"lcp":4957,"tbt":157,"requests":135,"scripts":108,"appScripts":92,"appScriptKB":1172.9}
+{"label":"inline4k","page":"trip","run":2,"score":70,"fcp":4357,"lcp":4882,"tbt":31,"requests":137,"scripts":107,"appScripts":91,"appScriptKB":1172}
+{"label":"inline4k","page":"home","run":3,"score":68,"fcp":4655,"lcp":5330,"tbt":11,"requests":79,"scripts":47,"appScripts":47,"appScriptKB":412.7}
+{"label":"inline4k","page":"features","run":3,"score":70,"fcp":4356,"lcp":5106,"tbt":6,"requests":60,"scripts":45,"appScripts":45,"appScriptKB":387.4}
+{"label":"inline4k","page":"example","run":3,"score":70,"fcp":4506,"lcp":4881,"tbt":30,"requests":137,"scripts":108,"appScripts":92,"appScriptKB":1172.9}
+{"label":"inline4k","page":"trip","run":3,"score":68,"fcp":4506,"lcp":4956,"tbt":40,"requests":145,"scripts":107,"appScripts":91,"appScriptKB":1172}
