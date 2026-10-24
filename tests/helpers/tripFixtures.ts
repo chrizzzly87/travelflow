@@ -20,8 +20,6 @@ export const makeCityItem = (input: CityItemInput): ITimelineItem => ({
   coordinates: input.coordinates || { lat: 0, lng: 0 },
   color: input.color || '#4f46e5',
   description: '',
-  activities: [],
-  notes: '',
   hotels: [],
   transportMode: 'na',
 });
@@ -36,8 +34,6 @@ export const makeTravelItem = (id: string, startDateOffset: number, title: strin
   description: '',
   transportMode: 'train',
   location: '',
-  activities: [],
-  notes: '',
   hotels: [],
 });
 
@@ -51,8 +47,6 @@ export const makeActivityItem = (id: string, city: string, startDateOffset: numb
   color: 'bg-slate-100 border-slate-300 text-slate-800',
   description: '',
   transportMode: 'na',
-  activities: [],
-  notes: '',
   hotels: [],
 });
 
@@ -62,7 +56,6 @@ export const makeTrip = (overrides: Partial<ITrip> = {}): ITrip => {
     id: overrides.id || 'trip-1',
     title: overrides.title || 'Test Trip',
     startDate: overrides.startDate || '2026-05-01',
-    endDate: overrides.endDate || '2026-05-10',
     items: overrides.items || [],
     createdAt: typeof overrides.createdAt === 'number' ? overrides.createdAt : now,
     updatedAt: typeof overrides.updatedAt === 'number' ? overrides.updatedAt : now,

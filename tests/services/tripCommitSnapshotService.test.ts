@@ -7,7 +7,6 @@ const makeTrip = (overrides?: Partial<ITrip>): ITrip => ({
     id: 'trip-1',
     title: 'Trip',
     startDate: '2026-03-01',
-    endDate: '2026-03-05',
     items: [],
     createdAt: 1,
     updatedAt: 2,

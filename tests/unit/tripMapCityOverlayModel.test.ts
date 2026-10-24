@@ -15,11 +15,9 @@ const buildCity = (overrides: Partial<ITimelineItem>): ITimelineItem => ({
   startDateOffset: overrides.startDateOffset ?? 0,
   duration: overrides.duration ?? 2,
   color: overrides.color ?? 'from-blue-500 to-cyan-400',
-  notes: overrides.notes ?? '',
   link: overrides.link ?? '',
   activityType: overrides.activityType ?? [],
   transportMode: overrides.transportMode ?? '',
-  travelTime: overrides.travelTime ?? '',
   cost: overrides.cost ?? '',
   imageUrl: overrides.imageUrl ?? '',
 } as ITimelineItem);
