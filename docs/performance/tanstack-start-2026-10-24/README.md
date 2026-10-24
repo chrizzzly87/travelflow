@@ -22,5 +22,10 @@ workstation against `deploy-preview-574` (integration head) and `deploy-preview-
   three videos (`/cdp/…`), which production does not serve. Blocking those URLs in
   Lighthouse was not reliably applied. Treat preview LCP as unusable for before/after
   claims; compare production or a local built-site run instead.
-- **The example trip's 12 s LCP is the full planner render on a throttled mobile CPU.**
-  It is the same on both targets and remains #561 territory (TripView decomposition).
+- **The example trip's 12 s LCP is not the planner.** Its LCP element is Google Maps'
+  "problem with your API key" panel: the referrer-restricted browser key rejects preview
+  hosts, and the panel paints late. The same thing happens on both targets. The real trip
+  costs on this sample are FCP 2.4 s, TBT 71 ms, and 168 script requests (about 1.1 MB
+  transferred, including about 90 KB of unused TripView code). Request count and unused
+  TripView code are the measurable #561 follow-ups; verify them on production or a local
+  built site, where the map key works.
