@@ -39,6 +39,7 @@ const browsersMissing = () => {
 const STAGES = [
   { name: 'storage', label: 'Validate storage registry', args: ['storage:validate'] },
   { name: 'toasts', label: 'Validate toast usage conventions', args: ['toasts:validate'] },
+  { name: 'typecheck', label: 'Type-check the whole project', args: ['typecheck'] },
   { name: 'tests', label: 'Run core regression tests', args: ['test:core'] },
   {
     name: 'build',

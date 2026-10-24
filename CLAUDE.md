@@ -93,8 +93,11 @@ Before finalizing, ensure all applicable code changes are represented in release
 - Use the existing event naming/payload convention; avoid ad-hoc query param tracking when Umami events are available.
 
 ## Running the CI gates locally
-- `pnpm ci:local` runs the PR Quality workflow stage for stage (storage, toasts, `test:core`,
-  `build:netlify`, Playwright, the PWA e2e suite). Takes ~3m30s. Run it before pushing.
+- `pnpm ci:local` runs the PR Quality workflow stage for stage (storage, toasts, `typecheck`,
+  `test:core`, `build:netlify`, Playwright, the PWA e2e suite). Takes ~3m30s. Run it before pushing.
+- `pnpm typecheck` (`tsc --noEmit -p .`) is a gate: fix type errors properly — no `@ts-ignore`,
+  `@ts-nocheck`, blanket `any` or tsconfig weakening. Deno-only code reads `Deno` through a typed
+  `globalThis` handle and types URL imports in `netlify/edge-lib/og-edge.d.ts`.
 - `pnpm ci:local --fast` skips the build and the browser suite (~70s); `--only=<stage>` and
   `--from=<stage>` target one stage or resume after a failure; `--list` prints the stage names.
 - Keep the STAGES list in `scripts/ci-local.mjs` in step with `.github/workflows/pr-quality.yml`.

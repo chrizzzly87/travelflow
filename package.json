@@ -42,6 +42,7 @@
     "test:watch": "TZ=Europe/Berlin vitest",
     "test:run": "TZ=Europe/Berlin vitest run",
     "test:core": "TZ=Europe/Berlin vitest run --coverage --reporter=default",
+    "typecheck": "tsc --noEmit -p .",
     "ci:local": "node scripts/ci-local.mjs",
     "test:e2e": "playwright test",
     "test:e2e:production": "playwright test --config playwright.production.config.ts",
