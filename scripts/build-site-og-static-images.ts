@@ -132,7 +132,7 @@ export const resolveDenoRenderConcurrency = (
 const buildQueryFromMetadata = (metadata: SiteOgMetadata): Record<string, string> => {
   const query: Record<string, string> = {};
 
-  const entries = Object.entries(metadata.ogImageParams as Record<string, string | undefined>);
+  const entries = Object.entries(metadata.ogImageParams);
   for (const [key, rawValue] of entries) {
     const value = (rawValue || "").trim();
     if (!value) continue;
