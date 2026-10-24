@@ -8,6 +8,7 @@ import {
   buildProviderSuccessRateChartData,
   type ModelTelemetryChartPoint,
   type ProviderTelemetryChartPoint,
+  type RecentTelemetryChartRow,
 } from '../../services/adminAiTelemetryChartData';
 
 const PROVIDER_ROWS: ProviderTelemetryChartPoint[] = [
@@ -145,13 +146,13 @@ describe('services/adminAiTelemetryChartData', () => {
   });
 
   it('groups failed recent rows by error code with UNKNOWN_ERROR fallback', () => {
-    const rows = [
+    const rows: RecentTelemetryChartRow[] = [
       { status: 'failed', error_code: 'OPENAI_REQUEST_FAILED' },
       { status: 'failed', error_code: null },
       { status: 'failed', error_code: '' },
       { status: 'success', error_code: 'IGNORED' },
       { status: 'failed', error_code: 'OPENAI_REQUEST_FAILED' },
-    ] as const;
+    ];
 
     const barListRows = buildFailureCodeBarListData(rows, 5);
     expect(barListRows).toHaveLength(2);

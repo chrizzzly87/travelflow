@@ -1,4 +1,4 @@
-import type { ReleaseNote, ReleaseNoteItem } from './releaseNotesFormat';
+import type { ReleaseNote, ReleaseNoteItem, ReleaseStatus } from './releaseNotesFormat';
 import { isReleaseInsideAnnouncementWindow, sortReleaseItemsByType } from './releaseNotesFormat';
 
 // The full corpus: this module's eager glob bundles every release note ever

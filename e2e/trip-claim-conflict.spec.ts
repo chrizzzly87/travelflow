@@ -151,7 +151,12 @@ test('guest registration hits the claim-conflict modal and preserves create-simi
     const decodedPrefill = await page.evaluate(async () => {
         const encoded = new URLSearchParams(window.location.search).get('prefill');
         if (!encoded) return null;
-        const { decodeTripPrefill } = await import('/services/tripPrefillDecoder.ts');
+        // The browser loads the module from the dev server by URL; tsc cannot
+        // resolve a root-relative specifier, so type it against the source file.
+        const decoderModuleUrl = '/services/tripPrefillDecoder.ts';
+        const { decodeTripPrefill } = (await import(
+            /* @vite-ignore */ decoderModuleUrl
+        )) as typeof import('../services/tripPrefillDecoder');
         return decodeTripPrefill(encoded);
     });
 

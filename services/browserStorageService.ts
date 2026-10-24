@@ -4,7 +4,7 @@ import {
   type CookieDefinition,
   doesRegistryNameMatch,
 } from '../lib/legal/cookies.config';
-import { isOptionalConsentGranted, readConsentChoiceFromStorage } from './consentState';
+import { isOptionalConsentGranted, readCurrentConsentChoice } from './consentState';
 
 export type BrowserStorageMedium = 'localStorage' | 'sessionStorage';
 
@@ -48,7 +48,12 @@ const warnPolicy = (message: string) => {
 
 const getStorage = (medium: BrowserStorageMedium): Storage | null => {
   if (typeof window === 'undefined') return null;
-  return medium === 'localStorage' ? window.localStorage : window.sessionStorage;
+  try {
+    return medium === 'localStorage' ? window.localStorage : window.sessionStorage;
+  } catch {
+    // Browser policies can reject the storage getter before getItem/setItem.
+    return null;
+  }
 };
 
 const resolveRegisteredEntry = (
@@ -74,7 +79,7 @@ const resolveRegisteredEntry = (
 
 const isCategoryAllowed = (category: CookieCategory): boolean => {
   if (category === 'essential') return true;
-  return isOptionalConsentGranted(readConsentChoiceFromStorage());
+  return isOptionalConsentGranted(readCurrentConsentChoice());
 };
 
 const removeByRegistryPattern = (storage: Storage, registryName: string): number => {

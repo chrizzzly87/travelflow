@@ -3,7 +3,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   adminGetAiWorkerHealth: vi.fn(),
@@ -128,7 +128,7 @@ describe('pages/AdminAiWorkerHealthPage', () => {
     });
 
     expect(screen.getByRole('heading', { name: 'Worker Health' })).toBeInTheDocument();
-    expect(screen.getAllByText('Detected stale queued jobs and re-kicked the worker.').length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Detected stale queued jobs and re-kicked the worker.')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'What the canary proves' })).toHaveAttribute(
       'data-tooltip',
       expect.stringContaining('synthetic probe'),

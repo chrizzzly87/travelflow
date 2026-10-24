@@ -16,7 +16,8 @@ vi.mock('../../../services/lazyImportRecovery', () => ({
 import { LazyTripView } from '../../../components/tripview/LazyTripView';
 
 describe('components/tripview/LazyTripView', () => {
-  // The trip, shared-trip and example-trip routes all render through this.
+  // Optional embedded creation previews retain their own lazy recovery.
+  // Native trip routes now load their complete component through the router.
   // It used to be a bare React.lazy, so a tab opened before a deploy crashed
   // with "Failed to fetch dynamically imported module" instead of reloading
   // once onto the new build like every other lazy route.

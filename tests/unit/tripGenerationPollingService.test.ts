@@ -36,6 +36,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
             aiMeta: {
                 provider: 'gemini',
                 model: 'gemini-3-pro-preview',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'running',
                     latestAttempt: {
@@ -59,6 +60,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
             aiMeta: {
                 provider: 'gemini',
                 model: 'gemini-3-pro-preview',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'failed',
                     latestAttempt: {
@@ -89,6 +91,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
             aiMeta: {
                 provider: 'gemini',
                 model: 'gemini-3-pro-preview',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'succeeded',
                     latestAttempt: {
@@ -126,6 +129,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
             aiMeta: {
                 provider: 'openai',
                 model: 'gpt-5.4',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'queued',
                     latestAttempt: {
@@ -150,6 +154,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
             aiMeta: {
                 provider: 'openai',
                 model: 'gpt-5.4',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'failed',
                     latestAttempt: {
@@ -183,6 +188,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
             aiMeta: {
                 provider: 'openai',
                 model: 'gpt-5.4',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'queued',
                     latestAttempt: {
@@ -210,6 +216,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
             aiMeta: {
                 provider: 'openai',
                 model: 'gpt-5.4',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'failed',
                     latestAttempt: {
@@ -241,6 +248,7 @@ describe('tripGenerationPollingService.shouldPollTripGenerationState', () => {
             aiMeta: {
                 provider: 'gemini',
                 model: 'gemini-3-pro-preview',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'running',
                     latestAttempt: {
@@ -364,6 +372,7 @@ describe('tripGenerationPollingService.shouldPollTripGenerationState', () => {
             aiMeta: {
                 provider: 'gemini',
                 model: 'gemini-3-pro-preview',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'running',
                     latestAttempt: {
@@ -398,6 +407,7 @@ describe('tripGenerationPollingService.shouldUseRemoteTripForAsyncStallRecovery'
             aiMeta: {
                 provider: 'openai',
                 model: 'gpt-5.4',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'queued',
                     latestAttempt: {
@@ -472,6 +482,7 @@ describe('tripGenerationPollingService.shouldUseRemoteTripForAsyncStallRecovery'
             aiMeta: {
                 provider: 'openai',
                 model: 'gpt-5.4',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'queued',
                     latestAttempt: {
@@ -496,6 +507,7 @@ describe('tripGenerationPollingService.shouldUseRemoteTripForAsyncStallRecovery'
             aiMeta: {
                 provider: 'openai',
                 model: 'gpt-5.4',
+                generatedAt: '2026-01-01T00:00:00.000Z',
                 generation: {
                     state: 'queued',
                     latestAttempt: {

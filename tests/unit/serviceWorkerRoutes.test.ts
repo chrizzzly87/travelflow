@@ -28,6 +28,10 @@ describe('resolveServiceWorkerStrategy', () => {
         expect(strategyFor(`${ORIGIN}/de/trips`, { mode: 'navigate' })).toBe('navigation');
     });
 
+    it('does not cache document responses as a shared shell', () => {
+        expect(isCachingStrategy(strategyFor(`${ORIGIN}/create-trip`, { mode: 'navigate' }))).toBe(false);
+    });
+
     it('serves the shell files from the precache', () => {
         expect(strategyFor(`${ORIGIN}/spa.html`)).toBe('precache');
         expect(strategyFor(`${ORIGIN}/manifest.webmanifest`)).toBe('precache');

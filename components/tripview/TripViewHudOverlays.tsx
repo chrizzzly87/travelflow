@@ -1,15 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { Article, Check, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { PLAN_CATALOG } from '../../config/planCatalog';
 import type { TripPaywallActivationMode } from '../../config/paywall';
-import type { ShareMode } from '../../types';
+import type { ITrip, ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
+import { useLoginModal } from '../../hooks/useLoginModal';
 import { CopyTripButton } from './CopyTripButton';
+import { TripClaimRecoveryBoundary } from './tripClaimRecoveryBoundary';
 import { tripDockCardBottomClass } from './tripBottomDock';
 
 interface TripViewHudOverlaysProps {
@@ -37,7 +40,8 @@ interface TripViewHudOverlaysProps {
     isPendingAuthContinueDisabled?: boolean;
     claimConflictModalVisible?: boolean;
     claimConflictShowLoginCta?: boolean;
-    claimConflictCreateSimilarPath?: string;
+    claimConflictTrip?: Pick<ITrip, 'title' | 'aiMeta'>;
+    claimConflictPathname?: string;
     onClaimConflictLogin?: () => void;
 }
 
@@ -61,10 +65,12 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     isPendingAuthContinueDisabled = false,
     claimConflictModalVisible = false,
     claimConflictShowLoginCta = false,
-    claimConflictCreateSimilarPath = '/create-trip',
+    claimConflictTrip,
+    claimConflictPathname,
     onClaimConflictLogin,
 }) => {
     const { t } = useTranslation(['common', 'pricing']);
+    const { isLoginModalOpen } = useLoginModal();
     const paywallRequiresLogin = paywallActivationMode === 'login_modal';
     const showPendingAuthModal = pendingAuthModalStage !== 'hidden';
     const showClaimConflictModal = claimConflictModalVisible;
@@ -112,8 +118,16 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
             )}
 
             {isPaywallLocked && (
+                // A persistent lock card, not a modal: nothing dismisses it, and the
+                // header and status banner around it stay usable while the planner
+                // behind it is already inert (`pointer-events-none`). Trapping focus
+                // here would strand the user on a trip they cannot leave.
                 <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
-                    <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none">
+                    <section
+                        aria-labelledby="trip-paywall-overlay-title"
+                        data-testid="trip-paywall-lock-card"
+                        className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
+                    >
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_320px]">
                             <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
@@ -121,7 +135,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                             {t('tripPaywall.overlay.eyebrow')}
                                         </p>
-                                        <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
+                                        <h2 id="trip-paywall-overlay-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                             {paywallRequiresLogin
                                                 ? t('tripPaywall.overlay.title.login')
                                                 : t('tripPaywall.overlay.title.direct')}
@@ -195,17 +209,21 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </ul>
                             </aside>
                         </div>
-                    </div>
+                    </section>
                 </div>
             )}
 
             {showPendingAuthModal && (
-                <div className="fixed inset-0 z-[1495] flex items-end justify-center bg-slate-950/45 p-3 backdrop-blur-sm sm:items-center sm:p-4">
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="trip-pending-auth-title"
-                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
+                // Nothing closes this modal — it ends when the auth flow does — so
+                // Escape and outside clicks are swallowed. The login modal owns its
+                // own focus boundary, so this one steps aside while that is open.
+                <Dialog open={!isLoginModalOpen}>
+                    <DialogContent
+                        data-testid="trip-pending-auth-dialog"
+                        overlayClassName="z-[1495] bg-slate-950/45 backdrop-blur-sm"
+                        onEscapeKeyDown={(event) => event.preventDefault()}
+                        onInteractOutside={(event) => event.preventDefault()}
+                        className="z-[1496] block top-auto bottom-3 w-[calc(100vw-1.5rem)] max-w-xl max-h-[calc(100dvh-1.5rem)] translate-y-0 overflow-auto rounded-2xl sm:top-1/2 sm:bottom-auto sm:w-[calc(100vw-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:-translate-y-1/2"
                     >
                         {pendingAuthModalStage === 'loading' ? (
                             <div className="p-5 sm:p-6">
@@ -217,12 +235,12 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                             {t('tripView.pendingAuth.eyebrowLoading')}
                                         </p>
-                                        <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                                        <DialogTitle className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                                             {t('tripView.pendingAuth.titleLoading')}
-                                        </h2>
-                                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                        </DialogTitle>
+                                        <DialogDescription className="mt-2 text-sm leading-6 text-muted-foreground">
                                             {t('tripView.pendingAuth.descriptionLoading')}
-                                        </p>
+                                        </DialogDescription>
                                     </div>
                                 </div>
                                 <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
@@ -237,18 +255,18 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                                 {t('tripView.pendingAuth.eyebrowLocked')}
                                             </p>
-                                            <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
+                                            <DialogTitle className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                                 {t('tripView.pendingAuth.titleLocked')}
-                                            </h2>
+                                            </DialogTitle>
                                         </div>
                                         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                             <WarningCircle size={20} weight="duotone" />
                                         </span>
                                     </div>
 
-                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                                    <DialogDescription className="mt-3 text-sm leading-6 text-muted-foreground">
                                         {t('tripView.pendingAuth.descriptionLocked')}
-                                    </p>
+                                    </DialogDescription>
 
                                     <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
                                         {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
@@ -295,8 +313,8 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </aside>
                             </div>
                         )}
-                    </div>
-                </div>
+                    </DialogContent>
+                </Dialog>
             )}
 
             {showGenerationOverlay && (
@@ -321,104 +339,17 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                 </div>
             )}
 
-            {showClaimConflictModal && (
-                <div className="fixed inset-0 z-[1496] flex items-end justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:items-center sm:p-4">
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="trip-claim-conflict-title"
-                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
-                    >
-                        <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_220px]">
-                            <div className="p-5 sm:p-6">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
-                                            {t('tripView.claimConflict.eyebrow')}
-                                        </p>
-                                        <h2 id="trip-claim-conflict-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
-                                            {t('tripView.claimConflict.title')}
-                                        </h2>
-                                    </div>
-                                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
-                                        <WarningCircle size={20} weight="duotone" />
-                                    </span>
-                                </div>
-
-                                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                                    {claimConflictShowLoginCta
-                                        ? t('tripView.claimConflict.descriptionLoggedOut')
-                                        : t('tripView.claimConflict.descriptionLoggedIn')}
-                                </p>
-
-                                <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
-                                    {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
-                                </div>
-
-                                <div className="mt-5 flex flex-wrap gap-2">
-                                    {claimConflictShowLoginCta && (
-                                        <Button
-                                            type="button"
-                                            variant="default"
-                                            size="lg"
-                                            onClick={() => {
-                                                trackEvent('trip_generation__claim_conflict_modal--login', {
-                                                    trip_id: tripId,
-                                                    source: 'trip_claim_conflict_modal',
-                                                });
-                                                onClaimConflictLogin?.();
-                                            }}
-                                            className="h-11 rounded-xl px-4 font-semibold"
-                                            {...getAnalyticsDebugAttributes('trip_generation__claim_conflict_modal--login', {
-                                                trip_id: tripId,
-                                                source: 'trip_claim_conflict_modal',
-                                            })}
-                                        >
-                                            {t('tripView.claimConflict.loginCta')}
-                                        </Button>
-                                    )}
-                                    <Link
-                                        to={claimConflictCreateSimilarPath}
-                                        onClick={() => {
-                                            trackEvent('trip_generation__claim_conflict_modal--create_similar', {
-                                                trip_id: tripId,
-                                                source: 'trip_claim_conflict_modal',
-                                            });
-                                        }}
-                                        className={`inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 ${
-                                            claimConflictShowLoginCta
-                                                ? 'border border-border bg-card text-foreground hover:bg-secondary'
-                                                : 'bg-accent-600 text-white hover:bg-accent-700'
-                                        }`}
-                                        {...getAnalyticsDebugAttributes('trip_generation__claim_conflict_modal--create_similar', {
-                                            trip_id: tripId,
-                                            source: 'trip_claim_conflict_modal',
-                                        })}
-                                    >
-                                        {t('tripView.claimConflict.createSimilarCta')}
-                                    </Link>
-                                </div>
-                            </div>
-
-                            <aside className="border-t border-border bg-secondary/80 p-5 md:border-l md:border-t-0 sm:p-6">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                    {t('tripView.claimConflict.benefitsTitle')}
-                                </p>
-                                <ul className="mt-4 space-y-3">
-                                    {[
-                                        t('tripView.claimConflict.benefits.prefill'),
-                                        t('tripView.claimConflict.benefits.adjust'),
-                                    ].map((benefit) => (
-                                        <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-foreground">
-                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600 dark:text-accent-300" />
-                                            <span>{benefit}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </aside>
-                        </div>
-                    </div>
-                </div>
+            {showClaimConflictModal && claimConflictTrip && claimConflictPathname && (
+                <TripClaimRecoveryBoundary
+                    tripId={tripId}
+                    claimConflictTrip={claimConflictTrip}
+                    claimConflictPathname={claimConflictPathname}
+                    claimConflictShowLoginCta={claimConflictShowLoginCta}
+                    onClaimConflictLogin={onClaimConflictLogin}
+                    loadingDestinationSummary={loadingDestinationSummary}
+                    tripDateRange={tripDateRange}
+                    tripSpanCompactLabel={tripSpanCompactLabel}
+                />
             )}
         </>
     );

@@ -206,7 +206,8 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
       compact,
     });
 
-    let bestCandidate: CandidateLabelLayout | null = null;
+    // Assigned inside tryAnchor; the explicit widening keeps TS from narrowing it to null.
+    let bestCandidate = null as CandidateLabelLayout | null;
     let bestPenalty = Number.POSITIVE_INFINITY;
     const preferredAnchor: TripMapCityLabelAnchor = label.point.y <= estimatedBox.height + baseOffsetPx + 18
       ? 'below'

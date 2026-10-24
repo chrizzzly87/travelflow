@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { setResolvedTheme, getResolvedTheme } from '../../../contexts/theme/themeStore';
+import { useTheme } from '../../../contexts/theme/useTheme';
 
 /**
  * Dragging does NOT go through React state. Every pointermove used to call
@@ -33,6 +34,9 @@ const RECOLOUR_MS = 520;
 export const SHADE_TRAVEL = 1.02;
 /** How far the cabin dims as the shade comes down. */
 export const FRAME_DIM = 0.28;
+// CSS owns the initial and resting theme; pointer drags override these briefly.
+export const SHADE_REST_TRANSFORM = 'translate3d(0, var(--tf-window-shade-offset), 0)';
+export const FRAME_REST_FILTER = 'brightness(var(--tf-window-frame-brightness))';
 
 export interface WindowShadeResult {
     shade: number;
@@ -88,37 +92,11 @@ const markRecolouring = (): void => {
 };
 
 export const useWindowShade = (): WindowShadeResult => {
-    const [isDark, setIsDark] = useState(() =>
-        typeof document === 'undefined' ? false : document.documentElement.classList.contains('dark'),
-    );
-    const [shade, setShade] = useState(() => (isDark ? 1 : 0));
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
+    const shade = isDark ? 1 : 0;
     const [dragging, setDragging] = useState(false);
-
-    // Same two-pass hydration guard as ThemeToggle, for the same reason: preact's
-    // hydrate() does not patch attributes on prerendered DOM, so a first render
-    // that disagrees with the build-time markup is silently dropped and the shade
-    // stays visually open while the page is actually dark.
-    const [hydrated, setHydrated] = useState(false);
-    useEffect(() => { setHydrated(true); }, []);
-
     const drag = useRef({ active: false, startY: 0, startShade: 0, height: 1, velocity: 0, lastAt: 0, lastShade: 0 });
-
-    // Keep in step with the toggle in the header: if the theme changes from
-    // anywhere else, the shade has to move to match or the two controls disagree.
-    useEffect(() => {
-        if (typeof document === 'undefined') return;
-        const root = document.documentElement;
-        const observer = new MutationObserver(() => {
-            const dark = root.classList.contains('dark');
-            setIsDark((current) => {
-                if (current === dark) return current;
-                if (!drag.current.active) setShade(dark ? 1 : 0);
-                return dark;
-            });
-        });
-        observer.observe(root, { attributes: true, attributeFilter: ['class'] });
-        return () => observer.disconnect();
-    }, []);
 
     // Attached by PlaneWindow so the drag can paint without a render.
     const shadeElRef = useRef<HTMLElement | null>(null);
@@ -173,25 +151,20 @@ export const useWindowShade = (): WindowShadeResult => {
                 rafId.current = 0;
             }
             pending.current = null;
-            // Write the TARGET, do not clear. Clearing looks tidier but breaks:
-            // React diffs against its previous vdom, so if the computed style
-            // string is unchanged it never rewrites the property, and the element
-            // keeps the cleared value — a shade with no transform sits fully down
-            // whatever the state says. Writing the target keeps DOM and state in
-            // agreement, and React's next render is a harmless no-op.
+            // Resting values come from CSS on the boot-applied root theme.
+            // Clearing a property alone is insufficient when React's previous
+            // style is unchanged, so restore the actual CSS expression here.
             if (shadeElRef.current) {
-                shadeElRef.current.style.transform = `translate3d(0, ${-(1 - next) * SHADE_TRAVEL * 100}%, 0)`;
+                shadeElRef.current.style.transform = SHADE_REST_TRANSFORM;
             }
             if (frameElRef.current) {
-                frameElRef.current.style.filter = `brightness(${1 - next * FRAME_DIM})`;
+                frameElRef.current.style.filter = FRAME_REST_FILTER;
             }
-            setShade(next);
             const wantsDark = next === 1;
             if (getResolvedTheme() !== (wantsDark ? 'dark' : 'light')) {
                 markRecolouring();
                 setResolvedTheme(wantsDark ? 'dark' : 'light');
             }
-            setIsDark(wantsDark);
             paintVeil(0, false);
         },
         [paintVeil],
@@ -296,5 +269,5 @@ export const useWindowShade = (): WindowShadeResult => {
         [onPointerDown, onPointerMove, endDrag, onKeyDown, onClick],
     );
 
-    return { shade: hydrated ? shade : 0, dragging, isDark: hydrated && isDark, handlers, shadeElRef, frameElRef };
+    return { shade, dragging, isDark, handlers, shadeElRef, frameElRef };
 };

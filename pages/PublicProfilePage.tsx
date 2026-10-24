@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { NavLink, useNavigate, useParams, useSearchParams } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
@@ -273,7 +273,7 @@ export const PublicProfilePage: React.FC = () => {
         [trips]
     );
     const distanceLabel = totalDistanceKm > 0
-        ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
+        ? (formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 }) ?? t('summary.distanceUnknown'))
         : t('summary.distanceUnknown');
 
     const visitedCountries = useMemo(() => collectVisitedCountries(trips), [trips]);

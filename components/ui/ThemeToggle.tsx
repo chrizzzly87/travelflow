@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useState } from 'react';
+import React, { forwardRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun } from 'lucide-react';
 
@@ -16,38 +16,18 @@ interface ThemeToggleProps {
     analyticsSurface?: string;
 }
 
-/**
- * Keep explicit ref forwarding for Radix triggers and focus-managing parents.
- * Preact 11 forwards refs automatically, while our React 18 test/type peer
- * still requires forwardRef; this wrapper works in both runtimes.
- */
+/** Ref forwarding supports Radix triggers and focus-managing parents. */
 export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
     ({ variant = 'bar', className, analyticsSurface = 'nav' }, ref) => {
         const { t } = useTranslation('common');
         const { resolvedTheme, toggle } = useTheme();
 
-        // Two-pass render, the same pattern SiteHeader uses for its active-link
-        // underline, and for the same reason.
-        //
-        // Marketing routes are prerendered, and preact's hydrate() does not patch
-        // attributes or text on DOM that already exists — it only diffs structure.
-        // So a first client render that disagrees with the prerendered markup is
-        // silently ignored: the button keeps the build-time label, icon and
-        // aria-pressed, and only corrects itself once something else forces a real
-        // re-render (resizing the window, for instance).
-        //
-        // Prerender has no window, so it always emits the light state. Rendering
-        // that same light state on the first client pass and flipping afterwards
-        // turns the correction into a genuine post-hydration update, which preact
-        // does apply.
-        const [hydrated, setHydrated] = useState(false);
         const bootScope = `theme:${analyticsSurface}`;
         useEffect(() => {
-            setHydrated(true);
             return activateBootControls(bootScope);
         }, [bootScope]);
 
-        const isDark = hydrated && resolvedTheme === 'dark';
+        const isDark = resolvedTheme === 'dark';
 
         const label = isDark ? t('nav.themeToLight') : t('nav.themeToDark');
 
@@ -56,11 +36,13 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
             toggle();
         };
 
-        const icon = isDark ? (
-            <Sun className="size-4 shrink-0" aria-hidden="true" />
-        ) : (
-            <Moon className="size-4 shrink-0" aria-hidden="true" />
-        );
+        // CSS reads the boot-applied root class before hydration. Both icons
+        // have identical geometry, so the visible icon never flips from SSR's
+        // default light snapshot while React attaches the handlers.
+        const icon = <>
+            <Sun className="hidden size-4 shrink-0 dark:block" aria-hidden="true" />
+            <Moon className="size-4 shrink-0 dark:hidden" aria-hidden="true" />
+        </>;
 
         if (variant === 'row') {
             return (

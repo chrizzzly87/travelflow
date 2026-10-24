@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 
 import { TripViewStatusBanners } from '../../../components/tripview/TripViewStatusBanners';
 
@@ -10,7 +11,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
 }));
 
-const renderBanners = (isAgentLauncherVisible: boolean) => render(
+const renderBanners = async (isAgentLauncherVisible: boolean) => await render(
   React.createElement(MemoryRouter, null,
     React.createElement(TripViewStatusBanners, {
       isAdminFallbackView: false,
@@ -40,15 +41,15 @@ const renderBanners = (isAgentLauncherVisible: boolean) => render(
 describe('example trip banner placement', () => {
   // The banner and the "Plan with AI" launcher share the bottom-end corner on
   // desktop; the launcher used to sit on top of the banner's action buttons.
-  it('stacks above the AI launcher while the launcher is shown', () => {
-    renderBanners(true);
+  it('stacks above the AI launcher while the launcher is shown', async () => {
+    await renderBanners(true);
     const banner = screen.getByTestId('example-trip-banner');
     expect(banner.className).toContain('sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+3.5rem)]');
     expect(banner.className).not.toContain('sm:bottom-6');
   });
 
-  it('keeps its corner spot when there is no launcher', () => {
-    renderBanners(false);
+  it('keeps its corner spot when there is no launcher', async () => {
+    await renderBanners(false);
     expect(screen.getByTestId('example-trip-banner').className).toContain('sm:bottom-6');
   });
 });

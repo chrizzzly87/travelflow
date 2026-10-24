@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   adminGetBillingDashboard: vi.fn(),
@@ -54,14 +54,6 @@ vi.mock('../../../components/admin/AdminSurfaceCard', () => ({
   AdminSurfaceCard: ({ children }: { children: React.ReactNode }) => React.createElement('section', null, children),
 }));
 
-vi.mock('@tremor/react', () => ({
-  BarChart: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-bar-chart' }, children),
-  BarList: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-bar-list' }, children),
-  DonutChart: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-donut-chart' }, children),
-  Metric: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
-  Text: ({ children }: { children?: React.ReactNode }) => React.createElement('p', null, children),
-  Title: ({ children }: { children?: React.ReactNode }) => React.createElement('h3', null, children),
-}));
 
 vi.mock('../../../components/admin/CopyableUuid', () => ({
   CopyableUuid: ({ value }: { value: string }) => React.createElement('span', null, value),
@@ -167,8 +159,11 @@ describe('pages/AdminBillingPage', () => {
     });
 
     expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument();
-    expect(screen.getByText('Current MRR by tier')).toBeInTheDocument();
-    expect(screen.getByText('At-risk revenue')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Current MRR by tier' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'At-risk revenue' })).toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: 'Current MRR by tier' })).toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: 'Subscription mix' })).toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: 'Status mix' })).toBeInTheDocument();
     expect(screen.getByText('Subscriptions')).toBeInTheDocument();
     expect(screen.getByText('Webhook events')).toBeInTheDocument();
     expect(screen.getAllByText('explorer@example.com')).toHaveLength(2);
@@ -176,6 +171,14 @@ describe('pages/AdminBillingPage', () => {
     expect(screen.getByText('Subscription status')).toBeInTheDocument();
     expect(screen.getByText('Webhook status')).toBeInTheDocument();
     expect(screen.getByText('Payload JSON')).toBeInTheDocument();
+  });
+
+  it('labels at-risk revenue rows with their status bucket and amount', async () => {
+    renderPage();
+
+    const list = await screen.findByRole('list', { name: 'At-risk revenue' });
+    expect(within(list).getByText('Past due · USD')).toBeInTheDocument();
+    expect(within(list).getByText((9).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))).toBeInTheDocument();
   });
 
   it('runs Paddle reconciliation from the billing workspace', async () => {

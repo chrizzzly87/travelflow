@@ -1,0 +1,270 @@
+{
+  "date": "2026-10-19",
+  "tool": "Lighthouse 13.5.0",
+  "method": "Three fresh-profile mobile audits per revision, sequentially interleaved production/candidate. Default simulated throttling. No consent choice pre-seeded.",
+  "groups": {
+    "production": {
+      "url": "https://travelflowapp.netlify.app/",
+      "commit": "ca90ba7bb7869265c5722c747356e889a0f6ee7e",
+      "deployId": "6acd95ed76aa8573702a1c04",
+      "runs": [
+        {
+          "fetchedAt": "2026-10-19T08:56:02.084Z",
+          "categories": {
+            "performance": 75,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "first-contentful-paint": 1800.03492,
+            "largest-contentful-paint": 4842.12948,
+            "speed-index": 6800.252585407742,
+            "total-blocking-time": 17,
+            "cumulative-layout-shift": 0.00117958694608077
+          },
+          "desktopArtworkRequests": [
+            {
+              "url": "https://travelflowapp.netlify.app/.netlify/images?url=%2Fimages%2Fplane-window.png&w=640&q=68&fm=webp",
+              "transferSize": 83281
+            }
+          ]
+        },
+        {
+          "fetchedAt": "2026-10-19T08:56:42.961Z",
+          "categories": {
+            "performance": 76,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "first-contentful-paint": 3469.0106299999993,
+            "largest-contentful-paint": 4666.931404999999,
+            "speed-index": 3469.0106299999993,
+            "total-blocking-time": 6,
+            "cumulative-layout-shift": 0.00117958694608077
+          },
+          "desktopArtworkRequests": [
+            {
+              "url": "https://travelflowapp.netlify.app/.netlify/images?url=%2Fimages%2Fplane-window.png&w=640&q=68&fm=webp",
+              "transferSize": 83274
+            }
+          ]
+        },
+        {
+          "fetchedAt": "2026-10-19T08:57:21.085Z",
+          "categories": {
+            "performance": 78,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "first-contentful-paint": 3157.18644,
+            "largest-contentful-paint": 4526.03766,
+            "speed-index": 3157.18644,
+            "total-blocking-time": 19,
+            "cumulative-layout-shift": 0.00117958694608077
+          },
+          "desktopArtworkRequests": [
+            {
+              "url": "https://travelflowapp.netlify.app/.netlify/images?url=%2Fimages%2Fplane-window.png&w=640&q=68&fm=webp",
+              "transferSize": 83276
+            }
+          ]
+        }
+      ],
+      "medianCategories": {
+        "performance": 76,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "medianMetrics": {
+        "first-contentful-paint": 3157.18644,
+        "largest-contentful-paint": 4666.931404999999,
+        "speed-index": 3469.0106299999993,
+        "total-blocking-time": 17,
+        "cumulative-layout-shift": 0.00117958694608077
+      }
+    },
+    "candidate": {
+      "url": "https://deploy-preview-563--travelflowapp.netlify.app/",
+      "commit": "eaad9a0d12fb89744d0e6d8c7797ac8d91edf538",
+      "deployId": "6ad5d7797c0359b55af8c071",
+      "runs": [
+        {
+          "fetchedAt": "2026-10-19T08:56:24.808Z",
+          "categories": {
+            "performance": 83,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": 2928.194999999999,
+            "largest-contentful-paint": 3877.5149999999985,
+            "speed-index": 2928.194999999999,
+            "total-blocking-time": 0,
+            "cumulative-layout-shift": 0
+          },
+          "desktopArtworkRequests": [
+            {
+              "url": "https://deploy-preview-563--travelflowapp.netlify.app/.netlify/images?url=%2Fimages%2Fplane-window.png&w=640&q=68&fm=webp",
+              "transferSize": 83253
+            }
+          ]
+        },
+        {
+          "fetchedAt": "2026-10-19T08:57:02.133Z",
+          "categories": {
+            "performance": 90,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": 2721.7109999999993,
+            "largest-contentful-paint": 3039.138999999999,
+            "speed-index": 2721.7109999999993,
+            "total-blocking-time": 0,
+            "cumulative-layout-shift": 0
+          },
+          "desktopArtworkRequests": [
+            {
+              "url": "https://deploy-preview-563--travelflowapp.netlify.app/.netlify/images?url=%2Fimages%2Fplane-window.png&w=640&q=68&fm=webp",
+              "transferSize": 83288
+            }
+          ]
+        },
+        {
+          "fetchedAt": "2026-10-19T08:57:39.336Z",
+          "categories": {
+            "performance": 88,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": 2781.1039999999994,
+            "largest-contentful-paint": 3273.343999999999,
+            "speed-index": 2781.1039999999994,
+            "total-blocking-time": 0,
+            "cumulative-layout-shift": 0
+          },
+          "desktopArtworkRequests": [
+            {
+              "url": "https://deploy-preview-563--travelflowapp.netlify.app/.netlify/images?url=%2Fimages%2Fplane-window.png&w=640&q=68&fm=webp",
+              "transferSize": 83166
+            }
+          ]
+        }
+      ],
+      "medianCategories": {
+        "performance": 88,
+        "accessibility": 100,
+        "best-practices": 96,
+        "seo": 69
+      },
+      "medianMetrics": {
+        "first-contentful-paint": 2781.1039999999994,
+        "largest-contentful-paint": 3273.343999999999,
+        "speed-index": 2781.1039999999994,
+        "total-blocking-time": 0,
+        "cumulative-layout-shift": 0
+      }
+    },
+    "responsive": {
+      "url": "https://deploy-preview-563--travelflowapp.netlify.app/",
+      "commit": "4809a7055d9cfb9894faa14dc10a7323b35e7145",
+      "deployId": "6ad5dd43df7f86948d11349e",
+      "method": "Three subsequent fresh-profile audits with the same settings, after the six interleaved baseline/candidate audits; no concurrent browser tests.",
+      "runs": [
+        {
+          "fetchedAt": "2026-10-19T09:09:46.677Z",
+          "categories": {
+            "performance": 89,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": 2695.0940000000005,
+            "largest-contentful-paint": 3171.419000000001,
+            "speed-index": 2695.0940000000005,
+            "total-blocking-time": 3.5,
+            "cumulative-layout-shift": 0
+          },
+          "desktopArtworkRequests": []
+        },
+        {
+          "fetchedAt": "2026-10-19T09:10:04.998Z",
+          "categories": {
+            "performance": 89,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": 2606.323,
+            "largest-contentful-paint": 3256.7749999999996,
+            "speed-index": 2606.323,
+            "total-blocking-time": 0,
+            "cumulative-layout-shift": 0
+          },
+          "desktopArtworkRequests": []
+        },
+        {
+          "fetchedAt": "2026-10-19T09:10:23.666Z",
+          "categories": {
+            "performance": 87,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": 2770.1754999999994,
+            "largest-contentful-paint": 3342.611,
+            "speed-index": 2770.1754999999994,
+            "total-blocking-time": 0,
+            "cumulative-layout-shift": 0
+          },
+          "desktopArtworkRequests": []
+        }
+      ],
+      "medianCategories": {
+        "performance": 89,
+        "accessibility": 100,
+        "best-practices": 96,
+        "seo": 69
+      },
+      "medianMetrics": {
+        "first-contentful-paint": 2695.0940000000005,
+        "largest-contentful-paint": 3256.7749999999996,
+        "speed-index": 2695.0940000000005,
+        "total-blocking-time": 0,
+        "cumulative-layout-shift": 0
+      }
+    }
+  },
+  "settings": {
+    "formFactor": "mobile",
+    "screenEmulation": {
+      "mobile": true,
+      "width": 412,
+      "height": 823,
+      "deviceScaleFactor": 1.75,
+      "disabled": false
+    },
+    "throttling": {
+      "rttMs": 150,
+      "throughputKbps": 1638.4,
+      "requestLatencyMs": 562.5,
+      "downloadThroughputKbps": 1474.5600000000002,
+      "uploadThroughputKbps": 675,
+      "cpuSlowdownMultiplier": 4
+    },
+    "throttlingMethod": "simulate"
+  }
+}

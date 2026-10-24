@@ -202,6 +202,9 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const descriptionContent = activeRequest
         ? (activeRequest.kind === 'confirm' ? activeRequest.options.message : (activeRequest.options.message || ''))
         : '';
+    const dialogTitle = activeRequest
+        ? (activeRequest.options.title || (activeRequest.kind === 'confirm' ? 'Confirm Action' : 'Input Required'))
+        : '';
     const hasDescriptionContent = hasRenderableContent(descriptionContent);
     const descriptionNode = hasDescriptionContent
         ? (
@@ -238,7 +241,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     >
                         <div className="px-5 py-4 border-b border-border">
                             <h2 id="app-dialog-title" className="text-base font-semibold text-foreground">
-                                {activeRequest.options.title || (activeRequest.kind === 'confirm' ? 'Confirm Action' : 'Input Required')}
+                                {dialogTitle}
                             </h2>
                         </div>
                         <div className="px-5 py-4 space-y-3">
@@ -260,7 +263,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 	                                    <input
 	                                        ref={promptInputRef}
 	                                        type={activeRequest.options.inputType || 'text'}
-	                                        aria-label={activeRequest.options.label || activeRequest.options.placeholder || title}
+	                                        aria-label={activeRequest.options.label || activeRequest.options.placeholder || dialogTitle}
 	                                        value={promptValue}
                                         onChange={(event) => {
                                             setPromptValue(event.target.value);

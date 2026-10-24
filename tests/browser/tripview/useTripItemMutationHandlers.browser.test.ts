@@ -24,8 +24,6 @@ describe('components/tripview/useTripItemMutationHandlers', () => {
       description: '',
       transportMode: 'na',
       hotels: [],
-      activities: [],
-      notes: '',
     };
     const trip = makeTrip({
       items: [cityItem, activityItem],

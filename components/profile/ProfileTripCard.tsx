@@ -10,12 +10,13 @@ import {
   Star,
   Trash,
 } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { isTripExpiredByTimestamp } from '../../config/productLimits';
 import type { AppLanguage, ITrip } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
 import { buildPath } from '../../config/routes';
 import { getTripSpan } from '../../shared/tripSpan';
+import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
 import { getTripGenerationState } from '../../services/tripGenerationDiagnosticsService';
 import {
@@ -262,24 +263,24 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
         )}
 
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2 pe-10">
-          <span className="rounded-full border border-border bg-card/95 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+          <Badge variant="outline" className="bg-card/95 px-2.5 text-[11px] font-semibold">
             {sourceLabel}
-          </span>
+          </Badge>
           <div className="flex items-center gap-2">
             {!isPublic && (
-              <span className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+              <Badge variant="neutral" className="px-2.5 text-[11px] font-semibold">
                 {labels.hiddenTag || 'Hidden'}
-              </span>
+              </Badge>
             )}
             {isExpired && (
-              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+              <Badge variant="warning" className="px-2.5 text-[11px] font-semibold">
                 {labels.expiredTag || 'Expired'}
-              </span>
+              </Badge>
             )}
             {isGenerationFailed && (
-              <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
+              <Badge variant="danger" className="px-2.5 text-[11px] font-semibold">
                 {(labels.generationFailedTag || 'Generation failed').toLowerCase()}
-              </span>
+              </Badge>
             )}
             {trip.isPinned && (
               <span className="rounded-full bg-accent-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">

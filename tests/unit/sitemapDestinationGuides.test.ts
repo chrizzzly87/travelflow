@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readDestinationGuidePaths } from '../../scripts/generate-sitemap.mjs';
+import { readDestinationGuidePaths } from '../../scripts/generate-sitemap';
 
 describe('sitemap destination guide URLs', () => {
   it('emits a path for every country guide, including China and Taiwan', async () => {

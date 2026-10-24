@@ -245,7 +245,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const closeDurationEditor = (options?: { revertPreview?: boolean }) => {
-      if (options?.revertPreview !== false && isSchedulableDraftType(displayItem?.type) && durationBaselineRef.current) {
+      if (options?.revertPreview !== false && displayItem && isSchedulableDraftType(displayItem.type) && durationBaselineRef.current) {
           applyItemChanges(
               [{
                   id: displayItem.id,
@@ -343,6 +343,68 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
         if (timerId) clearTimeout(timerId);
     };
   }, [isOpen, item, variant]);
+
+  // The overlay is a modal dialog: move focus into it on open, keep Tab inside
+  // it (see handleOverlayKeyDown) and hand focus back to the trigger on close.
+  // Not `useFocusTrap`: its focusin guard would pull focus back out of the
+  // AppDialog confirm (delete) that this panel opens on top of itself.
+  const overlayPanelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (variant !== 'overlay' || !isOpen || typeof document === 'undefined') return undefined;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    let frameId = 0;
+    let attempts = 0;
+    const focusPanel = () => {
+        const panel = overlayPanelRef.current;
+        if (!panel) {
+            // The panel mounts a render after `isOpen` flips (see the effect above).
+            if (attempts < 5) {
+                attempts += 1;
+                frameId = requestAnimationFrame(focusPanel);
+            }
+            return;
+        }
+        if (!panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
+    };
+    frameId = requestAnimationFrame(focusPanel);
+    return () => {
+        cancelAnimationFrame(frameId);
+        const panel = overlayPanelRef.current;
+        const active = document.activeElement;
+        const focusIsStranded = !active || active === document.body || Boolean(panel && panel.contains(active));
+        if (focusIsStranded && previouslyFocused && previouslyFocused.isConnected) {
+            previouslyFocused.focus({ preventScroll: true });
+        }
+    };
+  }, [isOpen, variant]);
+
+  const handleOverlayKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'Tab') return;
+      const panel = overlayPanelRef.current;
+      if (!panel) return;
+      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter((node) => node.getAttribute('aria-hidden') !== 'true' && node.getClientRects().length > 0);
+      if (focusables.length === 0) {
+          event.preventDefault();
+          panel.focus({ preventScroll: true });
+          return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const current = document.activeElement;
+      if (event.shiftKey) {
+          if (current === first || current === panel) {
+              event.preventDefault();
+              last.focus();
+          }
+          return;
+      }
+      if (current === last) {
+          event.preventDefault();
+          first.focus();
+      }
+  };
 
   // Handle Escape Key
   useEffect(() => {
@@ -1953,7 +2015,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
-                            onClick={closeDurationEditor}
+                            onClick={() => closeDurationEditor()}
                             className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
@@ -2022,7 +2084,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </p>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
-                            onClick={closeCityEditor}
+                            onClick={() => closeCityEditor()}
                             className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
@@ -2343,11 +2405,20 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
         <button
             type="button"
             aria-label="Close details panel"
+            // A pointer target only: keyboard users close with Escape or the
+            // panel's own close control, and Tab stays inside the dialog.
+            tabIndex={-1}
             className={`absolute inset-0 border-0 p-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-auto ${isVisible ? 'opacity-100' : 'opacity-0'}`}
             onClick={handleClosePanel}
         />
         <div
-            className={`bg-secondary shadow-2xl flex flex-col pointer-events-auto will-change-transform absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto dark:shadow-none`}
+            ref={overlayPanelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={displayItem.title || displayItem.type}
+            tabIndex={-1}
+            onKeyDown={handleOverlayKeyDown}
+            className={`bg-secondary shadow-2xl flex flex-col pointer-events-auto will-change-transform focus:outline-none absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto dark:shadow-none`}
             style={{ transform: window.innerWidth < 640 ? `translateY(${!isVisible ? '100%' : `${dragOffset}px`})` : `translateX(${!isVisible ? '110%' : '0%'})`, transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}
         >
           {Content}

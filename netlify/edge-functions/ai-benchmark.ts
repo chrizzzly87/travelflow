@@ -1,4 +1,5 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
+import { isZeroNightReturnStop } from "../../shared/aiTripStayDuration.ts";
 import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
 import { buildModelActivityPlacementFields } from "../../shared/aiTripActivityPlacement.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
@@ -522,7 +523,7 @@ const normalizeCityColors = (items: Array<Record<string, unknown>>): Array<Recor
   });
 };
 
-const buildTripFromModelData = (
+export const buildTripFromModelData = (
   data: Record<string, unknown>,
   startDate: string,
   options: {
@@ -553,7 +554,9 @@ const buildTripFromModelData = (
     const typed = city as Record<string, unknown>;
     const location = parseAiTripCityLocation(typed, `Stop ${index + 1}`);
     const daysRaw = Number(typed.days);
-    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 1;
+    const days = isZeroNightReturnStop(rawCities, index, options.roundTrip === true)
+      ? 0
+      : (Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 1);
 
     parsedCities.push({
       name: location.name,
@@ -572,7 +575,7 @@ const buildTripFromModelData = (
     if (normalizeCityName(first.name) !== normalizeCityName(last.name)) {
       parsedCities.push({
         ...first,
-        days: 1,
+        days: 0,
         sourceIndex: -1,
       });
     }
@@ -1486,7 +1489,7 @@ const normalizeTelemetryProvider = (value: string | null): string | null => {
 const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((row) => {
+    .map((row): AiTelemetryRow | null => {
       if (!row || typeof row !== "object") return null;
       const typed = row as Record<string, unknown>;
       const id = typeof typed.id === "string" ? typed.id : "";
@@ -1507,7 +1510,7 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
         latency_ms: Number.isFinite(Number(typed.latency_ms)) ? Number(typed.latency_ms) : null,
         estimated_cost_usd: Number.isFinite(Number(typed.estimated_cost_usd)) ? Number(typed.estimated_cost_usd) : null,
         error_code: typeof typed.error_code === "string" ? typed.error_code : null,
-      } satisfies AiTelemetryRow;
+      };
     })
     .filter((row): row is AiTelemetryRow => Boolean(row));
 };
@@ -1515,7 +1518,7 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
 const toBenchmarkRunCommentRows = (value: unknown): BenchmarkRunCommentRow[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((row) => {
+    .map((row): BenchmarkRunCommentRow | null => {
       if (!row || typeof row !== "object") return null;
       const typed = row as Record<string, unknown>;
       const id = typeof typed.id === "string" ? typed.id : "";
@@ -1540,7 +1543,7 @@ const toBenchmarkRunCommentRows = (value: unknown): BenchmarkRunCommentRow[] => 
         created_at: createdAt,
         status,
         satisfaction_rating: rating,
-      } satisfies BenchmarkRunCommentRow;
+      };
     })
     .filter((row): row is BenchmarkRunCommentRow => Boolean(row));
 };

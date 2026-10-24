@@ -95,11 +95,11 @@ describe('config/paywall', () => {
     const sourceTrip = makeTrip({
       items: [cityA, travel, cityB, activity],
       countryInfo: {
-        bestMonthsToVisit: '',
-        bestMonthsArray: [],
-        weatherSummary: '',
-        estimatedBudget: '',
-        visaRequirement: '',
+        currencyCode: 'EUR',
+        currencyName: 'Euro',
+        exchangeRate: 1,
+        languages: ['German'],
+        electricSockets: 'Type F',
       },
     });
 

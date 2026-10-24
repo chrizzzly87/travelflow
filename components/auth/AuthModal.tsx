@@ -1,17 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
-    ArrowRight,
     SpinnerGap as Loader2,
     X,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
-import { Checkbox } from '../ui/checkbox';
+import { useNavigate } from '@/app/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import { buildLocalizedMarketingPath } from '../../config/routes';
 import type { OAuthProviderId } from '../../services/authService';
 import { acceptCurrentTerms, isSupabaseAuthNotConfiguredError } from '../../services/authService';
-import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { trackEvent } from '../../services/analyticsService';
 import { buildPasswordResetRedirectUrl } from '../../services/authNavigationService';
 import {
     isRememberLoginEnabled,
@@ -24,13 +22,25 @@ import {
     subscribeLastUsedOAuthProvider,
 } from '../../services/authUiPreferencesService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useDocumentScrollLock } from '../../hooks/useDocumentScrollLock';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getAuthRequestTimeoutMs, getAuthRestoreTimeoutMs } from '../../services/networkStatus';
 import { normalizeAppLanguage } from '../../utils';
 import { getOAuthButtons, SocialLoginButton } from './SocialLoginButton';
 import { SegmentedControl } from '../ui/segmented-control';
+import {
+    AuthCredentialsForm,
+    AuthStatusMessages,
+    type AuthCredentialsFormAnalytics,
+} from './AuthCredentialsForm';
 
 type AuthMode = 'login' | 'register';
+
+const AUTH_MODAL_FORM_ANALYTICS: AuthCredentialsFormAnalytics = {
+    rememberLoginPayload: { source: 'modal' },
+    passwordResetSource: 'modal',
+    termsConsentSource: 'auth_modal',
+};
 
 type CloseReason = 'dismiss' | 'backdrop' | 'escape' | 'success';
 
@@ -143,10 +153,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
     const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
     const contactPath = useMemo(() => buildLocalizedMarketingPath('contact', authLocale), [authLocale]);
-    const emailInputId = 'auth-modal-email';
-    const secondaryInputId = 'auth-modal-secondary';
-    const rememberLoginInputId = 'auth-modal-remember-login';
-    const fieldClassName = 'mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200 dark:border-border dark:bg-card dark:text-foreground';
 
     const updateAuthFeedback = useCallback((patch: Partial<AuthFeedbackState>) => {
         setAuthFeedback((current) => ({ ...current, ...patch }));
@@ -225,6 +231,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         return result;
     }, []);
 
+    useDocumentScrollLock(isOpen);
+
     useEffect(() => {
         if (!isOpen) return;
         trackEvent('auth__modal--open', { source });
@@ -239,12 +247,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             return;
         }
 
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-
-        return () => {
-            document.body.style.overflow = previousOverflow;
-        };
     }, [isOpen]);
 
     useEffect(() => {
@@ -408,7 +410,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 if (outcome.value.error) {
                     const errorCode = normalizeErrorCode(outcome.value.error);
                     setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
-                } else if (!outcome.value.data.session) {
+                } else if (!('session' in outcome.value.data) || !outcome.value.data.session) {
                     setInfoMessage(t('states.emailConfirmationSent'));
                 } else {
                     const acceptance = await acceptCurrentTerms({
@@ -538,14 +540,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(false);
     };
 
-    const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
-        if (event.key !== 'Enter') return;
-        if (event.nativeEvent.isComposing) return;
-        if (!(event.target instanceof HTMLInputElement)) return;
-        event.preventDefault();
-        event.currentTarget.requestSubmit();
-    };
-
     const handleRememberLoginToggle = (checked: boolean) => {
         setRememberLogin(checked);
         setRememberLoginEnabled(checked);
@@ -629,125 +623,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 ]}
                             />
 
-                            <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit} onKeyDown={handleFormKeyDown}>
-                                <div className="block">
-                                    <label
-                                        htmlFor={emailInputId}
-                                        className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground"
-                                    >
-                                        {t('labels.email')}
-                                    </label>
-                                    <input
-                                        id={emailInputId}
-	                                        name="email"
-	                                        type="email"
-	                                        aria-label={t('labels.email')}
-	                                        autoComplete={mode === 'login' ? 'username' : 'email'}
-                                        inputMode="email"
-                                        autoCapitalize="none"
-                                        autoCorrect="off"
-                                        spellCheck={false}
-                                        value={email}
-                                        onChange={(event) => setEmail(event.target.value)}
-                                        disabled={isSubmitting || isRestoreBlocked}
-                                        required
-                                        className={fieldClassName}
-                                    />
-                                </div>
-                                <div className="block">
-                                    <label
-                                        htmlFor={secondaryInputId}
-                                        className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground"
-                                    >
-                                        {t('labels.password')}
-                                    </label>
-                                    <input
-                                        id={secondaryInputId}
-	                                        name="password"
-	                                        type="password"
-	                                        aria-label={t('labels.password')}
-	                                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                                        value={password}
-                                        onChange={(event) => setPassword(event.target.value)}
-                                        disabled={isSubmitting || isRestoreBlocked}
-                                        required
-                                        minLength={8}
-                                        className={fieldClassName}
-                                    />
-                                </div>
-                                {mode === 'login' && (
-                                    <div className="space-y-2">
-                                        <label
-                                            htmlFor={rememberLoginInputId}
-                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-foreground dark:text-foreground"
-                                        >
-                                            <Checkbox
-                                                id={rememberLoginInputId}
-                                                checked={rememberLogin}
-                                                onCheckedChange={(checked) => handleRememberLoginToggle(checked === true)}
-                                                disabled={isSubmitting || isRestoreBlocked}
-                                                aria-label={t('labels.rememberLogin')}
-                                                {...getAnalyticsDebugAttributes('auth__remember_login--toggle', { source: 'modal' })}
-                                            />
-                                            <span>{t('labels.rememberLogin')}</span>
-                                        </label>
-                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-                                            <button
-                                                type="button"
-                                                onClick={() => void handlePasswordResetRequest('forgot_password')}
-                                                disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
-                                                {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
-                                            >
-                                                {t('actions.forgotPassword')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => void handlePasswordResetRequest('set_password')}
-                                                disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
-                                                {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
-                                            >
-                                                {t('actions.setPasswordSocial')}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                                {mode === 'register' && (
-                                    <label className="flex items-start gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-foreground dark:border-border dark:bg-secondary dark:text-foreground">
-                                        <input
-                                            type="checkbox"
-                                            checked={hasAcceptedTerms}
-                                            onChange={(event) => {
-                                                setHasAcceptedTerms(event.target.checked);
-                                                trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'auth_modal' });
-                                            }}
-                                            className="mt-0.5 size-4 rounded border-border dark:border-border"
-                                            {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'auth_modal' })}
-                                        />
-                                        <span>
-                                            {t('copy.termsConsentPrefix')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
-                                                {t('copy.termsConsentTerms')}
-                                            </Link>{' '}
-                                            {t('copy.termsConsentJoiner')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
-                                                {t('copy.termsConsentPrivacy')}
-                                            </Link>
-                                            .
-                                        </span>
-                                    </label>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
-                                >
-                                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                                    {isSubmitting ? t('actions.submitting') : mode === 'login' ? t('actions.submitLogin') : t('actions.submitRegister')}
-                                </button>
-                            </form>
+                            <AuthCredentialsForm
+                                className="mt-5"
+                                mode={mode}
+                                idPrefix="auth-modal"
+                                email={email}
+                                onEmailChange={setEmail}
+                                password={password}
+                                onPasswordChange={setPassword}
+                                rememberLogin={rememberLogin}
+                                onRememberLoginChange={handleRememberLoginToggle}
+                                hasAcceptedTerms={hasAcceptedTerms}
+                                onAcceptedTermsChange={setHasAcceptedTerms}
+                                onSubmit={handlePasswordSubmit}
+                                onPasswordResetRequest={(intent) => void handlePasswordResetRequest(intent)}
+                                termsPath={termsPath}
+                                privacyPath={privacyPath}
+                                isSubmitting={isSubmitting}
+                                fieldsDisabled={isSubmitting || isRestoreBlocked}
+                                rememberLoginDisabled={isSubmitting || isRestoreBlocked}
+                                passwordResetDisabled={isSubmitting || isRestoreBlocked || !isOnline}
+                                submitDisabled={isRestoreBlocked || !isOnline}
+                                submitClassName="dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
+                                analytics={AUTH_MODAL_FORM_ANALYTICS}
+                            />
 
                             <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground dark:text-muted-foreground">
                                 <span className="h-px flex-1 bg-slate-200 dark:bg-secondary" />
@@ -774,31 +673,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </>
                     )}
 
-                    {showAuthSupportMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                            <p className="font-semibold">{t('errors.auth_unavailable_title')}</p>
-                            <p className="mt-1">{t('errors.auth_unavailable_body')}</p>
-                            <Link
-                                to={contactPath}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={() => trackEvent('auth__config_error--contact', { source: 'modal' })}
-                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4 dark:text-rose-200"
-                                {...getAnalyticsDebugAttributes('auth__config_error--contact', { source: 'modal' })}
-                            >
-                                {t('actions.contactSupport')}
-                            </Link>
-                        </div>
-                    ) : errorMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                            {errorMessage}
-                        </div>
-                    ) : null}
-                    {infoMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                            {infoMessage}
-                        </div>
-                    )}
+                    <AuthStatusMessages
+                        errorMessage={errorMessage}
+                        infoMessage={infoMessage}
+                        showAuthSupportMessage={showAuthSupportMessage}
+                        contactPath={contactPath}
+                        contactSource="modal"
+                    />
                 </div>
             </div>
         </div>

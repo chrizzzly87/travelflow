@@ -1,7 +1,7 @@
 export const isFiniteLatLngLiteral = (
   coordinates: google.maps.LatLngLiteral | null | undefined,
 ): coordinates is google.maps.LatLngLiteral => (
-  Boolean(coordinates)
+  coordinates != null
   && Number.isFinite(coordinates.lat)
   && Number.isFinite(coordinates.lng)
 );

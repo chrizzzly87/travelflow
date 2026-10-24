@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
+import { cleanup, screen } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CountryExplorerCard } from '../../components/inspirations/CountryExplorerCard';
 import type { CountryExplorerEntry, CountryMonthInsight } from '../../services/countryExplorerService';
@@ -21,7 +22,7 @@ const entry: CountryExplorerEntry = {
     searchTokens: [],
 };
 
-const renderCard = (props: Partial<React.ComponentProps<typeof CountryExplorerCard>> = {}) => render(
+const renderCard = async (props: Partial<React.ComponentProps<typeof CountryExplorerCard>> = {}) => await render(
     <MemoryRouter>
         <CountryExplorerCard
             entry={entry}
@@ -38,8 +39,8 @@ describe('CountryExplorerCard', () => {
         cleanup();
     });
 
-    it('shows the month strip with an accessible label naming the ideal months', () => {
-        renderCard();
+    it('shows the month strip with an accessible label naming the ideal months', async () => {
+        await renderCard();
         // i18next is not initialized in this environment, so keys render verbatim — the assertion
         // is about the accessible label existing on the strip, not about the copy itself.
         const strip = screen.getByRole('img');
@@ -47,28 +48,28 @@ describe('CountryExplorerCard', () => {
         expect(strip.querySelectorAll(':scope > span')).toHaveLength(12);
     });
 
-    it('does not render duration anywhere on the card', () => {
-        const { container } = renderCard();
+    it('does not render duration anywhere on the card', async () => {
+        const { container } = await renderCard();
         expect(container.textContent).not.toContain('9');
         expect(container.textContent).not.toMatch(/days/i);
     });
 
-    it('renders climate figures when the month insight has climate data', () => {
+    it('renders climate figures when the month insight has climate data', async () => {
         const insight: CountryMonthInsight = {
             month: 5,
             band: 'ideal',
             climate: { avgHighC: 27.4, avgLowC: 16.2, precipitationMm: 40, rainfall: 'light', season: 'high' },
         };
-        const { container } = renderCard({ insight, selectedMonth: 5 });
+        const { container } = await renderCard({ insight, selectedMonth: 5 });
         expect(container.textContent).toContain('explorer.temperature');
         expect(container.textContent).toContain('explorer.rainfall.light');
         expect(container.textContent).toContain('explorer.season.high');
         expect(container.textContent).not.toContain('explorer.climateUnavailable');
     });
 
-    it('falls back to the curated band and omits numbers when climate data is missing', () => {
+    it('falls back to the curated band and omits numbers when climate data is missing', async () => {
         const insight: CountryMonthInsight = { month: 5, band: 'ideal' };
-        const { container } = renderCard({ insight, selectedMonth: 5 });
+        const { container } = await renderCard({ insight, selectedMonth: 5 });
         expect(container.textContent).toContain('explorer.band.ideal');
         expect(container.textContent).toContain('explorer.climateUnavailable');
         expect(container.textContent).not.toContain('explorer.temperature');

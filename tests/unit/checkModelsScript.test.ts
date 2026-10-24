@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error The audit helper is an executable ESM script without a declaration file.
 import {
   compareOpenRouterCatalog,
   extractOpenRouterAllowlist,

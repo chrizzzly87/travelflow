@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { useSearchParams } from '../../app/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useTripOgPreview } from './useTripOgPreview';
 import { requestTripVideo, setTripVideoImageSource } from '../../services/tripOgVideoService';
 import { normalizeTripVideoFormat, tripVideoDimensions, normalizeTripVideoStyle, normalizeTripVideoRouteMode, type TripVideoRouteMode, type TripVideoStyle, type TripVideoFormat } from '../../shared/tripOgVideo';
 
 export const TripOgPreviewPanel: React.FC<{ tripId: string }> = ({ tripId }) => {
-    const initialSettings = new URLSearchParams(window.location.search);
+    const [initialSettings] = useSearchParams();
     const [selectedStyle, setStyle] = useState<TripVideoStyle | null>(() => initialSettings.has('mapStyle') ? normalizeTripVideoStyle(initialSettings.get('mapStyle')) : null);
     const [selectedRouteMode, setRouteMode] = useState<TripVideoRouteMode | null>(() => initialSettings.has('routeMode') ? normalizeTripVideoRouteMode(initialSettings.get('routeMode')) : null);
     const [selectedFormat, setFormat] = useState<TripVideoFormat | null>(() => initialSettings.has('format') ? normalizeTripVideoFormat(initialSettings.get('format')) : null);

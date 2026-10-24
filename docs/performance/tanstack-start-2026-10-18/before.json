@@ -1,0 +1,434 @@
+{
+  "label": "tanstack-before",
+  "revision": "aec813be73298709cb827e3bba91b92abdb6594f",
+  "sourceDirty": false,
+  "preact": "^11.0.1",
+  "browser": "145.0.7632.6",
+  "node": "v22.20.0",
+  "settings": {
+    "runs": 5,
+    "viewport": "390x844",
+    "cpuSlowdown": 4,
+    "latencyMs": 40,
+    "downloadBytesPerSecond": 500000,
+    "settleMs": 1500,
+    "externalNetwork": "blocked",
+    "serviceWorkers": "blocked"
+  },
+  "results": [
+    {
+      "route": "/",
+      "median": {
+        "fcp": 936,
+        "lcp": 1836,
+        "cls": 0.005849209592246585,
+        "blocking": 101,
+        "readyMs": 1922.800000011921,
+        "jsRawBytes": 1165591,
+        "jsGzipBytes": 372188
+      },
+      "samples": [
+        {
+          "lcp": 1816,
+          "cls": 0.005849209592246585,
+          "blocking": 82,
+          "fcp": 928,
+          "domContentLoaded": 1602.4000000357628,
+          "readyMs": 1924.9000000357628,
+          "jsRawBytes": 1165591,
+          "jsGzipBytes": 372188,
+          "errors": []
+        },
+        {
+          "lcp": 1856,
+          "cls": 0.005849209592246585,
+          "blocking": 110,
+          "fcp": 1012,
+          "domContentLoaded": 1636.3999999761581,
+          "readyMs": 1845,
+          "jsRawBytes": 1165591,
+          "jsGzipBytes": 372188,
+          "errors": []
+        },
+        {
+          "lcp": 1844,
+          "cls": 0.005849209592246585,
+          "blocking": 101,
+          "fcp": 940,
+          "domContentLoaded": 1619.300000011921,
+          "readyMs": 1922.800000011921,
+          "jsRawBytes": 1165591,
+          "jsGzipBytes": 372188,
+          "errors": []
+        },
+        {
+          "lcp": 1836,
+          "cls": 0.005849209592246585,
+          "blocking": 95,
+          "fcp": 928,
+          "domContentLoaded": 1602,
+          "readyMs": 1907.7000000476837,
+          "jsRawBytes": 1165591,
+          "jsGzipBytes": 372188,
+          "errors": []
+        },
+        {
+          "lcp": 1836,
+          "cls": 0.005849209592246585,
+          "blocking": 101,
+          "fcp": 936,
+          "domContentLoaded": 1615.0999999642372,
+          "readyMs": 1975.8999999761581,
+          "jsRawBytes": 1165591,
+          "jsGzipBytes": 372188,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "route": "/features",
+      "median": {
+        "fcp": 844,
+        "lcp": 844,
+        "cls": 0.005849209592246585,
+        "blocking": 94,
+        "readyMs": 1680.199999988079,
+        "jsRawBytes": 2742986,
+        "jsGzipBytes": 763887
+      },
+      "samples": [
+        {
+          "lcp": 828,
+          "cls": 0.005849209592246585,
+          "blocking": 55,
+          "fcp": 828,
+          "domContentLoaded": 1484.3999999761581,
+          "readyMs": 1680.199999988079,
+          "jsRawBytes": 2742986,
+          "jsGzipBytes": 763887,
+          "errors": []
+        },
+        {
+          "lcp": 876,
+          "cls": 0.005849209592246585,
+          "blocking": 166,
+          "fcp": 876,
+          "domContentLoaded": 1493.199999988079,
+          "readyMs": 1787.800000011921,
+          "jsRawBytes": 2742986,
+          "jsGzipBytes": 763887,
+          "errors": []
+        },
+        {
+          "lcp": 844,
+          "cls": 0.005849209592246585,
+          "blocking": 94,
+          "fcp": 844,
+          "domContentLoaded": 1489.2000000476837,
+          "readyMs": 1712.1000000238419,
+          "jsRawBytes": 2742986,
+          "jsGzipBytes": 763887,
+          "errors": []
+        },
+        {
+          "lcp": 968,
+          "cls": 0.005849209592246585,
+          "blocking": 182,
+          "fcp": 968,
+          "domContentLoaded": 1458.800000011921,
+          "readyMs": 1666,
+          "jsRawBytes": 2742986,
+          "jsGzipBytes": 763887,
+          "errors": []
+        },
+        {
+          "lcp": 800,
+          "cls": 0.005849209592246585,
+          "blocking": 30,
+          "fcp": 800,
+          "domContentLoaded": 1482,
+          "readyMs": 1676.3999999761581,
+          "jsRawBytes": 2742986,
+          "jsGzipBytes": 763887,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "route": "/pricing",
+      "median": {
+        "fcp": 800,
+        "lcp": 800,
+        "cls": 0.005849209592246585,
+        "blocking": 26,
+        "readyMs": 1249.4000000357628,
+        "jsRawBytes": 2753896,
+        "jsGzipBytes": 768350
+      },
+      "samples": [
+        {
+          "lcp": 792,
+          "cls": 0.005849209592246585,
+          "blocking": 21,
+          "fcp": 792,
+          "domContentLoaded": 1099.4000000357628,
+          "readyMs": 1246.5,
+          "jsRawBytes": 2753896,
+          "jsGzipBytes": 768350,
+          "errors": []
+        },
+        {
+          "lcp": 800,
+          "cls": 0.005849209592246585,
+          "blocking": 21,
+          "fcp": 800,
+          "domContentLoaded": 1098.4000000357628,
+          "readyMs": 1252.5,
+          "jsRawBytes": 2753896,
+          "jsGzipBytes": 768350,
+          "errors": []
+        },
+        {
+          "lcp": 792,
+          "cls": 0.005849209592246585,
+          "blocking": 26,
+          "fcp": 792,
+          "domContentLoaded": 1106.9000000357628,
+          "readyMs": 1260.300000011921,
+          "jsRawBytes": 2753896,
+          "jsGzipBytes": 768350,
+          "errors": []
+        },
+        {
+          "lcp": 800,
+          "cls": 0.005849209592246585,
+          "blocking": 31,
+          "fcp": 800,
+          "domContentLoaded": 1099.300000011921,
+          "readyMs": 1240.8999999761581,
+          "jsRawBytes": 2753896,
+          "jsGzipBytes": 768350,
+          "errors": []
+        },
+        {
+          "lcp": 812,
+          "cls": 0.005849209592246585,
+          "blocking": 44,
+          "fcp": 812,
+          "domContentLoaded": 1103.800000011921,
+          "readyMs": 1249.4000000357628,
+          "jsRawBytes": 2753896,
+          "jsGzipBytes": 768350,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "route": "/create-trip",
+      "median": {
+        "fcp": 572,
+        "lcp": 1840,
+        "cls": 0,
+        "blocking": 77,
+        "readyMs": 2184.800000011921,
+        "jsRawBytes": 1686777,
+        "jsGzipBytes": 438022
+      },
+      "samples": [
+        {
+          "lcp": 1836,
+          "cls": 0,
+          "blocking": 74,
+          "fcp": 592,
+          "domContentLoaded": 871.3000000119209,
+          "readyMs": 2190.2000000476837,
+          "jsRawBytes": 1686777,
+          "jsGzipBytes": 438022,
+          "errors": []
+        },
+        {
+          "lcp": 1840,
+          "cls": 0,
+          "blocking": 77,
+          "fcp": 572,
+          "domContentLoaded": 864.3000000119209,
+          "readyMs": 2180.100000023842,
+          "jsRawBytes": 1686777,
+          "jsGzipBytes": 438022,
+          "errors": []
+        },
+        {
+          "lcp": 1864,
+          "cls": 0,
+          "blocking": 81,
+          "fcp": 584,
+          "domContentLoaded": 890.0999999642372,
+          "readyMs": 2212.399999976158,
+          "jsRawBytes": 1686777,
+          "jsGzipBytes": 438022,
+          "errors": []
+        },
+        {
+          "lcp": 1876,
+          "cls": 0,
+          "blocking": 119,
+          "fcp": 568,
+          "domContentLoaded": 868.8000000119209,
+          "readyMs": 2184.800000011921,
+          "jsRawBytes": 1686777,
+          "jsGzipBytes": 438022,
+          "errors": []
+        },
+        {
+          "lcp": 1828,
+          "cls": 0,
+          "blocking": 75,
+          "fcp": 572,
+          "domContentLoaded": 866.6999999880791,
+          "readyMs": 2183.099999964237,
+          "jsRawBytes": 1686777,
+          "jsGzipBytes": 438022,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "route": "/create-trip/wizard",
+      "median": {
+        "fcp": 568,
+        "lcp": 2424,
+        "cls": 0,
+        "blocking": 80,
+        "readyMs": 2804,
+        "jsRawBytes": 2510695,
+        "jsGzipBytes": 690112
+      },
+      "samples": [
+        {
+          "lcp": 2440,
+          "cls": 0,
+          "blocking": 100,
+          "fcp": 568,
+          "domContentLoaded": 874.1999999880791,
+          "readyMs": 2812.900000035763,
+          "jsRawBytes": 2510695,
+          "jsGzipBytes": 690112,
+          "errors": []
+        },
+        {
+          "lcp": 2416,
+          "cls": 0,
+          "blocking": 78,
+          "fcp": 572,
+          "domContentLoaded": 872.3000000119209,
+          "readyMs": 2804,
+          "jsRawBytes": 2510695,
+          "jsGzipBytes": 690112,
+          "errors": []
+        },
+        {
+          "lcp": 2424,
+          "cls": 0,
+          "blocking": 80,
+          "fcp": 560,
+          "domContentLoaded": 862.8999999761581,
+          "readyMs": 2794.099999964237,
+          "jsRawBytes": 2510695,
+          "jsGzipBytes": 690112,
+          "errors": []
+        },
+        {
+          "lcp": 2416,
+          "cls": 0,
+          "blocking": 76,
+          "fcp": 564,
+          "domContentLoaded": 863.8000000119209,
+          "readyMs": 2790.800000011921,
+          "jsRawBytes": 2510695,
+          "jsGzipBytes": 690112,
+          "errors": []
+        },
+        {
+          "lcp": 2508,
+          "cls": 0,
+          "blocking": 151,
+          "fcp": 576,
+          "domContentLoaded": 866.8000000119209,
+          "readyMs": 2859.100000023842,
+          "jsRawBytes": 2510695,
+          "jsGzipBytes": 690112,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "route": "/example/thailand-islands",
+      "median": {
+        "fcp": 564,
+        "lcp": 3936,
+        "cls": 0,
+        "blocking": 234,
+        "readyMs": 2747.199999988079,
+        "jsRawBytes": 2498382,
+        "jsGzipBytes": 691816
+      },
+      "samples": [
+        {
+          "lcp": 3928,
+          "cls": 0,
+          "blocking": 234,
+          "fcp": 560,
+          "domContentLoaded": 859.3000000119209,
+          "readyMs": 2740.300000011921,
+          "jsRawBytes": 2498382,
+          "jsGzipBytes": 691816,
+          "errors": []
+        },
+        {
+          "lcp": 3948,
+          "cls": 0,
+          "blocking": 234,
+          "fcp": 568,
+          "domContentLoaded": 866.3000000119209,
+          "readyMs": 2760.099999964237,
+          "jsRawBytes": 2498382,
+          "jsGzipBytes": 691816,
+          "errors": []
+        },
+        {
+          "lcp": 3940,
+          "cls": 0,
+          "blocking": 230,
+          "fcp": 564,
+          "domContentLoaded": 862,
+          "readyMs": 2747.199999988079,
+          "jsRawBytes": 2498382,
+          "jsGzipBytes": 691816,
+          "errors": []
+        },
+        {
+          "lcp": 3924,
+          "cls": 0,
+          "blocking": 213,
+          "fcp": 564,
+          "domContentLoaded": 863.1000000238419,
+          "readyMs": 2741.5,
+          "jsRawBytes": 2498382,
+          "jsGzipBytes": 691816,
+          "errors": []
+        },
+        {
+          "lcp": 3936,
+          "cls": 0,
+          "blocking": 239,
+          "fcp": 568,
+          "domContentLoaded": 865.8999999761581,
+          "readyMs": 2751,
+          "jsRawBytes": 2498382,
+          "jsGzipBytes": 691816,
+          "errors": []
+        }
+      ]
+    }
+  ]
+}

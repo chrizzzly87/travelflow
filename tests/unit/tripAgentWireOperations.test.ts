@@ -1,17 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
 import { ACTIVITY_TYPE_COLORS } from '../../shared/activityTypes';
+import type { z } from 'zod';
+
 import {
+    type TripAgentWireOperation,
     tripAgentWireOperationSchema,
     toTypedTripChangeOperation,
     toTypedTripChangeOperations,
 } from '../../shared/tripAgentWireOperations';
 
+/**
+ * Fixtures are written in the shape the schema accepts. The converter reads the
+ * parsed shape, whose transformed fields (`transportMode`, `isDayTrip`) are
+ * required keys that may hold `undefined`; leaving them out is equivalent.
+ */
+const wire = (operation: z.input<typeof tripAgentWireOperationSchema>) => operation as TripAgentWireOperation;
+
 const base = { id: 'op-1', rationale: 'Because the route is tight', targetLabel: 'Hualien' };
 
 describe('toTypedTripChangeOperation', () => {
     it('converts a flat remove into the typed operation', () => {
-        const result = toTypedTripChangeOperation({ ...base, kind: 'remove_item', itemId: 'city-1' });
+        const result = toTypedTripChangeOperation(wire({ ...base, kind: 'remove_item', itemId: 'city-1' }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok') return;
@@ -19,11 +29,11 @@ describe('toTypedTripChangeOperation', () => {
     });
 
     it('fills in the id and colour a model left out of a new item', () => {
-        const result = toTypedTripChangeOperation({
+        const result = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'add_item',
             item: { type: 'activity', title: 'Night market', startDateOffset: 2, duration: 0.25 },
-        });
+        }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok' || result.operation.kind !== 'add_item') return;
@@ -32,7 +42,7 @@ describe('toTypedTripChangeOperation', () => {
     });
 
     it('names the field a kind is missing instead of failing opaquely', () => {
-        const result = toTypedTripChangeOperation({ ...base, kind: 'move_item', itemId: 'city-1' });
+        const result = toTypedTripChangeOperation(wire({ ...base, kind: 'move_item', itemId: 'city-1' }));
 
         expect(result.status).toBe('invalid');
         if (result.status !== 'invalid') return;
@@ -152,7 +162,7 @@ describe('activity types on agent-authored activities', () => {
     it('keeps the types a model proposed instead of dropping them to general', () => {
         // The wire schema had no activityTypes field, so every activity the
         // planner added arrived untyped and rendered as "General".
-        const result = toTypedTripChangeOperation({
+        const result = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'add_item',
             item: {
@@ -162,7 +172,7 @@ describe('activity types on agent-authored activities', () => {
                 duration: 0.25,
                 activityTypes: ['food', 'nightlife'],
             },
-        });
+        }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok' || result.operation.kind !== 'add_item') return;
@@ -170,7 +180,7 @@ describe('activity types on agent-authored activities', () => {
     });
 
     it('colours the block from the primary type', () => {
-        const result = toTypedTripChangeOperation({
+        const result = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'add_item',
             item: {
@@ -181,7 +191,7 @@ describe('activity types on agent-authored activities', () => {
                 activityTypes: ['hiking', 'nature'],
                 color: '#7c3aed',
             },
-        });
+        }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok' || result.operation.kind !== 'add_item') return;
@@ -205,11 +215,11 @@ describe('activity types on agent-authored activities', () => {
         if (result.status !== 'ok' || result.operation.kind !== 'add_item') return;
         expect(result.operation.item.activityType).toEqual(['food', 'nightlife']);
 
-        const untyped = toTypedTripChangeOperation({
+        const untyped = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'add_item',
             item: { type: 'activity', title: 'Free afternoon', startDateOffset: 0, duration: 0.25 },
-        });
+        }));
         expect(untyped.status).toBe('ok');
         if (untyped.status !== 'ok' || untyped.operation.kind !== 'add_item') return;
         expect(untyped.operation.item.activityType).toEqual(['general']);
@@ -220,11 +230,11 @@ describe('activity types on agent-authored activities', () => {
         // "general" is the fallback, so it must also survive as a value the
         // model deliberately sends, in every shape the wire schema allows.
         for (const activityTypes of [['general'], 'general', ['General'], [], ['unbeschreiblich']]) {
-            const result = toTypedTripChangeOperation({
+            const result = toTypedTripChangeOperation(wire({
                 ...base,
                 kind: 'add_item',
                 item: { type: 'activity', title: 'Open afternoon', startDateOffset: 0, duration: 0.25, activityTypes },
-            });
+            }));
 
             expect(result.status).toBe('ok');
             if (result.status !== 'ok' || result.operation.kind !== 'add_item') return;
@@ -234,12 +244,12 @@ describe('activity types on agent-authored activities', () => {
     });
 
     it('lets an update fall back to general instead of rejecting the operation', () => {
-        const result = toTypedTripChangeOperation({
+        const result = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'update_item',
             itemId: 'activity-1',
             itemChanges: { activityTypes: [] },
-        });
+        }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok' || result.operation.kind !== 'update_item') return;
@@ -247,12 +257,12 @@ describe('activity types on agent-authored activities', () => {
     });
 
     it('retypes an existing activity and recolours it', () => {
-        const result = toTypedTripChangeOperation({
+        const result = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'update_item',
             itemId: 'activity-1',
             itemChanges: { activityTypes: ['culture'] },
-        });
+        }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok' || result.operation.kind !== 'update_item') return;
@@ -261,12 +271,12 @@ describe('activity types on agent-authored activities', () => {
     });
 
     it('leaves the types alone when an update touches other fields', () => {
-        const result = toTypedTripChangeOperation({
+        const result = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'update_item',
             itemId: 'activity-1',
             itemChanges: { duration: 0.5 },
-        });
+        }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok' || result.operation.kind !== 'update_item') return;
@@ -275,14 +285,14 @@ describe('activity types on agent-authored activities', () => {
     });
 
     it('does not put activity types on a city or a transfer', () => {
-        const result = toTypedTripChangeOperation({
+        const result = toTypedTripChangeOperation(wire({
             ...base,
             kind: 'add_item',
             item: {
                 type: 'city', title: 'Tainan', startDateOffset: 0, duration: 3,
                 activityTypes: ['food'],
             },
-        });
+        }));
 
         expect(result.status).toBe('ok');
         if (result.status !== 'ok' || result.operation.kind !== 'add_item') return;

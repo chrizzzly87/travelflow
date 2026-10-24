@@ -1,13 +1,8 @@
-import { tripVideoDimensions } from '../../shared/tripOgVideo.ts';
+import { tripVideoDimensions, tripVideoMetadata } from '../../shared/tripOgVideo.ts';
 import { escapeHtml } from './trip-og-data.ts';
 
-export const buildTripVideoMetaTags = (videoUrl?: string, dimensions = tripVideoDimensions()): string[] => videoUrl ? [
-  `<meta property="og:video" content="${escapeHtml(videoUrl)}" />`,
-  `<meta property="og:video:secure_url" content="${escapeHtml(videoUrl)}" />`,
-  '<meta property="og:video:type" content="video/mp4" />',
-  `<meta property="og:video:width" content="${dimensions.width}" />`,
-  `<meta property="og:video:height" content="${dimensions.height}" />`,
-] : [];
+export const buildTripVideoMetaTags = (videoUrl?: string, dimensions = tripVideoDimensions()): string[] =>
+  tripVideoMetadata(videoUrl, dimensions).map(({ property, content }) => `<meta property="${property}" content="${escapeHtml(content)}" />`);
 
 export const resolveReadyTripVideoMedia = async (origin: string, target: { token?: string; tripId?: string; versionId: string | null }): Promise<{ videoUrl: string; posterUrl?: string; dimensions: { width: number; height: number } } | undefined> => {
   if (target.versionId) return undefined;

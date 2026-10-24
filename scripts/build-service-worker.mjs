@@ -11,16 +11,16 @@ import {
 } from './lib/serviceWorkerManifest.mjs';
 
 /**
- * Generate `dist/sw.js` from `scripts/templates/sw.js`.
+ * Generate `dist/client/sw.js` from `scripts/templates/sw.js`.
  *
- * Runs LAST in the build, after `scripts/prerender-routes.mjs`, because the
- * precache list depends on `dist/spa.html` — which prerendering writes after
+ * Runs LAST in the build, after the native Start prerender, because the
+ * precache list depends on `dist/client/spa.html` — which prerendering writes after
  * `vite build` has already finished. A Workbox manifest generated during the
  * vite phase would not see it.
  */
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const distDir = path.join(projectRoot, 'dist');
+const distDir = path.join(projectRoot, 'dist', 'client');
 const shellHtmlPath = path.join(distDir, 'spa.html');
 const templatePath = path.join(projectRoot, 'scripts', 'templates', 'sw.js');
 const outputPath = path.join(distDir, 'sw.js');
@@ -32,8 +32,8 @@ const fail = (message) => {
 
 if (!fs.existsSync(shellHtmlPath)) {
   fail(
-    'dist/spa.html not found. The service worker must be generated after '
-    + '`node scripts/prerender-routes.mjs`, which writes the SPA shell template.'
+    'dist/client/spa.html not found. The service worker must be generated after '
+    + '`vite build` (Start prerender), which writes the SPA shell template.'
   );
 }
 
@@ -66,7 +66,7 @@ for (const url of precacheUrls) {
 
 if (missing.length > 0) {
   fail(
-    `These precache URLs do not exist in dist/:\n  ${missing.join('\n  ')}\n`
+    `These precache URLs do not exist in dist/client/:\n  ${missing.join('\n  ')}\n`
     + 'Fix the build output or update FIXED_PRECACHE_URLS in '
     + 'scripts/lib/serviceWorkerManifest.mjs.'
   );
@@ -86,9 +86,9 @@ fs.writeFileSync(outputPath, rendered, 'utf8');
 
 const totalBytes = entries.reduce((sum, entry) => sum + entry.contents.length, 0);
 console.log(
-  `Generated dist/sw.js (build ${buildHash}, `
+  `Generated dist/client/sw.js (build ${buildHash}, `
   + `${precacheUrls.length} precached files, ${(totalBytes / 1024).toFixed(0)} KB).`
 );
 
 const derivedCount = precacheUrls.length - FIXED_PRECACHE_URLS.length;
-console.log(`  ${FIXED_PRECACHE_URLS.length} fixed + ${derivedCount} derived from dist/spa.html`);
+console.log(`  ${FIXED_PRECACHE_URLS.length} fixed + ${derivedCount} derived from dist/client/spa.html`);

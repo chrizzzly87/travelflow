@@ -7,11 +7,12 @@ import {
   BOOT_INTENT_MOBILE_MENU,
   consumeBootIntent,
   hasPreHydrationInteraction,
+  hasActiveBootPointer,
   activateBootControls,
 } from '../../services/bootInteractionBridge';
 
 /**
- * Exercises the real inline script shipped in index.html — the one that keeps a
+ * Exercises the real inline script shipped by the native document head — the one that keeps a
  * pre-hydration tap from being silently dropped on a prerendered page.
  *
  * Regression: on mobile the prerendered page paints a finished header seconds
@@ -19,13 +20,7 @@ import {
  * that window hit an inert <button>, nothing happened, and the visitor was left
  * with no way into navigation or login.
  */
-const INDEX_HTML = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
-
-const extractBridgeScript = (): string => {
-  const match = INDEX_HTML.match(/<script data-tf-hydration-bridge>([\s\S]*?)<\/script>/);
-  if (!match) throw new Error('index.html no longer contains the hydration bridge script');
-  return match[1];
-};
+const extractBridgeScript = (): string => fs.readFileSync(path.resolve(__dirname, '../../src/document/interaction-boot.js'), 'utf8');
 
 const runBridge = () => {
   // eslint-disable-next-line no-new-func
@@ -63,6 +58,13 @@ describe('early control replay', () => {
     control().click();
     expect(clicks).toBe(2);
     cleanup();
+  });
+
+  it('does not mistake replayed pointerdown for a physical press that is still held', () => {
+    control().setAttribute('data-tf-boot-event', 'pointerdown');
+    control().click();
+    activateBootControls('theme');
+    expect(hasActiveBootPointer()).toBe(false);
   });
 
   it('holds partially hydrated clicks until the owner confirms readiness', () => {
@@ -107,6 +109,23 @@ describe('early control replay', () => {
 });
 
 describe('pre-hydration interaction bridge', () => {
+  it('tracks presses across hydration and waits for every pointer to finish or cancel', () => {
+    runBridge();
+    const pointer = (type: string, id: number) => {
+      const event = new Event(type, { bubbles: true });
+      Object.defineProperty(event, 'pointerId', { value: id });
+      burger().dispatchEvent(event);
+    };
+    pointer('pointerdown', 1);
+    pointer('pointerdown', 2);
+    consumeBootIntent(BOOT_INTENT_MOBILE_MENU);
+    expect(hasActiveBootPointer()).toBe(true);
+    pointer('pointerup', 1);
+    expect(hasActiveBootPointer()).toBe(true);
+    pointer('pointercancel', 2);
+    expect(hasActiveBootPointer()).toBe(false);
+  });
+
   it('hands a tap that landed on the inert burger to the header when it hydrates', () => {
     runBridge();
 

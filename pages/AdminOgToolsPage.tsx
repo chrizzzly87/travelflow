@@ -1,6 +1,7 @@
 import { TripOgPreviewPanel } from '../components/admin/TripOgPreviewPanel';
 import { isTripVideoId } from '../shared/tripOgVideo';
 import React, { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from '../app/navigation';
 import {
     CheckCircle,
     ClipboardText,
@@ -50,8 +51,9 @@ const formatKindLabel = (value: OgInspectionResult['imageKind']): string => {
 };
 
 export const AdminOgToolsPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'analyzer' | 'playground' | 'video'>(() => new URLSearchParams(window.location.search).has('trip') ? 'video' : 'analyzer');
-    const [videoTripInput, setVideoTripInput] = useState(() => new URLSearchParams(window.location.search).get('trip') || '4fee56dd-a79a-4130-bef0-cc7ffb552ea5');
+    const [initialSettings] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<'analyzer' | 'playground' | 'video'>(() => initialSettings.has('trip') ? 'video' : 'analyzer');
+    const [videoTripInput, setVideoTripInput] = useState(() => initialSettings.get('trip') || '4fee56dd-a79a-4130-bef0-cc7ffb552ea5');
     const [videoTripId, setVideoTripId] = useState(videoTripInput);
     const [playgroundMode, setPlaygroundMode] = useState<'trip' | 'site'>('trip');
     const [playgroundLoadIssue, setPlaygroundLoadIssue] = useState<string | null>(null);

@@ -403,7 +403,6 @@ const TRANSPORT_ICON_PATHS: Record<string, string> = {
 const resolveTransportIconPath = (mode?: string): string => {
     const normalized = normalizeTransportMode(mode);
     if (normalized === 'na' || !normalized) return TRANSPORT_ICON_PATHS.walk;
-    if (normalized === 'bike') return TRANSPORT_ICON_PATHS.bicycle;
     if (normalized === 'motorcycle') return TRANSPORT_ICON_PATHS.motorcycle;
     if (normalized in TRANSPORT_ICON_PATHS) {
         return TRANSPORT_ICON_PATHS[normalized as keyof typeof TRANSPORT_ICON_PATHS];
@@ -2947,6 +2946,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  const start = cities[i];
                  const end = cities[i+1];
                  if (!start.coordinates || !end.coordinates) continue;
+                 const startCoordinates = start.coordinates;
+                 const endCoordinates = end.coordinates;
 
                  const travelItem = findTravelBetweenCities(items, start, end);
                  const mode = normalizeTransportMode(travelItem?.transportMode);
@@ -3076,8 +3077,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              if (!isEffectActive()) {
                                  throw new Error('Route draw cancelled');
                              }
-                             const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
-                             const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
+                             const origin = { lat: startCoordinates.lat, lng: startCoordinates.lng };
+                             const destination = { lat: endCoordinates.lat, lng: endCoordinates.lng };
                              const { path, distanceKm, durationHours } = await computeGoogleRouteLeg({
                                  origin,
                                  destination,
@@ -3451,7 +3452,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         const handleMapboxClick = () => onClearSelection();
         mapboxMap.on('click', handleMapboxClick);
-        return () => mapboxMap.off('click', handleMapboxClick);
+        return () => {
+            mapboxMap.off('click', handleMapboxClick);
+        };
     }, [isCityFocusMode, isMapboxBasemapEnabled, mapInitialized, onClearSelection]);
 
     /**

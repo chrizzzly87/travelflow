@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { useParams, Link, useLocation, Navigate, useNavigate } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut } from '@phosphor-icons/react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
@@ -111,8 +111,8 @@ interface MarkdownCodeBlockPayload {
 
 const extractMarkdownCodeBlockPayload = (children: React.ReactNode): MarkdownCodeBlockPayload | null => {
     const elementChild = React.Children.toArray(children)
-        .find((child) => React.isValidElement<Record<string, unknown>>(child));
-    if (!elementChild || !React.isValidElement<Record<string, unknown>>(elementChild)) return null;
+        .find((child) => React.isValidElement<{ className?: unknown; children?: React.ReactNode }>(child));
+    if (!elementChild || !React.isValidElement<{ className?: unknown; children?: React.ReactNode }>(elementChild)) return null;
     const className = typeof elementChild.props?.className === 'string' ? elementChild.props.className : '';
     const rawCode = flattenNodeText(elementChild.props?.children).replace(/\n$/, '');
     if (!className && !rawCode) return null;
@@ -906,7 +906,7 @@ export const BlogPostPage: React.FC = () => {
     }, [post]);
 
     const handleBackToBlogClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
-        if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
+        if (!post || !viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
         warmResponsiveBlogImage({
             src: post.images.card.sources.large,
@@ -990,6 +990,7 @@ export const BlogPostPage: React.FC = () => {
     }
 
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
+        timeZone: 'UTC',
         month: 'long',
         day: 'numeric',
         year: 'numeric',

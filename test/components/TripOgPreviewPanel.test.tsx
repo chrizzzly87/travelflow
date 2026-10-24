@@ -6,6 +6,9 @@ const mocks = vi.hoisted(() => ({ state: vi.fn(), generate: vi.fn(), asset: vi.f
 vi.mock('../../services/tripOgVideoService', () => ({ getTripVideoState: mocks.state, requestTripVideo: mocks.generate, getTripVideoAsset: mocks.asset, setTripVideoImageSource: mocks.source }));
 vi.mock('../../services/adminOgToolsService', () => ({ inspectOgUrl: mocks.inspect }));
 import { TripOgPreviewPanel } from '../../components/admin/TripOgPreviewPanel';
+import { MemoryRouter } from '../../tests/helpers/routerHarness';
+
+const renderPreview = (initial = '/admin/og-tools') => render(<MemoryRouter initialEntries={[initial]}><TripOgPreviewPanel tripId="taiwan" /></MemoryRouter>);
 
 describe('trip details OG previews', () => {
   afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); });
@@ -15,7 +18,7 @@ describe('trip details OG previews', () => {
     URL.createObjectURL = vi.fn(() => 'blob:preview'); URL.revokeObjectURL = vi.fn();
   });
   it('shows the actual attached image and creates video only on explicit action', async () => {
-    render(<TripOgPreviewPanel tripId="taiwan" />);
+    renderPreview();
     expect(await screen.findByAltText('Attached trip sharing preview')).toHaveAttribute('src', '/api/og/trip?trip=taiwan');
     expect(mocks.generate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Generate video' }));
@@ -23,16 +26,15 @@ describe('trip details OG previews', () => {
   });
   it('uses authenticated media blobs and releases them when the drawer closes', async () => {
     mocks.state.mockResolvedValue({ status: 'ready', style: 'dark', bytes: 29000 });
-    const { unmount } = render(<TripOgPreviewPanel tripId="taiwan" />);
+    const { unmount } = renderPreview();
     const video = await screen.findByLabelText('Animated trip route preview');
     expect(video).toHaveAttribute('src', 'blob:preview'); expect(video).not.toHaveAttribute('autoplay');
     expect(video.style.aspectRatio).toBe('1200 / 630');
     unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
   it('forwards playground map and route settings only after applying, and explicitly refreshes a ready video', async () => {
-    window.history.replaceState(null, '', '/admin/og-tools?mapStyle=satellite&routeMode=realistic&format=classic');
     mocks.state.mockResolvedValue({ status: 'ready', style: 'clean', routeMode: 'simple', bytes: 29000 });
-    render(<TripOgPreviewPanel tripId="taiwan" />);
+    renderPreview('/admin/og-tools?mapStyle=satellite&routeMode=realistic&format=classic');
     await screen.findByLabelText('Animated trip route preview');
     expect(mocks.generate).not.toHaveBeenCalled();
     expect(screen.getByText(/These settings differ/)).toBeInTheDocument();
@@ -44,14 +46,14 @@ describe('trip details OG previews', () => {
   });
   it('keeps the attached ratio while a different format renders', async () => {
     mocks.state.mockResolvedValue({ status: 'rendering', format: 'classic', attached: { style: 'standard', posterAsImage: true, revision: 'old' } });
-    render(<TripOgPreviewPanel tripId="taiwan" />);
+    renderPreview();
     const video = await screen.findByLabelText('Animated trip route preview');
     expect(video.style.aspectRatio).toBe('1200 / 630');
     expect(mocks.generate).not.toHaveBeenCalled();
   });
   it('explains failed generation and lets the admin retry', async () => {
     mocks.state.mockResolvedValue({ status: 'failed', error: 'Map unavailable.' });
-    render(<TripOgPreviewPanel tripId="taiwan" />);
+    renderPreview();
     expect(await screen.findByText('Map unavailable.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generate video' })).toBeEnabled();
   });

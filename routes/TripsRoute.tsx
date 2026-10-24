@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { SignIn } from '@phosphor-icons/react';
 

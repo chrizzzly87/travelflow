@@ -63,12 +63,7 @@ describe('components/ItineraryMap route cache helpers', () => {
 
   it('serializes route cache payload with ttl-aware filtering', () => {
     const now = Date.now();
-    const routeCache = new Map<string, {
-      status: 'ok' | 'failed';
-      updatedAt: number;
-      path?: Array<{ lat: number; lng: number }>;
-      reason?: string;
-    }>();
+    const routeCache: Parameters<typeof buildPersistedRouteCachePayload>[0] = new Map();
     routeCache.set('freshOk', { status: 'ok', updatedAt: now - 2000, path: [{ lat: 1, lng: 2 }] });
     routeCache.set('staleOk', { status: 'ok', updatedAt: now - ROUTE_PERSIST_TTL_MS - 1, path: [{ lat: 2, lng: 3 }] });
     routeCache.set('freshFailed', {
@@ -794,9 +789,11 @@ describe('components/ItineraryMap route cache helpers', () => {
 
       // The pane must keep a usable strip of map on both axes, or `fitBounds`
       // stops framing the itinerary at all.
-      expect(mapViewportSize.height - (padding.top + padding.bottom)).toBeGreaterThanOrEqual(120);
-      expect(mapViewportSize.width - (padding.left + padding.right)).toBeGreaterThanOrEqual(120);
-      expect(Math.min(padding.top, padding.right, padding.bottom, padding.left)).toBeGreaterThan(0);
+      // google.maps.Padding keeps every side optional; a missing side reads as NaN and fails below.
+      const { top = NaN, right = NaN, bottom = NaN, left = NaN } = padding;
+      expect(mapViewportSize.height - (top + bottom)).toBeGreaterThanOrEqual(120);
+      expect(mapViewportSize.width - (left + right)).toBeGreaterThanOrEqual(120);
+      expect(Math.min(top, right, bottom, left)).toBeGreaterThan(0);
     });
   });
 

@@ -41,7 +41,6 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
-      all: true,
       include: [
         'shared/transportModes.ts',
         'config/routes.ts',

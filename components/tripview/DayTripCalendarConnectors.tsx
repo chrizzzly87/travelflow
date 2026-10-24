@@ -61,7 +61,7 @@ const cssEscape = (value: string): string => (
  * measuring the DOM after layout is exactly the external sync an effect is for.
  */
 export const DayTripCalendarConnectors: React.FC<{
-    containerRef: React.RefObject<HTMLElement>;
+    containerRef: React.RefObject<HTMLElement | null>;
     connectors: DayTripCalendarConnector[];
     /** Changes whenever block geometry may have moved (zoom, edits). */
     layoutKey: string;

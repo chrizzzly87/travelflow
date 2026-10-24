@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -56,12 +56,8 @@ const parseRgbColor = (color: string): [number, number, number] | null => {
 };
 
 const buildLaneOutlineColor = (color: string): string => {
-    if (typeof CSS !== 'undefined' && CSS.supports?.('color', `color(from ${color} srgb r g b / 0.45)`)) {
-        return `color(from ${color} srgb r g b / 0.45)`;
-    }
-
     const rgb = parseHexColor(color) || parseRgbColor(color);
-    if (!rgb) return 'rgb(15 23 42 / 0.2)';
+    if (!rgb) return `color-mix(in srgb, ${color} 45%, transparent)`;
     return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.45)`;
 };
 

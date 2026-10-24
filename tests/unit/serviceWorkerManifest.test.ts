@@ -32,6 +32,11 @@ describe('extractShellAssets', () => {
         });
     });
 
+    it('includes native bootstrap preloads once so cold offline starts keep their imports', () => {
+        const html = SHELL_HTML.replace('</head>', '<link rel="modulepreload" href="/assets/router.js"/><link rel="modulepreload" href="/assets/index-a1b2c3.js"/><link rel="modulepreload" href="https://example.com/remote.js"/></head>');
+        expect(extractShellAssets(html).scripts).toEqual(['/assets/index-a1b2c3.js', '/assets/router.js']);
+    });
+
     it('ignores cross-origin stylesheets', () => {
         const { stylesheets } = extractShellAssets(SHELL_HTML);
         expect(stylesheets.some((href) => href.startsWith('http'))).toBe(false);

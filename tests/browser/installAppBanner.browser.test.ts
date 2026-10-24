@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   hasSavedTrips: vi.fn(),
@@ -36,7 +37,7 @@ vi.mock('../../services/installPromptService', async (importOriginal) => {
 
 import { InstallAppBanner } from '../../components/InstallAppBanner';
 
-const renderBanner = () => render(
+const renderBanner = async () => await render(
   React.createElement(
     MemoryRouter,
     { initialEntries: ['/trips'] },
@@ -73,7 +74,7 @@ describe('components/InstallAppBanner', () => {
   });
 
   it('stays hidden until the delay has passed, so it never competes with the page', async () => {
-    renderBanner();
+    await renderBanner();
     expect(screen.queryByTestId('install-app-banner')).toBeNull();
 
     await advancePastDelay();
@@ -84,7 +85,7 @@ describe('components/InstallAppBanner', () => {
 
   it('shows Share-sheet instructions on iOS, where there is no install API', async () => {
     mocks.detectPlatform.mockReturnValue('ios');
-    renderBanner();
+    await renderBanner();
     await advancePastDelay();
 
     await waitFor(() => {
@@ -98,7 +99,7 @@ describe('components/InstallAppBanner', () => {
     // Without beforeinstallprompt we do not know which menu this browser hides
     // "install" behind, and iOS Share-sheet wording would be simply wrong.
     mocks.detectPlatform.mockReturnValue('android');
-    renderBanner();
+    await renderBanner();
     await advancePastDelay();
 
     expect(screen.queryByTestId('install-app-banner')).toBeNull();
@@ -106,7 +107,7 @@ describe('components/InstallAppBanner', () => {
 
   it('offers a real install button on Android once the browser fires the event', async () => {
     mocks.detectPlatform.mockReturnValue('android');
-    renderBanner();
+    await renderBanner();
 
     const event = new Event('beforeinstallprompt') as Event & {
       prompt: () => Promise<void>;
@@ -124,7 +125,7 @@ describe('components/InstallAppBanner', () => {
 
   it('does not render when the policy says no', async () => {
     mocks.shouldOffer.mockReturnValue(false);
-    renderBanner();
+    await renderBanner();
     await advancePastDelay();
     expect(screen.queryByTestId('install-app-banner')).toBeNull();
   });
@@ -132,7 +133,7 @@ describe('components/InstallAppBanner', () => {
   it('records a dismissal so it does not ask again immediately', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
-    renderBanner();
+    await renderBanner();
     await advancePastDelay();
     await waitFor(() => {
       expect(screen.getByTestId('install-app-banner')).toBeTruthy();
@@ -143,7 +144,7 @@ describe('components/InstallAppBanner', () => {
   });
 
   it('remembers an install that happened outside the banner', async () => {
-    renderBanner();
+    await renderBanner();
     window.dispatchEvent(new Event('appinstalled'));
     expect(mocks.recordAccepted).toHaveBeenCalledTimes(1);
   });

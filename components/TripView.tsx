@@ -1,10 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, Suspense, lazy } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState, ITripRecommendationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
-import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader, MapRuntimeProvider } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, TRAVEL_COLOR, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
@@ -32,13 +31,13 @@ import {
     buildPathFromLocationParts,
 } from '../services/authNavigationService';
 import {
-    buildCreateSimilarTripPath,
     buildTripClaimConflictPath,
     buildTripClaimLoginReturnPath,
     readTripClaimConflictQuery,
     TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED,
-} from '../services/tripClaimConflictService';
+} from '../services/tripClaimNavigation';
 import { useAuth } from '../hooks/useAuth';
+import { useTripActionLifetime } from '../features/trips/useTripActionLifetime';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { getLatestConflictBackupForTrip, resolveConflictBackupsForTrip } from '../services/offlineChangeQueue';
@@ -124,9 +123,8 @@ import {
 import {
     canTriggerTripGenerationAbortAndRetry,
     canTriggerTripGenerationRetry,
-    retryTripGenerationWithDefaultModel,
-} from '../services/tripGenerationRetryService';
-import { abortActiveTripGenerationRequest } from '../services/aiService';
+} from '../services/tripGenerationRetryCapability';
+import { abortActiveTripGenerationRequest } from '../services/tripGenerationRuntime';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
 import {
@@ -138,8 +136,7 @@ import {
 import {
     isQueuedTripGenerationAlreadyClaimedError,
     isQueuedTripGenerationClaimedByAnotherUserError,
-    processQueuedTripGenerationAfterAuth,
-} from '../services/tripGenerationQueueService';
+} from '../services/tripGenerationQueueErrors';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
@@ -438,7 +435,7 @@ const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarnin
 interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
-    onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
+    onCommitState?: (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
     onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string; changeSetId?: string }) => void;
     /** Set while the Trip Agent previews a proposal in the planner. */
     agentPreviewTrip?: ITrip | null;
@@ -658,7 +655,8 @@ interface TripViewModalLayerProps {
     isPendingAuthContinueDisabled: boolean;
     claimConflictModalVisible: boolean;
     claimConflictShowLoginCta: boolean;
-    claimConflictCreateSimilarPath: string;
+    claimConflictTrip?: Pick<ITrip, 'title' | 'aiMeta'>;
+    claimConflictPathname?: string;
     onClaimConflictLogin: () => void;
 }
 
@@ -756,7 +754,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isPendingAuthContinueDisabled,
     claimConflictModalVisible,
     claimConflictShowLoginCta,
-    claimConflictCreateSimilarPath,
+    claimConflictTrip,
+    claimConflictPathname,
     onClaimConflictLogin,
 }) => (
     <>
@@ -889,7 +888,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             isPendingAuthContinueDisabled={isPendingAuthContinueDisabled}
             claimConflictModalVisible={claimConflictModalVisible}
             claimConflictShowLoginCta={claimConflictShowLoginCta}
-            claimConflictCreateSimilarPath={claimConflictCreateSimilarPath}
+            claimConflictTrip={claimConflictTrip}
+            claimConflictPathname={claimConflictPathname}
             onClaimConflictLogin={onClaimConflictLogin}
         />
     </>
@@ -1064,6 +1064,11 @@ const useTripViewRender = ({
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
     const canUseAdminGenerationOverride = isAdminFallbackView && adminOverrideEnabled && Boolean(adminAccess?.canAdminWrite);
+    const captureTripAction = useTripActionLifetime(JSON.stringify([
+        trip.id, location.pathname, new URLSearchParams(location.search).get('v'),
+        access?.userId ?? null, isAuthenticated, isAnonymous, canEdit,
+        isAdminFallbackView, adminOverrideEnabled, adminAccess?.canAdminWrite ?? false,
+    ]));
     const generationState = useMemo<TripGenerationState>(
         () => getTripGenerationState(trip, generationNowMs),
         [generationNowMs, trip]
@@ -1206,7 +1211,7 @@ const useTripViewRender = ({
     }, []);
     const [isResolvingPendingAuthGeneration, setIsResolvingPendingAuthGeneration] = useState(false);
     const [hasSeenPendingAuthLoadingState, setHasSeenPendingAuthLoadingState] = useState(false);
-    const autoClaimedPendingAuthQueueRequestIdRef = useRef<string | null>(null);
+    const autoClaimAttemptRef = useRef<{ requestId: string; isCurrent: () => boolean } | null>(null);
     const generationElapsedMs = useMemo(
         () => getTripGenerationElapsedMs(trip, generationNowMs),
         [generationNowMs, trip]
@@ -1214,7 +1219,7 @@ const useTripViewRender = ({
     useEffect(() => {
         if (!isPendingAuthGeneration || !pendingAuthQueueRequestId) {
             setHasSeenPendingAuthLoadingState(false);
-            autoClaimedPendingAuthQueueRequestIdRef.current = null;
+            autoClaimAttemptRef.current = null;
             return;
         }
 
@@ -1402,17 +1407,6 @@ const useTripViewRender = ({
         && generationElapsedMs >= TRIP_GENERATION_TIMEOUT_MS
     );
     const isPendingAuthClaimedByAnotherUser = pendingAuthClaimConflict === TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED;
-    const localeAwareCreateTripFallbackPath = useMemo(() => {
-        const locale = extractLocaleFromPath(location.pathname) || 'en';
-        return buildLocalizedCreateTripPath(locale);
-    }, [location.pathname]);
-    const createSimilarTripPath = useMemo(() => (
-        buildCreateSimilarTripPath({
-            trip,
-            pathname: location.pathname,
-            source: 'trip_claim_conflict',
-        }) || localeAwareCreateTripFallbackPath
-    ), [localeAwareCreateTripFallbackPath, location.pathname, trip]);
     const pendingAuthModalStage: 'hidden' | 'loading' | 'locked' = !isPendingAuthGeneration || isPendingAuthClaimedByAnotherUser
         ? 'hidden'
         : (isResolvingPendingAuthGeneration || !hasSeenPendingAuthLoadingState)
@@ -1540,8 +1534,12 @@ const useTripViewRender = ({
 
         if (isAuthenticated && !isAnonymous) {
             setIsResolvingPendingAuthGeneration(true);
+            const isCurrent = captureTripAction();
             try {
+                const { processQueuedTripGenerationAfterAuth } = await import('../services/tripGenerationQueueService');
+                if (!isCurrent()) return;
                 const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
+                if (!isCurrent()) return;
                 registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_trip_view');
                 if (!isMobileViewport && !suppressToasts) {
                     showAppToast({
@@ -1552,6 +1550,7 @@ const useTripViewRender = ({
                 }
                 navigate(`/trip/${result.tripId}`, { replace: true });
             } catch (error) {
+                if (!isCurrent()) return;
                 if (isQueuedTripGenerationClaimedByAnotherUserError(error)) {
                     navigate(buildTripClaimConflictPath(buildPathFromLocationParts({
                         pathname: location.pathname,
@@ -1584,10 +1583,10 @@ const useTripViewRender = ({
                     showAppToast({
                         tone: 'warning',
                         title: 'Generation unavailable',
-                        description: error instanceof Error ? error.message : 'Could not start trip generation.',
+                        description: 'Could not start trip generation.',
                     });
                 }
-                autoClaimedPendingAuthQueueRequestIdRef.current = null;
+                autoClaimAttemptRef.current = null;
             } finally {
                 setIsResolvingPendingAuthGeneration(false);
             }
@@ -1600,6 +1599,7 @@ const useTripViewRender = ({
             reloadOnSuccess: true,
         });
     }, [
+        captureTripAction,
         isAnonymous,
         isAuthenticated,
         isMobileViewport,
@@ -1621,11 +1621,13 @@ const useTripViewRender = ({
         if (!isAuthenticated || isAnonymous) return;
         if (pendingAuthClaimQueryId !== pendingAuthQueueRequestId) return;
         if (isResolvingPendingAuthGeneration) return;
-        if (autoClaimedPendingAuthQueueRequestIdRef.current === pendingAuthQueueRequestId) return;
+        if (autoClaimAttemptRef.current?.requestId === pendingAuthQueueRequestId
+            && autoClaimAttemptRef.current.isCurrent()) return;
 
-        autoClaimedPendingAuthQueueRequestIdRef.current = pendingAuthQueueRequestId;
+        autoClaimAttemptRef.current = { requestId: pendingAuthQueueRequestId, isCurrent: captureTripAction() };
         void handleResolvePendingAuthGeneration();
     }, [
+        captureTripAction,
         handleResolvePendingAuthGeneration,
         isAnonymous,
         isAuthenticated,
@@ -2029,6 +2031,7 @@ const useTripViewRender = ({
             return;
         }
 
+        const isCurrent = captureTripAction();
         retryMutationInFlightRef.current = true;
         setIsRetryingGeneration(true);
         retryGenerationTabFeedbackSessionRef.current?.cancel();
@@ -2036,12 +2039,15 @@ const useTripViewRender = ({
         pendingRetryGenerationStateRef.current = true;
         let keepRetryFeedbackActive = false;
         try {
+            const { retryTripGenerationWithDefaultModel } = await import('../services/tripGenerationRetryService');
+            if (!isCurrent()) return;
             const result = await retryTripGenerationWithDefaultModel(baseTrip, {
                 source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
                 contextSource: 'trip_retry',
                 modelId: selectedRetryModelId,
                 adminOverride: isAdminFallbackView && adminOverrideEnabled,
                 onTripUpdate: (updatedTrip) => {
+                    if (!isCurrent()) return;
                     if (shouldPollTripGenerationState(updatedTrip, Date.now())) {
                         pendingRetryGenerationStateRef.current = false;
                     }
@@ -2049,6 +2055,7 @@ const useTripViewRender = ({
                 },
             });
 
+            if (!isCurrent()) return;
             if (onCommitState) {
                 onCommitState(
                     result.trip,
@@ -2070,14 +2077,6 @@ const useTripViewRender = ({
                         t('tripView.generation.retry.queuedTitle'),
                     ),
                 );
-            } else if (result.state === 'succeeded') {
-                retryGenerationTabFeedbackSessionRef.current?.complete('success', {
-                    title: result.trip.title,
-                });
-                showToast(t('tripView.generation.retry.completed'), {
-                    tone: 'add',
-                    title: t('tripView.generation.retry.completedTitle'),
-                });
             } else {
                 pendingRetryGenerationStateRef.current = false;
                 retryGenerationTabFeedbackSessionRef.current?.complete('error');
@@ -2086,14 +2085,16 @@ const useTripViewRender = ({
                     title: t('tripView.generation.retry.failedTitle'),
                 });
             }
-        } catch (error) {
+        } catch {
+            if (!isCurrent()) return;
             pendingRetryGenerationStateRef.current = false;
             retryGenerationTabFeedbackSessionRef.current?.complete('error');
-            showToast(error instanceof Error ? error.message : t('tripView.generation.retry.unexpected'), {
+            showToast(t('tripView.generation.retry.unexpected'), {
                 tone: 'neutral',
                 title: t('tripView.generation.retry.failedTitle'),
             });
         } finally {
+            if (!isCurrent()) retryGenerationTabFeedbackSessionRef.current?.cancel();
             setIsRetryingGeneration(false);
             retryMutationInFlightRef.current = false;
             if (!keepRetryFeedbackActive) {
@@ -2102,6 +2103,7 @@ const useTripViewRender = ({
             }
         }
     }, [
+        captureTripAction,
         adminAccess?.canAdminWrite,
         adminOverrideEnabled,
         canEdit,
@@ -3407,7 +3409,7 @@ const useTripViewRender = ({
             onSwapSelectedCities={handleReverseSelectedCities}
             routeStatusById={routeStatusById}
             pixelsPerDay={pixelsPerDay}
-            enableExampleSharedTransition={useExampleSharedTransition}
+            enableExampleSharedTransition={Boolean(useExampleSharedTransition)}
             selectionVisibilityKey={paneGeometrySyncKey}
             isDetailsPanelVisible={detailsPanelVisible}
             onNavigatePreviousCity={() => handleNavigateSelectedCity('previous')}
@@ -3614,7 +3616,7 @@ const useTripViewRender = ({
                     isMobile={isMobile}
                     tripTitle={trip.title}
                     tripSummary={tripSummary}
-                    titleViewTransitionName={titleViewTransitionName}
+                    titleViewTransitionName={titleViewTransitionName ?? null}
                     canManageTripMetadata={canManageTripMetadata}
                     onHeaderAuthAction={() => {
                         void handleHeaderAuthAction();
@@ -3641,8 +3643,8 @@ const useTripViewRender = ({
                     adminOverrideEnabled={adminOverrideEnabled}
                     canEnableAdminOverride={canEnableAdminOverride}
                     ownerUsersUrl={ownerUsersUrl}
-                    ownerEmail={adminAccess?.ownerEmail}
-                    ownerId={adminAccess?.ownerId}
+                    ownerEmail={adminAccess?.ownerEmail ?? undefined}
+                    ownerId={adminAccess?.ownerId ?? undefined}
                     isTripLockedByArchive={isTripLockedByArchive}
                     isTripLockedByExpiry={isTripLockedByExpiry}
                     hasLoadingItems={hasLoadingItems}
@@ -3658,7 +3660,7 @@ const useTripViewRender = ({
                     }}
                     tripExpiresAtMs={tripExpiresAtMs}
                     shouldShowExpirationBanner={shouldShowExpirationBanner}
-                    isExampleTrip={trip.isExample}
+                    isExampleTrip={Boolean(trip.isExample)}
                     isPaywallLocked={isPaywallLocked}
                     expirationLabel={expirationLabel}
                     expirationRelativeLabel={expirationRelativeLabel}
@@ -3847,7 +3849,7 @@ const useTripViewRender = ({
                         onRouteMetrics={handleRouteMetrics}
                         onRouteStatus={handleRouteStatus}
                         tripId={trip.id}
-                        mapViewTransitionName={mapViewTransitionName}
+                        mapViewTransitionName={mapViewTransitionName ?? null}
                         sidebarWidth={sidebarWidth}
                         detailsWidth={detailsWidth}
                         timelineHeight={timelineHeight}
@@ -3975,7 +3977,7 @@ const useTripViewRender = ({
                         onStartTitleEdit={handleStartTitleEdit}
                         canManageTripMetadata={canManageTripMetadata}
                         canEdit={canEdit}
-                        isFavorite={trip.isFavorite}
+                        isFavorite={Boolean(trip.isFavorite)}
                         onToggleFavorite={handleToggleFavorite}
                         isExamplePreview={isExamplePreview}
                         tripMeta={tripMeta}
@@ -4057,7 +4059,8 @@ const useTripViewRender = ({
                         isPendingAuthContinueDisabled={isResolvingPendingAuthGeneration}
                         claimConflictModalVisible={isPendingAuthClaimedByAnotherUser}
                         claimConflictShowLoginCta={!isAuthenticated || isAnonymous}
-                        claimConflictCreateSimilarPath={createSimilarTripPath}
+                        claimConflictTrip={isPendingAuthClaimedByAnotherUser ? trip : undefined}
+                        claimConflictPathname={location.pathname}
                         onClaimConflictLogin={handlePendingAuthClaimConflictLogin}
                     />
 

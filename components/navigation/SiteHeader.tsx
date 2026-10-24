@@ -1,20 +1,15 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { NavLink } from '@/app/navigation';
+import { List } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
-import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath } from '../../config/routes';
+import { normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
-import { buildLocalizedLocation } from '../../services/localeRoutingService';
-import { preloadLocaleNamespaces } from '../../i18n';
-import { useAuth } from '../../hooks/useAuth';
-import { useLoginModal } from '../../hooks/useLoginModal';
-import { buildPathFromLocationParts } from '../../services/authNavigationService';
-import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
-import { warmRouteAssets } from '../../services/navigationPrefetch';
+import { useLocaleNavigation } from '../../hooks/useLocaleNavigation';
 import { AppBrand } from './AppBrand';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootInteractionBridge';
 // Deliberately NOT lazy. The burger is the only way into navigation on a phone,
@@ -23,15 +18,7 @@ import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootI
 // header chunk, which is far cheaper than a network hop on a tap.
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from '../ui/ThemeToggle';
-
-const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
-    moduleKey: string,
-    importer: () => Promise<TModule>
-) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
-
-const AccountMenu = lazyWithRecovery('AccountMenu', () =>
-    import('./AccountMenu').then((module) => ({ default: module.AccountMenu }))
-);
+import { AccountEntry } from './AccountEntry';
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -51,15 +38,6 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) => {
     return baseClass;
 };
 
-const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.metaKey &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.shiftKey
-);
-
 export const SiteHeader: React.FC<SiteHeaderProps> = ({
     variant = 'solid',
     onMyTripsClick,
@@ -67,42 +45,21 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     hideCreateTrip = false,
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-    // A tap on the burger can land seconds before this chunk exists — the
-    // prerendered header is painted long before it is interactive. The inline
-    // boot script records that tap here; open the menu once we are mounted.
-    //
-    // This has to be an effect, not lazy initial state: opening during the
-    // hydration render adds a sibling the prerendered DOM does not have, and
-    // preact/compat hydrates it against whatever node follows the header
-    // without applying attributes — the drawer came out inline in the page
-    // flow, with no role="dialog". Reconciling after mount renders it properly.
+    // Replay an intent captured before the bundle once the menu can mount.
     useEffect(() => {
-        if (consumeBootIntent(BOOT_INTENT_MOBILE_MENU)) setIsMobileMenuOpen(true);
+        if (consumeBootIntent(BOOT_INTENT_MOBILE_MENU)) {
+            menuTriggerRef.current?.focus({ preventScroll: true });
+            setIsMobileMenuOpen(true);
+        }
     }, []);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
-    // The active-nav underline is derived after mount, not on the first render.
-    // The prerendered markup has no active link, and preact/compat does NOT
-    // reconcile a className that only differs between the server DOM and the
-    // first client render during hydration — so computing "active" on the first
-    // render leaves the DOM stuck inactive (vnode already says active, so no
-    // later re-render patches it). Rendering inactive first (matching the
-    // server) and flipping `hydrated` in an effect makes the underline a real
-    // post-hydration change that preact applies. Same two-pass pattern the
-    // banners use.
-    const [hydrated, setHydrated] = useState(false);
-    useEffect(() => { setHydrated(true); }, []);
     const routeLocation = useSafeRouteLocation();
-    const navigate = useNavigate();
+    const changeLocale = useLocaleNavigation();
     const { t, i18n } = useTranslation('common');
-    const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
-    const { openLoginModal } = useLoginModal();
 
-    const activeLocale = useMemo<AppLanguage>(() => {
-        const routeLocale = extractLocaleFromPath(routeLocation.pathname);
-        if (routeLocale) return routeLocale;
-        return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
-    }, [i18n.language, i18n.resolvedLanguage, routeLocation.pathname]);
+    const activeLocale = usePresentationLocale(routeLocation.pathname, i18n.resolvedLanguage ?? i18n.language);
     const selectedLocale = pendingLocale ?? activeLocale;
 
     useEffect(() => {
@@ -126,22 +83,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
         setPendingLocale(nextLocale);
 
-        if (!isToolRoute(routeLocation.pathname)) {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(routeLocation.pathname));
-        } else {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(routeLocation.pathname));
-        }
-
-        applyDocumentLocale(nextLocale);
-        void i18n.changeLanguage(nextLocale);
-
-        const target = buildLocalizedLocation({
-            pathname: routeLocation.pathname,
-            search: routeLocation.search,
-            hash: routeLocation.hash,
-            targetLocale: nextLocale,
-        });
-        navigate(target);
+        void changeLocale(nextLocale);
         trackEvent('navigation__language_switch', { from: activeLocale, to: nextLocale });
     };
 
@@ -149,39 +91,15 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         trackEvent(`navigation__${target}`);
     };
 
-    const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        handleNavClick('login');
-        if (isLoading) return;
-        if (!isPlainLeftClick(event)) return;
-
-        event.preventDefault();
-        openLoginModal({
-            source: 'navigation_header',
-            nextPath: buildPathFromLocationParts({
-                pathname: routeLocation.pathname,
-                search: routeLocation.search,
-                hash: routeLocation.hash,
-            }),
-            reloadOnSuccess: true,
-        });
-    };
-
     const navDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`navigation__${target}`);
 
-    const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildLocalizedCreateTripPath(selectedLocale), 'manual');
-    };
 
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
         ? 'sticky top-0 z-[1600] isolate border-b border-white/20 bg-card/80 backdrop-blur dark:border-white/10 dark:bg-background/80'
         : 'sticky top-0 z-[1600] isolate border-b border-border/70 bg-card/90 backdrop-blur dark:border-border dark:bg-background/90';
-
-    const loginClass = isGlass
-        ? 'hidden min-h-10 items-center rounded-lg border border-border/70 bg-card/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-[scale,border-color,color] duration-150 ease-out hover:border-border hover:text-foreground active:scale-[0.96] sm:inline-flex dark:border-border dark:bg-card/60 dark:text-muted-foreground dark:hover:border-border dark:hover:text-foreground'
-        : 'hidden min-h-10 items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-[scale,border-color,color] duration-150 ease-out hover:border-border hover:text-foreground active:scale-[0.96] sm:inline-flex dark:border-border dark:text-muted-foreground dark:hover:border-border dark:hover:text-foreground';
 
     const burgerClass = isGlass
         ? 'flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground lg:hidden dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground'
@@ -206,21 +124,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
                         {(['features', 'inspirations', 'updates', 'blog', 'pricing'] as const).map((routeKey) => {
                             const path = buildLocalizedMarketingPath(routeKey, activeLocale);
-                            // Inactive on the first render (matches the prerendered markup);
-                            // after `hydrated` flips, derive the active link from the current
-                            // URL. window.location is correct from the first client render and
-                            // react-router updates it synchronously on navigation; referencing
-                            // routeLocation.pathname keeps this recomputing on route changes.
-                            const currentPath = ((hydrated && typeof window !== 'undefined' ? window.location.pathname : routeLocation.pathname) || '/').replace(/\/+$/, '') || '/';
-                            const linkPath = path.replace(/\/+$/, '') || '/';
-                            const isActive = hydrated && (currentPath === linkPath || currentPath.startsWith(`${linkPath}/`));
                             return (
                                 <NavLink
                                     key={routeKey}
                                     to={path}
                                     onClick={() => handleNavClick(routeKey)}
-                                    className={navLinkClass({ isActive })}
-                                    aria-current={isActive ? 'page' : undefined}
+                                    className={navLinkClass}
                                     {...navDebugAttributes(routeKey)}
                                 >
                                     {t(`nav.${routeKey}`)}
@@ -238,51 +147,15 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 triggerClassName="h-9 rounded-lg border-border bg-card py-2 pl-3 pr-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border dark:border-border dark:bg-card dark:text-foreground dark:shadow-none"
                             />
                         </div>
-                        {isAuthenticated ? (
-                            <Suspense
-                                fallback={(
-                                    <span
-                                        className="hidden size-10 rounded-full border border-border bg-secondary lg:inline-flex"
-                                        aria-hidden="true"
-                                    />
-                                )}
-                            >
-                                <AccountMenu
-                                    email={access?.email || null}
-                                    userId={access?.userId || null}
-                                    isAdmin={isAdmin}
-                                    labelMode="profile"
-                                    onOpenTripManager={onMyTripsClick}
-                                    onPrewarmTripManager={onMyTripsIntent}
-                                    className="hidden lg:block"
-                                />
-                            </Suspense>
-                        ) : isLoading ? (
-                            <span
-                                className={`${loginClass} cursor-wait items-center gap-2 opacity-70`}
-                                aria-disabled="true"
-                                aria-live="polite"
-                            >
-                                <Loader2 size={14} className="animate-spin" />
-                                {t('nav.login')}
-                            </span>
-                        ) : (
-                            <NavLink
-                                to={buildLocalizedMarketingPath('login', activeLocale)}
-                                onClick={handleLoginClick}
-                                className={loginClass}
-                                {...navDebugAttributes('login')}
-                            >
-                                {t('nav.login')}
-                            </NavLink>
-                        )}
+                        <AccountEntry className="hidden lg:block"
+                            onOpenTripManager={onMyTripsClick} onPrewarmTripManager={onMyTripsIntent} />
                         {!hideCreateTrip && (
                             <NavLink
                                 to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
-                                onMouseEnter={prewarmCreateTripRoute}
-                                onFocus={prewarmCreateTripRoute}
-                                onTouchStart={prewarmCreateTripRoute}
+
+
+
                                 className="inline-flex min-h-10 items-center rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300"
                                 {...navDebugAttributes('create_trip')}
                             >
@@ -291,7 +164,13 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         )}
                         <ThemeToggle analyticsSurface="nav" className="hidden lg:inline-flex" />
                         <button type="button"
-                            onClick={() => setIsMobileMenuOpen(true)}
+                            ref={menuTriggerRef}
+                            onClick={(event) => {
+                                // Safari pointer clicks do not focus buttons by default.
+                                // The dialog must capture a connected return-focus target.
+                                event.currentTarget.focus({ preventScroll: true });
+                                setIsMobileMenuOpen(true);
+                            }}
                             data-tf-boot-intent={BOOT_INTENT_MOBILE_MENU}
                             className={burgerClass}
                             aria-label={t('nav.openMenu')}

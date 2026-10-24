@@ -1,8 +1,11 @@
+import { registerActiveGenerationAbortController } from './tripGenerationRuntime';
+export { abortActiveTripGenerationRequest } from './tripGenerationRuntime';
 import { buildModelActivityPlacementFields } from '../shared/aiTripActivityPlacement';
 import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripGenerationFlow, TripGenerationFailureKind } from "../types";
 import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
+import { isZeroNightReturnStop } from '../shared/aiTripStayDuration';
 import { parseAiTripCityLocation } from "../shared/aiTripCityLocation";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
 import {
@@ -138,62 +141,6 @@ export interface TripGenerationRequestContext {
     source?: string;
     retryOfAttemptId?: string;
 }
-
-type ActiveGenerationAbortControllerMap = Map<string, AbortController>;
-
-const ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID: ActiveGenerationAbortControllerMap = new Map();
-const ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID: ActiveGenerationAbortControllerMap = new Map();
-
-const registerActiveGenerationAbortController = (
-    context: TripGenerationRequestContext | undefined,
-    controller: AbortController | null,
-): (() => void) => {
-    if (!controller) return () => {};
-    const tripId = typeof context?.tripId === 'string' ? context.tripId.trim() : '';
-    const requestId = typeof context?.requestId === 'string' ? context.requestId.trim() : '';
-
-    if (!tripId && !requestId) return () => {};
-
-    if (tripId) {
-        const previous = ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.get(tripId);
-        if (previous && previous !== controller) {
-            previous.abort('superseded');
-        }
-        ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.set(tripId, controller);
-    }
-    if (requestId) {
-        const previous = ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.get(requestId);
-        if (previous && previous !== controller) {
-            previous.abort('superseded');
-        }
-        ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.set(requestId, controller);
-    }
-
-    return () => {
-        if (tripId && ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.get(tripId) === controller) {
-            ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.delete(tripId);
-        }
-        if (requestId && ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.get(requestId) === controller) {
-            ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.delete(requestId);
-        }
-    };
-};
-
-export const abortActiveTripGenerationRequest = (params: {
-    tripId?: string | null;
-    requestId?: string | null;
-    reason?: string;
-}): boolean => {
-    const requestId = typeof params.requestId === 'string' ? params.requestId.trim() : '';
-    const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
-    const reason = (typeof params.reason === 'string' && params.reason.trim()) ? params.reason.trim() : 'user_abort';
-    const byRequest = requestId ? ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_REQUEST_ID.get(requestId) : null;
-    const byTrip = tripId ? ACTIVE_GENERATION_ABORT_CONTROLLERS_BY_TRIP_ID.get(tripId) : null;
-    const controller = byRequest || byTrip || null;
-    if (!controller) return false;
-    controller.abort(reason);
-    return true;
-};
 
 export class TripGenerationError extends Error {
     code: string | null;
@@ -753,10 +700,13 @@ const buildTripFromModelData = (
     const cityOffsets: number[] = [];
     const cityDurations: number[] = [];
 
-    const parsedCities: ParsedCityStop[] = (Array.isArray(data.cities) ? data.cities : []).map((city: any, index: number) => {
+    const rawCities = Array.isArray(data.cities) ? data.cities : [];
+    const parsedCities: ParsedCityStop[] = rawCities.map((city: any, index: number) => {
         const location = parseAiTripCityLocation(city, `Stop ${index + 1}`);
         const parsedCityDays = Number(city?.days);
-        const cityDays = Number.isFinite(parsedCityDays) && parsedCityDays > 0 ? parsedCityDays : 1;
+        const cityDays = isZeroNightReturnStop(rawCities, index, options?.roundTrip === true)
+            ? 0
+            : (Number.isFinite(parsedCityDays) && parsedCityDays > 0 ? parsedCityDays : 1);
 
         return {
             name: location.name,
@@ -775,7 +725,7 @@ const buildTripFromModelData = (
         if (getNormalizedCityName(firstCity.name) !== getNormalizedCityName(lastCity.name)) {
             parsedCities.push({
                 ...firstCity,
-                days: 1,
+                days: 0,
                 sourceIndex: -1,
             });
         }

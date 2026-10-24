@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
 import { resolveMapRuntime } from '../../../shared/mapRuntime';
 
 const mocks = vi.hoisted(() => ({
@@ -353,6 +353,16 @@ describe('AdminAirportsPage', () => {
       expect(mocks.confirm).toHaveBeenCalled();
       expect(mocks.adminSyncAirportCatalog).toHaveBeenCalledTimes(1);
     });
+    // The progress toast stays until the result replaces it, instead of
+    // expiring after the default few seconds mid-sync.
+    expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Syncing airports',
+      duration: Infinity,
+    }));
+    expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'toast-id',
+      title: 'Airport sync finished',
+    }));
   });
 
   it('applies bulk edits to selected airports', async () => {

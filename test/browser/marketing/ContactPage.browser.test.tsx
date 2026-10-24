@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type InitialEntry, MemoryRouter } from 'react-router-dom';
+import { type InitialEntry, MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const useAuthMock = vi.fn();
 const getCurrentAccessContextMock = vi.fn();
@@ -98,7 +99,7 @@ vi.mock('../../../services/analyticsService', () => ({
 
 import { ContactPage } from '../../../pages/ContactPage';
 
-const renderContactPage = (initialEntries: InitialEntry[] = ['/contact']) => render(
+const renderContactPage = async (initialEntries: InitialEntry[] = ['/contact']) => await render(
   <MemoryRouter initialEntries={initialEntries}>
     <ContactPage />
   </MemoryRouter>
@@ -130,8 +131,8 @@ describe('pages/ContactPage', () => {
     cleanup();
   });
 
-  it('renders required form fields and hidden netlify fields', () => {
-    renderContactPage();
+  it('renders required form fields and hidden netlify fields', async () => {
+    await renderContactPage();
 
     expect(screen.getByText('contact.title')).toBeInTheDocument();
     expect(screen.getByLabelText('contact.form.nameLabel')).toBeInTheDocument();
@@ -153,8 +154,8 @@ describe('pages/ContactPage', () => {
     expect(screen.getByRole('link', { name: 'Browse all FAQs' }).getAttribute('href')).toBe('/faq');
   });
 
-  it('auto-opens the topic dropdown after selecting a reason', () => {
-    renderContactPage();
+  it('auto-opens the topic dropdown after selecting a reason', async () => {
+    await renderContactPage();
 
     selectReason('contact.form.reasonOptions.bugReport');
 
@@ -186,7 +187,7 @@ describe('pages/ContactPage', () => {
       tierKey: 'tier_mid',
     });
 
-    renderContactPage();
+    await renderContactPage();
 
     await waitFor(() => {
       expect((screen.getByLabelText(/^contact\.form\.emailLabel/) as HTMLInputElement).value).toBe('prefilled@example.com');
@@ -198,7 +199,7 @@ describe('pages/ContactPage', () => {
   it('submits successfully and tracks submit + success events', async () => {
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, status: 200 });
 
-    renderContactPage();
+    await renderContactPage();
 
     selectReason('contact.form.reasonOptions.bugReport');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
@@ -215,7 +216,7 @@ describe('pages/ContactPage', () => {
   });
 
   it('prefills reason and topic from route state (translation banner flow)', async () => {
-    renderContactPage([{
+    await renderContactPage([{
       pathname: '/contact',
       state: {
         reason: 'bug_report',
@@ -256,7 +257,7 @@ describe('pages/ContactPage', () => {
       updatedAt: Date.now(),
     }));
 
-    renderContactPage();
+    await renderContactPage();
 
     selectReason('contact.form.reasonOptions.bugReport');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
@@ -277,7 +278,7 @@ describe('pages/ContactPage', () => {
   it('shows fallback mailto on failed submit and tracks failure + fallback click', async () => {
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: false, status: 429 });
 
-    renderContactPage();
+    await renderContactPage();
 
     selectReason('contact.form.reasonOptions.partnership');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'partner@example.com' } });
@@ -299,7 +300,7 @@ describe('pages/ContactPage', () => {
   it('handles thrown network errors without crashing', async () => {
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('network down'));
 
-    renderContactPage();
+    await renderContactPage();
 
     selectReason('contact.form.reasonOptions.other');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });

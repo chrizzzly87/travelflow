@@ -117,6 +117,22 @@ from Reykjavik. It is not a city stop and needs no transfer.
   downgraded. Neither check blocks a run; both are visible in the admin
   benchmark validation dialog.
 
+### Return markers and trip dates
+
+The compiler represents a round trip's final arrival at the origin as a terminal
+city with `days: 0`. This marker adds no overnight stay. All three timeline
+builders preserve it through `shared/aiTripStayDuration.ts`, and their legacy
+missing-return fallback also adds zero nights. Zero-duration interior stops,
+non-origin stops and stops without round-trip intent retain the existing
+one-night fallback. Positive-duration stops remain overnight stays.
+
+`tests/unit/aiGeneratedTripDuration.test.ts` exercises compiler output through the
+actual client, async-worker and benchmark builders and then `getTripSpan`: five Tokyo nights
+and four Kyoto nights from November 10 end on November 19, including a zero-night
+return to Tokyo. Activity offsets and stay references must remain intact. This
+protects mapping correctness; the requested night budget is still a prompt
+constraint rather than a general validator of model-generated stop totals.
+
 ## Trip Agent (chat)
 
 - The internal schema (`shared/tripAgent.ts`) accepts `activityKind`,

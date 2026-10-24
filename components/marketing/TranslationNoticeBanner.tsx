@@ -1,14 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link } from '@/app/navigation';
 import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';
-import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
+import { buildLocalizedMarketingPath } from '../../config/routes';
+import type { AppLanguage } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
     readSessionStorageItem,
     writeSessionStorageItem,
 } from '../../services/browserStorageService';
+import { MarketingNotice } from './MarketingNotice';
+import { usePresentationLocale } from '../../hooks/usePresentationLocale';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const SESSION_DISMISS_KEY = 'tf_translation_notice_dismissed_session';
@@ -25,7 +28,7 @@ const buildContactSearch = (): string => {
     return `?${params.toString()}`;
 };
 
-const buildContactTo = (activeLocale: string) => ({
+const buildContactTo = (activeLocale: AppLanguage) => ({
     pathname: buildLocalizedMarketingPath('contact', activeLocale),
     search: buildContactSearch(),
 });
@@ -48,10 +51,7 @@ const isDismissedForSession = (): boolean => {
 export const TranslationNoticeBanner: React.FC = () => {
     const { t } = useTranslation('common');
     const routeLocation = useSafeRouteLocation();
-    const activeLocale = useMemo(
-        () => extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE,
-        [routeLocation.pathname]
-    );
+    const activeLocale = usePresentationLocale(routeLocation.pathname, DEFAULT_LOCALE);
     const [dismissed, setDismissed] = useState<boolean>(false);
 
     useEffect(() => {
@@ -73,12 +73,10 @@ export const TranslationNoticeBanner: React.FC = () => {
     };
 
     return (
-        <div className="border-b border-amber-200/70 bg-amber-50/90 shadow-sm dark:bg-amber-400/12 dark:border-amber-400/30">
-            <div className="mx-auto flex w-full max-w-7xl items-start gap-2 px-5 py-2.5 sm:items-center sm:gap-3 md:px-8">
-                <WarningCircle size={16} weight="duotone" className="shrink-0 text-amber-700 dark:text-amber-200" />
-                <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-amber-900 sm:text-sm dark:text-amber-200">
-                    {t('translationNotice.message')}
-                </p>
+        <MarketingNotice tone="amber"
+            icon={<WarningCircle size={16} weight="duotone" className="text-amber-700 dark:text-amber-200" />}
+            message={t('translationNotice.message')}
+            action={
                 <Link
                     to={buildContactTo(activeLocale)}
                     state={buildContactState()}
@@ -88,7 +86,7 @@ export const TranslationNoticeBanner: React.FC = () => {
                         sub_reason: CONTACT_PREFILL_SUB_REASON,
                         source: CONTACT_PREFILL_SOURCE,
                     })}
-                    className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-amber-300 bg-card px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5 dark:bg-card dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                    className="inline-flex min-h-10 min-w-0 max-w-full items-center whitespace-normal break-words text-start rounded-lg border border-amber-300 bg-card px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5 dark:bg-card dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                     {...getAnalyticsDebugAttributes('i18n_notice__contact', {
                         locale: activeLocale,
                         reason: CONTACT_PREFILL_REASON,
@@ -98,8 +96,8 @@ export const TranslationNoticeBanner: React.FC = () => {
                 >
                     <span className="sm:hidden">{t('translationNotice.ctaShort')}</span>
                     <span className="hidden sm:inline">{t('translationNotice.cta')}</span>
-                </Link>
-                <button
+                </Link>}
+            dismiss={<button
                     type="button"
                     onClick={handleDismiss}
                     aria-label={t('translationNotice.dismiss')}
@@ -107,8 +105,7 @@ export const TranslationNoticeBanner: React.FC = () => {
                     {...getAnalyticsDebugAttributes('i18n_notice__dismiss', { locale: activeLocale })}
                 >
                     <X size={14} weight="bold" />
-                </button>
-            </div>
-        </div>
+                </button>}
+        />
     );
 };

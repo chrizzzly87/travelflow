@@ -422,7 +422,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         ).sort((a,b) => a.startDateOffset - b.startDateOffset);
 
                         // Group activities by day
-                        const days = [];
+                        const days: Array<{ date: Date; activities: ITimelineItem[] }> = [];
                         for (let i = 0; i < city.duration; i++) {
                             const dayDate = addDays(cityStart, i);
                             const dayActs = cityActivities.filter(act =>
