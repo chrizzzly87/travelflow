@@ -170,4 +170,22 @@ describe('components/TripManager page variant', () => {
     await user.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('hides the closed overlay from assistive tech and the tab order', () => {
+    render(
+      React.createElement(TripManager, {
+        isOpen: false,
+        variant: 'overlay',
+        onClose: vi.fn(),
+        onSelectTrip: vi.fn(),
+      })
+    );
+
+    // Still mounted off-screen for the slide transition, but not an open modal.
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const panel = screen.getByRole('dialog', { hidden: true });
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
+    expect(panel).toHaveAttribute('inert');
+    expect(screen.getByRole('button', { name: 'Close My Plans panel', hidden: true }).closest('[inert]')).not.toBeNull();
+  });
 });

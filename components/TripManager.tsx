@@ -1252,6 +1252,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
             opacity: isOpen ? 1 : 0,
             pointerEvents: isOpen ? 'auto' : 'none',
           }}
+          inert={!isOpen ? true : undefined}
         >
           <button
             type="button"
@@ -1271,6 +1272,10 @@ export const TripManager: React.FC<TripManagerProps> = ({
         role={isPageVariant ? undefined : 'dialog'}
         aria-modal={isPageVariant ? undefined : 'true'}
         aria-labelledby="trip-manager-title"
+        // The overlay stays mounted off-screen so it can slide. While closed it
+        // must not read as an open modal or keep its rows in the tab order.
+        aria-hidden={!isPageVariant && !isOpen ? true : undefined}
+        inert={!isPageVariant && !isOpen ? true : undefined}
       >
         <div className={`px-4 py-3 border-b border-border flex items-center ${isPageVariant ? 'justify-end' : 'justify-between'}`}>
           {/* The /trips route supplies its own localized heading, so repeating a

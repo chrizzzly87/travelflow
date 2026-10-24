@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { preloadTripClaimConflictDialog } from '../../components/tripview/tripClaimRecoveryBoundary';
 import { TripViewHudOverlays } from '../../components/tripview/TripViewHudOverlays';
@@ -75,13 +75,13 @@ const makeProps = (overrides?: Partial<TripViewHudOverlaysProps>): TripViewHudOv
   generationProgressMessage: 'Checking timing',
   loadingDestinationSummary: 'Japan',
   tripDateRange: 'Mar 10, 2026 – Mar 20, 2026',
-  tripTotalDaysLabel: '10',
+  tripSpanCompactLabel: '10 days',
+  isAgentLauncherVisible: false,
   pendingAuthModalStage: 'hidden',
   onContinuePendingAuth: () => undefined,
   isPendingAuthContinueDisabled: false,
   claimConflictModalVisible: false,
   claimConflictShowLoginCta: false,
-  claimConflictCreateSimilarPath: '/create-trip',
   onClaimConflictLogin: () => undefined,
   ...overrides,
 });
@@ -122,6 +122,40 @@ describe('TripViewHudOverlays pending auth modal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign in or create account' }));
     expect(onContinuePendingAuth).toHaveBeenCalledTimes(1);
     expect(trackEventMock).toHaveBeenCalled();
+  });
+
+  it.each(['loading', 'locked'] as const)('renders the %s stage as a modal dialog that Escape cannot dismiss', (stage) => {
+    render(
+      <TripViewHudOverlays
+        {...makeProps({
+          pendingAuthModalStage: stage,
+        })}
+      />,
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: stage === 'loading' ? 'Preparing your trip' : 'Creating trips is only for registered users',
+    });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.getByRole('dialog')).toBe(dialog);
+  });
+
+  it('keeps the paywall lock card non-modal so the page around it stays usable', () => {
+    render(
+      <TripViewHudOverlays
+        {...makeProps({
+          isPaywallLocked: true,
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const card = screen.getByTestId('trip-paywall-lock-card');
+    expect(card.tagName).toBe('SECTION');
+    expect(card).toHaveAttribute('aria-labelledby', 'trip-paywall-overlay-title');
+    expect(within(card).getByRole('heading', { level: 2 })).toHaveAttribute('id', 'trip-paywall-overlay-title');
   });
 
   it('shows the claimed-by-another-user modal with a complete create-similar action', async () => {
