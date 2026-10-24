@@ -3,6 +3,7 @@ import { MapPin, Navigation } from 'lucide-react';
 
 import { ActivityTypeIcon } from '../ActivityTypeVisuals';
 import { formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisualsUtils';
+import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { useDirectionsChooser } from '../maps/useDirectionsChooser';
 import { buildRecommendationMapUrl, buildRecommendationPhotoUrl } from './recommendationCardMedia';
@@ -94,23 +95,24 @@ export const RecommendationCardBody: React.FC<{ recommendation: Recommendation }
 
             <div className="flex flex-wrap items-center gap-1">
                 {recommendation.activityTypes.slice(0, 3).map((type) => (
-                    <span
+                    <Badge
                         key={type}
-                        className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${getActivityTypePaletteClass(type)}`}
+                        variant="outline"
+                        className={`px-1.5 text-[10px] font-semibold ${getActivityTypePaletteClass(type)}`}
                     >
                         <ActivityTypeIcon type={type} size={11} />
                         {formatActivityTypeLabel(type)}
-                    </span>
+                    </Badge>
                 ))}
                 {costLabel && (
-                    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    <Badge variant="outline" className="px-1.5 text-[10px] font-semibold text-muted-foreground">
                         {costLabel}
-                    </span>
+                    </Badge>
                 )}
                 {durationLabel && (
-                    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    <Badge variant="outline" className="px-1.5 text-[10px] font-semibold text-muted-foreground">
                         {durationLabel}
-                    </span>
+                    </Badge>
                 )}
             </div>
 

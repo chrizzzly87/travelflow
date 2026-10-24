@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
-import { BarChart, BarList, DonutChart, Metric, Text, Title } from '@tremor/react';
+import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, WarningCircle } from '@phosphor-icons/react';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
+import { AdminBarList } from '../components/admin/charts/AdminBarList';
+import { AdminDonutChart } from '../components/admin/charts/AdminDonutChart';
+import { AdminMetric, AdminText, AdminTitle } from '../components/admin/AdminText';
 import { Link, useSearchParams } from '@/app/navigation';
 
 import { useAppDialog } from '../components/AppDialogProvider';
@@ -12,6 +15,8 @@ import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { showAppToast } from '../components/ui/appToast';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import {
     adminListBillingSubscriptions,
     adminReconcilePaddleSubscriptions,
@@ -23,7 +28,6 @@ import {
     type AdminBillingWebhookEventRecord,
 } from '../services/adminService';
 import {
-    adminBillingStatusClassName,
     buildAdminBillingAtRiskChartData,
     buildAdminBillingCurrentMrrCards,
     buildAdminBillingMrrByTierChartData,
@@ -78,13 +82,14 @@ const formatPayloadJson = (value: Record<string, unknown> | null | undefined): s
     }
 };
 
-const statusPill = (value: string | null | undefined) => {
-    const tone = resolveAdminBillingStatusTone(normalizeAdminBillingStatus(value));
-    return [
-        'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold capitalize',
-        adminBillingStatusClassName(tone),
-    ].join(' ');
-};
+const StatusPill = ({ value, children }: { value: string | null | undefined; children: React.ReactNode }) => (
+    <Badge
+        variant={resolveAdminBillingStatusTone(normalizeAdminBillingStatus(value))}
+        className="px-2.5 py-1 font-semibold capitalize"
+    >
+        {children}
+    </Badge>
+);
 
 const webhookMessageClassName = (status: string | null | undefined) => {
     const normalizedStatus = normalizeAdminBillingStatus(status);
@@ -243,7 +248,10 @@ export const AdminBillingPage: React.FC = () => {
         [dashboard],
     );
     const dashboardAtRiskData = useMemo(
-        () => dashboard ? buildAdminBillingAtRiskChartData(dashboard) : [],
+        // The bar list reads `name`/`value`; the presentation builder returns `label`/`amount`.
+        () => dashboard
+            ? buildAdminBillingAtRiskChartData(dashboard).map((row) => ({ key: row.label, name: row.label, value: row.amount }))
+            : [],
         [dashboard],
     );
 
@@ -331,15 +339,15 @@ export const AdminBillingPage: React.FC = () => {
             onDateRangeChange={setDateRange}
             actions={(
                 <div className="flex flex-wrap items-center gap-2">
-                    <button
+                    <Button
                         type="button"
                         onClick={() => void handleReconcile()}
-                        disabled={isReconciling}
-                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        loading={isReconciling}
+                        icon={<ArrowsClockwise weight="bold" />}
+                        className="rounded-lg px-3 font-semibold"
                     >
-                        {isReconciling ? <SpinnerGap size={14} className="animate-spin" /> : <ArrowsClockwise size={14} weight="bold" />}
                         Reconcile Paddle
-                    </button>
+                    </Button>
                     <AdminReloadButton
                         onClick={() => void loadData()}
                         isLoading={isLoading}
@@ -366,10 +374,10 @@ export const AdminBillingPage: React.FC = () => {
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs font-semibold text-foreground">
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Processed {lastReconcileSummary.processed}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Duplicates {lastReconcileSummary.duplicates}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Unresolved {lastReconcileSummary.unresolved}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Failed {lastReconcileSummary.failed}</span>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Processed {lastReconcileSummary.processed}</Badge>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Duplicates {lastReconcileSummary.duplicates}</Badge>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Unresolved {lastReconcileSummary.unresolved}</Badge>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Failed {lastReconcileSummary.failed}</Badge>
                         </div>
                     </div>
                 </section>
@@ -442,9 +450,9 @@ export const AdminBillingPage: React.FC = () => {
                     <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         {dashboardCurrentMrrCards.map((card) => (
                             <AdminSurfaceCard key={`mrr-${card.currency}`}>
-                                <Text>Current MRR ({card.currency})</Text>
-                                <Metric className="mt-2">{card.amountLabel}</Metric>
-                                <Text className="mt-2">{card.subscriptions} running subscriptions</Text>
+                                <AdminText>Current MRR ({card.currency})</AdminText>
+                                <AdminMetric className="mt-2">{card.amountLabel}</AdminMetric>
+                                <AdminText className="mt-2">{card.subscriptions} running subscriptions</AdminText>
                             </AdminSurfaceCard>
                         ))}
                     </div>
@@ -453,11 +461,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>Current MRR by tier</Title>
-                                    <Text>Current monthly recurring revenue grouped by tier and currency. Canceled access grace is excluded.</Text>
+                                    <AdminTitle>Current MRR by tier</AdminTitle>
+                                    <AdminText>Current monthly recurring revenue grouped by tier and currency. Canceled access grace is excluded.</AdminText>
                                 </div>
                                 {dashboardMrrByTierData.length > 0 ? (
-                                    <BarChart
+                                    <AdminBarChart
+                                        ariaLabel="Current MRR by tier"
                                         data={dashboardMrrByTierData}
                                         index="label"
                                         categories={['amount']}
@@ -480,11 +489,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>At-risk revenue</Title>
-                                    <Text>Revenue currently exposed to churn or collection risk, grouped by status bucket.</Text>
+                                    <AdminTitle>At-risk revenue</AdminTitle>
+                                    <AdminText>Revenue currently exposed to churn or collection risk, grouped by status bucket.</AdminText>
                                 </div>
                                 {dashboardAtRiskData.length > 0 ? (
-                                    <BarList
+                                    <AdminBarList
+                                        ariaLabel="At-risk revenue"
                                         data={dashboardAtRiskData}
                                         className="h-72"
                                         color="rose"
@@ -506,11 +516,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>Subscription mix</Title>
-                                    <Text>Paid subscription distribution by plan tier.</Text>
+                                    <AdminTitle>Subscription mix</AdminTitle>
+                                    <AdminText>Paid subscription distribution by plan tier.</AdminText>
                                 </div>
                                 {dashboardTierMixData.length > 0 ? (
-                                    <DonutChart
+                                    <AdminDonutChart
+                                        ariaLabel="Subscription mix"
                                         data={dashboardTierMixData}
                                         category="count"
                                         index="tier"
@@ -529,11 +540,12 @@ export const AdminBillingPage: React.FC = () => {
                         <AdminSurfaceCard>
                             <div className="space-y-4">
                                 <div>
-                                    <Title>Status mix</Title>
-                                    <Text>Billing lifecycle distribution across currently synced subscriptions.</Text>
+                                    <AdminTitle>Status mix</AdminTitle>
+                                    <AdminText>Billing lifecycle distribution across currently synced subscriptions.</AdminText>
                                 </div>
                                 {dashboardStatusMixData.length > 0 ? (
-                                    <DonutChart
+                                    <AdminDonutChart
+                                        ariaLabel="Status mix"
                                         data={dashboardStatusMixData}
                                         category="count"
                                         index="status"
@@ -625,9 +637,9 @@ export const AdminBillingPage: React.FC = () => {
                                             </td>
                                             <td className="border-b border-border py-4 pe-4">
                                                 <div className="flex flex-col gap-2">
-                                                    <span className={statusPill(resolveAdminBillingLifecycleStatus(record))}>
+                                                    <StatusPill value={resolveAdminBillingLifecycleStatus(record)}>
                                                         {humanizeAdminBillingStatus(resolveAdminBillingLifecycleStatus(record))}
-                                                    </span>
+                                                    </StatusPill>
                                                     <span className="text-xs text-muted-foreground">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
                                                 </div>
                                             </td>
@@ -679,7 +691,7 @@ export const AdminBillingPage: React.FC = () => {
                                     <div className="space-y-2">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className="font-semibold text-foreground">{humanizeEventType(record.event_type)}</span>
-                                            <span className={statusPill(record.status)}>{humanizeAdminBillingStatus(record.status)}</span>
+                                            <StatusPill value={record.status}>{humanizeAdminBillingStatus(record.status)}</StatusPill>
                                         </div>
                                         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                             <span>{formatDateTime(record.occurred_at)}</span>

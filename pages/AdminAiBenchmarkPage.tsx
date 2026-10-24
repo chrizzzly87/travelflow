@@ -58,6 +58,7 @@ import { AdminShell } from '../components/admin/AdminShell';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AppModal } from '../components/ui/app-modal';
+import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import {
@@ -95,6 +96,7 @@ import {
     applyAiRuntimeSettings,
     type AiRuntimeSettings,
 } from '../services/aiRuntimeSettingsService';
+import { buildInitialAdminAiRuntimeSettings } from '../components/admin/adminAiRuntimeSettingsDraft';
 import {
     AI_REASONING_EFFORTS,
     resolveSupportedReasoningEffort,
@@ -572,6 +574,34 @@ const downloadBlob = (blob: Blob, filename: string) => {
     URL.revokeObjectURL(url);
 };
 
+/**
+ * The prompt, error and validation inspectors. They draw their own header
+ * (action buttons, provider label, dark JSON chrome), so they use the dialog
+ * primitive directly rather than AppModal's fixed title bar — Radix still
+ * supplies the modal semantics, focus trap, Escape and focus restore.
+ */
+export const BenchmarkDetailDialog: React.FC<{
+    open: boolean;
+    onClose: () => void;
+    overlayZClassName: string;
+    className: string;
+    testId: string;
+    children: React.ReactNode;
+}> = ({ open, onClose, overlayZClassName, className, testId, children }) => {
+    return (
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+        <DialogContent
+            aria-describedby={undefined}
+            data-testid={testId}
+            overlayClassName={`${overlayZClassName} bg-slate-950/45 backdrop-blur-none`}
+            className={`block w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] overflow-auto ${className}`}
+        >
+            {children}
+        </DialogContent>
+    </Dialog>
+    );
+};
+
 export const AdminAiBenchmarkPage: React.FC = () => {
     const defaultDates = useMemo(() => getDefaultTripDates(), []);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -609,13 +639,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [modelCapabilityFilter, setModelCapabilityFilter] = useState('all');
     const [modelPriceFilter, setModelPriceFilter] = useState('all');
     const [liveOpenRouterModels, setLiveOpenRouterModels] = useState<OpenRouterCatalogModel[]>([]);
-    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>({
-        defaultModelId: getDefaultCreateTripModel().id,
-        approvedOpenRouterModels: [],
-        modelMaxAgeMonths: 6,
-        showOlderModels: false,
-        updatedAt: null,
-    });
+    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>(
+        () => buildInitialAdminAiRuntimeSettings(getDefaultCreateTripModel().id),
+    );
     const [modelCatalogLoading, setModelCatalogLoading] = useState(false);
     const [modelCatalogLoaded, setModelCatalogLoaded] = useState(false);
     const [modelTargetIds, setModelTargetIds] = useState<string[]>(() => {
@@ -3506,19 +3532,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 </AppModal>
 
                 {promptModal && (
-                    <div className="fixed inset-0 z-[1990] flex items-center justify-center bg-slate-950/45 p-4">
-                        <button
-                            type="button"
-                            aria-label="Close generated benchmark prompt"
-                            className="absolute inset-0 cursor-default"
-                            onClick={() => setPromptModal(null)}
-                        />
-                        <div
-                            className="relative z-10 w-full max-w-4xl rounded-xl border border-border bg-card shadow-2xl dark:shadow-none"
-                        >
+                    <BenchmarkDetailDialog
+                        open
+                        onClose={() => setPromptModal(null)}
+                        overlayZClassName="z-[1990]"
+                        testId="benchmark-prompt-dialog"
+                        className="z-[1991] max-w-4xl"
+                    >
                             <div className="flex items-center justify-between border-b border-border px-4 py-3">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-foreground">Generated benchmark prompt</h4>
+                                    <DialogTitle asChild><h4 className="text-sm font-semibold text-foreground">Generated benchmark prompt</h4></DialogTitle>
                                     <p className="text-xs text-muted-foreground">{formatTimestamp(promptModal.generatedAt)}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -3554,24 +3577,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     className="w-full rounded-md border border-border bg-secondary px-3 py-2 font-mono text-xs text-foreground outline-none"
                                 />
                             </div>
-                        </div>
-                    </div>
+                    </BenchmarkDetailDialog>
                 )}
 
                 {errorModalRun && (
-                    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4">
-                        <button
-                            type="button"
-                            aria-label="Close run error details"
-                            className="absolute inset-0 cursor-default"
-                            onClick={() => setErrorModalRun(null)}
-                        />
-                        <div
-                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                        >
+                    <BenchmarkDetailDialog
+                        open
+                        onClose={() => setErrorModalRun(null)}
+                        overlayZClassName="z-[2000]"
+                        testId="benchmark-error-dialog"
+                        className="z-[2001] max-w-3xl border-slate-700 bg-slate-900 dark:shadow-2xl"
+                    >
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-100">Run error details</h4>
+                                    <DialogTitle asChild><h4 className="text-sm font-semibold text-slate-100">Run error details</h4></DialogTitle>
                                     <p className="text-xs text-muted-foreground">
                                         <ProviderLabel
                                             provider={errorModalRun.provider}
@@ -3599,24 +3618,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <code className="language-json">{errorJsonSource}</code>
                                 </pre>
                             </div>
-                        </div>
-                    </div>
+                    </BenchmarkDetailDialog>
                 )}
 
                 {validationModalRun && (
-                    <div className="fixed inset-0 z-[1995] flex items-center justify-center bg-slate-950/45 p-4">
-                        <button
-                            type="button"
-                            aria-label="Close validation details"
-                            className="absolute inset-0 cursor-default"
-                            onClick={() => setValidationModalRun(null)}
-                        />
-                        <div
-                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                        >
+                    <BenchmarkDetailDialog
+                        open
+                        onClose={() => setValidationModalRun(null)}
+                        overlayZClassName="z-[1995]"
+                        testId="benchmark-validation-dialog"
+                        className="z-[1996] max-w-3xl border-slate-700 bg-slate-900 dark:shadow-2xl"
+                    >
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-100">Validation details</h4>
+                                    <DialogTitle asChild><h4 className="text-sm font-semibold text-slate-100">Validation details</h4></DialogTitle>
                                     <p className="text-xs text-muted-foreground">
                                         <ProviderLabel
                                             provider={validationModalRun.provider}
@@ -3648,8 +3663,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <code className="language-json">{validationJsonSource}</code>
                                 </pre>
                             </div>
-                        </div>
-                    </div>
+                    </BenchmarkDetailDialog>
                 )}
 
             </div>

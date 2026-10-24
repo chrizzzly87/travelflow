@@ -215,6 +215,10 @@ export const isOgRouteMode = (value?: string | null): value is OgRouteMode =>
 export const isMapColorMode = (value?: string | null): value is MapColorMode =>
   Boolean(value && MAP_COLOR_MODE_VALUES.includes(value as MapColorMode));
 
+/** A stored trip's colour mode is unvalidated JSON; only a known mode counts. */
+export const readTripMapColorMode = (trip: Pick<TripPayload, "mapColorMode"> | null | undefined): MapColorMode | undefined =>
+  isMapColorMode(trip?.mapColorMode) ? trip.mapColorMode : undefined;
+
 const normalizeOgMapStyle = (value?: string | null): OgMapStyle =>
   isOgMapStyle(value) ? value : DEFAULT_OG_MAP_STYLE;
 
@@ -1415,14 +1419,15 @@ export const buildOgImageUrl = (
       buildMapRuntimeSelectionCacheKey(payload.mapRuntimeSelection),
     );
   }
-  if (isOgMapStyle(payload.mapStyle ?? null)) {
-    url.searchParams.set("mapStyle", payload.mapStyle);
+  const { mapStyle, routeMode, mapColorMode } = payload;
+  if (isOgMapStyle(mapStyle)) {
+    url.searchParams.set("mapStyle", mapStyle);
   }
-  if (isOgRouteMode(payload.routeMode ?? null)) {
-    url.searchParams.set("routeMode", payload.routeMode);
+  if (isOgRouteMode(routeMode)) {
+    url.searchParams.set("routeMode", routeMode);
   }
-  if (isMapColorMode(payload.mapColorMode ?? null)) {
-    url.searchParams.set("mapColorMode", payload.mapColorMode);
+  if (isMapColorMode(mapColorMode)) {
+    url.searchParams.set("mapColorMode", mapColorMode);
   }
   const showStops = typeof payload.showStops === "boolean" ? payload.showStops : null;
   const showCities = typeof payload.showCities === "boolean"

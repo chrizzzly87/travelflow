@@ -212,13 +212,13 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setTimelineHeight).toHaveBeenCalledWith(420);
     expect(props.setShowCityNames).toHaveBeenCalledWith(true);
 
-    const mapStyleCalls = props.setMapStyle.mock.calls.length;
-    const routeModeCalls = props.setRouteMode.mock.calls.length;
+    const mapStyleCalls = vi.mocked(props.setMapStyle).mock.calls.length;
+    const routeModeCalls = vi.mocked(props.setRouteMode).mock.calls.length;
 
     rerender(props);
 
-    expect(props.setMapStyle.mock.calls.length).toBe(mapStyleCalls);
-    expect(props.setRouteMode.mock.calls.length).toBe(routeModeCalls);
+    expect(vi.mocked(props.setMapStyle).mock.calls.length).toBe(mapStyleCalls);
+    expect(vi.mocked(props.setRouteMode).mock.calls.length).toBe(routeModeCalls);
   });
 
   it('does not re-emit unchanged settings when callback identity changes', () => {

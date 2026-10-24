@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation } from '@/app/navigation';
 import {
     AirplaneTakeoff,
@@ -32,9 +32,11 @@ import { ADMIN_NAV_ITEMS, ADMIN_NAV_SECTIONS } from './adminNavConfig';
 import { AccountMenu } from '../navigation/AccountMenu';
 import { useAuth } from '../../hooks/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { AppBrand } from '../navigation/AppBrand';
 import {
     type AdminDateRange,
+    DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY,
     getStoredSidebarCollapseState,
     isDevAdminBypassDisabled,
     persistSidebarCollapseState,
@@ -164,6 +166,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     const { access, isAdmin } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getStoredSidebarCollapseState());
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const mobileSidebarCloseRef = useRef<HTMLButtonElement | null>(null);
+    const focusMobileSidebarClose = useCallback((event: Event) => {
+        event.preventDefault();
+        mobileSidebarCloseRef.current?.focus();
+    }, []);
     const [isSimulatedDebugLoginActive, setIsSimulatedDebugLoginActive] = useState<boolean>(() => isSimulatedLoggedIn());
     const [isDevAdminBypassActive, setIsDevAdminBypassActive] = useState(false);
 
@@ -194,16 +201,6 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     useEffect(() => {
         setIsMobileSidebarOpen(false);
     }, [routeLocation.pathname]);
-
-    useEffect(() => {
-        if (!isMobileSidebarOpen) return;
-        const onEscape = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape') return;
-            setIsMobileSidebarOpen(false);
-        };
-        window.addEventListener('keydown', onEscape);
-        return () => window.removeEventListener('keydown', onEscape);
-    }, [isMobileSidebarOpen]);
 
     useEffect(() => {
         syncAdminRuntimeFlags();
@@ -248,18 +245,17 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
     return (
         <div className="min-h-dvh bg-secondary text-foreground [&_.rounded-full]:select-none">
-            {isMobileSidebarOpen && (
-                <div
-                    className="fixed inset-0 z-50 bg-slate-950/45 lg:hidden"
-                    onClick={() => setIsMobileSidebarOpen(false)}
-                    aria-hidden="true"
-                />
-            )}
-
-            <aside
-                className={`fixed inset-y-0 left-0 z-[60] flex w-72 flex-col border-r border-border bg-card p-4 shadow-2xl transition-transform duration-200 lg:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-                aria-label="Admin navigation"
-            >
+            {/* The mobile navigation drawer is a modal dialog: Radix supplies the
+                focus trap, Escape, the backdrop and focus restore to the menu button. */}
+            <Dialog open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+                <DialogContent
+                    aria-describedby={undefined}
+                    data-testid="admin-mobile-navigation"
+                    overlayClassName="z-50 bg-slate-950/45 backdrop-blur-none lg:hidden"
+                    onOpenAutoFocus={focusMobileSidebarClose}
+                    className="inset-y-0 left-0 top-0 z-[60] h-dvh w-72 max-h-dvh translate-x-0 translate-y-0 rounded-none border-0 border-r border-border p-4 lg:hidden data-[state=open]:animate-in data-[state=open]:slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left duration-200"
+                >
+                <DialogTitle className="sr-only">Admin navigation</DialogTitle>
                 <div className="flex items-center justify-between">
                     <NavLink
                         to="/admin/dashboard"
@@ -270,6 +266,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         <AppBrand wordmarkClassName="text-base font-black tracking-tight text-foreground" />
                     </NavLink>
                     <button
+                        ref={mobileSidebarCloseRef}
                         type="button"
                         onClick={() => setIsMobileSidebarOpen(false)}
                         className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary"
@@ -304,7 +301,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         />
                     </div>
                 )}
-            </aside>
+                </DialogContent>
+            </Dialog>
 
             <div className="flex min-h-dvh w-full">
                 <div className="relative hidden lg:block z-50">

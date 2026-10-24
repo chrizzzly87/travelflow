@@ -89,6 +89,16 @@ const TIER_STYLE: Record<'backpacker' | 'explorer' | 'globetrotter', TierStyle> 
 const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
     value === null ? unlimitedLabel : String(value);
 
+
+interface PricingCtaState {
+    label: string;
+    href: string;
+    disabled: boolean;
+    className: string;
+    analyticsId: Parameters<typeof trackEvent>[0];
+    helperText: string | null;
+}
+
 export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
     const location = useLocation();
@@ -338,7 +348,7 @@ export const PricingPage: React.FC = () => {
                                 },
                             })
                             : null;
-                        const ctaState = (() => {
+                        const ctaState = ((): PricingCtaState => {
                             if (!isPaidTier) {
                                 return {
                                     label: t(`tiers.${tier.publicSlug}.cta`),

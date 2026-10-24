@@ -246,6 +246,34 @@ the user's attention is elsewhere on the page.
 
 ---
 
+## `badge.tsx` — status, tier and role pills
+
+Every status/tier/role pill is a `Badge`. Do not hand-roll
+`<span className="rounded-full border px-2 py-0.5 … bg-emerald-50 …">`. Variants:
+
+| Variant | Use |
+|---|---|
+| `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` | The shadcn originals, unchanged. `outline` is the base for a pill tinted by a domain palette (activity types). |
+| `success` | Active, activated, accepted, succeeded (emerald). |
+| `warning` | Pending, queued, expired, suspended, past due (amber). |
+| `danger` | Failed, deleted, canceled, never accepted (red, same as `Alert variant="danger"`). |
+| `info` | Invited, informational markers (sky). |
+| `accent` | Brand-tinted markers: admin role, active subscription (the `accent-*` tokens). |
+| `neutral` | Free tier, archived, plain role (`border-border bg-secondary`). |
+
+The tones use the same light and dark palette as the `Alert` tones and
+`adminBillingStatusClassName`, so `resolveAdminBillingStatusTone(...)` can be passed straight in
+as the variant. Admin tables use a denser pill; pass the size on the call site:
+
+```tsx
+<Badge variant="success" className="text-[11px] font-semibold">Active</Badge>
+```
+
+A colour with no semantic tone (violet for the premium tier, indigo targets) goes on top of
+`neutral` via `className`; `cn` lets the caller's border/background/text win.
+
+---
+
 ## `number-input.tsx`
 
 Numeric field. The native spinners are suppressed, so pass `steppers` when the value should be
@@ -334,6 +362,20 @@ The rest of the today palette lives beside it — `--tf-today-wash` for the colu
 `--tf-today-text` / `--tf-today-text-strong` for the date itself. Reach for those instead of a
 `red-50` wash: that colour is all but white, and in dark mode it painted a pale slab down the
 middle of the timeline.
+
+---
+
+## Admin charts (`components/admin/charts`)
+
+Not a `components/ui/` primitive, but the one chart foundation for admin pages:
+`AdminBarChart`, `AdminAreaChart`, `AdminDonutChart` and `AdminBarList`, built on `recharts`.
+They take `data` plus `index`/`categories` (or `category`), named `colors` from
+`styles/admin-charts.css`, a `valueFormatter` and a required `ariaLabel` (the figure's
+accessible name and the caption of its hidden data table). `customTooltip` receives
+`AdminChartTooltipProps`. Pair them with `AdminTitle` / `AdminSubtitle` / `AdminText` /
+`AdminMetric` / `AdminProgressBar` from `components/admin/AdminText.tsx`, and render a page-level
+empty sentence instead of a chart when there is no data. Import them only from admin route
+modules so the chart chunk stays out of public, auth and planner bundles.
 
 ---
 

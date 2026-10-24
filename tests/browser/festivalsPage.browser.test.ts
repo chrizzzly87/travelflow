@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../services/analyticsService', () => ({
   trackEvent: (...args: unknown[]) => mocks.trackEvent(...args),
-  getAnalyticsDebugAttributes: (...args: unknown[]) => mocks.getAnalyticsDebugAttributes(...args),
+  getAnalyticsDebugAttributes: (eventName: string) => mocks.getAnalyticsDebugAttributes(eventName),
 }));
 
 // The marketing chrome pulls in the whole app shell; the page body is what matters here.

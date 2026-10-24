@@ -22,7 +22,9 @@ export function Routes({ children }: { children: React.ReactNode }) {
     const selected = collect(children).find(route => route.path !== '*' && matchPath(route.path || '/', pathname)) ?? collect(children).find(route => route.path === '*');
     return <>{selected?.element ?? null}</>;
 }
-export function MemoryRouter({ children, initialEntries = ['/'], initialIndex }: { children?: React.ReactNode; initialEntries?: Array<string | { pathname?: string; search?: string; hash?: string; state?: unknown }>; initialIndex?: number }) {
+export type InitialEntry = string | { pathname?: string; search?: string; hash?: string; state?: unknown };
+
+export function MemoryRouter({ children, initialEntries = ['/'], initialIndex }: { children?: React.ReactNode; initialEntries?: InitialEntry[]; initialIndex?: number }) {
     const [router] = useState(() => {
         const entries = initialEntries.map(entry => typeof entry === 'string' ? entry : `${entry.pathname || '/'}${entry.search || ''}${entry.hash || ''}`);
         const history = createMemoryHistory({ initialEntries: entries, initialIndex });

@@ -273,7 +273,7 @@ export const PublicProfilePage: React.FC = () => {
         [trips]
     );
     const distanceLabel = totalDistanceKm > 0
-        ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
+        ? (formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 }) ?? t('summary.distanceUnknown'))
         : t('summary.distanceUnknown');
 
     const visitedCountries = useMemo(() => collectVisitedCountries(trips), [trips]);

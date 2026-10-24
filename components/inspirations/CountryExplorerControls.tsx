@@ -2,6 +2,8 @@ import React, { useId } from 'react';
 import { ArrowsClockwise, CalendarHeart, Funnel, MagnifyingGlass, NavigationArrow, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
   TRIP_LENGTH_BAND_ORDER,
   TRIP_LENGTH_BANDS,
@@ -37,12 +39,9 @@ interface CountryExplorerControlsProps {
   origin?: CountryExplorerOriginControl;
 }
 
-const chipClass = (isActive: boolean): string => [
-  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
-  isActive
-    ? 'border-accent-500 bg-accent-500 text-white'
-    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30',
-].join(' ');
+// Filter chips are `Button variant="toggle"`: the pressed fill comes from `aria-pressed`, so the
+// selection is announced as well as painted. The pill shape and border are the explorer's own.
+const chipClassName = 'h-auto gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold aria-pressed:border-transparent not-aria-pressed:hover:border-accent-300 not-aria-pressed:hover:bg-card not-aria-pressed:hover:text-accent-700 dark:not-aria-pressed:hover:border-accent-400/30 dark:not-aria-pressed:hover:text-accent-200';
 
 const FacetGroup: React.FC<{
   legend: string;
@@ -60,15 +59,17 @@ const FacetGroup: React.FC<{
         {values.map((value) => {
           const isActive = activeValues.includes(value);
           return (
-            <button
+            <Button
               key={value}
               type="button"
+              variant="toggle"
+              size="sm"
               aria-pressed={isActive}
               onClick={() => onToggle(facet, value)}
-              className={chipClass(isActive)}
+              className={chipClassName}
             >
               {renderLabel(value)}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -227,26 +228,30 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">{t('inspirations.subpages.explorer.monthSubtitle')}</p>
         <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
-          <button
+          <Button
             type="button"
+            variant="toggle"
+            size="sm"
             aria-pressed={state.month === null}
             onClick={() => handleSelectMonth(null)}
-            className={`${chipClass(state.month === null)} shrink-0`}
+            className={chipClassName}
           >
             {t('inspirations.subpages.explorer.anyMonth')}
-          </button>
+          </Button>
           {monthLabels.map((label, index) => {
             const month = index + 1;
             return (
-              <button
+              <Button
                 key={label}
                 type="button"
+                variant="toggle"
+                size="sm"
                 aria-pressed={state.month === month}
                 onClick={() => handleSelectMonth(month)}
-                className={`${chipClass(state.month === month)} shrink-0`}
+                className={chipClassName}
               >
                 {label}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -304,40 +309,47 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
           {t('inspirations.subpages.explorer.resultCount', { count: resultCount, total: totalCount })}
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground" htmlFor={sortId}>
-            {t('inspirations.subpages.explorer.sortLabel')}
-            <select
-              id={sortId}
-              value={state.sort}
-              onChange={(event) => handleSort(event.target.value as CountryExplorerSort)}
-              className="rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs font-bold text-foreground outline-none focus:border-accent-400"
-            >
-              {COUNTRY_EXPLORER_SORTS.map((sort) => (
-                <option
-                  key={sort}
-                  value={sort}
-                  // `distance` is never disabled: choosing it is what asks for the location
-                  // lookup in the first place, and the notice below explains any failure.
-                  disabled={sort === 'month' && state.month === null}
-                >
-                  {t(`inspirations.subpages.explorer.sort.${sort}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {/* A span, not a wrapping <label>: a label around a Radix trigger forwards a second
+              click and the menu opens and closes at once. */}
+          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+            <span id={sortId}>{t('inspirations.subpages.explorer.sortLabel')}</span>
+            <Select value={state.sort} onValueChange={(value) => handleSort(value as CountryExplorerSort)}>
+              <SelectTrigger
+                aria-labelledby={sortId}
+                className="h-8 w-auto gap-1.5 rounded-xl text-xs font-bold"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRY_EXPLORER_SORTS.map((sort) => (
+                  <SelectItem
+                    key={sort}
+                    value={sort}
+                    // `distance` is never disabled: choosing it is what asks for the location
+                    // lookup in the first place, and the notice below explains any failure.
+                    disabled={sort === 'month' && state.month === null}
+                  >
+                    {t(`inspirations.subpages.explorer.sort.${sort}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {hasActiveCountryExplorerState(state) ? (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
+              icon={<ArrowsClockwise size={13} weight="bold" className="size-[13px]" />}
               onClick={() => {
                 trackEvent('inspirations__country_filter--reset');
                 dispatch({ type: 'reset' });
               }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+              className="h-auto rounded-full bg-transparent px-3 py-1.5 text-xs font-bold text-muted-foreground shadow-none has-[>svg]:px-3 hover:border-accent-300 hover:bg-transparent hover:text-accent-700 dark:bg-transparent dark:hover:border-accent-400/30 dark:hover:bg-transparent dark:hover:text-accent-200"
               {...getAnalyticsDebugAttributes('inspirations__country_filter--reset')}
             >
-              <ArrowsClockwise size={13} weight="bold" />
               {t('inspirations.subpages.explorer.resetAll')}
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

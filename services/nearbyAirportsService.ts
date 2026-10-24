@@ -12,14 +12,16 @@ import {
 
 export const NEARBY_AIRPORTS_ENDPOINT = '/api/runtime/nearby-airports';
 
-const hasFiniteCoordinates = (
+const toFiniteCoordinates = (
   latitude: number | null,
   longitude: number | null,
-): boolean => (
+): { lat: number; lng: number } | null => (
   typeof latitude === 'number'
   && typeof longitude === 'number'
   && Number.isFinite(latitude)
   && Number.isFinite(longitude)
+    ? { lat: latitude, lng: longitude }
+    : null
 );
 
 const buildNearbyAirportsUrl = (params: {
@@ -107,13 +109,14 @@ export const fetchNearbyAirportsForRuntimeLocation = async ({
   const runtimeSnapshot = snapshot || await ensureRuntimeLocationLoaded(fetchImpl);
   const { latitude, longitude } = runtimeSnapshot.location;
 
-  if (!hasFiniteCoordinates(latitude, longitude)) {
+  const coordinates = toFiniteCoordinates(latitude, longitude);
+  if (!coordinates) {
     return null;
   }
 
   return fetchNearbyAirports({
-    lat: latitude,
-    lng: longitude,
+    lat: coordinates.lat,
+    lng: coordinates.lng,
     limit,
     minimumServiceTier,
     fetchImpl,

@@ -31,6 +31,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select';
+import { Badge, type BadgeVariant } from '../components/ui/badge';
+import { cn } from '../lib/utils';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
@@ -314,16 +318,16 @@ const formatAccountStatusLabel = (status: string | null | undefined): string => 
     return 'Active';
 };
 
-const getLifecyclePillClassName = (status: TripStatus): string => {
-    if (status === 'archived') return 'border-border bg-secondary text-foreground';
-    if (status === 'expired') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+const getLifecycleBadgeVariant = (status: TripStatus): BadgeVariant => {
+    if (status === 'archived') return 'neutral';
+    if (status === 'expired') return 'warning';
+    return 'success';
 };
 
-const getGenerationPillClassName = (state: TripGenerationState): string => {
-    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
-    if (state === 'running' || state === 'queued') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+const getGenerationBadgeVariant = (state: TripGenerationState): BadgeVariant => {
+    if (state === 'failed') return 'danger';
+    if (state === 'running' || state === 'queued') return 'warning';
+    return 'success';
 };
 
 const getGenerationStateLabel = (state: TripGenerationState): string => {
@@ -333,12 +337,16 @@ const getGenerationStateLabel = (state: TripGenerationState): string => {
     return 'succeeded';
 };
 
-const getGenerationJobPillClassName = (state: TripGenerationJobSummary['state']): string => {
-    if (state === 'dead') return 'border-rose-300 bg-rose-100 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
-    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
-    if (state === 'queued' || state === 'leased') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+const getGenerationJobBadgeVariant = (state: TripGenerationJobSummary['state']): BadgeVariant => {
+    if (state === 'dead' || state === 'failed') return 'danger';
+    if (state === 'queued' || state === 'leased') return 'warning';
+    return 'success';
 };
+
+// A dead job reads one step stronger than a failed one.
+const getGenerationJobBadgeClassName = (state: TripGenerationJobSummary['state']): string => (
+    state === 'dead' ? 'border-red-300 bg-red-100 dark:bg-red-400/20' : ''
+);
 
 const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
     const state = trip.generation_state;
@@ -1238,8 +1246,6 @@ export const AdminTripsPage: React.FC = () => {
 
             if (result.state === 'queued') {
                 setMessage('Trip generation retry queued. Processing in background.');
-            } else if (result.state === 'succeeded') {
-                setMessage('Trip generation retry completed.');
             } else {
                 setMessage('Trip generation retry failed. Diagnostics have been updated.');
             }
@@ -2138,16 +2144,16 @@ export const AdminTripsPage: React.FC = () => {
                                         )}
                                         {isTripColumnVisible('lifecycle') && (
                                             <TableCell className={`px-4 py-3 ${isTripSortedColumn('lifecycle') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${getLifecyclePillClassName(trip.status)}`}>
+                                                <Badge variant={getLifecycleBadgeVariant(trip.status)} className="px-2.5 py-1 font-semibold">
                                                     {trip.status}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                         )}
                                         {isTripColumnVisible('generation') && (
                                             <TableCell className={`px-4 py-3 ${isTripSortedColumn('generation') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${getGenerationPillClassName(generationState)}`}>
+                                                <Badge variant={getGenerationBadgeVariant(generationState)} className="px-2.5 py-1 font-semibold">
                                                     {getGenerationStateLabel(generationState)}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                         )}
                                         {isTripColumnVisible('source') && (
@@ -2357,15 +2363,15 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
                                                 <span className="text-xs font-semibold text-muted-foreground">Lifecycle</span>
-                                                <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getLifecyclePillClassName(selectedTripForDrawer.status)}`}>
+                                                <Badge variant={getLifecycleBadgeVariant(selectedTripForDrawer.status)} className="font-semibold">
                                                     {selectedTripForDrawer.status}
-                                                </span>
+                                                </Badge>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
                                                 <span className="text-xs font-semibold text-muted-foreground">Generation</span>
-                                                <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
+                                                <Badge variant={getGenerationBadgeVariant(selectedTripGenerationState)} className="font-semibold">
                                                     {getGenerationStateLabel(selectedTripGenerationState)}
-                                                </span>
+                                                </Badge>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
                                                 <span className="text-xs font-semibold text-muted-foreground">Source</span>
@@ -2415,7 +2421,7 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                             <label htmlFor="trip-lifecycle-expiration" className="flex flex-col gap-1">
                                                 <span className="text-xs font-semibold text-muted-foreground">Expiration timestamp</span>
-	                                                <input
+	                                                <Input
 	                                                    id="trip-lifecycle-expiration"
 	                                                    type="datetime-local"
 	                                                    aria-label="Expiration timestamp"
@@ -2423,7 +2429,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     onChange={(event) => {
                                                         setDrawerExpirationDraft(event.target.value);
                                                     }}
-                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/5 dark:shadow-none"
+                                                    className="h-9 border-input bg-background py-1 shadow-black/5"
                                                 />
                                             </label>
                                         </div>
@@ -2515,9 +2521,9 @@ export const AdminTripsPage: React.FC = () => {
                                     <section className="space-y-3 rounded-xl border border-border bg-card p-4">
                                         <div className="flex items-center justify-between gap-3">
                                             <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Generation Diagnostics</h3>
-                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
+                                            <Badge variant={getGenerationBadgeVariant(selectedTripGenerationState)} className="px-2.5 py-1 text-[11px] font-semibold">
                                                 {getGenerationStateLabel(selectedTripGenerationState)}
-                                            </span>
+                                            </Badge>
                                         </div>
                                         <dl className="grid gap-2 sm:grid-cols-2">
                                             <div className="rounded-lg border border-border bg-secondary p-3">
@@ -2699,9 +2705,9 @@ export const AdminTripsPage: React.FC = () => {
                                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Queue jobs</p>
                                                 {selectedTripGenerationJobRows.map((job) => (
                                                     <div key={job.id} className="grid gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] sm:grid-cols-[auto,1fr,auto,auto,auto] sm:items-center sm:gap-2">
-                                                        <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 font-semibold ${getGenerationJobPillClassName(job.state)}`}>
+                                                        <Badge variant={getGenerationJobBadgeVariant(job.state)} className={cn('text-[11px] font-semibold', getGenerationJobBadgeClassName(job.state))}>
                                                             {job.state}
-                                                        </span>
+                                                        </Badge>
                                                         <span className="truncate text-muted-foreground">
                                                             {job.lastErrorCode || job.lastErrorMessage || job.attemptId}
                                                         </span>
@@ -2712,25 +2718,20 @@ export const AdminTripsPage: React.FC = () => {
                                                             {formatRelativeTimestamp(job.createdAt, 'n/a')}
                                                         </span>
                                                         {(job.state === 'dead' || job.state === 'failed') ? (
-                                                            <button
+                                                            <Button
                                                                 type="button"
+                                                                variant="outline"
+                                                                size="xs"
                                                                 onClick={(event) => {
                                                                     event.preventDefault();
                                                                     event.stopPropagation();
                                                                     void handleRequeueGenerationJob(job);
                                                                 }}
-                                                                disabled={requeueingGenerationJobId === job.id}
-                                                                className="inline-flex h-6 items-center justify-center rounded-md border border-border bg-card px-2 text-[10px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                                                                loading={requeueingGenerationJobId === job.id}
+                                                                className="bg-card px-2 text-[10px] font-semibold"
                                                             >
-                                                                {requeueingGenerationJobId === job.id ? (
-                                                                    <>
-                                                                        <SpinnerGap size={12} className="mr-1 animate-spin" />
-                                                                        Requeueing…
-                                                                    </>
-                                                                ) : (
-                                                                    'Requeue'
-                                                                )}
-                                                            </button>
+                                                                {requeueingGenerationJobId === job.id ? 'Requeueing…' : 'Requeue'}
+                                                            </Button>
                                                         ) : (
                                                             <span className="hidden sm:block" aria-hidden="true" />
                                                         )}
@@ -2779,11 +2780,11 @@ export const AdminTripsPage: React.FC = () => {
                                                 <div className="max-w-sm">
                                                     <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Retry model</p>
                                                     {selectedDrawerRetryModelOption && (
-                                                        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
+                                                        <Badge variant="accent" className="mb-1.5 gap-1.5 text-[11px] font-semibold">
                                                             <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={12} />
                                                             <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.label}</span>
-                                                            <span className="rounded-full border border-accent-300 bg-card px-1.5 text-[10px] uppercase tracking-wide text-accent-700 dark:text-accent-200 dark:border-accent-400/30">current</span>
-                                                        </div>
+                                                            <Badge variant="accent" className="border-accent-300 bg-card px-1.5 py-0 text-[10px] font-normal uppercase tracking-wide text-accent-700 dark:bg-card">current</Badge>
+                                                        </Badge>
                                                     )}
                                                     <Select
                                                         value={drawerRetryModelId}
@@ -2802,9 +2803,9 @@ export const AdminTripsPage: React.FC = () => {
                                                                                 <AiProviderLogo provider={option.provider} model={option.model} size={14} />
                                                                                 <span className="font-medium text-foreground">{option.label}</span>
                                                                                 {option.id === drawerRetryModelId && (
-                                                                                    <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
+                                                                                    <Badge variant="accent" className="border-accent-300 px-1.5 py-0 text-[10px] font-normal uppercase tracking-wide text-accent-700">
                                                                                         current
-                                                                                    </span>
+                                                                                    </Badge>
                                                                                 )}
                                                                             </span>
                                                                         </SelectItem>

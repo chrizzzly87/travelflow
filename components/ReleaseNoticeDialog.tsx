@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { Link } from '@/app/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -7,7 +8,6 @@ import remarkGfm from 'remark-gfm';
 import { getLatestInAppRelease } from '../services/latestInAppRelease';
 import { getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesFormat';
 import { ReleasePill } from './marketing/ReleasePill';
-import { useFocusTrap } from '../hooks/useFocusTrap';
 import {
     readLocalStorageItem,
     writeLocalStorageItem,
@@ -21,7 +21,6 @@ export interface ReleaseNoticeDialogProps {
 
 export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enabled }) => {
     const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
-    const dialogRef = useRef<HTMLDivElement | null>(null);
     const dismissButtonRef = useRef<HTMLButtonElement | null>(null);
     const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
         if (typeof window === 'undefined') return null;
@@ -49,37 +48,38 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
         }
     }, [latestInAppRelease]);
 
-    const isNoticeOpen = enabled && Boolean(latestInAppRelease) && dismissedReleaseId !== latestInAppRelease.id;
+    const isNoticeOpen = enabled && latestInAppRelease != null && dismissedReleaseId !== latestInAppRelease.id;
 
-    useFocusTrap({
-        isActive: isNoticeOpen,
-        containerRef: dialogRef,
-        initialFocusRef: dismissButtonRef,
-    });
+    const handleOpenChange = useCallback((nextOpen: boolean) => {
+        if (!nextOpen) dismissReleaseNotice();
+    }, [dismissReleaseNotice]);
+
+    const handleOpenAutoFocus = useCallback((event: Event) => {
+        event.preventDefault();
+        dismissButtonRef.current?.focus();
+    }, []);
 
     if (!isNoticeOpen || !latestInAppRelease) {
         return null;
     }
 
     return (
-        <div className="fixed inset-0 z-[1650] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="release-update-title">
-            <button
-                type="button"
-                className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-                aria-label="Close release update"
-                onClick={dismissReleaseNotice}
-            />
-            <div ref={dialogRef} className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-card shadow-2xl dark:border-accent-400/25 dark:shadow-none">
+        <Dialog open onOpenChange={handleOpenChange}>
+            <DialogContent
+                overlayClassName="z-[1650] bg-slate-950/45 backdrop-blur-[2px]"
+                onOpenAutoFocus={handleOpenAutoFocus}
+                className="z-[1651] block w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-auto rounded-3xl border-accent-100 dark:border-accent-400/25"
+            >
                 <div className="rounded-t-3xl border-b border-border bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5 dark:from-accent-400/15 dark:to-accent-400/5">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700 dark:text-accent-200">
                         Latest release · {latestInAppRelease.version}
                     </p>
-                    <h2 id="release-update-title" className="mt-2 text-xl font-black text-foreground">
+                    <DialogTitle className="mt-2 text-xl font-black text-foreground">
                         {latestInAppRelease.title}
-                    </h2>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {new Date(latestInAppRelease.publishedAt).toLocaleDateString()}
-                    </p>
+                    </DialogDescription>
                 </div>
                 <div className="px-6 py-5">
                     {latestInAppRelease.summary && (
@@ -146,7 +146,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                         Dismiss
                     </button>
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 };

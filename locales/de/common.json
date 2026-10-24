@@ -915,5 +915,11 @@
       "iosStepShare": "Auf Teilen tippen",
       "iosStepAdd": "dann „Zum Home-Bildschirm“"
     }
+  },
+  "routeError": {
+    "title": "Diese Seite wurde nicht geladen",
+    "body": "Bei uns ist etwas schiefgelaufen. Versuch es noch einmal – deine Reisen sind sicher.",
+    "retry": "Erneut versuchen",
+    "home": "Zur Startseite"
   }
 }

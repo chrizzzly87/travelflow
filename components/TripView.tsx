@@ -435,7 +435,7 @@ const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarnin
 interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
-    onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
+    onCommitState?: (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
     onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string; changeSetId?: string }) => void;
     /** Set while the Trip Agent previews a proposal in the planner. */
     agentPreviewTrip?: ITrip | null;
@@ -2077,14 +2077,6 @@ const useTripViewRender = ({
                         t('tripView.generation.retry.queuedTitle'),
                     ),
                 );
-            } else if (result.state === 'succeeded') {
-                retryGenerationTabFeedbackSessionRef.current?.complete('success', {
-                    title: result.trip.title,
-                });
-                showToast(t('tripView.generation.retry.completed'), {
-                    tone: 'add',
-                    title: t('tripView.generation.retry.completedTitle'),
-                });
             } else {
                 pendingRetryGenerationStateRef.current = false;
                 retryGenerationTabFeedbackSessionRef.current?.complete('error');
@@ -3417,7 +3409,7 @@ const useTripViewRender = ({
             onSwapSelectedCities={handleReverseSelectedCities}
             routeStatusById={routeStatusById}
             pixelsPerDay={pixelsPerDay}
-            enableExampleSharedTransition={useExampleSharedTransition}
+            enableExampleSharedTransition={Boolean(useExampleSharedTransition)}
             selectionVisibilityKey={paneGeometrySyncKey}
             isDetailsPanelVisible={detailsPanelVisible}
             onNavigatePreviousCity={() => handleNavigateSelectedCity('previous')}
@@ -3624,7 +3616,7 @@ const useTripViewRender = ({
                     isMobile={isMobile}
                     tripTitle={trip.title}
                     tripSummary={tripSummary}
-                    titleViewTransitionName={titleViewTransitionName}
+                    titleViewTransitionName={titleViewTransitionName ?? null}
                     canManageTripMetadata={canManageTripMetadata}
                     onHeaderAuthAction={() => {
                         void handleHeaderAuthAction();
@@ -3651,8 +3643,8 @@ const useTripViewRender = ({
                     adminOverrideEnabled={adminOverrideEnabled}
                     canEnableAdminOverride={canEnableAdminOverride}
                     ownerUsersUrl={ownerUsersUrl}
-                    ownerEmail={adminAccess?.ownerEmail}
-                    ownerId={adminAccess?.ownerId}
+                    ownerEmail={adminAccess?.ownerEmail ?? undefined}
+                    ownerId={adminAccess?.ownerId ?? undefined}
                     isTripLockedByArchive={isTripLockedByArchive}
                     isTripLockedByExpiry={isTripLockedByExpiry}
                     hasLoadingItems={hasLoadingItems}
@@ -3668,7 +3660,7 @@ const useTripViewRender = ({
                     }}
                     tripExpiresAtMs={tripExpiresAtMs}
                     shouldShowExpirationBanner={shouldShowExpirationBanner}
-                    isExampleTrip={trip.isExample}
+                    isExampleTrip={Boolean(trip.isExample)}
                     isPaywallLocked={isPaywallLocked}
                     expirationLabel={expirationLabel}
                     expirationRelativeLabel={expirationRelativeLabel}
@@ -3857,7 +3849,7 @@ const useTripViewRender = ({
                         onRouteMetrics={handleRouteMetrics}
                         onRouteStatus={handleRouteStatus}
                         tripId={trip.id}
-                        mapViewTransitionName={mapViewTransitionName}
+                        mapViewTransitionName={mapViewTransitionName ?? null}
                         sidebarWidth={sidebarWidth}
                         detailsWidth={detailsWidth}
                         timelineHeight={timelineHeight}
@@ -3985,7 +3977,7 @@ const useTripViewRender = ({
                         onStartTitleEdit={handleStartTitleEdit}
                         canManageTripMetadata={canManageTripMetadata}
                         canEdit={canEdit}
-                        isFavorite={trip.isFavorite}
+                        isFavorite={Boolean(trip.isFavorite)}
                         onToggleFavorite={handleToggleFavorite}
                         isExamplePreview={isExamplePreview}
                         tripMeta={tripMeta}

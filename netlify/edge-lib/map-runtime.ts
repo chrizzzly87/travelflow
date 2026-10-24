@@ -12,8 +12,10 @@ import {
 } from '../../shared/mapRuntime.ts';
 
 const readEdgeEnv = (name: string): string => {
-  if (typeof Deno !== 'undefined' && typeof Deno.env?.get === 'function') {
-    return Deno.env.get(name) || '';
+  // Deno is the edge runtime's global; the Node type graph does not declare it.
+  const denoEnv = (globalThis as { Deno?: { env?: { get?: (key: string) => string | undefined } } }).Deno?.env;
+  if (typeof denoEnv?.get === 'function') {
+    return denoEnv.get(name) || '';
   }
   if (typeof process !== 'undefined' && process.env) {
     return process.env[name] || '';

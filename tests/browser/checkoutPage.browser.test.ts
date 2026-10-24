@@ -3,6 +3,13 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { UserProfileRecord } from '../../services/profileService';
+import type { UserAccessContext } from '../../types';
+
+// The auth mock only carries the fields CheckoutPage reads; tests swap them per scenario.
+type AuthSessionMock = { user: { email: string } } | null;
+type AuthAccessMock = Partial<UserAccessContext>;
+type AuthProfileMock = Partial<UserProfileRecord> | null;
 
 const mocks = vi.hoisted(() => ({
   location: {
@@ -16,11 +23,11 @@ const mocks = vi.hoisted(() => ({
       user: {
         email: 'ada@example.com',
       },
-    },
+    } as AuthSessionMock,
     access: {
       isAnonymous: false,
       tierKey: 'tier_free',
-    },
+    } as AuthAccessMock,
     isAuthenticated: true,
     isLoading: false,
     isProfileLoading: false,
@@ -36,7 +43,7 @@ const mocks = vi.hoisted(() => ({
       username: 'ada',
       usernameDisplay: 'ada',
       gender: '',
-    },
+    } as AuthProfileMock,
     refreshAccess: vi.fn().mockResolvedValue(undefined),
     refreshProfile: vi.fn().mockResolvedValue(undefined),
     loginWithPassword: vi.fn().mockResolvedValue({ data: { session: { user: { id: 'user_123' } } }, error: null }),
@@ -414,6 +421,40 @@ describe('pages/CheckoutPage', () => {
     expect(mocks.startPaddleCheckoutSession).not.toHaveBeenCalled();
   });
 
+  it('marks the inline login action busy and disabled while signing in', async () => {
+    const user = userEvent.setup();
+    mocks.auth.session = null;
+    mocks.auth.isAuthenticated = false;
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
+    mocks.auth.loginWithPassword.mockImplementationOnce(() => new Promise(() => {}));
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByRole('textbox', { name: 'labels.email' }), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    const submitButton = screen.getByRole('button', { name: 'actions.submitLogin' });
+    expect(submitButton).not.toHaveAttribute('aria-busy');
+    await user.click(submitButton);
+
+    const busyButton = await screen.findByRole('button', { name: 'actions.submitting' });
+    expect(busyButton).toHaveAttribute('aria-busy', 'true');
+    expect(busyButton).toBeDisabled();
+  });
+
   it('shows a support banner when checkout auth config is missing', async () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
@@ -576,7 +617,7 @@ describe('pages/CheckoutPage', () => {
   });
 
   it('starts the claimed trip after payment and prioritizes trip actions on success', async () => {
-    let checkoutEventCallback: ((event: { name: string }) => void) | null = null;
+    let checkoutEventCallback = null as ((event: { name: string }) => void) | null;
     mocks.location.search = '?tier=tier_mid&source=trip_paywall_strip&claim=claim_123&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123&_ptxn=txn_123';
     mocks.initializePaddleJs.mockImplementation(async ({ eventCallback }: { eventCallback: (event: { name: string }) => void }) => {
       checkoutEventCallback = eventCallback;
@@ -695,7 +736,7 @@ describe('pages/CheckoutPage', () => {
 
   it('syncs voucher apply and removal events from Paddle checkout into the sidebar state', async () => {
     const user = userEvent.setup();
-    let checkoutEventCallback: ((event: { name: string; data?: unknown }) => void) | null = null;
+    let checkoutEventCallback = null as ((event: { name: string; data?: unknown }) => void) | null;
     mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123';
     mocks.lookupPaddleDiscount.mockResolvedValue({
       code: 'VIP50',

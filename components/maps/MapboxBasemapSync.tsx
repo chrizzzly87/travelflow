@@ -100,12 +100,12 @@ const syncMapboxToGoogleCamera = (
   const zoom = googleMap.getZoom?.();
   if (!center || !Number.isFinite(zoom)) return;
 
-  const nextCamera = {
+  const nextCamera: { center: [number, number]; zoom: number; bearing: number; pitch: number } = {
     center: [center.lng(), center.lat()],
     zoom: Number(zoom),
     bearing: 0,
     pitch: 0,
-  } as const;
+  };
   const currentCenter = mapboxMap.getCenter?.();
   const currentZoom = mapboxMap.getZoom?.();
   const canAnimate = options?.animate
@@ -128,6 +128,22 @@ const syncMapboxToGoogleCamera = (
   }
 
   mapboxMap.jumpTo(nextCamera);
+};
+
+type MapboxSetStyleOptions = NonNullable<Parameters<mapboxgl.Map['setStyle']>[1]>;
+
+/**
+ * mapbox-gl's d.ts marks the font family fields of `setStyle` options as
+ * required, but at runtime missing fields fall back to the map's current fonts.
+ * Passing them as `undefined` would reset the ideograph font, so they are left
+ * out and the partial options are handed through.
+ */
+const setMapboxStyle = (
+  mapboxMap: mapboxgl.Map,
+  styleUrl: string,
+  options?: Partial<MapboxSetStyleOptions>,
+): void => {
+  mapboxMap.setStyle(styleUrl, options as MapboxSetStyleOptions | undefined);
 };
 
 const readGoogleCameraTarget = (
@@ -233,7 +249,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   const appliedProjectionRef = useRef<'globe' | 'mercator' | null>(null);
   const mapDockModeRef = useRef<TripMapDockMode>(mapDockMode);
   const mapViewportSizeRef = useRef<{ width: number; height: number } | null>(mapViewportSize);
-  const cancelIntroRef = useRef<(() => void) | null>(null);
+  const cancelIntroRef = useRef<((options?: { syncToGoogle?: boolean }) => void) | null>(null);
   const reportSurfaceReadyRef = useRef<(isReady: boolean) => void>(() => {});
 
   mapStyleRef.current = mapStyle;
@@ -858,7 +874,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     appliedStyleKeyRef.current = styleKey;
     reportSurfaceReadyRef.current(false);
     try {
-      mapboxMap.setStyle(styleUrl, config ? { config } : undefined);
+      setMapboxStyle(mapboxMap, styleUrl, config ? { config } : undefined);
     } catch (error) {
       reportSurfaceReadyRef.current(true);
       console.warn('Failed to switch Mapbox basemap style', error);

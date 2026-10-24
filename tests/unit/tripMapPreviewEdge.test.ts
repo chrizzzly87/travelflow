@@ -216,7 +216,7 @@ describe('trip-map-preview edge function hardening', () => {
     });
 
     it('does not spend a Directions call on a plane leg (regression: flights fell back to straight lines)', async () => {
-      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}', { status: 500 }));
       vi.stubGlobal('fetch', fetchMock);
 
       await upstreamUrlFor('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane');
@@ -227,7 +227,7 @@ describe('trip-map-preview edge function hardening', () => {
     });
 
     it('still routes non-plane legs while curving the plane leg', async () => {
-      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}', { status: 500 }));
       vi.stubGlobal('fetch', fetchMock);
 
       await upstreamUrlFor(
@@ -246,7 +246,7 @@ describe('trip-map-preview edge function hardening', () => {
         VITE_MAP_RUNTIME_PRESET: 'mapbox_all',
       };
       vi.stubGlobal('Deno', { env: { get: (name: string) => edgeEnv[name] } });
-      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}', { status: 500 }));
       vi.stubGlobal('fetch', fetchMock);
 
       const straight = await upstreamUrlFor('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic');

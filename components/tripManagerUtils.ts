@@ -5,11 +5,11 @@ export type CountryCacheStore = Record<string, { countryCode: string; countryNam
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
 
-export const shouldAttemptTripManagerReverseGeocode = (
-  item: Pick<ITimelineItem, 'coordinates'>,
+export const shouldAttemptTripManagerReverseGeocode = <T extends Pick<ITimelineItem, 'coordinates'>>(
+  item: T,
   hasStoredOrParsedCountry: boolean,
   remainingLookups: number
-): boolean => {
+): item is T & { coordinates: NonNullable<ITimelineItem['coordinates']> } => {
   if (hasStoredOrParsedCountry) return false;
   if (remainingLookups <= 0) return false;
   if (!item.coordinates) return false;

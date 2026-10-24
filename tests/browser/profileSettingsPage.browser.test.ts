@@ -4,6 +4,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from '@/tests/helpers/routerHarness';
+import type { UserProfileRecord } from '../../services/profileService';
+import type { UserAccessContext } from '../../types';
 
 class ResizeObserverMock {
   observe() {}
@@ -19,13 +21,14 @@ const mocks = vi.hoisted(() => ({
   auth: {
     isLoading: false,
     isAuthenticated: true,
+    // Only the access fields the settings page reads; scenarios replace them.
     access: {
       tierKey: 'tier_mid',
-    },
+    } as Partial<UserAccessContext>,
     refreshAccess: vi.fn().mockResolvedValue(undefined),
     refreshProfile: vi.fn().mockResolvedValue(undefined),
     isProfileLoading: false,
-    profile: null,
+    profile: null as UserProfileRecord | null,
   },
   updateCurrentUserProfile: vi.fn(),
   checkUsernameAvailability: vi.fn(),
@@ -106,9 +109,10 @@ const renderPage = () => render(
 );
 
 describe('pages/ProfileSettingsPage username governance', () => {
-  const buildProfile = (overrides: Record<string, unknown> = {}) => ({
+  const buildProfile = (overrides: Partial<UserProfileRecord> = {}): UserProfileRecord => ({
     id: 'user-1',
     email: 'traveler@example.com',
+    createdAt: null,
     displayName: 'Traveler One',
     firstName: 'Traveler',
     lastName: 'One',
@@ -591,6 +595,44 @@ describe('pages/ProfileSettingsPage username governance', () => {
 
     await waitFor(() => {
       expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalled();
+      expect(assignMock).toHaveBeenCalledWith('https://vendors.paddle.test/manage');
+    });
+  });
+
+  it('marks the billing management action busy and disabled while the portal link loads', async () => {
+    let resolveUrls: (value: unknown) => void = () => {};
+    mocks.getPaddleSubscriptionManagementUrls.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveUrls = resolve;
+    }));
+    const assignMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, assign: assignMock },
+      writable: true,
+    });
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.billing.title')).toBeInTheDocument();
+    });
+
+    const manageButton = screen.getByRole('button', { name: 'settings.billing.manageCta' });
+    expect(manageButton).not.toHaveAttribute('aria-busy');
+    await user.click(manageButton);
+
+    await waitFor(() => {
+      expect(manageButton).toHaveAttribute('aria-busy', 'true');
+    });
+    expect(manageButton).toBeDisabled();
+
+    resolveUrls({
+      provider: 'paddle',
+      providerSubscriptionId: 'sub_123',
+      cancelUrl: 'https://vendors.paddle.test/cancel',
+      updatePaymentMethodUrl: 'https://vendors.paddle.test/manage',
+    });
+    await waitFor(() => {
       expect(assignMock).toHaveBeenCalledWith('https://vendors.paddle.test/manage');
     });
   });

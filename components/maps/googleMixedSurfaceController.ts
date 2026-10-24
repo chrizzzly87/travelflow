@@ -11,11 +11,15 @@ const MIXED_MODE_GOOGLE_HIDDEN_SELECTORS = [
 const GOOGLE_PLACEHOLDER_SURFACE_COLOR = 'rgb(229, 227, 223)';
 const FULL_BLEED_RATIO = 0.6;
 
-const setElementStyle = (element: HTMLElement | null, styles: Partial<CSSStyleDeclaration>): void => {
+type WritableStyleKey = {
+  [K in keyof CSSStyleDeclaration]: CSSStyleDeclaration[K] extends string ? K : never;
+}[keyof CSSStyleDeclaration];
+
+const setElementStyle = (element: HTMLElement | null, styles: Partial<Pick<CSSStyleDeclaration, WritableStyleKey>>): void => {
   if (!element) return;
   Object.entries(styles).forEach(([key, value]) => {
     if (value === undefined) return;
-    element.style[key as keyof CSSStyleDeclaration] = value;
+    element.style[key as WritableStyleKey] = value;
   });
 };
 

@@ -94,6 +94,25 @@ const isClaimedByAnotherUserQueueError = (error: { message?: string | null } | n
 
 const DEFAULT_CREATE_MODEL = getDefaultCreateTripModel();
 
+// Stored payloads are unvalidated JSON. Keep the optional preferences as
+// stored, but guarantee the destination field each prompt builder reads
+// unconditionally (`countries` for the wizard, `country` for surprise).
+const parseWizardOptions = (options: unknown): WizardGenerateOptions => {
+    if (!isRecord(options)) return { countries: [] };
+    const countries = Array.isArray(options.countries)
+        ? options.countries.filter((entry): entry is string => typeof entry === 'string')
+        : [];
+    return { ...(options as Partial<WizardGenerateOptions>), countries };
+};
+
+const parseSurpriseOptions = (options: unknown, destinationLabel: string): SurpriseGenerateOptions => {
+    if (!isRecord(options)) return { country: destinationLabel };
+    const country = typeof options.country === 'string' && options.country.trim()
+        ? options.country
+        : destinationLabel;
+    return { ...(options as Partial<SurpriseGenerateOptions>), country };
+};
+
 const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedTripGenerationPayload => {
     if (!isRecord(payload)) {
         throw new Error('Queued request payload is invalid.');
@@ -135,7 +154,7 @@ const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedT
             destinationLabel,
             startDate,
             endDate,
-            options: isRecord(payload.options) ? payload.options as WizardGenerateOptions : { countries: [] },
+            options: parseWizardOptions(payload.options),
         };
     }
 
@@ -145,7 +164,7 @@ const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedT
         destinationLabel,
         startDate,
         endDate,
-        options: isRecord(payload.options) ? payload.options as SurpriseGenerateOptions : { country: destinationLabel },
+        options: parseSurpriseOptions(payload.options, destinationLabel),
     };
 };
 
@@ -620,4 +639,8 @@ export const processQueuedTripGenerationAfterAuth = async (
         payload: parsedPayload,
         snapshot: generationSnapshot,
     });
+};
+
+export const __tripGenerationQueueServiceInternals = {
+    parseQueuedPayload,
 };

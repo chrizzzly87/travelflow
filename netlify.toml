@@ -221,6 +221,54 @@ exit 1
   to = "/asset-not-found"
   status = 404
 
+# Retired planner labs and versions move permanently. Answering at the CDN
+# avoids a server-function invocation per hit; the matching route files under
+# src/routes/redirects keep in-app links working and also answer 301.
+[[redirects]]
+  from = "/create-trip/labs/classic-legacy"
+  to = "/create-trip"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/labs/split-workspace"
+  to = "/create-trip"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/labs/journey-architect"
+  to = "/create-trip"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/labs/design-v1"
+  to = "/create-trip"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/labs/design-v2"
+  to = "/create-trip"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/labs/design-v3"
+  to = "/create-trip/wizard"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/v1"
+  to = "/create-trip"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/v2"
+  to = "/create-trip"
+  status = 301
+
+[[redirects]]
+  from = "/create-trip/v3"
+  to = "/create-trip/wizard"
+  status = 301
+
 # TanStack Start's Netlify adapter owns document requests and route 404s.
 # Do not restore the former blanket SPA rewrite: it bypasses the framework server.
 

@@ -76,7 +76,7 @@ let syncSnapshot: SyncRunSnapshot = {
 let managerStarted = false;
 let lastConnectivityState: ConnectivityState = getConnectivitySnapshot().state;
 let syncPromise: Promise<SyncRunSnapshot> | null = null;
-let periodicSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let periodicSyncTimer: number | null = null;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
