@@ -35,3 +35,5 @@ summary: "Framework migration under development and validation on an isolated pr
 - [ ] [Internal] ♿ Share overlay scroll-lock ownership and preserve navigation focus across Safari sign-in handoffs.
 - [ ] [Internal] 📶 Preserve the neutral install-time offline shell rather than caching another route's document as a shared fallback.
 - [ ] [Internal] 🎞️ Preserve current sharing-image/video behavior in the native document head and resolve preview media against its own deployment origin.
+
+- [ ] [Fixed] 🛠️ Fix cold admin route crashes caused by global syntax-highlighter initialization; retain JSON highlighting without global language registration.

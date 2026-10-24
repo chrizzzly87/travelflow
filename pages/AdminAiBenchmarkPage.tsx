@@ -19,11 +19,7 @@ import {
     ToggleRight,
     Funnel,
 } from '@phosphor-icons/react';
-import Prism from 'prismjs';
-if (typeof window !== 'undefined') {
-    (window as any).Prism = (window as any).Prism || Prism;
-}
-import 'prismjs/components/prism-json';
+import { Prism, jsonGrammar } from '../lib/jsonSyntax';
 import {
     AI_MODEL_CATALOG,
     getDefaultCreateTripModel,
@@ -828,7 +824,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     ), [customScenarioJsonDraft, selectedPreset?.scenario, selectedPresetId]);
     const selectedTemplateJsonHtml = useMemo(() => Prism.highlight(
         selectedTemplateJson,
-        Prism.languages.json,
+        jsonGrammar,
         'json',
     ), [selectedTemplateJson]);
 
