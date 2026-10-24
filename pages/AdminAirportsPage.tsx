@@ -21,6 +21,8 @@ import { AdminShell } from '../components/admin/AdminShell';
 import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTableUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { Checkbox } from '../components/ui/checkbox';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { showAppToast } from '../components/ui/appToast';
 import {
@@ -641,23 +643,18 @@ const AirportSourcePill: React.FC<{
 }> = ({ source, databaseAvailable }) => {
     if (source === 'database') {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
+            <Badge variant="success" className="px-2.5 py-1 font-semibold">
                 <Database size={12} />
                 Database-backed
-            </span>
+            </Badge>
         );
     }
 
     return (
-        <span className={cn(
-            'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
-            databaseAvailable
-                ? 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
-                : 'border-border bg-secondary text-foreground',
-        )}>
+        <Badge variant={databaseAvailable ? 'warning' : 'neutral'} className="px-2.5 py-1 font-semibold">
             <WarningCircle size={12} />
             {databaseAvailable ? 'Snapshot fallback' : 'Snapshot only'}
-        </span>
+        </Badge>
     );
 };
 
@@ -1076,7 +1073,7 @@ const AdminAirportTester: React.FC<{
                             <MapPin size={15} />
                             Use runtime location
                         </button>
-                        <button
+                        <Button
                             type="button"
                             onClick={() => {
                                 if (!filters.lookupActive) {
@@ -1085,12 +1082,13 @@ const AdminAirportTester: React.FC<{
                                 manualLookupInFlightRef.current = true;
                                 void handleLookup({ force: true });
                             }}
-                            disabled={lookupLoading}
-                            className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
+                            loading={lookupLoading}
+                            icon={<AirplaneTakeoff />}
+                            size="lg"
+                            className="rounded-lg px-3 font-semibold has-[>svg]:px-3"
                         >
-                            {lookupLoading ? <SpinnerGap size={15} className="animate-spin" /> : <AirplaneTakeoff size={15} />}
                             Lookup nearby airports
-                        </button>
+                        </Button>
                     </div>
 
                     {origin && (
@@ -1131,16 +1129,16 @@ const AdminAirportTester: React.FC<{
                                             <div className="text-sm font-semibold text-foreground">{formatDistance(entry.airDistanceKm)}</div>
                                         </div>
                                         <div className="mt-2 flex flex-wrap gap-2">
-                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
+                                            <Badge variant="outline" className="bg-card py-1 text-[11px] font-semibold">
                                                 {formatServiceTierLabel(entry.airport.commercialServiceTier)}
-                                            </span>
-                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
+                                            </Badge>
+                                            <Badge variant="outline" className="bg-card py-1 text-[11px] font-semibold">
                                                 {formatAirportTypeLabel(entry.airport.airportType)}
-                                            </span>
+                                            </Badge>
                                             {entry.airport.timezone && (
-                                                <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
+                                                <Badge variant="outline" className="bg-card py-1 text-[11px] font-semibold">
                                                     {entry.airport.timezone}
-                                                </span>
+                                                </Badge>
                                             )}
                                         </div>
                                     </div>
@@ -1340,24 +1338,29 @@ const AdminAirportBulkEditor: React.FC<{
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-                <button
+                <Button
                     type="button"
+                    size="lg"
                     onClick={() => void handleApply()}
                     disabled={!canApply}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    loading={isApplying}
+                    icon={<FloppyDisk />}
+                    className="rounded-lg px-3 font-semibold has-[>svg]:px-3"
                 >
-                    {isApplying ? <SpinnerGap size={14} className="animate-spin" /> : <FloppyDisk size={14} />}
                     Apply bulk edit
-                </button>
-                <button
+                </Button>
+                <Button
                     type="button"
+                    variant="outline"
+                    size="lg"
                     onClick={() => void onDeleteSelected()}
-                    disabled={!databaseBacked || selectedCount === 0 || isDeleting || isApplying}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
+                    disabled={!databaseBacked || selectedCount === 0 || isApplying}
+                    loading={isDeleting}
+                    icon={<Trash />}
+                    className="rounded-lg border-rose-300 bg-card px-3 has-[>svg]:px-3 font-semibold text-rose-700 shadow-none hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-400/30 dark:bg-card dark:text-rose-200 dark:hover:bg-rose-400/12"
                 >
-                    {isDeleting ? <SpinnerGap size={14} className="animate-spin" /> : <Trash size={14} />}
                     Delete selected
-                </button>
+                </Button>
                 {!databaseBacked && (
                     <span className="text-xs text-amber-700 dark:text-amber-200">Sync the database catalog first to enable bulk edits.</span>
                 )}
@@ -1480,9 +1483,9 @@ const AdminAirportTicketLab: React.FC<{
                     </p>
                 </div>
                 {ticket && (
-                    <span className="inline-flex rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">
+                    <Badge variant="neutral" className="px-2.5 py-1 font-semibold">
                         {formatCabinClassLabel(ticket.cabinClass)} preview
-                    </span>
+                    </Badge>
                 )}
             </div>
 
@@ -2356,15 +2359,15 @@ export const AdminAirportsPage: React.FC = () => {
                         New airport
                     </button>
                     <AdminReloadButton onClick={() => void loadCatalog()} isLoading={loading} label="Reload catalog" />
-                    <button
+                    <Button
                         type="button"
                         onClick={() => void handleSyncCatalog()}
-                        disabled={syncing}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
+                        loading={syncing}
+                        icon={<ArrowsClockwise />}
+                        className="rounded-lg px-3 font-semibold has-[>svg]:px-3"
                     >
-                        {syncing ? <SpinnerGap size={14} className="animate-spin" /> : <ArrowsClockwise size={14} />}
                         Sync from upstream
-                    </button>
+                    </Button>
                 </div>
             )}
         >
@@ -2390,20 +2393,15 @@ export const AdminAirportsPage: React.FC = () => {
                         </div>
                         {editorPreviewAirport && (
                             <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground">
+                                <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">
                                     {formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}
-                                </span>
-                                <span className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground">
+                                </Badge>
+                                <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">
                                     {formatAirportTypeLabel(editorPreviewAirport.airportType)}
-                                </span>
-                                <span className={cn(
-                                    'inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold',
-                                    editorPreviewAirport.isCommercial
-                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
-                                        : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
-                                )}>
+                                </Badge>
+                                <Badge variant={editorPreviewAirport.isCommercial ? 'success' : 'warning'} className="px-2.5 py-1 font-semibold">
                                     {editorPreviewAirport.isCommercial ? 'Commercial lookup eligible' : 'Excluded from commercial lookup'}
-                                </span>
+                                </Badge>
                             </div>
                         )}
                     </div>
@@ -2654,16 +2652,14 @@ export const AdminAirportsPage: React.FC = () => {
                                                 <div className="text-xs text-muted-foreground">{airport.countryName}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <span className={cn(
-                                                    'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
-                                                    airport.commercialServiceTier === 'major'
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
-                                                        : airport.commercialServiceTier === 'regional'
-                                                            ? 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
-                                                            : 'border-border bg-card text-foreground',
-                                                )}>
+                                                <Badge
+                                                    variant={airport.commercialServiceTier === 'major'
+                                                        ? 'success'
+                                                        : airport.commercialServiceTier === 'regional' ? 'info' : 'outline'}
+                                                    className={cn('py-1 text-[11px] font-semibold', airport.commercialServiceTier !== 'major' && airport.commercialServiceTier !== 'regional' && 'bg-card')}
+                                                >
                                                     {formatServiceTierLabel(airport.commercialServiceTier)}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                             <TableCell>{formatAirportTypeLabel(airport.airportType)}</TableCell>
                                             <TableCell>{airport.timezone || '—'}</TableCell>
@@ -2717,14 +2713,14 @@ export const AdminAirportsPage: React.FC = () => {
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {editorMode === 'create' && (
-                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
+                                    <Badge variant="info" className="px-2.5 py-1 font-semibold">
                                         New row draft
-                                    </span>
+                                    </Badge>
                                 )}
                                 {!databaseBacked && (
-                                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+                                    <Badge variant="warning" className="px-2.5 py-1 font-semibold">
                                         Sync DB first to enable saves
-                                    </span>
+                                    </Badge>
                                 )}
                             </div>
                         </div>
@@ -2899,17 +2895,12 @@ export const AdminAirportsPage: React.FC = () => {
                                     <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-foreground">
                                         <div className="font-semibold text-foreground">Derived commercial status</div>
                                         <div className="mt-2 flex flex-wrap gap-2">
-                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
+                                            <Badge variant="outline" className="bg-card py-1 text-[11px] font-semibold">
                                                 {formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}
-                                            </span>
-                                            <span className={cn(
-                                                'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
-                                                editorPreviewAirport.isCommercial
-                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
-                                                    : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
-                                            )}>
+                                            </Badge>
+                                            <Badge variant={editorPreviewAirport.isCommercial ? 'success' : 'warning'} className="py-1 text-[11px] font-semibold">
                                                 {editorPreviewAirport.isCommercial ? 'Included in nearby-airport results' : 'Excluded from nearby-airport results'}
-                                            </span>
+                                            </Badge>
                                         </div>
                                     </div>
                                 )}
@@ -2929,25 +2920,30 @@ export const AdminAirportsPage: React.FC = () => {
                                         {editorMode === 'create' ? 'Reset draft' : 'Reset changes'}
                                     </button>
                                     {editorMode !== 'create' && (
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="outline"
+                                            size="lg"
                                             onClick={() => void handleDeleteAirport()}
-                                            disabled={!databaseBacked || deleting}
-                                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
+                                            disabled={!databaseBacked}
+                                            loading={deleting}
+                                            icon={<Trash />}
+                                            className="rounded-lg border-rose-300 bg-card px-3 has-[>svg]:px-3 font-semibold text-rose-700 shadow-none hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-400/30 dark:bg-card dark:text-rose-200 dark:hover:bg-rose-400/12"
                                         >
-                                            {deleting ? <SpinnerGap size={16} className="animate-spin" /> : <Trash size={16} />}
                                             Delete airport
-                                        </button>
+                                        </Button>
                                     )}
-                                    <button
+                                    <Button
                                         type="button"
+                                        size="lg"
                                         onClick={() => void handleSaveAirport()}
-                                        disabled={!databaseBacked || saving || deleting}
-                                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
+                                        disabled={!databaseBacked || deleting}
+                                        loading={saving}
+                                        icon={<FloppyDisk />}
+                                        className="rounded-lg px-3 font-semibold has-[>svg]:px-3"
                                     >
-                                        {saving ? <SpinnerGap size={16} className="animate-spin" /> : <FloppyDisk size={16} />}
                                         {editorMode === 'create' ? 'Create airport' : 'Save airport'}
-                                    </button>
+                                    </Button>
                                 </div>
                             </>
                         )}

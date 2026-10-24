@@ -54,6 +54,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
+import { Badge, type BadgeVariant } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import { cn } from '../lib/utils';
 import {
     Table,
     TableBody,
@@ -82,7 +85,6 @@ import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalC
 import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
 import {
-    adminBillingStatusClassName,
     humanizeAdminBillingStatus,
     normalizeAdminBillingStatus,
     resolveAdminBillingStatusTone,
@@ -545,11 +547,22 @@ const getActivationStatusLabel = (status: UserActivationStatus): string => {
     return 'Anonymous';
 };
 
-const activationPillClass = (status: UserActivationStatus): string => {
-    if (status === 'activated') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
-    if (status === 'invited') return 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30';
-    if (status === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
+// Dense table pill on the shared Badge. Violet (premium tier, anonymous users)
+// has no semantic tone, so it rides on `neutral` with its own colours.
+type UserPillTone = BadgeVariant | 'violet';
+const USER_PILL_CLASS = 'text-[11px] font-semibold';
+const VIOLET_PILL_CLASS = 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
+const userPillProps = (tone: UserPillTone): { variant: BadgeVariant; className: string } => (
+    tone === 'violet'
+        ? { variant: 'neutral', className: cn(USER_PILL_CLASS, VIOLET_PILL_CLASS) }
+        : { variant: tone, className: USER_PILL_CLASS }
+);
+
+const activationPillTone = (status: UserActivationStatus): UserPillTone => {
+    if (status === 'activated') return 'success';
+    if (status === 'invited') return 'info';
+    if (status === 'pending') return 'warning';
+    return 'violet';
 };
 
 const normalizeProviderKey = (value: string | null | undefined): string => {
@@ -689,10 +702,10 @@ const getUserTermsStateLabel = (state: UserTermsState): string => {
     return 'Never accepted';
 };
 
-const getUserTermsStatePillClass = (state: UserTermsState): string => {
-    if (state === 'latest') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
-    if (state === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+const getUserTermsStatePillTone = (state: UserTermsState): UserPillTone => {
+    if (state === 'latest') return 'success';
+    if (state === 'pending') return 'warning';
+    return 'danger';
 };
 
 const getUserTermsSortRank = (state: UserTermsState): number => {
@@ -867,16 +880,14 @@ const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<st
     JSON.stringify(toStableComparableJson(left)) === JSON.stringify(toStableComparableJson(right))
 );
 
-const rolePillClass = (role: 'admin' | 'user') => (
-    role === 'admin'
-        ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
-        : 'border-border bg-secondary text-foreground'
+const rolePillTone = (role: 'admin' | 'user'): UserPillTone => (
+    role === 'admin' ? 'accent' : 'neutral'
 );
 
-const statusPillClass = (status: UserAccountStatus) => {
-    if (status === 'active') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
-    if (status === 'disabled') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+const statusPillTone = (status: UserAccountStatus): UserPillTone => {
+    if (status === 'active') return 'success';
+    if (status === 'disabled') return 'warning';
+    return 'danger';
 };
 
 const formatAccountStatusLabel = (status: UserAccountStatus): string => {
@@ -924,18 +935,18 @@ const getUserSubscriptionStatusLabel = (status: UserSubscriptionStatus): string 
     return humanizeAdminBillingStatus(status);
 };
 
-const subscriptionStatusPillClass = (status: UserSubscriptionStatus): string => (
-    adminBillingStatusClassName(resolveAdminBillingStatusTone(status === 'canceled_grace' ? 'grace' : status))
+const subscriptionStatusPillTone = (status: UserSubscriptionStatus): UserPillTone => (
+    resolveAdminBillingStatusTone(status === 'canceled_grace' ? 'grace' : status)
 );
 
 const resolveUserSubscriptionDowngradeAt = (user: AdminUserRecord): string | null => (
     user.grace_ends_at || user.current_period_end || user.cancel_at || null
 );
 
-const tierPillClass = (tier: PlanTierKey) => {
-    if (tier === 'tier_premium') return 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
-    if (tier === 'tier_mid') return 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30';
-    return 'border-border bg-secondary text-foreground';
+const tierPillTone = (tier: PlanTierKey): UserPillTone => {
+    if (tier === 'tier_premium') return 'violet';
+    if (tier === 'tier_mid') return 'info';
+    return 'neutral';
 };
 
 interface CreateInviteDraft {
@@ -3229,26 +3240,26 @@ export const AdminUsersPage: React.FC = () => {
                                                     {getLoginPills(user).map((pill) => {
                                                         const Icon = pill.icon;
                                                         return (
-                                                            <span key={`${user.user_id}-login-pill-${pill.label}`} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}>
+                                                            <Badge key={`${user.user_id}-login-pill-${pill.label}`} variant="neutral" className={cn(USER_PILL_CLASS, pill.className)}>
                                                                 <Icon size={11} />
                                                                 {pill.label}
-                                                            </span>
+                                                            </Badge>
                                                         );
                                                     })}
                                                     {activationStatus === 'pending' && (
-                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+                                                        <Badge variant="warning" className={USER_PILL_CLASS}>
                                                             Needs activation
-                                                        </span>
+                                                        </Badge>
                                                     )}
                                                     {activationStatus === 'invited' && (
-                                                        <span className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
+                                                        <Badge variant="info" className={USER_PILL_CLASS}>
                                                             Invite sent
-                                                        </span>
+                                                        </Badge>
                                                     )}
                                                     {activationStatus === 'anonymous' && (
-                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+                                                        <Badge variant="warning" className={USER_PILL_CLASS}>
                                                             Temp
-                                                        </span>
+                                                        </Badge>
                                                     )}
                                                 </div>
                                             </TableCell>
@@ -3270,31 +3281,31 @@ export const AdminUsersPage: React.FC = () => {
                                         )}
                                         {isUserColumnVisible('activation') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
+                                                <Badge {...userPillProps(activationPillTone(activationStatus))}>
                                                     {getActivationStatusLabel(activationStatus)}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('role') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
+                                                <Badge {...userPillProps(rolePillTone(user.system_role))}>
                                                     {user.system_role === 'admin' ? 'Admin' : 'User'}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('tier') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
+                                                <Badge {...userPillProps(tierPillTone(user.tier_key))}>
                                                     {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('subscription') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="flex min-w-[132px] flex-col gap-1">
-                                                    <span className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(subscriptionStatus)}`}>
+                                                    <Badge {...userPillProps(subscriptionStatusPillTone(subscriptionStatus))}>
                                                         {getUserSubscriptionStatusLabel(subscriptionStatus)}
-                                                    </span>
+                                                    </Badge>
                                                     {user.provider_subscription_id ? (
                                                         <span className="truncate text-[11px] font-mono text-muted-foreground" title={user.provider_subscription_id}>
                                                             {user.provider_subscription_id}
@@ -3305,16 +3316,16 @@ export const AdminUsersPage: React.FC = () => {
                                         )}
                                         {isUserColumnVisible('status') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
+                                                <Badge {...userPillProps(statusPillTone(accountStatus))}>
                                                     {formatAccountStatusLabel(accountStatus)}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('toc') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getUserTermsStatePillClass(termsState)}`}>
+                                                <Badge {...userPillProps(getUserTermsStatePillTone(termsState))}>
                                                     {getUserTermsStateLabel(termsState)}
-                                                </span>
+                                                </Badge>
                                                 <div className="mt-1 text-[11px] text-muted-foreground">
                                                     {user.terms_accepted_version || 'No accepted version'}
                                                 </div>
@@ -3459,30 +3470,30 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-	                                    <input
+	                                    <Input
 	                                        aria-label="Email"
 	                                        value={inviteDraft.email}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9 rounded-lg"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                    <input
+	                                    <Input
 	                                        aria-label="First name"
 	                                        value={inviteDraft.firstName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9 rounded-lg"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                    <input
+	                                    <Input
 	                                        aria-label="Last name"
 	                                        value={inviteDraft.lastName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9 rounded-lg"
                                     />
                                 </label>
                                 <div className="space-y-1 sm:col-span-2">
@@ -3518,41 +3529,41 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-	                                    <input
+	                                    <Input
 	                                        aria-label="Email"
 	                                        value={directDraft.email}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9 rounded-lg"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                    <input
+	                                    <Input
 	                                        aria-label="First name"
 	                                        value={directDraft.firstName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9 rounded-lg"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                    <input
+	                                    <Input
 	                                        aria-label="Last name"
 	                                        value={directDraft.lastName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9 rounded-lg"
                                     />
                                 </label>
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Initial password</span>
-	                                    <input
+	                                    <Input
 	                                        aria-label="Initial password"
 	                                        value={directDraft.password}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, password: event.target.value }))}
                                         type="password"
                                         placeholder="Minimum 8 characters"
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9 rounded-lg"
                                     />
                                 </label>
                                 <div className="space-y-1 sm:col-span-2">
@@ -3680,29 +3691,29 @@ export const AdminUsersPage: React.FC = () => {
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                        <input
+	                                        <Input
 	                                            aria-label="First name"
 	                                            value={profileDraft.firstName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9 rounded-lg"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                        <input
+	                                        <Input
 	                                            aria-label="Last name"
 	                                            value={profileDraft.lastName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9 rounded-lg"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Username</span>
-	                                        <input
+	                                        <Input
 	                                            aria-label="Username"
 	                                            value={profileDraft.username}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, username: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9 rounded-lg"
                                         />
                                     </label>
                                     <div className="space-y-1 rounded-lg border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground sm:col-span-2">
@@ -3762,20 +3773,20 @@ export const AdminUsersPage: React.FC = () => {
                                     </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">City</span>
-	                                        <input
+	                                        <Input
 	                                            aria-label="City"
 	                                            value={profileDraft.city}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, city: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9 rounded-lg"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preferred language</span>
-	                                        <input
+	                                        <Input
 	                                            aria-label="Preferred language"
 	                                            value={profileDraft.preferredLanguage}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, preferredLanguage: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9 rounded-lg"
                                         />
                                     </label>
                                     <div className="space-y-1">
@@ -3847,12 +3858,12 @@ export const AdminUsersPage: React.FC = () => {
                                     <div className="rounded-lg border border-border bg-secondary p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subscription status</span>
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(resolveUserSubscriptionStatus(selectedUser))}`}>
+                                            <Badge {...userPillProps(subscriptionStatusPillTone(resolveUserSubscriptionStatus(selectedUser)))}>
                                                 {getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(selectedUser))}
-                                            </span>
-                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(selectedUser.tier_key)}`}>
+                                            </Badge>
+                                            <Badge {...userPillProps(tierPillTone(selectedUser.tier_key))}>
                                                 {PLAN_CATALOG[selectedUser.tier_key].publicName}
-                                            </span>
+                                            </Badge>
                                         </div>
                                         <div className="mt-2 text-xs text-muted-foreground">
                                             Provider: {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
@@ -3991,7 +4002,7 @@ export const AdminUsersPage: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-	                                                        <input
+	                                                        <Input
 	                                                            key={`${trip.trip_id}-${trip.updated_at}`}
 	                                                            type="datetime-local"
 	                                                            aria-label={`Trip expiration for ${trip.title || trip.trip_id}`}
@@ -3999,7 +4010,7 @@ export const AdminUsersPage: React.FC = () => {
                                                             onBlur={(event) => {
                                                                 void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
                                                             }}
-                                                            className="h-8 rounded border border-border px-2"
+                                                            className="h-8 w-auto rounded py-1 ps-2 pe-2 text-xs"
                                                         />
                                                         <Select
                                                             value={trip.status}
@@ -4088,20 +4099,21 @@ export const AdminUsersPage: React.FC = () => {
                                                             <div className="text-[11px] font-semibold text-muted-foreground">
                                                                 {formatTimestamp(log.created_at)}
                                                             </div>
-                                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
+                                                            <Badge variant="neutral" className={cn(USER_PILL_CLASS, actionPresentation.className)}>
                                                                 {actionPresentation.label}
-                                                            </span>
+                                                            </Badge>
                                                         </div>
                                                         {secondaryFacets.length > 0 && (
                                                             <div className="mt-1 flex flex-wrap items-center gap-1">
                                                                 {secondaryFacets.map((facet, facetIndex) => (
-                                                                    <span
+                                                                    <Badge
                                                                         key={`${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
-                                                                        className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                                        variant="neutral"
+                                                                        className={cn('text-[10px] font-semibold', facet.className)}
                                                                         title={facet.code}
                                                                     >
                                                                         {facet.label}
-                                                                    </span>
+                                                                    </Badge>
                                                                 ))}
                                                             </div>
                                                         )}
