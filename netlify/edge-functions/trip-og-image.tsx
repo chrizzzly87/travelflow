@@ -11,6 +11,7 @@ import {
   getMapboxAccessTokenFromEnv,
   getMapsApiKeyFromEnv,
   isMapColorMode,
+  readTripMapColorMode,
   isOgMapStyle,
   isOgRouteMode,
   type MapColorMode,
@@ -500,7 +501,7 @@ export default async (request: Request): Promise<Response> => {
           mapboxAccessToken,
           mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
           routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
-          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip.trip),
           mapRuntimeSelection: mapRuntime.effectiveSelection,
           showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
           showCities: showCitiesOverride ??
@@ -525,7 +526,7 @@ export default async (request: Request): Promise<Response> => {
           mapboxAccessToken,
           mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
           routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
-          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip.trip),
           mapRuntimeSelection: mapRuntime.effectiveSelection,
           showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
           showCities: showCitiesOverride ??

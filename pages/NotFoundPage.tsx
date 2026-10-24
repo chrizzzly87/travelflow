@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { DEFAULT_LOCALE } from '../config/locales';

@@ -1,6 +1,6 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from '@/app/navigation';
 import {
     AirplaneTakeoff,
     ArrowsClockwise,
@@ -557,7 +557,7 @@ const AdminAirportTester: React.FC<{
         const snapshot = await ensureRuntimeLocationLoaded();
         const latitude = snapshot.location.latitude;
         const longitude = snapshot.location.longitude;
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        if (typeof latitude !== 'number' || typeof longitude !== 'number' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
             setLookupError('Runtime location is unavailable for this session.');
             return;
         }
@@ -1261,7 +1261,7 @@ export const AdminAirportsPage: React.FC = () => {
             const snapshot = await ensureRuntimeLocationLoaded();
             const latitude = snapshot.location.latitude;
             const longitude = snapshot.location.longitude;
-            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+            if (typeof latitude !== 'number' || typeof longitude !== 'number' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
             const runtimeDefaultFilters: AdminAirportTesterFilters = {
                 cityQuery: formatRuntimeLocationTesterLabel(snapshot.location),

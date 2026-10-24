@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/app/navigation';
 import { House, Moon, Sun } from '@phosphor-icons/react';
 
 import {

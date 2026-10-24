@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,7 @@ import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindow } from './PlaneWindow/PlaneWindow';
 import { buildPath } from '../../config/routes';
-import { warmRouteAssets } from '../../services/navigationPrefetch';
+import { useAuth } from '../../hooks/useAuth';
 
 const heroTitleGradient: GradientStop[] = [
     { color: '#0f766e', position: 0 },
@@ -101,6 +101,7 @@ const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => 
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
+    const { isAuthenticated } = useAuth();
     const [showPlaneWindow, setShowPlaneWindow] = useState(true);
 
     // Homepage only, and re-evaluated on every route change.
@@ -143,54 +144,55 @@ export const HeroSection: React.FC = () => {
     const heroCtaDebugAttributes = (ctaName: string) =>
         getAnalyticsDebugAttributes(`home__hero_cta--${ctaName}`);
 
-    const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildPath('createTrip'), 'manual');
-    };
 
     return (
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
             <div className="relative flex items-center gap-8 lg:gap-12">
                 <div className="max-w-3xl flex-1">
-                    <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
+                    <div>
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             <Sparkle size={14} weight="duotone" />
                             {t('hero.badge')}
                         </span>
                     </div>
 
-                    <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
+                    <div>
                         <h1 className="mt-6 text-balance text-5xl font-semibold text-foreground dark:text-foreground md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                             {t('hero.titleBefore')} {' '}
                             <HeroTitleHighlight>{t('hero.titleHighlight')}</HeroTitleHighlight>
                         </h1>
                     </div>
 
-                    <div className="animate-hero-stagger" style={{ '--stagger': '160ms' } as React.CSSProperties}>
+                    <div>
                         <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground dark:text-muted-foreground md:text-xl">
                             {t('hero.description')}
                         </p>
                     </div>
 
-                    <div className="mt-10 flex flex-wrap items-center gap-4 animate-hero-stagger" style={{ '--stagger': '240ms' } as React.CSSProperties}>
+                    <div className="mt-10 flex flex-wrap items-center gap-4">
                         <Link
                             to={buildPath('createTrip')}
                             onClick={() => handleCtaClick('start_planning')}
-                            onMouseEnter={prewarmCreateTripRoute}
-                            onFocus={prewarmCreateTripRoute}
-                            onTouchStart={prewarmCreateTripRoute}
+
+
+
                             className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300 dark:hover:shadow-none"
                             {...heroCtaDebugAttributes('start_planning')}
                         >
                             {t('common:buttons.startPlanning')}
                         </Link>
-                        <a
+                        {isAuthenticated ? <Link to="/profile"
+                            onClick={() => handleCtaClick('my_trips')}
+                            className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:shadow-sm active:scale-[0.96]"
+                            {...heroCtaDebugAttributes('my_trips')}
+                        >{t('common:nav.myTrips')}</Link> : <a
                             href="#examples"
                             onClick={() => handleCtaClick('see_examples')}
                             className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:text-foreground hover:shadow-sm active:scale-[0.96] dark:border-border dark:bg-card dark:text-foreground dark:hover:border-border dark:hover:text-foreground dark:shadow-none"
                             {...heroCtaDebugAttributes('see_examples')}
                         >
                             {t('common:buttons.seeExampleTrips')}
-                        </a>
+                        </a>}
                     </div>
 
                     <div className="mt-8 flex flex-wrap gap-2.5 animate-hero-stagger" style={{ '--stagger': '360ms' } as React.CSSProperties}>

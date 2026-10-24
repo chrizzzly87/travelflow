@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { ArrowRight, Info, X } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';

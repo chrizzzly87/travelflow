@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowsClockwise, UserCircle } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 
 import { AdminDetailSheet } from './AdminDetailSheet';
 import { AdminSectionHeader } from './AdminSectionHeader';

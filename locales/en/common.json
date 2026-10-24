@@ -1,5 +1,8 @@
 {
   "nav": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "account": "Account",
     "features": "Features",
     "inspirations": "Inspirations",
     "updates": "News & Updates",
@@ -912,5 +915,11 @@
       "iosStepShare": "Tap Share",
       "iosStepAdd": "then \"Add to Home Screen\""
     }
+  },
+  "routeError": {
+    "title": "This page didn't load",
+    "body": "Something went wrong on our side. Try again — your trips are safe.",
+    "retry": "Try again",
+    "home": "Go to homepage"
   }
 }

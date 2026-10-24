@@ -1,6 +1,7 @@
 import { TripOgPreviewPanel } from '../components/admin/TripOgPreviewPanel';
 import { isTripVideoId } from '../shared/tripOgVideo';
 import React, { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from '@/app/navigation';
 import {
     ArrowSquareOut,
     ClipboardText,
@@ -59,16 +60,6 @@ export const resolveOgToolsTab = (search: string): OgToolsTab => {
     return params.has('trip') ? 'video' : 'inspect';
 };
 
-/** Keeps the address bar in step with the tab and trip so the view can be shared. */
-const replaceSearchParams = (patch: Record<string, string | null>): void => {
-    const url = new URL(window.location.href);
-    Object.entries(patch).forEach(([key, value]) => {
-        if (value === null) url.searchParams.delete(key);
-        else url.searchParams.set(key, value);
-    });
-    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-};
-
 const fieldLabelClassName = 'text-xs font-medium text-muted-foreground';
 
 const CommandBlock: React.FC<{
@@ -120,8 +111,20 @@ const formatKindLabel = (value: OgInspectionResult['imageKind']): string => {
  * own tabs.
  */
 export const AdminOgToolsPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<OgToolsTab>(() => resolveOgToolsTab(window.location.search));
-    const [videoTripInput, setVideoTripInput] = useState(() => new URLSearchParams(window.location.search).get('trip') || SAMPLE_TRIP_ID);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<OgToolsTab>(() => resolveOgToolsTab(searchParams.toString()));
+    const [videoTripInput, setVideoTripInput] = useState(() => searchParams.get('trip') || SAMPLE_TRIP_ID);
+    // Keeps the address bar in step with the tab and trip so the view can be shared.
+    const replaceSearchParams = (patch: Record<string, string | null>): void => {
+        setSearchParams((previous) => {
+            const next = new URLSearchParams(previous);
+            Object.entries(patch).forEach(([key, value]) => {
+                if (value === null) next.delete(key);
+                else next.set(key, value);
+            });
+            return next;
+        }, { replace: true });
+    };
     const [videoTripId, setVideoTripId] = useState(videoTripInput);
     const [playgroundMode, setPlaygroundMode] = useState<'trip' | 'site'>('trip');
     const [playgroundLoadIssue, setPlaygroundLoadIssue] = useState<string | null>(null);

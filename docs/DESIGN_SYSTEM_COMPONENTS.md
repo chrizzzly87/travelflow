@@ -248,6 +248,34 @@ the user's attention is elsewhere on the page.
 
 ---
 
+## `badge.tsx` — status, tier and role pills
+
+Every status/tier/role pill is a `Badge`. Do not hand-roll
+`<span className="rounded-full border px-2 py-0.5 … bg-emerald-50 …">`. Variants:
+
+| Variant | Use |
+|---|---|
+| `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` | The shadcn originals, unchanged. `outline` is the base for a pill tinted by a domain palette (activity types). |
+| `success` | Active, activated, accepted, succeeded (emerald). |
+| `warning` | Pending, queued, expired, suspended, past due (amber). |
+| `danger` | Failed, deleted, canceled, never accepted (red, same as `Alert variant="danger"`). |
+| `info` | Invited, informational markers (sky). |
+| `accent` | Brand-tinted markers: admin role, active subscription (the `accent-*` tokens). |
+| `neutral` | Free tier, archived, plain role (`border-border bg-secondary`). |
+
+The tones use the same light and dark palette as the `Alert` tones and
+`adminBillingStatusClassName`, so `resolveAdminBillingStatusTone(...)` can be passed straight in
+as the variant. Admin tables use a denser pill; pass the size on the call site:
+
+```tsx
+<Badge variant="success" className="text-[11px] font-semibold">Active</Badge>
+```
+
+A colour with no semantic tone (violet for the premium tier, indigo targets) goes on top of
+`neutral` via `className`; `cn` lets the caller's border/background/text win.
+
+---
+
 ## `number-input.tsx`
 
 Numeric field. The native spinners are suppressed, so pass `steppers` when the value should be
@@ -339,20 +367,17 @@ middle of the timeline.
 
 ---
 
-## `chart.tsx` — shadcn charts on Recharts
+## Admin charts (`components/admin/charts`)
 
-The chart primitives for every data view. `ChartContainer` takes a `ChartConfig`
-(`{ seriesKey: { label, color } }`) and exposes each colour as `--color-<key>` on the
-container, so marks use `fill={chartColor(key)}` and follow the theme. Series colours come
-from the `--chart-1` … `--chart-5` tokens in `index.css` (brand indigo, emerald, amber,
-violet, rose — the same order in both themes). `ChartTooltipContent` and `ChartLegendContent`
-render the themed tooltip and legend.
-
-- **Recharts finds axes, grids and bars among its direct children.** Never wrap `XAxis`,
-  `YAxis` or `Bar` in a fragment or a helper component: the chart renders with no axes and no
-  error. Pick between two axes with two conditionals instead.
-- Tremor was removed; do not add `@tremor/react` back. Admin screens use `AdminBarChart`
-  (below) unless they need a different mark.
+Not a `components/ui/` primitive, but the one chart foundation for admin pages:
+`AdminBarChart`, `AdminAreaChart`, `AdminDonutChart` and `AdminBarList`, built on `recharts`.
+They take `data` plus `index`/`categories` (or `category`), named `colors` from
+`styles/admin-charts.css`, a `valueFormatter` and a required `ariaLabel` (the figure's
+accessible name and the caption of its hidden data table). `customTooltip` receives
+`AdminChartTooltipProps`. Pair them with `AdminTitle` / `AdminSubtitle` / `AdminText` /
+`AdminMetric` / `AdminProgressBar` from `components/admin/AdminText.tsx`, and render a page-level
+empty sentence instead of a chart when there is no data. Import them only from admin route
+modules so the chart chunk stays out of public, auth and planner bundles.
 
 ---
 
@@ -381,9 +406,9 @@ add their own outer padding. Nav entries, sections and command-palette keywords 
 | `AdminStatCard` | A KPI tile: `label`, large tabular `value`, optional `icon`, one-line `hint` with a `hintTone`, and `children` for a progress bar or breakdown. Lay them out in `grid gap-4 sm:grid-cols-2 xl:grid-cols-4`. |
 | `AdminEmptyState` | "Nothing here" for a table, list or chart, with one sentence naming the next action. |
 | `AdminErrorAlert` | A failed load or save above the surface it affects (an authored sentence, never a raw exception). |
-| `AdminStatusBadge` | Status pills in tables and headers. Tones: `neutral`, `info`, `success`, `warning`, `danger`, `accent`; the leading dot repeats the tone so state never rests on colour alone. |
-| `AdminBarChart` | Bar or stacked bar chart (`index`, `categories`, `stacked`, `layout="vertical"`, `colors`, `valueFormatter`). Set the height through `className` (default `h-64`). |
-| `AdminBarList` | Ranked rows with label, tabular value and a thin share track (`scale="max"` or `"total"`, `sortOrder`, one `color` or the palette with swatches). Use it for breakdowns and leaderboards instead of a chart. |
+| `AdminStatusBadge` | Status pills in tables and headers: `Badge` with its tone variants (`neutral`, `info`, `success`, `warning`, `danger`, `accent`) plus a leading dot that repeats the tone, so state never rests on colour alone. Use `Badge` directly for pills that are not a status. |
+| Charts | `AdminBarChart`, `AdminAreaChart`, `AdminDonutChart` from `components/admin/charts` (see "Admin charts" above). Pair them with `AdminSectionHeader` inside an `AdminSurfaceCard`. |
+| `AdminBarList` | `components/admin/charts/AdminBarList.tsx`. Ranked rows with label, tabular value and a thin track (`scale="max"` or `"total"`, `sortOrder`, one `color` or the palette with swatches, `href`/`onValueChange` rows). Breakdowns and leaderboards. |
 | `AdminDetailSheet` | The inspector for one record (user, trip, audit target): right-hand sheet with a fixed header (`title`, `subtitle`, `meta` badges, `headerActions`), a scrolling body and a pinned `footer` for the record's actions, destructive last. Sizes `md` (560px) and `lg` (720px). Every admin detail view uses it so they open, close and lay out the same way. |
 | `AdminSelectionBar` | Bulk actions for a table. Renders **only** while `count > 0`, floating at the bottom of the viewport so the actions stay reachable on a long table. Pass the actions as children, destructive last. Never show a permanent strip of disabled buttons reading "0 selected". |
 | `AdminPagination` | "Showing 51–100 of 240 trips" with previous/next icon buttons and "Page 2 of 5"; hides the controls when there is one page. |

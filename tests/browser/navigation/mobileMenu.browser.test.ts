@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   isAuthenticated: false,
@@ -55,6 +56,9 @@ vi.mock('react-i18next', async (importOriginal) => {
         if (key === 'footer.terms') return 'Terms';
         if (key === 'footer.cookies') return 'Cookies';
         if (key === 'nav.login') return 'Login';
+        if (key === 'nav.account') return 'Account';
+        if (key === 'nav.profile') return 'Profile';
+        if (key === 'nav.settings') return 'Settings';
         return key;
       },
       i18n: {
@@ -78,8 +82,19 @@ describe('components/navigation/MobileMenu legal links', () => {
     mocks.profile = null;
   });
 
-  it('shows legal links in the mobile menu for anonymous users', () => {
-    render(
+  it('keeps the permanent account entry and opens Login directly during auth bootstrap', async () => {
+    mocks.isLoading = true;
+    await render(React.createElement(MemoryRouter, { initialEntries: ['/trip/example'] },
+      React.createElement(MobileMenu, { isOpen: true, onClose: vi.fn() })));
+    const account = screen.getByRole('button', { name: 'Account' });
+    await userEvent.click(account);
+    expect(mocks.openLoginModal).toHaveBeenCalledWith({ source: 'navigation_mobile', nextPath: '/trip/example', reloadOnSuccess: false });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'My trips' })).toBeNull();
+  });
+
+  it('shows legal links in the mobile menu for anonymous users', async () => {
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/trip/example'] },
@@ -96,12 +111,12 @@ describe('components/navigation/MobileMenu legal links', () => {
     expect(screen.getByRole('link', { name: 'Cookies' })).toHaveAttribute('href', '/cookies');
   });
 
-  it('shows only the admin dashboard shortcut on mobile for admins', () => {
+  it('keeps the admin workspace inside the permanent mobile account menu', async () => {
     mocks.isAuthenticated = true;
     mocks.isAdmin = true;
     mocks.profile = { username: 'owner' };
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/profile'] },
@@ -112,7 +127,8 @@ describe('components/navigation/MobileMenu legal links', () => {
       )
     );
 
-    expect(screen.getByRole('link', { name: 'Admin dashboard' })).toHaveAttribute('href', '/admin');
+    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(await screen.findByRole('menuitem', { name: 'Admin workspace' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Users' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Trips' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'AI Telemetry' })).toBeNull();
@@ -122,7 +138,7 @@ describe('components/navigation/MobileMenu legal links', () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/trip/example'] },
@@ -141,12 +157,12 @@ describe('components/navigation/MobileMenu legal links', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it('hides stamps and public-profile shortcuts from the authenticated mobile account section', () => {
+  it('hides stamps and public-profile shortcuts from the authenticated mobile account section', async () => {
     mocks.isAuthenticated = true;
     mocks.isAdmin = false;
     mocks.profile = { username: 'owner' };
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/profile'] },
@@ -157,10 +173,23 @@ describe('components/navigation/MobileMenu legal links', () => {
       )
     );
 
-    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
-    expect(screen.getByRole('link', { name: 'Recent trips' })).toHaveAttribute('href', '/profile?tab=recent');
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/profile/settings');
+    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(await screen.findByRole('menuitem', { name: 'Profile' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'View all trips' })).toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Stamps' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'View public profile' })).toBeNull();
   });
+
+  it('closes mobile navigation before opening login with its original source and return path', async () => {
+    const onClose = vi.fn();
+    await render(React.createElement(MemoryRouter, { initialEntries: ['/trip/example?view=map#day-2'] },
+      React.createElement(MobileMenu, { isOpen: true, onClose })));
+    await userEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(mocks.openLoginModal).toHaveBeenCalledWith({
+      source: 'navigation_mobile', nextPath: '/trip/example?view=map#day-2', reloadOnSuccess: false,
+    });
+  });
+
 });

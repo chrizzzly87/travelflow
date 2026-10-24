@@ -50,6 +50,9 @@ jobs:
       - name: Validate toast usage conventions
         run: pnpm toasts:validate
 
+      - name: Type-check the whole project
+        run: pnpm typecheck
+
       - name: Run core regression tests
         run: pnpm test:core
 
@@ -64,8 +67,8 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
 
       # The offline suite needs a real production build, which the step above
-      # has just produced in dist/ — including dist/sw.js, which only exists
-      # after prerendering. Running it here costs one browser download rather
+      # has just produced in dist/client/ — including dist/client/sw.js, which only exists
+      # after the Start build. Running it here costs one browser download rather
       # than a second full build.
       #
       # It earns its place: the service worker's failure modes are invisible to

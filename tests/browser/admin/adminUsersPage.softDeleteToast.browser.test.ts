@@ -3,7 +3,9 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
+import type { ConfirmDialogOptions, PromptDialogOptions } from '../../../components/AppDialogProvider';
+import type { showAppToast } from '../../../components/ui/appToast';
 
 const mocks = vi.hoisted(() => ({
   adminListUsers: vi.fn(),
@@ -15,9 +17,9 @@ const mocks = vi.hoisted(() => ({
   adminResetUserTermsAcceptance: vi.fn(),
   adminHardDeleteUser: vi.fn(),
   adminUpdateTrip: vi.fn(),
-  confirmDialog: vi.fn(async () => true),
-  promptDialog: vi.fn(async () => null),
-  showAppToast: vi.fn(() => 'toast-id'),
+  confirmDialog: vi.fn(async (_options: ConfirmDialogOptions): Promise<boolean> => true),
+  promptDialog: vi.fn(async (_options: PromptDialogOptions): Promise<string | null> => null),
+  showAppToast: vi.fn<typeof showAppToast>(() => 'toast-id'),
 }));
 
 vi.mock('../../../components/admin/AdminShell', () => ({

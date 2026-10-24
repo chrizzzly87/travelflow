@@ -1,4 +1,6 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
+import { useHydrated } from '../../hooks/useHydrated';
+const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 import {
   readDocumentTimeMs,
@@ -201,13 +203,14 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   // Read before the effect registers this mount: on the first shell of an
   // episode the epoch is 0, on the remounts that follow it is however long the
   // placeholder has already been on screen. See services/appBootstrapShellEpoch.
-  const epochMs = Math.round(readShellEpochMs());
+  const hydrated = useHydrated();
+  const epochMs = hydrated ? Math.round(readShellEpochMs()) : 0;
   // The sweep is a loop, so anchoring it to document time keeps every shell —
   // including the static one in index.html — in the same phase. Only the
   // entrance fade needs the per-episode clock.
-  const documentTimeMs = Math.round(readDocumentTimeMs());
+  const documentTimeMs = hydrated ? Math.round(readDocumentTimeMs()) : 0;
 
-  useLayoutEffect(() => {
+  useBrowserLayoutEffect(() => {
     registerShellMounted();
     return registerShellUnmounted;
   }, []);

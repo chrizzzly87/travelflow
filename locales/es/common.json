@@ -1,5 +1,8 @@
 {
   "nav": {
+    "profile": "Perfil",
+    "settings": "Ajustes",
+    "account": "Cuenta",
     "features": "Funciones",
     "inspirations": "Inspiración",
     "updates": "Novedades",
@@ -920,5 +923,11 @@
       "iosStepShare": "Toca Compartir",
       "iosStepAdd": "y luego «Añadir a inicio»"
     }
+  },
+  "routeError": {
+    "title": "Esta página no se cargó",
+    "body": "Algo salió mal por nuestra parte. Inténtalo de nuevo: tus viajes están a salvo.",
+    "retry": "Intentar de nuevo",
+    "home": "Ir al inicio"
   }
 }

@@ -7,6 +7,14 @@ export const TRIP_VIDEO = {
 export type TripVideoFormat = 'wide' | 'classic';
 export const normalizeTripVideoFormat = (value: unknown): TripVideoFormat => value === 'classic' ? 'classic' : 'wide';
 export const tripVideoDimensions = (format?: unknown) => normalizeTripVideoFormat(format) === 'classic' ? { width: 960, height: 720 } : { width: 1200, height: 630 };
+/** Structured metadata shared by native document heads and the edge HTML adapter. */
+export const tripVideoMetadata = (videoUrl?: string, dimensions = tripVideoDimensions()): Array<{ property: string; content: string }> => videoUrl ? [
+  { property: 'og:video', content: videoUrl },
+  { property: 'og:video:secure_url', content: videoUrl },
+  { property: 'og:video:type', content: 'video/mp4' },
+  { property: 'og:video:width', content: String(dimensions.width) },
+  { property: 'og:video:height', content: String(dimensions.height) },
+] : [];
 // Geographic coordinates and SVG artwork have a fixed orientation; UI controls use normal logical flow.
 export const tripVideoLayout = (format?: unknown) => {
   const { width, height } = tripVideoDimensions(format);

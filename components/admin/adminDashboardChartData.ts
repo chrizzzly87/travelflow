@@ -96,16 +96,12 @@ export const buildUserLevelCumulativeStackedChartData = (
                 runningTotals[label] += increments[label] || 0;
             });
         }
-        return {
-            date: dayKey,
-            ...runningTotals,
-        };
+        return Object.assign({ date: dayKey }, runningTotals);
     });
 
-    return sortAndSliceRecent(result, dayKeys.length).map((row) => ({
-        ...row,
-        date: toDayLabel(row.date),
-    }));
+    return sortAndSliceRecent(result, dayKeys.length).map((row) => (
+        Object.assign({}, row, { date: toDayLabel(row.date) })
+    ));
 };
 
 export const buildTripStatusStackedChartData = (

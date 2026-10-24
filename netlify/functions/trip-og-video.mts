@@ -88,7 +88,8 @@ export default async (request: Request, context?: Context) => {
     const bytes = new Uint8Array(entry.data);
     const range = poster ? null : parseVideoRange(request.headers.get('range'), bytes.byteLength);
     const headers = new Headers({ 'content-type': poster ? 'image/jpeg' : 'video/mp4', 'cache-control': 'private, no-store',
-      'accept-ranges': 'bytes', 'x-content-type-options': 'nosniff', etag: entry.etag });
+      'accept-ranges': 'bytes', 'x-content-type-options': 'nosniff' });
+    if (entry.etag) headers.set('etag', entry.etag);
     if (range === 'invalid') { headers.set('content-range', `bytes */${bytes.byteLength}`); return new Response(null, { status: 416, headers }); }
     if (range) headers.set('content-range', `bytes ${range.start}-${range.end}/${bytes.byteLength}`);
     const body = range ? bytes.slice(range.start, range.end + 1) : bytes;

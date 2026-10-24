@@ -1,5 +1,8 @@
 {
   "nav": {
+    "profile": "Profil",
+    "settings": "Ustawienia",
+    "account": "Konto",
     "features": "Funkcje",
     "inspirations": "Inspiracje",
     "updates": "Aktualności",
@@ -928,5 +931,11 @@
       "iosStepShare": "Dotknij Udostępnij",
       "iosStepAdd": "potem „Do ekranu głównego”"
     }
+  },
+  "routeError": {
+    "title": "Ta strona się nie załadowała",
+    "body": "Coś poszło nie tak po naszej stronie. Spróbuj ponownie — Twoje podróże są bezpieczne.",
+    "retry": "Spróbuj ponownie",
+    "home": "Przejdź do strony głównej"
   }
 }

@@ -66,8 +66,9 @@ export const formatAdminBillingAmount = (
             currency: normalizedCurrency,
         });
         const fractionDigits = formatter.resolvedOptions().maximumFractionDigits;
-        const divisor = 10 ** fractionDigits;
-        const majorAmount = divisor > 0 ? amount / divisor : amount / MINOR_UNIT_SCALE_FALLBACK;
+        const majorAmount = typeof fractionDigits === 'number'
+            ? amount / 10 ** fractionDigits
+            : amount / MINOR_UNIT_SCALE_FALLBACK;
         return formatter.format(majorAmount);
     } catch {
         return `${normalizedCurrency} ${amount}`;

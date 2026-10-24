@@ -1,17 +1,41 @@
 import { describe, expect, it } from 'vitest';
 import { __paddleSubscriptionManageInternals } from '../../netlify/edge-functions/paddle-subscription-manage';
+import type { CurrentUserSubscriptionSummary } from '../../netlify/edge-lib/paddle-request';
+
+// Every column of the summary row, so each test only states the ones it is about.
+const buildSummary = (overrides: Partial<CurrentUserSubscriptionSummary>): CurrentUserSubscriptionSummary => ({
+  user_id: 'user_1',
+  provider: null,
+  provider_customer_id: null,
+  provider_subscription_id: null,
+  provider_price_id: null,
+  provider_product_id: null,
+  provider_status: null,
+  status: null,
+  current_period_start: null,
+  current_period_end: null,
+  cancel_at: null,
+  canceled_at: null,
+  grace_ends_at: null,
+  currency: null,
+  amount: null,
+  last_event_id: null,
+  last_event_type: null,
+  last_event_at: null,
+  ...overrides,
+});
 
 describe('paddle subscription manage edge internals', () => {
   it('extracts Paddle management URLs and keeps local lifecycle fields', () => {
     const result = __paddleSubscriptionManageInternals.extractManagementResponse(
-      {
+      buildSummary({
         provider_subscription_id: 'sub_123',
         provider_status: 'active',
         current_period_end: '2026-04-01T00:00:00.000Z',
         cancel_at: null,
         canceled_at: null,
         grace_ends_at: null,
-      },
+      }),
       {
         management_urls: {
           cancel: 'https://paddle.test/cancel/sub_123',

@@ -5,14 +5,19 @@ This document defines how to add or change localized pages in TravelFlow.
 ## URL Strategy (Locked)
 - English marketing pages stay on root paths (example: `/features`).
 - Non-English marketing pages use locale-prefixed paths (example: `/de/features`, `/fr/features`).
-- Tool/app URLs stay unprefixed for tracking stability (example: `/create-trip`, `/trip/*`, `/s/*`, `/example/*`, `/admin/*`).
+- Trip/share/example/account/admin identity URLs stay unprefixed. Creation and library routes currently accept optional locale prefixes through their native route definitions; preserve existing URL contracts rather than inventing aliases. The route graph in `src/virtualRoutes.ts` is authoritative.
 
 ## Locale Contract
 - Locale source of truth: `config/locales.ts`.
 - Route building/parsing source of truth: `config/routes.ts`.
 - Current phase locales: `en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`, `fa`, `ur`.
 - Direction map is locale-based (`ltr` for most locales, `rtl` for `fa` and `ur`).
-- Keep `document.documentElement.lang` and `document.documentElement.dir` in sync via runtime locale updates in `App.tsx`.
+- The native root document in `src/routes/__root.tsx` emits `lang` and `dir`. Check both direct SSR and client navigation; do not reintroduce an App-level route interpreter to update them.
+- `getRouter()` creates a request-local i18next instance on the server. Pass that instance to namespace preload helpers and `I18nextProvider`; never change the browser singleton from an SSR request.
+- The router `dehydrate`/`hydrate` hooks transport the request’s loaded active/fallback language resources before React hydration. Keep singleton initialization synchronous with no eager namespace request; native routes and optional feature owners load subsequent resources. Do not add a second locale-download gate before `hydrateStart()`.
+- The document owns browser-language persistence after hydration. An unprefixed tool can then restore its saved language after its namespaces load; it must not overwrite the preference with the server default, interrupt initial hydration, or supersede a newer selection/navigation.
+- Native route preloading may load namespaces, but must not change the visible locale on hover. The root `beforeLoad` distinguishes preload from navigation.
+- Optional locale parameters are validated by `app/routing/localePolicy.ts`. Default-language `/en` prefixes and unsupported prefixes are not canonical aliases.
 
 ## Translation Files
 - Runtime i18n bootstrap: `i18n.ts` (`i18next + react-i18next`, no ICU MessageFormat plugin).
@@ -120,33 +125,38 @@ When adding a new key:
 4. Run `pnpm build` before handoff.
 
 ## New Marketing Page Checklist
-1. Add page component in `pages/` and wrap with `MarketingLayout` when applicable.
-2. Add route key and path in `config/routes.ts`:
-   - `RouteKey`
-   - `buildPath(...)`
-   - `LOCALIZED_MARKETING_ROUTE_KEYS`
-   - `MARKETING_PATH_PATTERNS`
-3. Register route in `App.tsx`:
-   - lazy import
-   - `MARKETING_ROUTE_CONFIGS`
-   - preload rule (if route-level preloading is needed)
-4. Add prefetch rule in `config/prefetchTargets.ts`.
-5. Add localized strings in required namespaces for `en/es/de/fr/pt/ru/it/pl/ko/fa/ur`.
-6. Add SEO metadata in `netlify/edge-functions/site-og-meta.ts`:
-   - `MARKETING_PATH_PATTERNS`
-   - `PAGE_META`
-   - `LOCALIZED_PAGE_META`
-7. Confirm sitemap coverage in `scripts/generate-sitemap.mjs`:
-   - Indexable static marketing routes are auto-derived from `MARKETING_ROUTE_CONFIGS` in `App.tsx`.
-   - If a static route is utility/error-only and should not be indexed, add it to `NON_INDEXABLE_STATIC_PATHS`.
-8. Update navigation/footer links to use route helpers (`buildLocalizedMarketingPath`).
-9. Update release notes in `content/updates/*.md`.
+
+1. Choose the owning native public route area. Add the leaf route module and register
+   its optional locale path in `src/virtualRoutes.ts`. Let the router plugin regenerate
+   the route tree; do not create a separate route copy for every locale.
+2. Add the page component using existing marketing composition. Keep critical content
+   SSR-safe and first-render markup deterministic.
+3. Update canonical URL/namespace helpers in `config/routes.ts` where the page needs
+   a route key or namespace selection. Keep English slugs for every locale.
+4. Add the required translation keys to all active locales. Load the route's namespaces
+   before rendering through the native root/route boundary.
+5. Use native `head` metadata and the shared metadata resolver. Do not add HTML edge
+   middleware that rewrites Start's output after rendering.
+6. Verify sitemap generation includes the new canonical and localized URLs and excludes
+   utility/noindex routes. During migration, the sitemap consumer must be kept aligned
+   with the native graph; the retired App route array is not a source of truth.
+7. If prerendering is justified, add an explicit page to the Start configuration in
+   `vite.config.ts`. Otherwise the public route renders on demand. No Playwright
+   HTML-capture registry or manual global prefetch entry is required.
+8. Use canonical route helpers/native Links for navigation. Test direct load, client
+   navigation, locale switching and RTL output. Check first interaction against a
+   production build, not just development.
+9. Run locale/content tests and validators and update the feature's single draft note.
 
 ## New Tool/App Page Checklist
-1. Keep the URL unprefixed (no locale segment).
-2. Use active app language for text + formatting.
-3. Do not introduce locale-specific tool path variants unless explicitly approved.
-4. Admin workspace copy (`/admin/*`) is English-only by default; do not add locale keys for admin-only labels unless localization is explicitly requested.
+
+1. Add a native leaf under the area that owns its lifecycle and access requirements.
+2. Preserve the area's URL contract. Trip/share/example/admin IDs stay unprefixed;
+   do not add localized slug aliases or compatibility redirects without their own issue.
+3. Use the active application language and formatting with the appropriate namespaces.
+4. Keep browser-storage/session dependent rendering under an explicit client boundary.
+   Enabling SSR later requires a server-safe session and authorization design.
+5. Admin workspace copy is English-only unless explicitly requested otherwise.
 
 ## AI Translation Disclaimer
 - Localized marketing pages show translation disclaimer banner via `components/marketing/TranslationNoticeBanner.tsx`.

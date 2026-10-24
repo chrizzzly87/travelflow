@@ -9,13 +9,13 @@ import {
     SpinnerGap,
     WarningCircle,
 } from '@phosphor-icons/react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from '@/app/navigation';
 
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
-import { AdminBarList, type AdminBarListItem } from '../components/admin/AdminBarList';
+import { AdminBarList, type AdminBarListItem } from '../components/admin/charts/AdminBarList';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
@@ -24,7 +24,7 @@ import { AdminStatCard } from '../components/admin/AdminStatCard';
 import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
-import { AdminBarChart } from '../components/admin/AdminBarChart';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
 import { AdminPagination } from '../components/admin/AdminPagination';
 import {
     AdminBillingStatusBadge,
@@ -95,7 +95,7 @@ const toShareItems = (rows: Array<{ label: string; count: number }>): AdminBarLi
     const total = rows.reduce((sum, row) => sum + row.count, 0);
     return rows.map((row) => ({
         key: row.label,
-        label: row.label,
+        name: row.label,
         value: row.count,
         valueLabel: `${row.count.toLocaleString()} · ${total > 0 ? Math.round((row.count / total) * 100) : 0}%`,
     }));
@@ -269,7 +269,7 @@ export const AdminBillingPage: React.FC = () => {
     const atRiskListItems = useMemo<AdminBarListItem[]>(
         () => (dashboard ? buildAdminBillingAtRiskChartData(dashboard) : []).map((row) => ({
             key: row.label,
-            label: row.label,
+            name: row.label,
             value: row.amount,
             valueLabel: formatMajorAmount(row.amount),
         })),
@@ -833,7 +833,9 @@ export const AdminBillingPage: React.FC = () => {
                                         data={mrrByTierChartData}
                                         index="label"
                                         categories={['MRR']}
-                                        layout="vertical"
+                                        colors={['indigo']}
+                                        showLegend={false}
+                                        yAxisWidth={80}
                                         valueFormatter={formatMajorAmount}
                                         className="h-72"
                                         ariaLabel="Bar chart of current monthly recurring revenue by tier and currency"
@@ -849,7 +851,7 @@ export const AdminBillingPage: React.FC = () => {
                                     description="Revenue exposed to churn or collection risk, by status."
                                 />
                                 {atRiskListItems.length > 0 ? (
-                                    <AdminBarList items={atRiskListItems} color="var(--chart-5)" ariaLabel="At-risk revenue by status" />
+                                    <AdminBarList data={atRiskListItems} color="rose" ariaLabel="At-risk revenue by status" />
                                 ) : (
                                     <AdminEmptyState title="No revenue at risk" />
                                 )}
@@ -862,7 +864,7 @@ export const AdminBillingPage: React.FC = () => {
                                 <div className="flex flex-col gap-2">
                                     <h3 className="text-xs font-medium text-muted-foreground">By plan</h3>
                                     {tierMixListItems.length > 0 ? (
-                                        <AdminBarList items={tierMixListItems} ariaLabel="Paid subscriptions by plan tier" />
+                                        <AdminBarList data={tierMixListItems} sortOrder="none" ariaLabel="Paid subscriptions by plan tier" />
                                     ) : (
                                         <p className="text-sm text-muted-foreground">No paid subscriptions yet.</p>
                                     )}
@@ -870,7 +872,7 @@ export const AdminBillingPage: React.FC = () => {
                                 <div className="flex flex-col gap-2">
                                     <h3 className="text-xs font-medium text-muted-foreground">By status</h3>
                                     {statusMixListItems.length > 0 ? (
-                                        <AdminBarList items={statusMixListItems} ariaLabel="Subscriptions by billing lifecycle status" />
+                                        <AdminBarList data={statusMixListItems} sortOrder="none" ariaLabel="Subscriptions by billing lifecycle status" />
                                     ) : (
                                         <p className="text-sm text-muted-foreground">No synced subscriptions yet.</p>
                                     )}

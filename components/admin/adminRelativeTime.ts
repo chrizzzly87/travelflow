@@ -35,3 +35,16 @@ export const formatAdminAbsoluteTime = (value: unknown, fallback = '—'): strin
     const timestamp = parseTimestamp(value);
     return timestamp === null ? fallback : absoluteDateTimeFormatter.format(new Date(timestamp));
 };
+
+const chartDayFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' });
+
+/**
+ * "Oct 12" for a chart axis. An ISO day ("2026-10-12") is read as a local date,
+ * so it never shifts to the previous day west of UTC.
+ */
+export const formatAdminChartDay = (value: unknown): string => {
+    if (typeof value !== 'string' || !value) return '';
+    const day = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+    if (!day) return value;
+    return chartDayFormatter.format(new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])));
+};

@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import { Link, useLocation, useNavigate, useSearchParams } from '@/app/navigation';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { Button } from '../components/ui/button';
 import { APP_NAME } from '../config/appGlobals';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
@@ -183,16 +183,16 @@ export const TermsPage: React.FC = () => {
                             {acceptRequired ? t('termsPage.acceptRequiredDescription') : t('termsPage.acceptOptionalDescription')}
                         </p>
                         <div className="mt-3">
-                            <button
+                            <Button
                                 type="button"
+                                size="sm"
                                 onClick={() => void handleAcceptCurrentTerms()}
-                                disabled={isAccepting}
-                                className="inline-flex items-center gap-2 rounded-lg bg-accent-600 px-4 py-2 text-xs font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                loading={isAccepting}
+                                className="rounded-lg px-4 text-xs font-semibold has-[>svg]:px-4 [&_svg]:size-3.5"
                                 {...getAnalyticsDebugAttributes('terms__accept--submit', { source: 'terms_page' })}
                             >
-                                {isAccepting ? <Loader2 size={14} className="animate-spin" /> : null}
                                 {isAccepting ? t('termsPage.acceptSubmitting') : t('termsPage.acceptSubmit')}
-                            </button>
+                            </Button>
                         </div>
                         {acceptError && (
                             <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">{acceptError}</p>

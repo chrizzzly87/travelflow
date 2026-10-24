@@ -1,141 +1,48 @@
-# Lighthouse Shared Plan
+# Landing-page performance
 
-Last updated: 2026-07-03
-Owner: Performance and SEO team
+## Targets and evidence
 
-## Performance Targets
-- **Mobile Lighthouse Performance score target**: `>= 90` on key entry routes.
+Target mobile Lighthouse Performance >= 90 on key entry routes. A target is not
+proof of a passing audit. Keep the measurement revision, browser, throttle, image
+handling and raw results with each report. Historical July 2026 Lighthouse results
+and the retired runtime guidance are archived in
+[the dated report](docs/performance/lighthouse-2026-07-03.md).
 
----
+## Current TanStack Start principles
 
-## ⚠️ Prerender + hydration invariants (read before touching the boot path)
+- Native Start SSR and configured prerendering own documents. There is no browser
+  capture script or second SPA document router.
+- Hydrate through the native Start client. Preload only the active route's locale
+  namespaces; do not wait for every route or preload the trip editor before attaching
+  public-page handlers.
+- Render meaningful landing-page content on the server. Keep the server and first
+  browser render deterministic, including image placeholders and auth hints.
+  Do not use empty spacers, browser-capture flags or idle callbacks to conceal
+  hydration mismatches.
+- Keep the lightweight public preview data independent of full editable trips.
+  Split loaders and pending components explicitly, then inspect emitted preloads
+  and real network requests to prove that unrelated domains stay unloaded.
+- Keep one shared atomic Tailwind stylesheet to preserve responsive utility order.
+  Load feature-specific map/widget styles with their feature.
+- Apply theme before paint using `src/document/theme-boot.js`, with the same storage
+  contract as `contexts/theme/themeStore.ts`. Loading-shell styles live in cached CSS.
+- Test early controls with JavaScript delayed. Include Chromium and WebKit and treat
+  recoverable hydration errors as failures. The initial browser auth-context update
+  must not interrupt a still-hydrating Suspense boundary.
 
-The marketing/landing pages are **prerendered static HTML** (`scripts/prerender-routes.mjs`)
-that the client **hydrates in place**. This is fast but has sharp edges — the
-following were each shipped as regressions and then fixed, so keep them intact:
+## Reproducible checks
 
-1. **Hydrate immediately; never gate the mount.** `index.tsx` must call
-   `hydrateRoot` right away. A previous "warm critical chunks before mounting"
-   gate left prerendered pages visually complete but **non-interactive for up to
-   ~5s on cold loads** (no nav highlight, banners, card-image upgrade, globe, or
-   below-fold content until the gate elapsed). Hydration keeps the prerendered
-   DOM on screen while it attaches and does **not** blank even while i18n
-   namespaces are still loading (a suspending subtree retains its server DOM),
-   so there is no reason to delay it. Warm route modules/i18n in the background
-   instead.
+Run `pnpm ci:local` for validators, core coverage, the production build, both browser
+engines and offline checks. `pnpm benchmark:runtime` measures six fixed routes with
+five cold samples plus warmup under a fixed browser/CPU/network profile. Compare
+matching reports with `pnpm benchmark:runtime:compare`; do not infer production
+field performance or INP from this local readiness probe.
 
-2. **What is prerendered must equal the client's FIRST render**, or Preact-compat
-   hydration rebuilds the subtree (flash + CLS). Consequences:
-   - Below-fold `IntersectionObserver`-gated sections (`MarketingHomePage`,
-     footer in `MarketingLayout`) stay **lazy on both** prerender and client —
-     they start as empty spacers on each side and mount just after hydration.
-     Do **not** force them eager: it regressed homepage LCP from ~3.9s to ~6.0s
-     (score 86 → 73) for no real UX gain, since fast hydration already mounts
-     them within a moment of load.
-   - Image cards that swap to an icon/placeholder on error
-     (`BlogPage`, `InspirationsPage`) render their `<picture>`+blurhash whenever
-     `isPrerenderedDocument()` is true (see `services/prerenderHydrationState.ts`).
-     That helper is true during capture (via a `__TF_PRERENDER_EAGER__` init
-     flag) **and** on the client's first render (via the
-     `data-tf-prerendered-root` attribute), so both agree and the image loads
-     from the CDN on the live site instead of freezing as a fallback icon.
+Use `scripts/serve-built-site.mjs` for the built local browser harness: it serves
+native dynamic routes and emulates same-origin image transforms. Validate the
+actual Netlify preview separately because this harness does not execute every
+hosted Edge Function.
 
-3. **Prerender must load images through the CDN endpoint.** The preview server
-   does not implement `/.netlify/images`, so `prerender-routes.mjs` intercepts it
-   with a `sharp` transform that honours `fm`/`w`/`q` (an AVIF `<source>` needs
-   real AVIF bytes — serving webp-as-avif fails to decode → `onError` →
-   fallbacks). Keep transforms modest; do **not** force-scroll every below-fold
-   image into loading at once — the burst overwhelmed the transform and made
-   error-fallback cards capture as fallbacks.
-
-4. **Keep the boot-shell `<style>` in prerendered pages.** The runtime
-   `AppBootstrapShell` (Suspense fallback during client-side navigation) reuses
-   the inline `tf-boot-*` classes; stripping that style block caused a
-   full-screen white flash on every page switch.
-
-5. **preact/compat hydration ≠ React 18 hydration — this is the big one.**
-   Under `preact/compat` a component that **suspends during hydration** does NOT
-   retain the prerendered DOM (React 18 does); preact swaps in the Suspense
-   fallback. So two hard rules:
-   - **The first client render must not suspend at/above the root.** i18next runs
-     with `useSuspense: true` and `AppContent` reads 6 namespaces above the
-     route boundary — so `index.tsx` **awaits the app-shell namespaces (bounded
-     timeout) before `hydrateRoot`**. Never let that boundary trip; and the root
-     Suspense fallback is the boot-shell skeleton with `data-tf-handoff-ready`,
-     **never `null`** (a null fallback = intermittent blank page).
-   - **The first client render must be byte-identical to the prerender capture.**
-     A mismatch makes preact tear the subtree down (missing footer/sections,
-     flash). Deferred/lazy content (below-fold marketing sections, footer) must
-     render the SAME way on both sides: they stay empty spacers during capture
-     (`isPrerenderCapture()`) AND on the client's first render, then mount right
-     after hydration via `requestIdleCallback` — **not IntersectionObserver**,
-     whose callbacks did not fire for these elements in WebKit/Safari. Content
-     that IS captured into the HTML (image `<picture>` cards) must instead render
-     eagerly on the client's first render (`isPrerenderedDocument()`), matching
-     the capture.
-   - **Always test in WebKit, not just Chromium.** Several of these bugs
-     reproduced only in Safari's engine (`npx playwright` `webkit`).
-
-### Latest local audits (2026-07-03, `vite preview`; CDN images 404 locally so real LCP is better)
-| Page | Score | FCP | LCP | TBT | CLS |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Homepage `/` | 86 | 2.1s | 3.9s | 20ms | 0 |
-| Features | 84 | 2.3s | 4.2s | 10ms | 0 |
-| Pricing | 85 | 2.3s | 4.1s | 0ms | 0 |
-| Blog | 85 | 2.2s | 4.1s | 0ms | 0 |
-| Inspirations | 76 | 2.6s | 5.6s | 20ms | 0 |
-
-Remaining levers toward the ≥90 target: the header wordmark is still the
-homepage LCP element (it repaints at hydration commit — inline it into the
-initial header paint); Inspirations is image-heavy (24 cards) and needs an
-above-the-fold image-priority pass; and the dormant critical-CSS inliner
-(`TF_INLINE_CRITICAL_CSS=1`) still crashes and would cut ~0.7s off FCP.
-
----
-
-## 📈 Entry Page Status (Baselines & Latest Audits)
-
-Below are the latest recorded performance scores for primary entries and landing pages (Mobile audits):
-
-| Page | Route | Performance Score | First Contentful Paint (FCP) | Largest Contentful Paint (LCP) | Total Blocking Time (TBT) | Cumulative Layout Shift (CLS) | LCP Target Element |
-| --- | --- | :---: | :---: | :---: | :---: | :---: | --- |
-| **Homepage** | `/` | **84** | 1.1 s | 4.6 s | 0 ms | 0 | `div.min-h-screen > div.border-b > div.mx-auto > p.flex-1` (Header Banners) |
-| **Features** | `/features` | **81** | 1.1 s | 5.0 s | 20 ms | 0 | `div.min-h-screen > div.border-b > div.mx-auto > p.flex-1` (Header Banners) |
-| **Pricing** | `/pricing` | **83** | 1.1 s | 4.7 s | 30 ms | 0 | `main.mx-auto > div.py-8 > div.mx-auto > p.mt-4` (Subheader text) |
-| **Blog** | `/blog` | **78** | 1.1 s | 5.9 s | 10 ms | 0 | `main.mx-auto > section.pt-8 > p.mt-5` (Intro text) |
-| **Inspirations** | `/inspirations` | **78** | 1.1 s | 6.0 s | 10 ms | 0 | `main.mx-auto > section.pt-8 > p.mt-5` (Intro text) |
-
-*Note: FCP sits at 1.1s on mobile due to pre-rendered skeletons with inlined styles in `index.html`. LCP is now fully optimized with cookie consent deferral, fetch priority, and layout visibility containments.*
-
----
-
-## 🚀 Running Automated Audits
-
-We have created an automated Lighthouse runner script at `scripts/run-lighthouse-audits.mjs` to test pages locally.
-
-### Steps to Run Audits:
-1. **Build the production assets**:
-   ```bash
-   pnpm run build
-   ```
-2. **Start the local preview server**:
-   ```bash
-   pnpm exec vite preview --port 4173
-   ```
-3. **Run the automated audits** (in a separate terminal):
-   ```bash
-   PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" node scripts/run-lighthouse-audits.mjs
-   ```
-   *(Note: Set the `PUPPETEER_EXECUTABLE_PATH` environment variable to point to your system's Google Chrome binary on macOS/Linux if local Chromium was not downloaded during installation).*
-
-The script runs Lighthouse sequentially on all 5 landing pages, saves the JSON reports under `tmp/perf/`, and prints a Markdown summary table.
-
----
-
-## ⚡ Performance Optimizations Applied
-
-1. **Cookie Consent Deferral**: Delayed the mounting of `CookieConsentBanner.tsx` by `4000ms` or until first user interaction (scroll, mousemove, keydown, touchstart) using `useEffect` so it doesn't get picked up as the LCP element on page entries.
-2. **Dynamic Language-Based Font Preloading**: Replaced static font preloads in `index.html` with an inline script block that detects active locale (via URL path or `localStorage`) and dynamically preloads only the font needed (e.g. Cyrillic Noto for `ru`, Cyrillic + Cyrillic Extended for Russian, Vazirmatn 400/700/800 for `fa`/`ur`, Latin + Latin-ext for Polish `pl`, and Latin-only subsets for default locales).
-3. **Hero Image Fetch Priority**: Set `fetchPriority="high"` on the desktop above-the-fold airplane window image inside `PlaneWindowAnimation.tsx` and removed `loading="lazy"` to speed up hero image painting.
-4. **Below-the-Fold Content Visibility**: Applied `content-visibility: auto` and `contain-intrinsic-size` constraints to complex sections (`FeatureShowcase.tsx`, `CtaBanner.tsx`, `SiteFooter.tsx`) to offload browser layout/rendering work until they scroll into view.
-
+See [architecture](docs/TANSTACK_START_ARCHITECTURE.md),
+[deployment](docs/NETLIFY_TANSTACK_START.md) and
+[acceptance plan](docs/architecture/TANSTACK_START_MIGRATION.md).

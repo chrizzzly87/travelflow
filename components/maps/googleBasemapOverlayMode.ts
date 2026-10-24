@@ -3,11 +3,15 @@ export interface GoogleBasemapOverlayController {
   destroy: () => void;
 }
 
-const setElementStyle = (element: HTMLElement | null, styles: Partial<CSSStyleDeclaration>): void => {
+type WritableStyleKey = {
+  [K in keyof CSSStyleDeclaration]: CSSStyleDeclaration[K] extends string ? K : never;
+}[keyof CSSStyleDeclaration];
+
+const setElementStyle = (element: HTMLElement | null, styles: Partial<Pick<CSSStyleDeclaration, WritableStyleKey>>): void => {
   if (!element) return;
   Object.entries(styles).forEach(([key, value]) => {
     if (value === undefined) return;
-    element.style[key as keyof CSSStyleDeclaration] = value;
+    element.style[key as WritableStyleKey] = value;
   });
 };
 

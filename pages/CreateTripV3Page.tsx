@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import {
     AirplaneTilt,
@@ -20,7 +20,6 @@ import {
     Mountains,
     PersonSimpleWalk,
     Sparkle as Sparkles,
-    SpinnerGap as Loader2,
     SunHorizon,
     TextAlignLeft as AlignLeft,
     Train,
@@ -34,8 +33,12 @@ import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Spinner } from '../components/ui/spinner';
 import { Switch } from '../components/ui/switch';
+import { Textarea } from '../components/ui/textarea';
 import {
     buildWizardItineraryPrompt,
     type WizardGenerateOptions,
@@ -61,7 +64,7 @@ import {
     resolveDestinationName,
 } from '../services/destinationService';
 import { decodeTripPrefill } from '../services/tripPrefillDecoder';
-import { TripView } from '../components/TripView';
+import { LazyTripView } from '../components/tripview/LazyTripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
 import {
@@ -165,6 +168,9 @@ type IntentOption = {
 };
 
 const NOOP = () => {};
+// Wizard footer actions: the shared `Button` at the wizard's tall, round shape.
+const wizardPrimaryActionClassName = 'h-auto rounded-2xl px-6 py-3 font-semibold has-[>svg]:px-6 shadow-lg shadow-accent-200/60 dark:shadow-none';
+const wizardSecondaryActionClassName = 'h-auto rounded-2xl bg-card px-5 py-3 font-semibold has-[>svg]:px-5 hover:border-accent-300 hover:bg-card hover:text-accent-900 dark:bg-card dark:hover:border-accent-400/30 dark:hover:bg-card dark:hover:text-accent-200';
 const BUDGET_OPTIONS: BudgetType[] = ['Low', 'Medium', 'High', 'Luxury'];
 const FLEX_WINDOW_MONTHS: Record<FlexWindow, number[]> = {
     spring: [3, 4, 5],
@@ -1505,7 +1511,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     if (isGenerating && previewTrip) {
         return (
             <div className="relative h-screen w-screen">
-                <TripView
+                <Suspense fallback={<TripGenerationSkeleton />}><LazyTripView
                     trip={previewTrip}
                     onUpdateTrip={setPreviewTrip}
                     onOpenManager={onOpenManager}
@@ -1513,12 +1519,12 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     onViewSettingsChange={NOOP}
                     canShare={false}
                     initialMapFocusQuery={generationSummary.mapFocus || generationSummary.destination}
-                />
+                /></Suspense>
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-card/95 px-5 py-4 shadow-xl backdrop-blur-sm dark:bg-card/95 dark:border-accent-400/25 dark:shadow-none">
                         <div className="flex items-center gap-3">
                             <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600 dark:text-accent-300 dark:bg-accent-400/12">
-                                <Loader2 size={18} className="animate-spin" />
+                                <Spinner className="size-[18px]" />
                             </div>
                             <div className="min-w-0">
                                 <div className="truncate text-sm font-semibold text-accent-900 dark:text-accent-200">{t('wizard.loading.title')}</div>
@@ -1560,13 +1566,13 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-muted-foreground dark:text-muted-foreground">{t('traveler.settings.age')}</label>
-	                        <input
-	                            type="text"
-	                            aria-label={t('traveler.settings.age')}
-	                            value={soloAge}
+                        <Input
+                            type="text"
+                            aria-label={t('traveler.settings.age')}
+                            value={soloAge}
                             onChange={(event) => setSoloAge(event.target.value)}
                             placeholder={t('traveler.settings.agePlaceholder')}
-                            className="h-11 w-full rounded-2xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground"
+                            className="h-11 rounded-2xl"
                         />
                     </div>
                     <div className="space-y-2">
@@ -2097,25 +2103,25 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-muted-foreground dark:text-muted-foreground">{t('wizard.details.specificCitiesLabel')}</label>
-	                        <input
-	                            type="text"
-	                            aria-label={t('wizard.details.specificCitiesLabel')}
-	                            value={specificCities}
+                        <Input
+                            type="text"
+                            aria-label={t('wizard.details.specificCitiesLabel')}
+                            value={specificCities}
                             onChange={(event) => setSpecificCities(event.target.value)}
                             placeholder={t('wizard.details.specificCitiesPlaceholder')}
-                            className="h-11 w-full rounded-2xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground"
+                            className="h-11 rounded-2xl"
                         />
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-muted-foreground dark:text-muted-foreground">{t('wizard.details.notesLabel')}</label>
-	                        <textarea
-	                            aria-label={t('wizard.details.notesLabel')}
-	                            value={notes}
+                        <Textarea
+                            aria-label={t('wizard.details.notesLabel')}
+                            value={notes}
                             onChange={(event) => setNotes(event.target.value)}
                             rows={4}
                             placeholder={t('wizard.details.notesPlaceholder')}
-                            className="w-full rounded-2xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground"
+                            className="field-sizing-fixed rounded-2xl bg-card text-sm md:text-sm dark:bg-card"
                         />
                     </div>
 
@@ -2254,49 +2260,51 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     {currentStepId !== 'intent' && (
                         <div className="mt-8 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-border">
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
                                 onClick={() => goToStep(Math.max(0, currentStepIndex - 1))}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                                className={wizardSecondaryActionClassName}
                             >
                                 {t('wizard.actions.back')}
-                            </button>
+                            </Button>
 
                             {currentStepId !== 'review' ? (
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => goToStep(Math.min(steps.length - 1, currentStepIndex + 1))}
                                     disabled={!canContinue}
-                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/60 transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:hover:bg-accent-500 dark:shadow-none dark:text-background"
+                                    className={wizardPrimaryActionClassName}
                                 >
                                     {t('wizard.actions.continue')}
                                     <ArrowRight size={16} />
-                                </button>
+                                </Button>
                             ) : (
                                 <div className="flex flex-col gap-3 sm:flex-row">
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="outline"
                                         onClick={handleCreateBlank}
                                         disabled={selectedCountries.length === 0}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                                        icon={<FilePlus size={16} weight="duotone" />}
+                                        className={wizardSecondaryActionClassName}
                                     >
-                                        <FilePlus size={16} weight="duotone" />
                                         {t('wizard.actions.blank')}
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="button"
                                         onClick={handleGenerate}
                                         disabled={!canGenerate}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/60 transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:hover:bg-accent-500 dark:shadow-none dark:text-background"
+                                        icon={<Sparkles size={16} weight="duotone" />}
+                                        className={wizardPrimaryActionClassName}
                                         {...getAnalyticsDebugAttributes('create_trip_wizard__cta--generate', {
                                             branch: wizardBranch || 'unknown',
                                             destination_count: orderedDestinations.length,
                                             date_mode: dateInputMode,
                                         })}
                                     >
-                                        <Sparkles size={16} weight="duotone" />
                                         {t('wizard.actions.generate')}
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
                         </div>

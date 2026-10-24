@@ -63,9 +63,15 @@ describe('components/admin/AdminJsonDiffModal', () => {
     expect(screen.getByText(/Both snapshots are identical/i)).toBeInTheDocument();
   });
 
-  it('ensures Prism is defined on window and contains the json language definition', () => {
-    expect(window).toBeDefined();
-    expect((window as any).Prism).toBeDefined();
-    expect((window as any).Prism.languages.json).toBeDefined();
+  it('highlights JSON properties and values without a global JSON language plugin', () => {
+    render(React.createElement(AdminJsonDiffModal, {
+      isOpen: true,
+      onClose: () => undefined,
+      title: 'JSON syntax',
+      beforeValue: { enabled: true },
+      afterValue: { enabled: false },
+    }));
+    expect(document.querySelector('.token.property')?.textContent).toBe('"enabled"');
+    expect(document.querySelector('.token.boolean')?.textContent).toBe('true');
   });
 });

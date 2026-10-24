@@ -1,5 +1,8 @@
 {
   "nav": {
+    "profile": "Profilo",
+    "settings": "Impostazioni",
+    "account": "Account",
     "features": "Funzionalità",
     "inspirations": "Ispirazioni",
     "updates": "Novità",
@@ -920,5 +923,11 @@
       "iosStepShare": "Tocca Condividi",
       "iosStepAdd": "poi \"Aggiungi a Home\""
     }
+  },
+  "routeError": {
+    "title": "Questa pagina non si è caricata",
+    "body": "Qualcosa è andato storto da parte nostra. Riprova: i tuoi viaggi sono al sicuro.",
+    "retry": "Riprova",
+    "home": "Vai alla home"
   }
 }

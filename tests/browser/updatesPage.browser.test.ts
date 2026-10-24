@@ -1,12 +1,16 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
+import { renderToString } from 'react-dom/server';
+import { hydrateRoot } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, screen } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   auth: {
     isAdmin: false,
   },
+  locale: 'en',
   getPublishedReleaseNotes: vi.fn(),
   readLocalStorageItem: vi.fn(),
 }));
@@ -30,7 +34,8 @@ vi.mock('../../services/releaseNotesService', async () => {
   const actual = await vi.importActual<typeof import('../../services/releaseNotesService')>('../../services/releaseNotesService');
   return {
     ...actual,
-    getPublishedReleaseNotes: mocks.getPublishedReleaseNotes,
+    locale: 'en',
+  getPublishedReleaseNotes: mocks.getPublishedReleaseNotes,
   };
 });
 
@@ -41,6 +46,7 @@ vi.mock('../../services/browserStorageService', () => ({
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
+    i18n: { resolvedLanguage: mocks.locale, language: mocks.locale },
   }),
 }));
 
@@ -51,6 +57,7 @@ describe('pages/UpdatesPage internal release visibility', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.auth.isAdmin = false;
+    mocks.locale = 'en';
     mocks.readLocalStorageItem.mockReturnValue(null);
     mocks.getPublishedReleaseNotes.mockReturnValue([
       {
@@ -82,18 +89,41 @@ describe('pages/UpdatesPage internal release visibility', () => {
     ]);
   });
 
-  it('hides private release items for non-admin viewers by default', () => {
-    render(React.createElement(UpdatesPage));
+  it('hydrates route-localized release dates identically despite different server and browser defaults', async () => {
+    mocks.locale = 'fr';
+    let hostLocale = 'en-US';
+    const original = Date.prototype.toLocaleDateString;
+    vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function (this: Date, locale, options) {
+      return original.call(this, locale ?? hostLocale, options);
+    });
+    const container = document.createElement('div');
+    container.innerHTML = renderToString(React.createElement(UpdatesPage));
+    document.body.appendChild(container);
+    hostLocale = 'de-DE';
+    const onRecoverableError = vi.fn();
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    try {
+      await act(async () => { root = hydrateRoot(container, React.createElement(UpdatesPage), { onRecoverableError }); });
+      expect(onRecoverableError).not.toHaveBeenCalled();
+      expect(container).toHaveTextContent('1 mars 2026');
+    } finally {
+      await act(async () => root?.unmount());
+      container.remove();
+    }
+  });
+
+  it('hides private release items for non-admin viewers by default', async () => {
+    await render(React.createElement(UpdatesPage));
 
     expect(screen.getByText('Public item')).toBeInTheDocument();
     expect(screen.queryByText('Private item')).toBeNull();
     expect(screen.queryByText('Internal view enabled. Hidden release items are visible.')).toBeNull();
   });
 
-  it('shows private release items for authenticated admins', () => {
+  it('shows private release items for authenticated admins', async () => {
     mocks.auth.isAdmin = true;
 
-    render(React.createElement(UpdatesPage));
+    await render(React.createElement(UpdatesPage));
 
     expect(screen.getByText('Public item')).toBeInTheDocument();
     expect(screen.getByText('Private item')).toBeInTheDocument();

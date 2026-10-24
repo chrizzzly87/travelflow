@@ -1,9 +1,9 @@
 /**
  * Pure request-routing rules for the offline service worker.
  *
- * The worker itself (`public/sw.js`) is plain JavaScript shipped as-is, so the
+ * The worker template (`scripts/templates/sw.js`) is plain JavaScript, so the
  * decision table lives here where it can be unit-tested without a worker
- * runtime. `public/sw.js` keeps an inlined copy of `resolveServiceWorkerStrategy`
+ * runtime. `scripts/templates/sw.js` keeps an inlined copy of `resolveServiceWorkerStrategy`
  * that must stay in sync; `tests/unit/serviceWorkerRoutes.test.ts` asserts the
  * two agree.
  */
@@ -98,5 +98,4 @@ export const isCachingStrategy = (strategy: ServiceWorkerStrategy): boolean => (
     || strategy === 'immutable-asset'
     || strategy === 'static-media'
     || strategy === 'map-preview'
-    || strategy === 'navigation'
 );

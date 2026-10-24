@@ -72,7 +72,26 @@ export interface DialogContentProps
 export const DialogContent = React.forwardRef<
     React.ElementRef<typeof DialogPrimitive.Content>,
     DialogContentProps
->(({ className, overlayClassName, size = 'lg', showCloseButton = false, closeLabel = 'Close', children, ...props }, ref) => (
+>(({ className, overlayClassName, size = 'lg', showCloseButton = false, closeLabel = 'Close', children, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+    // Radix hands focus back only to a `DialogTrigger`; for a dialog opened
+    // from state it focuses a null trigger ref and focus falls to <body>.
+    // Remember what had focus at open (the open event fires before focus
+    // moves) and restore it on close unless the caller already handled it.
+    const returnFocusRef = React.useRef<HTMLElement | null>(null);
+    const handleOpenAutoFocus = React.useCallback((event: Event) => {
+        const active = typeof document === 'undefined' ? null : document.activeElement;
+        returnFocusRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
+        onOpenAutoFocus?.(event);
+    }, [onOpenAutoFocus]);
+    const handleCloseAutoFocus = React.useCallback((event: Event) => {
+        onCloseAutoFocus?.(event);
+        const target = returnFocusRef.current;
+        returnFocusRef.current = null;
+        if (event.defaultPrevented || !target?.isConnected) return;
+        event.preventDefault();
+        target.focus({ preventScroll: true });
+    }, [onCloseAutoFocus]);
+    return (
     <DialogPortal>
         <DialogOverlay className={overlayClassName} />
         <DialogPrimitive.Content
@@ -86,7 +105,10 @@ export const DialogContent = React.forwardRef<
                 'rounded-xl border border-border bg-card p-0 shadow-2xl focus:outline-none dark:shadow-none',
                 className,
             )}
+            aria-modal="true"
             {...props}
+            onOpenAutoFocus={handleOpenAutoFocus}
+            onCloseAutoFocus={handleCloseAutoFocus}
         >
             {children}
             {showCloseButton && (
@@ -99,7 +121,8 @@ export const DialogContent = React.forwardRef<
             )}
         </DialogPrimitive.Content>
     </DialogPortal>
-));
+    );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 export interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {

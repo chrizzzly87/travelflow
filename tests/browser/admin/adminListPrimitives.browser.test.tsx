@@ -12,13 +12,13 @@ const h = React.createElement;
 
 describe('AdminSelectionBar', () => {
   it('renders nothing while nothing is selected', () => {
-    const { container } = render(h(AdminSelectionBar, { count: 0, noun: 'user', onClear: vi.fn() }, h('button', null, 'Delete')));
+    const { container } = render(h(AdminSelectionBar, { count: 0, noun: 'user', onClear: vi.fn(), children: h('button', null, 'Delete') }));
     expect(container.innerHTML).toBe('');
   });
 
   it('names the selection, shows the actions and clears', async () => {
     const onClear = vi.fn();
-    render(h(AdminSelectionBar, { count: 3, noun: 'entry', pluralNoun: 'entries', onClear }, h('button', null, 'Export')));
+    render(h(AdminSelectionBar, { count: 3, noun: 'entry', pluralNoun: 'entries', onClear, children: h('button', null, 'Export') }));
 
     expect(screen.getByRole('region', { name: 'Bulk actions' })).toBeTruthy();
     expect(screen.getByText('3 entries selected')).toBeTruthy();
@@ -62,7 +62,8 @@ describe('AdminDetailSheet', () => {
       title: 'Ada Lovelace',
       subtitle: 'ada@example.com',
       footer: h('button', null, 'Save'),
-    }, h('p', null, 'Body')));
+      children: h('p', null, 'Body'),
+    }));
 
     const dialog = await screen.findByRole('dialog', { name: 'Ada Lovelace' });
     expect(dialog).toBeTruthy();

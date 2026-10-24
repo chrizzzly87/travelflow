@@ -76,13 +76,18 @@ export const applyViewSettingsToSearchParams = (
 ): void => {
     if (!view) return;
 
-    if (isLayoutMode(view.layoutMode ?? null)) params.set('layout', view.layoutMode);
-    if (isTimelineMode(view.timelineMode ?? null)) params.set('timelineMode', view.timelineMode);
+    const layoutMode = view.layoutMode ?? null;
+    if (isLayoutMode(layoutMode)) params.set('layout', layoutMode);
+    const timelineMode = view.timelineMode ?? null;
+    if (isTimelineMode(timelineMode)) params.set('timelineMode', timelineMode);
     else params.delete('timelineMode');
-    if (isTimelineViewMode(view.timelineView ?? null)) params.set('timelineView', view.timelineView);
-    if (isMapStyleValue(view.mapStyle ?? null)) params.set('mapStyle', view.mapStyle);
+    const timelineView = view.timelineView ?? null;
+    if (isTimelineViewMode(timelineView)) params.set('timelineView', timelineView);
+    const mapStyle = view.mapStyle ?? null;
+    if (isMapStyleValue(mapStyle)) params.set('mapStyle', mapStyle);
 
-    if (isRouteModeValue(view.routeMode ?? null)) params.set('routeMode', view.routeMode);
+    const routeMode = view.routeMode ?? null;
+    if (isRouteModeValue(routeMode)) params.set('routeMode', routeMode);
     else params.delete('routeMode');
 
     if (typeof view.showCityNames === 'boolean') params.set('cityNames', view.showCityNames ? '1' : '0');

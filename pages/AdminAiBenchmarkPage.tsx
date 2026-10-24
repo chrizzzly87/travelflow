@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { buildInitialAdminAiRuntimeSettings } from '../components/admin/adminAiRuntimeSettingsDraft';
 import { AdminUserFacingError, toAdminErrorMessage, toBenchmarkApiErrorSentence } from '../services/adminErrorMessages';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from '@/app/navigation';
 import {
     Plus,
     ArrowClockwise,
@@ -333,13 +334,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [modelCapabilityFilter, setModelCapabilityFilter] = useState('all');
     const [modelPriceFilter, setModelPriceFilter] = useState('all');
     const [liveOpenRouterModels, setLiveOpenRouterModels] = useState<OpenRouterCatalogModel[]>([]);
-    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>({
-        defaultModelId: getDefaultCreateTripModel().id,
-        approvedOpenRouterModels: [],
-        modelMaxAgeMonths: 6,
-        showOlderModels: false,
-        updatedAt: null,
-    });
+    // Start from the service defaults: saving before the server answers posts the
+    // whole object, so map style and runtime preset must never be undefined.
+    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>(
+        () => buildInitialAdminAiRuntimeSettings(getDefaultCreateTripModel().id),
+    );
     const [modelCatalogLoading, setModelCatalogLoading] = useState(false);
     const [modelCatalogLoaded, setModelCatalogLoaded] = useState(false);
     const [modelTargetIds, setModelTargetIds] = useState<string[]>(() => {

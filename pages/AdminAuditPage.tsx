@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
 import { ArrowSquareOut, CopySimple, Crosshair, DotsThreeVertical, DownloadSimple, Info, SpinnerGap, User, Warning, X } from '@phosphor-icons/react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from '@/app/navigation';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { PlanTierKey } from '../types';
 import {

@@ -1,14 +1,14 @@
-import i18n from 'i18next';
+import i18n, { createInstance, type i18n as I18nInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, isLocale } from './config/locales';
 import { APP_NAME } from './config/appGlobals';
-import { readLocalStorageItem, writeLocalStorageItem } from './services/browserStorageService';
+import { readLocalStorageItem } from './services/browserStorageService';
 
 const localeModules = import.meta.glob('./locales/*/*.json');
 
-// Namespaces the app shell (AppContent) requests on every route. Preloaded
-// before mount in index.tsx so the first render never suspends on them.
+// Shared capability namespaces. Native route requirements and optional feature
+// owners preload these; initial resources travel with the server document.
 export const APP_SHELL_NAMESPACES = ['common', 'pages', 'auth', 'wip', 'legal', 'profile'];
 const preloadCache = new Set<string>();
 const LOCALE_STORAGE_KEY = 'tf_app_language';
@@ -82,17 +82,17 @@ const loadLocaleNamespace = async (language: string, namespace: string) => {
     return {};
 };
 
-export const preloadLocaleNamespaces = async (language: string, namespaces: string[]): Promise<void> => {
+export const preloadLocaleNamespaces = async (language: string, namespaces: string[], instance: I18nInstance = i18n): Promise<void> => {
     const normalizedLanguage = isLocale(language) ? language : DEFAULT_LOCALE;
     const uniqueNamespaces = Array.from(new Set(namespaces.filter(Boolean)));
 
     await Promise.all(uniqueNamespaces.map(async (namespace) => {
         const cacheKey = `${normalizedLanguage}:${namespace}`;
-        if (preloadCache.has(cacheKey) || i18n.hasResourceBundle(normalizedLanguage, namespace)) return;
+        if ((instance === i18n && preloadCache.has(cacheKey)) || instance.hasResourceBundle(normalizedLanguage, namespace)) return;
 
         const resources = await loadLocaleNamespace(normalizedLanguage, namespace);
-        i18n.addResourceBundle(normalizedLanguage, namespace, resources, true, true);
-        preloadCache.add(cacheKey);
+        instance.addResourceBundle(normalizedLanguage, namespace, resources, true, true);
+        if (instance === i18n) preloadCache.add(cacheKey);
     }));
 };
 
@@ -105,7 +105,10 @@ void i18n
         supportedLngs: SUPPORTED_LOCALES,
         nonExplicitSupportedLngs: false,
         defaultNS: 'common',
-        ns: ['common'],
+        // The native router restores the document's resource snapshot. Starting
+        // an independent namespace request here races that hydration handoff.
+        ns: [],
+        initImmediate: false,
         interpolation: {
             prefix: '{',
             suffix: '}',
@@ -119,16 +122,15 @@ void i18n
         },
     });
 
-if (typeof window !== 'undefined') {
-    i18n.on('languageChanged', (language) => {
-        const normalized = normalizeDetectedLocale(language);
-        if (!normalized) return;
-        try {
-            writeLocalStorageItem(LOCALE_STORAGE_KEY, normalized);
-        } catch {
-            // Ignore storage write failures (private mode/quota/security).
-        }
+/** One resource store per server request; never mutate the browser singleton for SSR. */
+export const createRequestI18n = (): I18nInstance => {
+    const instance = createInstance();
+    void instance.use(resourcesToBackend(loadLocaleNamespace)).init({
+        lng: DEFAULT_LOCALE, fallbackLng: DEFAULT_LOCALE, supportedLngs: SUPPORTED_LOCALES,
+        defaultNS: 'common', ns: [], initImmediate: false,
+        interpolation: { prefix: '{', suffix: '}', escapeValue: false, defaultVariables: { appName: APP_NAME } },
+        react: { useSuspense: true },
     });
-}
-
+    return instance;
+};
 export default i18n;

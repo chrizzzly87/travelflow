@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from '@/app/navigation';
 import { ArrowRight, Hourglass, SuitcaseRolling, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
@@ -13,8 +13,10 @@ import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
-import { AdminBarChart } from '../components/admin/AdminBarChart';
-import { AdminBarList } from '../components/admin/AdminBarList';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
+import { AdminBarList } from '../components/admin/charts/AdminBarList';
+import type { AdminChartColor } from '../components/admin/charts/chartPalette';
+import { formatAdminChartDay } from '../components/admin/adminRelativeTime';
 import { buildAdminDashboardUserLevelBreakdown } from '../components/admin/adminDashboardUserBreakdown';
 import { buildAdminTripsFilterPath, isAdminTripInDateRange, summarizeAdminTrips } from '../components/admin/adminTripsModel';
 import {
@@ -45,11 +47,16 @@ const RANGE_LABEL: Record<AdminDateRange, string> = {
     all: 'all time',
 };
 
-const TRIP_STATUS_COLORS = {
-    'Active trips': 'var(--chart-2)',
-    'Expired trips': 'var(--chart-3)',
-    'Archived trips': 'var(--chart-4)',
-} as const;
+// Named series colours (styles/admin-charts.css). Plan levels share one order
+// so the "User mix" list and the level chart read as the same legend.
+const ACTIVITY_COLORS: readonly AdminChartColor[] = ['indigo', 'emerald'];
+const USER_LEVEL_COLORS: readonly AdminChartColor[] = ['violet', 'indigo', 'sky', 'emerald'];
+const TRIP_STATUS_COLORS: readonly AdminChartColor[] = ['emerald', 'amber', 'slate'];
+
+/** Chart rows keyed by an ISO day get a short, timezone-safe axis label. */
+const withDayLabels = <TRow extends { date: string }>(rows: readonly TRow[]): TRow[] => (
+    rows.map((row) => ({ ...row, date: formatAdminChartDay(row.date) }))
+);
 
 const getUserName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
@@ -246,10 +253,12 @@ export const AdminDashboardPage: React.FC = () => {
                             description={`Daily sign-ups and trips created ${rangeLabel}.`}
                         />
                         <AdminBarChart
-                            data={usersVsTripsData}
+                            data={withDayLabels(usersVsTripsData)}
                             index="date"
                             categories={ACTIVITY_STACKED_CATEGORIES}
-                            stacked
+                            colors={ACTIVITY_COLORS}
+                            stack
+                            className="h-64"
                             ariaLabel="Bar chart of new users and new trips per day"
                         />
                     </AdminSurfaceCard>
@@ -259,9 +268,11 @@ export const AdminDashboardPage: React.FC = () => {
                         <AdminBarList
                             ariaLabel="Users by plan level"
                             scale="total"
-                            items={userLevelBreakdown.map((level) => ({
+                            sortOrder="none"
+                            data={userLevelBreakdown.map((level, position) => ({
                                 key: level.key,
-                                label: level.label,
+                                name: level.label,
+                                color: USER_LEVEL_COLORS[position % USER_LEVEL_COLORS.length],
                                 value: level.count,
                                 valueLabel: `${formatValue(level.count)} · ${level.shareLabel}`,
                                 tooltip: level.tooltip,
@@ -277,10 +288,12 @@ export const AdminDashboardPage: React.FC = () => {
                             description="Cumulative users per plan level for each day in range."
                         />
                         <AdminBarChart
-                            data={userLevelTrendData}
+                            data={withDayLabels(userLevelTrendData)}
                             index="date"
                             categories={userLevelCategories}
-                            stacked
+                            colors={USER_LEVEL_COLORS}
+                            stack
+                            className="h-64"
                             ariaLabel="Stacked bar chart of cumulative users by plan level"
                         />
                     </AdminSurfaceCard>
@@ -290,11 +303,12 @@ export const AdminDashboardPage: React.FC = () => {
                             description="Active, expired and archived trips by creation day."
                         />
                         <AdminBarChart
-                            data={tripStatusData}
+                            data={withDayLabels(tripStatusData)}
                             index="date"
                             categories={TRIP_STATUS_STACKED_CATEGORIES}
                             colors={TRIP_STATUS_COLORS}
-                            stacked
+                            stack
+                            className="h-64"
                             ariaLabel="Stacked bar chart of trips by status per creation day"
                         />
                     </AdminSurfaceCard>

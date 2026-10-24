@@ -9,11 +9,11 @@ const drawerMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../components/ui/drawer', () => ({
-  Drawer: ({ children, ...props }: Record<string, unknown>) => {
+  Drawer: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => {
     drawerMocks.rootProps.push(props);
     return React.createElement('div', { 'data-testid': 'drawer-root' }, children);
   },
-  DrawerContent: ({ children, ...props }: Record<string, unknown>) => {
+  DrawerContent: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => {
     drawerMocks.contentProps.push(props);
     return React.createElement('div', { 'data-testid': 'drawer-content' }, children);
   },
@@ -35,7 +35,8 @@ describe('components/TripDetailsDrawer', () => {
         expanded: true,
         onOpenChange: vi.fn(),
         onExpandedChange: vi.fn(),
-      }, React.createElement('div', null, 'details')),
+        children: React.createElement('div', null, 'details'),
+      }),
     );
 
     expect(drawerMocks.rootProps.at(-1)?.autoFocus).toBe(false);

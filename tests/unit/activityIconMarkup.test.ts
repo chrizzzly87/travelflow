@@ -1,13 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-// Load order matters: the app's dev entry loads preact/debug before
-// preact/hooks, so the hooks runtime wraps debug's option hooks.
-import 'preact/debug';
-import { h, render } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
-import { setupRerender } from 'preact/test-utils';
-import { renderToString } from 'preact-render-to-string';
+import { act, render } from '@testing-library/react';
+import { useEffect, useState } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { ActivityTypeIcon } from '../../components/ActivityTypeVisuals';
@@ -16,34 +11,25 @@ import { ACTIVITY_TYPE_VALUES } from '../../shared/activityTypes';
 
 const readInnerSvg = (markup: string): string => markup.slice(markup.indexOf('>') + 1, markup.lastIndexOf('</svg>'));
 
-/**
- * Mirrors ItineraryMap: a marker effect builds icon markup, and the component
- * re-renders before paint, so preact/hooks flushes that pending effect inside
- * `options._render`, between setting the current component and running the
- * first hook of the body.
- */
+/** Marker effects build SVG strings while React continues rendering live map state. */
 const renderMarkerMapThroughTwoUpdates = (buildIcon: (size: number) => string) => {
-    const rerender = setupRerender();
-    const root = document.createElement('div');
     let setSize: (size: number) => void = () => {};
     const MarkerMap = ({ size }: { size: number }) => {
         const [label] = useState('markers');
-        useEffect(() => {
-            buildIcon(size);
-        }, [size]);
-        return h('div', null, `${label}:${size}`);
+        useEffect(() => { buildIcon(size); }, [size]);
+        return React.createElement('div', null, `${label}:${size}`);
     };
     const App = () => {
         const [size, update] = useState(11);
         setSize = update;
-        return h(MarkerMap, { size });
+        return React.createElement(MarkerMap, { size });
     };
-    render(h(App, null), root);
-    setSize(12);
-    rerender();
-    setSize(13);
-    rerender();
-    return root.textContent;
+    const view = render(React.createElement(App));
+    act(() => setSize(12));
+    act(() => setSize(13));
+    const text = view.container.textContent;
+    view.unmount();
+    return text;
 };
 
 describe('activity marker icon markup', () => {
@@ -58,12 +44,6 @@ describe('activity marker icon markup', () => {
         expect(markup.startsWith('<svg style="width:17px;height:17px;')).toBe(true);
         expect(markup).toContain('width="17" height="17" viewBox="0 0 24 24"');
         expect(markup.endsWith('</svg>')).toBe(true);
-    });
-
-    it('reproduces the dev crash when a marker effect nests a Preact string render', () => {
-        expect(() => renderMarkerMapThroughTwoUpdates((size) => renderToString(h('svg', { width: size })))).toThrow(
-            'Hook can only be invoked from render methods.',
-        );
     });
 
     it('builds marker icons inside a flushed effect without breaking the live render', () => {

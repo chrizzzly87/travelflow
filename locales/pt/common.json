@@ -1,5 +1,8 @@
 {
   "nav": {
+    "profile": "Perfil",
+    "settings": "Configurações",
+    "account": "Conta",
     "features": "Funcionalidades",
     "inspirations": "Inspiração",
     "updates": "Novidades",
@@ -920,5 +923,11 @@
       "iosStepShare": "Toque em Compartilhar",
       "iosStepAdd": "e depois \"Adicionar à Tela de Início\""
     }
+  },
+  "routeError": {
+    "title": "Esta página não carregou",
+    "body": "Algo deu errado do nosso lado. Tente de novo — suas viagens estão seguras.",
+    "retry": "Tentar novamente",
+    "home": "Ir para o início"
   }
 }

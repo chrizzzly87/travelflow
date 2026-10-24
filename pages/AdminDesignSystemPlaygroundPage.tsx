@@ -8,8 +8,10 @@ import { AdminStatCard } from '../components/admin/AdminStatCard';
 import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
-import { AdminBarChart } from '../components/admin/AdminBarChart';
-import { AdminBarList } from '../components/admin/AdminBarList';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
+import { AdminAreaChart } from '../components/admin/charts/AdminAreaChart';
+import { AdminDonutChart } from '../components/admin/charts/AdminDonutChart';
+import { AdminBarList } from '../components/admin/charts/AdminBarList';
 import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
 import { AdminPagination } from '../components/admin/AdminPagination';
 import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
@@ -305,7 +307,6 @@ const SAMPLE_VERTICAL_CHART_DATA = [
     { country: 'Portugal', Trips: 21 },
     { country: 'Peru', Trips: 12 },
 ];
-const SAMPLE_VERTICAL_CHART_CATEGORIES = ['Trips'] as const;
 
 const GENERATION_TONE: Record<PlaygroundTableRow['generation'], AdminStatusTone> = {
     succeeded: 'success',
@@ -342,10 +343,10 @@ const sampleAdminTableRows: PlaygroundTableRow[] = [
 const formatPlaygroundTimestamp = (value: string): string => new Date(value).toLocaleString();
 
 const SAMPLE_BAR_LIST_ITEMS = [
-    { key: 'de', label: 'Germany', value: 412 },
-    { key: 'jp', label: 'Japan', value: 287 },
-    { key: 'th', label: 'Thailand', value: 164 },
-    { key: 'pt', label: 'Portugal', value: 98 },
+    { key: 'de', name: 'Germany', value: 412 },
+    { key: 'jp', name: 'Japan', value: 287 },
+    { key: 'th', name: 'Thailand', value: 164 },
+    { key: 'pt', name: 'Portugal', value: 98 },
 ];
 
 const SAMPLE_SELECTION_ROWS = [
@@ -1443,27 +1444,39 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                 data={SAMPLE_STACKED_CHART_DATA}
                                 index="day"
                                 categories={SAMPLE_STACKED_CHART_CATEGORIES}
-                                stacked
+                                colors={['indigo', 'emerald']}
+                                stack
                                 className="h-56"
                                 ariaLabel="Sample stacked bar chart of daily new and returning users"
                             />
                         </AdminSurfaceCard>
                         <AdminSurfaceCard className="flex flex-col gap-3">
-                            <AdminSectionHeader as="h3" title="AdminBarChart, vertical" description="Trips per destination country." />
-                            <AdminBarChart
+                            <AdminSectionHeader as="h3" title="AdminAreaChart" description="New users per day as a trend." />
+                            <AdminAreaChart
+                                data={SAMPLE_STACKED_CHART_DATA}
+                                index="day"
+                                categories={['New users']}
+                                colors={['violet']}
+                                showLegend={false}
+                                className="h-56"
+                                ariaLabel="Sample area chart of new users per day"
+                            />
+                        </AdminSurfaceCard>
+                        <AdminSurfaceCard className="flex flex-col gap-3 lg:col-span-2">
+                            <AdminSectionHeader as="h3" title="AdminDonutChart" description="Trips per destination country." />
+                            <AdminDonutChart
                                 data={SAMPLE_VERTICAL_CHART_DATA}
                                 index="country"
-                                categories={SAMPLE_VERTICAL_CHART_CATEGORIES}
-                                layout="vertical"
+                                category="Trips"
                                 className="h-56"
-                                ariaLabel="Sample vertical bar chart of trips per country"
+                                ariaLabel="Sample donut chart of trips per country"
                             />
                         </AdminSurfaceCard>
                     </div>
 
                     <AdminSurfaceCard className="flex max-w-xl flex-col gap-3">
                         <AdminSectionHeader as="h3" title="AdminBarList" description="Top destination countries, each row's share of the leader." />
-                        <AdminBarList items={SAMPLE_BAR_LIST_ITEMS} ariaLabel="Sample bar list of trips per country" sortOrder="descending" />
+                        <AdminBarList data={SAMPLE_BAR_LIST_ITEMS} ariaLabel="Sample bar list of trips per country" sortOrder="descending" />
                     </AdminSurfaceCard>
                 </div>
             );

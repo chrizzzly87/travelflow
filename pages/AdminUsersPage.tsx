@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from '@/app/navigation';
 import {
     AppleLogo,
     ArrowSquareOut,
@@ -3471,7 +3471,6 @@ export const AdminUsersPage: React.FC = () => {
                                             <ProfileCountryRegionSelect
                                                 value={profileDraft.country}
                                                 placeholder="Search country or region"
-                                                clearLabel="Clear country/region"
                                                 emptyLabel="No countries found"
                                                 toggleLabel="Toggle country/region options"
                                                 onValueChange={(nextCode) => setProfileDraft((current) => ({ ...current, country: nextCode }))}

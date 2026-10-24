@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { ArrowRight, X } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
-import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from 'recharts';
-import { AdminBarList } from '../components/admin/AdminBarList';
+import { Link } from '@/app/navigation';
+import { AdminBarList } from '../components/admin/charts/AdminBarList';
+import { AdminAreaChart } from '../components/admin/charts/AdminAreaChart';
+import type { AdminChartColor } from '../components/admin/charts/chartPalette';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
@@ -13,20 +14,13 @@ import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
-import { AdminBarChart } from '../components/admin/AdminBarChart';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
 import { AdminPagination } from '../components/admin/AdminPagination';
 import { AdminFilterMenu } from '../components/admin/AdminFilterMenu';
 import { AdminSortHeaderButton } from '../components/admin/AdminDataTable';
 import { ADMIN_TABLE_SORTED_CELL_CLASS, ADMIN_TABLE_SORTED_HEADER_CLASS } from '../components/admin/AdminDataTableUtils';
 import { formatAdminAbsoluteTime, formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
 import { Button } from '../components/ui/button';
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    chartColor,
-    type ChartConfig,
-} from '../components/ui/chart';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { cn } from '../lib/utils';
@@ -159,7 +153,7 @@ const TELEMETRY_ROW_CAP = 2000;
 const MODEL_PAGE_SIZE = 10;
 const RECENT_PAGE_SIZE = 20;
 
-const CALL_TREND_COLORS = { Success: 'var(--chart-2)', Failed: 'var(--chart-5)' } as const;
+const CALL_TREND_COLORS: readonly AdminChartColor[] = ['emerald', 'rose'];
 
 type TrendTab = 'calls' | 'success' | 'latency' | 'cost';
 type BreakdownTab = 'models' | 'providers';
@@ -228,95 +222,6 @@ const formatIsoDayTick = (value: unknown): string => {
     return Number.isNaN(date.getTime())
         ? value
         : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-};
-
-interface TelemetrySeriesChartProps<TDatum extends Record<string, unknown>> {
-    data: TDatum[];
-    index: keyof TDatum & string;
-    category: keyof TDatum & string;
-    kind: 'area' | 'bar';
-    color: string;
-    valueFormatter: (value: number) => string;
-    tickFormatter?: (value: number) => string;
-    indexFormatter?: (value: unknown) => string;
-    domain?: [number, number];
-    yAxisWidth?: number;
-    className?: string;
-    ariaLabel: string;
-}
-
-/**
- * One series over a category axis, for values `AdminBarChart` cannot scale: its y axis
- * only draws whole-number ticks, which flattens sub-cent costs and fractional seconds.
- */
-const TelemetrySeriesChart = <TDatum extends Record<string, unknown>>({
-    data,
-    index,
-    category,
-    kind,
-    color,
-    valueFormatter,
-    tickFormatter,
-    indexFormatter,
-    domain,
-    yAxisWidth = 56,
-    className,
-    ariaLabel,
-}: TelemetrySeriesChartProps<TDatum>) => {
-    const config = useMemo<ChartConfig>(() => ({ [category]: { label: category, color } }), [category, color]);
-    const gradientId = `telemetry-fill-${category.replace(/[^a-zA-Z0-9]/g, '-')}`;
-    return (
-        <ChartContainer config={config} className={cn('aspect-auto h-56 w-full', className)} role="img" aria-label={ariaLabel}>
-            <ComposedChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                <defs>
-                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={chartColor(category)} stopOpacity={0.35} />
-                        <stop offset="95%" stopColor={chartColor(category)} stopOpacity={0.02} />
-                    </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey={index} tickLine={false} axisLine={false} tickMargin={8} minTickGap={24} tickFormatter={indexFormatter} />
-                <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={6}
-                    width={yAxisWidth}
-                    domain={domain}
-                    tickFormatter={tickFormatter ?? valueFormatter}
-                />
-                <ChartTooltip
-                    cursor={kind === 'bar' ? { fillOpacity: 0.6 } : true}
-                    content={(
-                        <ChartTooltipContent
-                            labelFormatter={indexFormatter ? (label) => indexFormatter(label) : undefined}
-                            valueFormatter={(value) => valueFormatter(Number(value))}
-                        />
-                    )}
-                />
-                {kind === 'area'
-                    ? (
-                        <Area
-                            dataKey={category}
-                            type="monotone"
-                            stroke={chartColor(category)}
-                            strokeWidth={2}
-                            fill={`url(#${gradientId})`}
-                            connectNulls
-                            isAnimationActive={false}
-                        />
-                    )
-                    : (
-                        <Bar
-                            dataKey={category}
-                            fill={chartColor(category)}
-                            radius={[3, 3, 0, 0]}
-                            maxBarSize={32}
-                            isAnimationActive={false}
-                        />
-                    )}
-            </ComposedChart>
-        </ChartContainer>
-    );
 };
 
 const TelemetryEmpty: React.FC<{ children: React.ReactNode; description?: React.ReactNode }> = ({ children, description }) => (
@@ -516,9 +421,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
     );
 
     const monthlyCostChartData = useMemo(() => {
-        // Keep the ISO day; the axis formats it locally (see formatIsoDayTick).
+        // Format the ISO day locally (formatIsoDayTick), so it never shifts west of UTC.
         return monthlyCostHistorySeries.map((point) => ({
-            Date: point.date,
+            Date: formatIsoDayTick(point.date),
             'Cost (USD)': point.cost,
         }));
     }, [monthlyCostHistorySeries]);
@@ -737,47 +642,50 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                             index="Time"
                                             categories={['Success', 'Failed']}
                                             colors={CALL_TREND_COLORS}
-                                            stacked
+                                            stack
+                                            className="h-64"
                                             ariaLabel="Stacked bar chart of successful and failed calls per time bucket"
                                         />
                                     </TabsContent>
                                     <TabsContent value="success">
-                                        <TelemetrySeriesChart
-                                            kind="area"
+                                        <AdminAreaChart
                                             className="h-64"
                                             data={trendChartData}
                                             index="Time"
-                                            category="Success rate"
-                                            color="var(--chart-2)"
-                                            domain={[0, 100]}
+                                            categories={['Success rate']}
+                                            colors={['emerald']}
+                                            minValue={0}
+                                            maxValue={100}
+                                            showLegend={false}
+                                            connectNulls
                                             valueFormatter={(value) => formatPercent(value)}
-                                            tickFormatter={(value) => `${value}%`}
-                                            yAxisWidth={44}
+                                            yAxisWidth={52}
                                             ariaLabel="Area chart of success rate per time bucket"
                                         />
                                     </TabsContent>
                                     <TabsContent value="latency">
-                                        <TelemetrySeriesChart
-                                            kind="area"
+                                        <AdminAreaChart
                                             className="h-64"
                                             data={trendChartData}
                                             index="Time"
-                                            category="Avg latency"
-                                            color="var(--chart-4)"
+                                            categories={['Avg latency']}
+                                            colors={['violet']}
+                                            showLegend={false}
+                                            connectNulls
                                             valueFormatter={(value) => formatDuration(value)}
                                             ariaLabel="Area chart of average latency per time bucket"
                                         />
                                     </TabsContent>
                                     <TabsContent value="cost">
-                                        <TelemetrySeriesChart
-                                            kind="area"
+                                        <AdminAreaChart
                                             className="h-64"
                                             data={trendChartData}
                                             index="Time"
-                                            category="Cost"
-                                            color="var(--chart-3)"
-                                            valueFormatter={(value) => formatUsd(value)}
-                                            tickFormatter={formatUsdTick}
+                                            categories={['Cost']}
+                                            colors={['amber']}
+                                            showLegend={false}
+                                            connectNulls
+                                            valueFormatter={formatUsdTick}
                                             yAxisWidth={64}
                                             ariaLabel="Area chart of total estimated cost per time bucket"
                                         />
@@ -794,14 +702,14 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         />
                         {failureCodeBarListData.length > 0 ? (
                             <AdminBarList
-                                items={failureCodeBarListData.map((row) => ({
+                                data={failureCodeBarListData.map((row) => ({
                                     key: row.key,
-                                    label: <span className="font-mono text-xs text-foreground">{row.name}</span>,
+                                    name: <span className="font-mono text-xs text-foreground">{row.name}</span>,
                                     value: row.value,
                                 }))}
                                 sortOrder="descending"
                                 valueFormatter={(value) => formatCallCount(value)}
-                                color="var(--chart-5)"
+                                color="rose"
                                 ariaLabel="Recent failures by error code"
                             />
                         ) : (
@@ -821,16 +729,15 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         )}
                     />
                     {monthlyCostChartData.length > 0 ? (
-                        <TelemetrySeriesChart
-                            kind="bar"
+                        <AdminBarChart
                             data={monthlyCostChartData}
                             index="Date"
-                            category="Cost (USD)"
-                            color="var(--chart-2)"
-                            valueFormatter={(value) => formatUsd(value)}
-                            tickFormatter={formatUsdTick}
-                            indexFormatter={formatIsoDayTick}
+                            categories={['Cost (USD)']}
+                            colors={['emerald']}
+                            showLegend={false}
+                            valueFormatter={formatUsdTick}
                             yAxisWidth={64}
+                            className="h-64"
                             ariaLabel="Bar chart of API cost per day this month"
                         />
                     ) : (
@@ -1012,7 +919,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                         <TableCell className="min-w-40">
                                                             <div className="flex items-center gap-2 tabular-nums">
                                                                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                                                                    <div className="h-full rounded-full bg-[var(--chart-1)]" style={{ width: `${row.sharePercent}%` }} />
+                                                                    <div className="h-full rounded-full bg-[var(--admin-chart-indigo)]" style={{ width: `${row.sharePercent}%` }} />
                                                                 </div>
                                                                 <span className="w-24 shrink-0 text-end text-foreground">
                                                                     {row.total.toLocaleString()} · {formatPercent(row.sharePercent)}

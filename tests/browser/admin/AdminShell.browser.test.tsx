@@ -3,7 +3,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from '@/tests/helpers/routerHarness';
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ access: { userId: 'admin-1', email: 'admin@example.com' }, isAdmin: true }),
@@ -50,7 +50,7 @@ const renderShell = (path: string, props: Partial<React.ComponentProps<typeof Ad
       h(Route, {
         path: '*',
         element: h(React.Fragment, null,
-          h(AdminShell, { title: 'Page title', description: 'Page purpose.', ...props }, h('p', null, 'Page body')),
+          h(AdminShell, { title: 'Page title', description: 'Page purpose.', ...props, children: h('p', null, 'Page body') }),
           h(LocationProbe)),
       }))),
 );

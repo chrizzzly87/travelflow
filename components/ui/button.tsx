@@ -4,6 +4,7 @@ import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Kbd } from "@/components/ui/kbd"
+import { Spinner } from "@/components/ui/spinner"
 
 const buttonVariants = cva(
   "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity,scale] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -75,13 +76,20 @@ export type ButtonProps = React.ComponentProps<"button"> &
      * chord too. Ignored with `asChild`, whose Slot takes exactly one child.
      */
     shortcut?: React.ReactNode
+    /** Leading icon. While `loading`, the shared spinner takes its place. */
+    icon?: React.ReactNode
+    /**
+     * Pending action: disables the button, sets `aria-busy` and shows the
+     * spinner in the icon slot, so the label and width stay put.
+     */
+    loading?: boolean
   }
 
 // forwardRef, not a ref-in-props function component: the app renders through
 // preact/compat, which does not pass `ref` to a plain function component, so
 // Radix `asChild` triggers would hand their popper an empty anchor.
 const Button = React.forwardRef(function Button(
-  { className, variant = "default", size = "default", asChild = false, shortcut, children, ...props }: ButtonProps,
+  { className, variant = "default", size = "default", asChild = false, shortcut, icon, loading = false, disabled, children, ...props }: ButtonProps,
   ref: React.Ref<HTMLButtonElement>
 ) {
   const Comp = asChild ? Slot.Root : "button"
@@ -93,12 +101,15 @@ const Button = React.forwardRef(function Button(
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
     >
-      {asChild || !shortcut ? children : (
+      {asChild ? children : (
         <>
+          {loading ? <Spinner /> : icon}
           {children}
-          <Kbd className="ms-0.5">{shortcut}</Kbd>
+          {shortcut ? <Kbd className="ms-0.5">{shortcut}</Kbd> : null}
         </>
       )}
     </Comp>

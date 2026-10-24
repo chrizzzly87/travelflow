@@ -1,17 +1,15 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { MapPinLine, Printer, Ticket } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { FeaturesAirportBand } from '../components/marketing/features/FeaturesAirportBand';
 import { FeaturesCapabilities, type FeatureCapabilityItem } from '../components/marketing/features/FeaturesCapabilities';
 import { FeaturesGlobe } from '../components/marketing/features/FeaturesGlobe';
-import { RevealWords } from '../components/marketing/features/RevealWords';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { warmRouteAssets } from '../services/navigationPrefetch';
 
 interface OutcomeItem {
     title: string;
@@ -41,16 +39,13 @@ export const FeaturesPage: React.FC = () => {
     const outcomeItems = t('outcomes.items', { returnObjects: true }) as OutcomeItem[];
     const airport = t('airport', { returnObjects: true }) as AirportCopy;
 
-    const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildPath('createTrip'), 'manual');
-    };
 
     return (
         <MarketingLayout>
             <section className="relative overflow-visible pb-20 pt-10 md:pb-28 md:pt-16">
                 <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(460px,560px)] lg:items-center">
                     <div className="max-w-2xl">
-                        <p className={`${sectionEyebrowClasses} animate-hero-stagger`} style={{ '--stagger': '0ms' } as React.CSSProperties}>
+                        <p className={sectionEyebrowClasses}>
                             {t('hero.eyebrow')}
                         </p>
 
@@ -58,16 +53,11 @@ export const FeaturesPage: React.FC = () => {
                             className="mt-5 text-balance text-5xl font-semibold leading-[1.05] tracking-tight text-foreground md:text-7xl"
                             style={{ fontFamily: 'var(--tf-font-heading)' }}
                         >
-                            <RevealWords
-                                startDelayMs={120}
-                                segments={[
-                                    { text: t('hero.titleBefore') },
-                                    { text: t('hero.titleHighlight'), className: 'text-accent-700 dark:text-accent-200' },
-                                ]}
-                            />
+                            {t('hero.titleBefore')}{' '}
+                            <span className="text-accent-700 dark:text-accent-200">{t('hero.titleHighlight')}</span>
                         </h1>
 
-                        <div className="animate-hero-stagger" style={{ '--stagger': '520ms' } as React.CSSProperties}>
+                        <div>
                             <p className="mt-7 max-w-lg text-pretty text-lg leading-relaxed text-muted-foreground md:text-xl">
                                 {t('hero.description')}
                             </p>
@@ -76,9 +66,9 @@ export const FeaturesPage: React.FC = () => {
                                 <Link
                                     to={buildPath('createTrip')}
                                     onClick={() => trackEvent('features__hero_cta--start_planning')}
-                                    onMouseEnter={prewarmCreateTripRoute}
-                                    onFocus={prewarmCreateTripRoute}
-                                    onTouchStart={prewarmCreateTripRoute}
+
+
+
                                     className={primaryCtaClasses}
                                     {...getAnalyticsDebugAttributes('features__hero_cta--start_planning')}
                                 >
@@ -182,9 +172,9 @@ export const FeaturesPage: React.FC = () => {
                         <Link
                             to={buildPath('createTrip')}
                             onClick={() => trackEvent('features__bottom_cta')}
-                            onMouseEnter={prewarmCreateTripRoute}
-                            onFocus={prewarmCreateTripRoute}
-                            onTouchStart={prewarmCreateTripRoute}
+
+
+
                             className="mt-10 inline-flex items-center justify-center rounded-lg bg-white px-8 py-4 text-base font-semibold text-accent-700 shadow-lg shadow-slate-900/20 transition-[scale,translate,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.96] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-600"
                             {...getAnalyticsDebugAttributes('features__bottom_cta')}
                         >

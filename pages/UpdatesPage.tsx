@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ReleasePill } from '../components/marketing/ReleasePill';
 import { useAuth } from '../hooks/useAuth';
-import { getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
+import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
+import { formatReleaseDate, getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { readLocalStorageItem } from '../services/browserStorageService';
 
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
@@ -55,17 +56,6 @@ const updatesDebugVisibilityReducer = (
     }
 };
 
-const formatReleaseDate = (dateLike: string) => {
-    const parsed = new Date(dateLike);
-    if (Number.isNaN(parsed.getTime())) return dateLike;
-
-    return parsed.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
-
 const readStoredBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
     if (typeof window === 'undefined') return fallbackValue;
     try {
@@ -94,7 +84,8 @@ const readInitialSimulatedLogin = (): boolean => {
 };
 
 export const UpdatesPage: React.FC = () => {
-    const { t } = useTranslation('pages');
+    const { t, i18n } = useTranslation('pages');
+    const locale = normalizeLocale(i18n.resolvedLanguage || i18n.language || DEFAULT_LOCALE);
     const { isAdmin } = useAuth();
     const releases = useMemo(() => getPublishedReleaseNotes(), []);
     const [debugVisibility, dispatchDebugVisibility] = useReducer(updatesDebugVisibilityReducer, undefined, () => ({
@@ -191,7 +182,7 @@ export const UpdatesPage: React.FC = () => {
                                         {release.version}
                                     </span>
                                     <p className="mt-1 text-xs font-medium text-muted-foreground">
-                                        {formatReleaseDate(release.publishedAt || release.date)}
+                                        {formatReleaseDate(release.publishedAt || release.date, locale)}
                                     </p>
                                 </div>
                             </div>

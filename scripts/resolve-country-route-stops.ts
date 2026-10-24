@@ -125,6 +125,7 @@ const buildAirportIndex = (): Map<string, Resolution> => {
     const countryCode = (airport.countryCode || '').trim().toUpperCase();
     if (!municipality || !countryCode) return;
     if (typeof airport.latitude !== 'number' || typeof airport.longitude !== 'number') return;
+    const { latitude, longitude } = airport;
 
     municipalityAliases(municipality).forEach((alias) => {
       const mapKey = key(countryCode, alias);
@@ -133,8 +134,8 @@ const buildAirportIndex = (): Map<string, Resolution> => {
       if (existing && !airport.isMajorCommercial) return;
       index.set(mapKey, {
         coordinates: {
-          lat: Number(airport.latitude.toFixed(4)),
-          lng: Number(airport.longitude.toFixed(4)),
+          lat: Number(latitude.toFixed(4)),
+          lng: Number(longitude.toFixed(4)),
         },
         source: 'airport',
         detail: airport.name || municipality,

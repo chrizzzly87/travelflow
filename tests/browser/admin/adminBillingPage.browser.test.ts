@@ -2,7 +2,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   adminGetBillingDashboard: vi.fn(),
@@ -61,7 +61,7 @@ vi.mock('recharts', async (importOriginal) => {
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactElement }) => (
-      React.createElement('div', { style: { width: 640, height: 288 } }, React.cloneElement(children, { width: 640, height: 288 }))
+      React.createElement('div', { style: { width: 640, height: 288 } }, React.cloneElement(children as React.ReactElement<Record<string, unknown>>, { width: 640, height: 288 }))
     ),
   };
 });

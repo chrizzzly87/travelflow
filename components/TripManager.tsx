@@ -196,11 +196,14 @@ const getTripFlagCodes = (trip: ITrip): string[] => {
   });
 
   if (codes.length === 0 && trip.countryInfo) {
-    const fromCountryInfoCode = typeof (trip.countryInfo as { countryCode?: unknown }).countryCode === 'string'
-      ? getCountryFromToken((trip.countryInfo as { countryCode: string }).countryCode)
+    // Older trips stored the country code/name on countryInfo; ICountryInfo no longer declares them.
+    const legacyCountryInfo: Record<string, unknown> = { ...trip.countryInfo };
+    const { countryCode, countryName } = legacyCountryInfo;
+    const fromCountryInfoCode = typeof countryCode === 'string'
+      ? getCountryFromToken(countryCode)
       : null;
-    const fromCountryInfoName = typeof (trip.countryInfo as { countryName?: unknown }).countryName === 'string'
-      ? getCountryFromToken((trip.countryInfo as { countryName: string }).countryName)
+    const fromCountryInfoName = typeof countryName === 'string'
+      ? getCountryFromToken(countryName)
       : null;
     const fallbackMatch = fromCountryInfoCode || fromCountryInfoName;
     if (fallbackMatch && !seen.has(fallbackMatch.code)) {
@@ -1252,6 +1255,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
             opacity: isOpen ? 1 : 0,
             pointerEvents: isOpen ? 'auto' : 'none',
           }}
+          inert={!isOpen ? true : undefined}
         >
           <button
             type="button"
@@ -1271,6 +1275,10 @@ export const TripManager: React.FC<TripManagerProps> = ({
         role={isPageVariant ? undefined : 'dialog'}
         aria-modal={isPageVariant ? undefined : 'true'}
         aria-labelledby="trip-manager-title"
+        // The overlay stays mounted off-screen so it can slide. While closed it
+        // must not read as an open modal or keep its rows in the tab order.
+        aria-hidden={!isPageVariant && !isOpen ? true : undefined}
+        inert={!isPageVariant && !isOpen ? true : undefined}
       >
         <div className={`px-4 py-3 border-b border-border flex items-center ${isPageVariant ? 'justify-end' : 'justify-between'}`}>
           {/* The /trips route supplies its own localized heading, so repeating a

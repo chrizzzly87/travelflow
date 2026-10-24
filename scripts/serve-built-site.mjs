@@ -4,12 +4,16 @@ import { createServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
-import { gzipSync } from 'node:zlib';
+import { Readable } from 'node:stream';
+import { gzipSync, createGzip } from 'node:zlib';
 import sharp from 'sharp';
+
+// The built framework server externalizes React and must resolve its production export.
+process.env.NODE_ENV ||= 'production';
 
 const root = process.env.RUNTIME_DIST_DIR
   ? path.resolve(process.env.RUNTIME_DIST_DIR)
-  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'client');
 const port = Number(process.env.PORT || 4183);
 const types = {
   '.css': 'text/css', '.html': 'text/html', '.ico': 'image/x-icon',
@@ -24,9 +28,10 @@ export const resolveBuiltPath = async (pathname, distRoot = root) => {
   try { decoded = decodeURIComponent(pathname); } catch { return null; }
   if (decoded.startsWith('/api/')) return null;
   const relative = decoded.replace(/^\/+/, '');
+  const documentPath = relative.replace(/\/+$/, '');
   const fallback = path.extname(relative) ? [] : ['spa.html'];
   const candidates = relative
-    ? [relative, `${relative}.html`, path.join(relative, 'index.html'), ...fallback]
+    ? [relative, `${documentPath}.html`, path.join(relative, 'index.html'), ...fallback]
     : ['index.html'];
 
   for (const candidate of candidates) {
@@ -49,7 +54,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         let body = imageCache.get(url.search);
         const format = url.searchParams.get('fm') === 'avif' ? 'avif' : 'webp';
         if (!body) {
-          const source = await resolveBuiltPath(url.searchParams.get('url') || '');
+          const imageUrl = new URL(url.searchParams.get('url') || '', 'http://localhost');
+          if (imageUrl.origin !== 'http://localhost') throw new Error('Remote image not supported by the built test server');
+          const source = await resolveBuiltPath(imageUrl.pathname);
           if (!source || !/\.(webp|png|jpe?g|avif)$/.test(source)) throw new Error('Missing image');
           const width = Number(url.searchParams.get('w')) || undefined;
           body = await sharp(source).resize({ width, withoutEnlargement: true })
@@ -61,6 +68,27 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       return;
     }
     const target = await resolveBuiltPath(pathname);
+    const isShellFallback = target?.endsWith(`${path.sep}spa.html`) && pathname !== '/spa.html';
+    if ((!target || isShellFallback) && !process.env.RUNTIME_DIST_DIR && !pathname.startsWith('/api/') && (!path.extname(pathname) || pathname.startsWith('/_serverFn/'))) {
+      try {
+        const { default: server } = await import('../dist/server/server.js');
+        const requestUrl = `http://127.0.0.1:${port}${request.url || '/'}`;
+        const chunks = [];
+        for await (const chunk of request) chunks.push(chunk);
+        const body = request.method === 'GET' || request.method === 'HEAD' ? undefined : Buffer.concat(chunks);
+        const result = await server.fetch(new Request(requestUrl, { method: request.method, headers: request.headers, body }));
+        const headers = Object.fromEntries(result.headers);
+        const compress = request.headers['accept-encoding']?.includes('gzip');
+        if (compress) { headers['content-encoding'] = 'gzip'; delete headers['content-length']; }
+        response.writeHead(result.status, headers);
+        if (!result.body) response.end();
+        else { const stream = Readable.fromWeb(result.body); (compress ? stream.pipe(createGzip()) : stream).pipe(response); }
+      } catch (error) {
+        console.error('Framework request failed:', error.message);
+        response.writeHead(500).end();
+      }
+      return;
+    }
     if (!target) {
       response.writeHead(404).end();
       return;

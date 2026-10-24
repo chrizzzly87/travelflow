@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
-import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
+import { Navigate, useNavigate, useSearchParams } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { ProfileHomeActions } from '../components/profile/ProfileHomeActions';
 import { ProfileHero } from '../components/profile/ProfileHero';
-import { ProfileOwnerSummary } from '../components/profile/ProfileOwnerSummary';
 import { ProfileTripTabs } from '../components/profile/ProfileTripTabs';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
 import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
 import { PASSPORT_FEATURE_ENABLED } from '../services/passportService';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import {
     getPinnedTrips,
@@ -24,15 +24,11 @@ import {
     toggleTripFavorite,
     toggleTripPinned,
 } from '../components/profile/profileTripState';
-import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
-import { resolveProfileStatusByTier } from '../components/profile/profileStatus';
 import {
     buildProfileStampProgress,
     computeProfileStampMetrics,
-    getPassportDisplayStamps,
 } from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
-import { getProfileCountryDisplayName } from '../services/profileCountryService';
 import { deleteTrip, getAllTrips, saveTrip } from '../services/storageService';
 import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -42,71 +38,19 @@ import {
 } from '../data/internationalGreetingsCatalog';
 import { normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
-import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import type { ITrip } from '../types';
+import { cn } from '../lib/utils';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
 import { showAppToast } from '../components/ui/appToast';
 import { isTripExpiredByTimestamp } from '../config/productLimits';
 
 const PROFILE_TRIPS_PAGE_SIZE = 6;
+// Selection toolbar actions: the shared small `Button`, kept at the toolbar's
+// compact text size. Tinted ones layer their status colour on `outline`.
+const profileSelectionActionClassName = 'rounded-lg text-xs font-semibold';
+const profileSelectionAmberClassName = 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/12 dark:text-amber-200 dark:hover:bg-amber-400/20 dark:hover:text-amber-200';
 const PROFILE_PASSPORT_QUERY_KEY = 'passport';
 const PROFILE_PASSPORT_QUERY_VALUE = 'open';
-
-const initialsFrom = (
-    profile: {
-        firstName?: string | null;
-        lastName?: string | null;
-    } | null,
-    fallbackEmail: string | null
-): string => {
-    const first = profile?.firstName?.trim() || '';
-    const last = profile?.lastName?.trim() || '';
-    if (first || last) {
-        return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || 'U';
-    }
-    return (fallbackEmail || 'user').charAt(0).toUpperCase();
-};
-
-const formatMemberSince = (
-    profile: {
-        createdAt?: string | null;
-        onboardingCompletedAt?: string | null;
-        usernameChangedAt?: string | null;
-    } | null,
-    trips: ITrip[],
-    locale: string,
-    fallbackLabel: string
-): string => {
-    const candidateTimestamps: number[] = [];
-
-    if (profile?.createdAt) {
-        const parsed = Date.parse(profile.createdAt);
-        if (Number.isFinite(parsed)) candidateTimestamps.push(parsed);
-    }
-
-    if (profile?.onboardingCompletedAt) {
-        const parsed = Date.parse(profile.onboardingCompletedAt);
-        if (Number.isFinite(parsed)) candidateTimestamps.push(parsed);
-    }
-
-    if (profile?.usernameChangedAt) {
-        const parsed = Date.parse(profile.usernameChangedAt);
-        if (Number.isFinite(parsed)) candidateTimestamps.push(parsed);
-    }
-
-    trips.forEach((trip) => {
-        if (typeof trip.createdAt === 'number' && Number.isFinite(trip.createdAt)) {
-            candidateTimestamps.push(trip.createdAt);
-        }
-    });
-
-    if (candidateTimestamps.length === 0) return fallbackLabel;
-    const earliest = Math.min(...candidateTimestamps);
-    return new Date(earliest).toLocaleDateString(locale, {
-        month: 'short',
-        year: 'numeric',
-    });
-};
 
 const isEditableEventTarget = (target: EventTarget | null): boolean => {
     if (!(target instanceof HTMLElement)) return false;
@@ -171,30 +115,6 @@ export const ProfilePage: React.FC = () => {
     const greetingContext = t(`hero.greetingFacts.${greeting.id}`, {
         defaultValue: greeting.context,
     });
-
-    const profileCountryLabel = getProfileCountryDisplayName(profile?.country, appLocale);
-    const locationLabel = [profile?.city || '', profileCountryLabel]
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .join(', ') || t('summary.locationUnknown');
-
-    const totalDistanceKm = useMemo(
-        () => trips.reduce((sum, trip) => sum + getTripDistanceKm(trip.items), 0),
-        [trips]
-    );
-    const distanceLabel = totalDistanceKm > 0
-        ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
-        : t('summary.distanceUnknown');
-
-    const visitedCountries = useMemo(() => collectVisitedCountries(trips), [trips]);
-    const memberSince = useMemo(
-        () => formatMemberSince(profile, trips, appLocale, t('summary.memberSinceUnknown')),
-        [appLocale, profile, t, trips]
-    );
-    const profileStatus = useMemo(
-        () => resolveProfileStatusByTier(access?.tierKey),
-        [access?.tierKey]
-    );
 
     const refreshTrips = useCallback(() => {
         setTrips(getAllTrips());
@@ -312,11 +232,6 @@ export const ProfilePage: React.FC = () => {
         () => buildProfileStampProgress(stampMetrics),
         [stampMetrics]
     );
-    const passportDisplayStamps = useMemo(
-        () => getPassportDisplayStamps(stampProgress, profile?.passportStickerSelection),
-        [profile?.passportStickerSelection, stampProgress]
-    );
-
     const handleTabChange = useCallback((nextTab: 'recent' | 'favorites' | 'all' | 'liked') => {
         const next = new URLSearchParams(searchParams);
         next.set('tab', nextTab);
@@ -820,13 +735,6 @@ export const ProfilePage: React.FC = () => {
         });
     }, [persistTrip, tab, trips]);
 
-    const publicProfilePath = profile?.username
-        ? buildPath('publicProfile', { username: profile.username })
-        : null;
-    const publicProfileUrl = publicProfilePath
-        ? `${typeof window !== 'undefined' ? window.location.origin : ''}${publicProfilePath}`
-        : null;
-
     const inspirationPath = buildLocalizedMarketingPath('inspirationsCountryDetail', appLocale, {
         countryName: greeting.inspirationCountry,
     });
@@ -835,23 +743,11 @@ export const ProfilePage: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
-    if (isProfileLoading && !profile) {
-        return (
-            <div className="flex min-h-screen flex-col bg-secondary">
-                <SiteHeader />
-                <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-12 md:px-8 md:pt-14">
-                    <div className="h-24" aria-hidden="true" />
-                </main>
-                <SiteFooter />
-            </div>
-        );
-    }
-
     return (
         <div className="flex min-h-screen flex-col bg-secondary">
             <SiteHeader />
-            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
-                <ProfileHero
+            <main aria-busy={isProfileLoading || undefined} data-testid="profile-page-container" className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
+                {(!isProfileLoading || profile) && <ProfileHero
                     greeting={greeting.greeting}
                     name={greetingDisplayName}
                     transliteration={greeting.transliteration}
@@ -871,20 +767,7 @@ export const ProfilePage: React.FC = () => {
                     analyticsAttributes={getAnalyticsDebugAttributes('profile__hero_cta--inspirations_country', {
                         country: greeting.inspirationCountry,
                     })}
-                />
-
-                <div className="md:hidden">
-                    <NavLink
-                        to={buildPath('profileSettings')}
-                        onClick={() => {
-                            trackEvent('profile__summary--edit_profile');
-                        }}
-                        className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
-                        {...getAnalyticsDebugAttributes('profile__summary--edit_profile')}
-                    >
-                        {t('summary.editProfile')}
-                    </NavLink>
-                </div>
+                />}
 
                 {pinNotice && (
                     <section className="rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
@@ -892,124 +775,7 @@ export const ProfilePage: React.FC = () => {
                     </section>
                 )}
 
-                <ProfileOwnerSummary
-                    displayName={displayName}
-                    username={profile?.usernameDisplay || profile?.username || ''}
-                    initials={initialsFrom(profile, access?.email || null)}
-                    status={profileStatus}
-                    memberSince={memberSince}
-                    bio={profile?.bio || ''}
-                    location={locationLabel}
-                    distanceLabel={distanceLabel}
-                    countries={visitedCountries}
-                    stamps={passportDisplayStamps}
-                    passportCountryCode={profile?.country}
-                    stats={[
-                        { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
-                        { id: 'likes_saved', label: t('stats.likesSaved'), value: favoriteTripsCount },
-                        { id: 'followers', label: t('stats.followers'), value: 0 },
-                        { id: 'likes_earned', label: t('stats.likesEarned'), value: 0, accent: true },
-                    ]}
-                    labels={{
-                        editProfile: t('summary.editProfile'),
-                        viewPublicProfile: t('summary.viewPublicProfile'),
-                        shareProfile: t('summary.shareProfile'),
-                        memberSinceLabel: t('summary.memberSinceLabel'),
-                        usernamePrefix: t('summary.usernamePrefix'),
-                        bio: t('summary.bioLabel'),
-                        bioFallback: t('summary.bioFallback'),
-                        countries: t('summary.countriesLabel'),
-                        countriesEmpty: t('summary.countriesEmpty'),
-                        stampsTitle: t('summary.stampsTitle'),
-                        stampsDescription: t('summary.stampsDescription'),
-                        stampsOpen: t('summary.stampsOpen'),
-                    }}
-                    editProfileHref={buildPath('profileSettings')}
-                    viewPublicProfileHref={publicProfilePath || buildPath('profileSettings')}
-                    onEditProfileClick={() => {
-                        trackEvent('profile__summary--edit_profile');
-                    }}
-                    onViewPublicProfileClick={() => {
-                        trackEvent(publicProfilePath ? 'profile__summary--view_public_profile' : 'profile__summary--view_public_profile_setup');
-                    }}
-                    onShareProfile={() => {
-                        if (!publicProfileUrl) {
-                            navigate(buildPath('profileSettings'));
-                            return;
-                        }
-                        trackEvent('profile__summary--share_public_profile');
-                        if (navigator.clipboard?.writeText) {
-                            void navigator.clipboard.writeText(publicProfileUrl)
-                                .then(() => {
-                                    showAppToast({
-                                        tone: 'success',
-                                        title: t('summary.shareCopiedTitle'),
-                                        description: t('summary.shareCopied'),
-                                    });
-                                })
-                                .catch(() => {
-                                    window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
-                                    showAppToast({
-                                        tone: 'info',
-                                        title: t('summary.shareOpenedTitle'),
-                                        description: t('summary.shareOpened'),
-                                    });
-                                });
-                        } else {
-                            window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
-                            showAppToast({
-                                tone: 'info',
-                                title: t('summary.shareOpenedTitle'),
-                                description: t('summary.shareOpened'),
-                            });
-                        }
-                    }}
-                    onOpenPassport={(rect) => {
-                        handleOpenPassportDialog(rect);
-                    }}
-                    isPassportOpen={searchParams.get(PROFILE_PASSPORT_QUERY_KEY) === PROFILE_PASSPORT_QUERY_VALUE}
-                    canShareProfile={Boolean(publicProfileUrl)}
-                    locale={appLocale}
-                    className="hidden md:grid"
-                />
-
-                <section className="hidden space-y-2 md:block">
-                    <h2 className="text-sm font-black tracking-tight text-foreground">{t('actions.title')}</h2>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <NavLink
-                            to={buildPath('createTrip')}
-                            onClick={() => trackEvent('profile__shortcut--planner')}
-                            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
-                            {...getAnalyticsDebugAttributes('profile__shortcut--planner')}
-                        >
-                            <IdentificationCard size={16} />
-                            {t('nav.createTrip', { ns: 'common' })}
-                        </NavLink>
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                trackEvent('profile__shortcut--stamps');
-                                handleOpenPassportDialog(e.currentTarget.getBoundingClientRect());
-                            }}
-                            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
-                            {...getAnalyticsDebugAttributes('profile__shortcut--stamps')}
-                        >
-                            <SealCheck size={16} weight="duotone" />
-                            {t('actions.stamps')}
-                        </button>
-                        {isAdmin && (
-                            <NavLink
-                                to={buildPath('adminDashboard')}
-                                onClick={() => trackEvent('profile__shortcut--admin_workspace')}
-                                className="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 transition-colors hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
-                                {...getAnalyticsDebugAttributes('profile__shortcut--admin_workspace')}
-                            >
-                                <ShieldCheck size={16} />
-                                {t('actions.adminWorkspace')}
-                            </NavLink>
-                        )}
-                    </div>
-                </section>
+                <ProfileHomeActions username={profile?.username} isAdmin={isAdmin} onOpenPassport={handleOpenPassportDialog} />
 
                 {pinnedTrips.length > 0 && (
                     <section className="space-y-3">
@@ -1134,71 +900,85 @@ export const ProfilePage: React.FC = () => {
                                         total: tabCounts[tab] ?? tripsForTab.length,
                                     })}
                                 </span>
-                                <button
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleSelectVisibleTrips}
-                                    className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
+                                    className={profileSelectionActionClassName}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--visible', { tab })}
                                 >
                                     {t('selection.selectVisible')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleSelectExpiredTrips}
-                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                                    className={cn(profileSelectionActionClassName, profileSelectionAmberClassName)}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--expired', { tab })}
                                 >
                                     {t('selection.selectExpired')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleSelectExampleTrips}
-                                    className="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30"
+                                    className={cn(profileSelectionActionClassName, 'border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100 hover:text-sky-800 dark:border-sky-400/30 dark:bg-sky-400/12 dark:text-sky-200 dark:hover:bg-sky-400/20 dark:hover:text-sky-200')}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--examples', { tab })}
                                 >
                                     {t('selection.selectExamples')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleToggleFavoriteSelectedTrips}
-                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                                    className={cn(profileSelectionActionClassName, profileSelectionAmberClassName)}
                                     {...getAnalyticsDebugAttributes('profile__trip_favorite--batch_toggle', {
                                         tab,
                                         selected_count: selectedTripCount,
                                     })}
                                 >
                                     {t('selection.toggleFavorites')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="secondary"
                                     onClick={handleToggleVisibilitySelectedTrips}
-                                    className="inline-flex items-center rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-slate-200"
+                                    className={cn(profileSelectionActionClassName, 'border border-border')}
                                     {...getAnalyticsDebugAttributes('profile__trip_visibility--batch_toggle', {
                                         tab,
                                         selected_count: selectedTripCount,
                                     })}
                                 >
                                     {t('selection.toggleVisibility')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={() => void handleArchiveSelectedTrips()}
-                                    className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
+                                    className={cn(profileSelectionActionClassName, 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 hover:text-rose-800 dark:border-rose-400/30 dark:bg-rose-400/12 dark:text-rose-200 dark:hover:bg-rose-400/20 dark:hover:text-rose-200')}
                                     {...getAnalyticsDebugAttributes('profile__trip_archive--batch', {
                                         tab,
                                         selected_count: selectedTripCount,
                                     })}
                                 >
                                     {t('selection.archiveSelected')}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="sm"
+                                    variant="outline"
                                     onClick={handleEndSelection}
-                                    className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
+                                    className={profileSelectionActionClassName}
                                     {...getAnalyticsDebugAttributes('profile__trip_select--end', { tab })}
                                 >
                                     {t('selection.end')}
-                                </button>
+                                </Button>
                                 <span className="text-[11px] text-muted-foreground">{t('selection.hotkeyHint')}</span>
                             </div>
                         )}

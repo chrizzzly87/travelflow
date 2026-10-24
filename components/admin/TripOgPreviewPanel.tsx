@@ -1,3 +1,4 @@
+import { useSearchParams } from '@/app/navigation';
 import React, { useState } from 'react';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -37,7 +38,7 @@ const STATUS_LABEL: Record<string, string> = {
 const fieldLabelClass = 'text-xs font-medium text-muted-foreground';
 
 export const TripOgPreviewPanel: React.FC<{ tripId: string }> = ({ tripId }) => {
-    const initialSettings = new URLSearchParams(window.location.search);
+    const [initialSettings] = useSearchParams();
     const [selectedStyle, setStyle] = useState<TripVideoStyle | null>(() => initialSettings.has('mapStyle') ? normalizeTripVideoStyle(initialSettings.get('mapStyle')) : null);
     const [selectedRouteMode, setRouteMode] = useState<TripVideoRouteMode | null>(() => initialSettings.has('routeMode') ? normalizeTripVideoRouteMode(initialSettings.get('routeMode')) : null);
     const [selectedFormat, setFormat] = useState<TripVideoFormat | null>(() => initialSettings.has('format') ? normalizeTripVideoFormat(initialSettings.get('format')) : null);

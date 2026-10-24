@@ -372,3 +372,12 @@ sub-surface such as a row menu or a sheet). One row per surface; the actions are
 3. Decide: is the qualifier finite (< ~15 values) and stable? → use `--{detail}`. Otherwise → payload.
 4. Add a `trackEvent(...)` call and update the catalog table above.
 5. Run `pnpm build` — the TypeScript type catches malformed names at compile time.
+
+## Consent during asynchronous loading
+
+Never treat consent at the start of an analytics-script download as permission to
+send later. Recheck consent after every asynchronous boundary before dispatching
+an event/pageview. A pending send must be dropped when optional consent is withdrawn.
+Same-page and cross-tab consent changes use `subscribeToConsentChanges`; unsubscribe
+when the owning UI/runtime unmounts. Existing event names and debug attributes remain
+unchanged when improving the consent controls.

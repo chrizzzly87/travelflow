@@ -18,7 +18,7 @@ interface CountrySelectProps {
     onChange: (value: string) => void;
     disabled?: boolean;
     recommendationMonths?: number[];
-    analyticsEventName?: string;
+    analyticsEventName?: Parameters<typeof trackEvent>[0];
     labels?: {
         fieldLabel?: string;
         placeholder?: string;

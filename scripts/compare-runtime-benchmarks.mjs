@@ -22,10 +22,13 @@ export const compareBenchmarks = (before, after) => {
 };
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const before = JSON.parse(await fs.readFile('perf/runtime/before.json', 'utf8'));
-  const after = JSON.parse(await fs.readFile('perf/runtime/after.json', 'utf8'));
+  const beforePath = process.argv.find(arg => arg.startsWith('--before='))?.slice(9) || 'perf/runtime/before.json';
+  const afterPath = process.argv.find(arg => arg.startsWith('--after='))?.slice(8) || 'perf/runtime/after.json';
+  const outputPath = process.argv.find(arg => arg.startsWith('--output='))?.slice(9) || 'perf/runtime/comparison.json';
+  const before = JSON.parse(await fs.readFile(beforePath, 'utf8'));
+  const after = JSON.parse(await fs.readFile(afterPath, 'utf8'));
   const comparison = compareBenchmarks(before, after);
-  await fs.writeFile('perf/runtime/comparison.json', `${JSON.stringify(comparison, null, 2)}\n`);
+  await fs.writeFile(outputPath, `${JSON.stringify(comparison, null, 2)}\n`);
   console.table(comparison.map(({ route, metrics }) => ({ route,
     'ready before ms': Math.round(metrics.readyMs.before), 'ready after ms': Math.round(metrics.readyMs.after),
     'ready change %': metrics.readyMs.percent.toFixed(1),

@@ -309,7 +309,7 @@ const resolveMapboxCountryBoundaryLineWidth = ({
 }: {
   mapStyle: MapStyle;
   isGlow: boolean;
-}): any[] => {
+}): import('mapbox-gl').ExpressionSpecification => {
   if (mapStyle === 'satellite') {
     return isGlow
       ? ['interpolate', ['linear'], ['zoom'], 1, 0.28, 3, 0.52, 5, 0.95, 8, 1.7]
@@ -355,7 +355,7 @@ const upsertMapboxCountryBoundaryLayer = ({
   beforeId?: string;
   color: string;
   opacity: number;
-  lineWidth: number | any[];
+  lineWidth: number | import('mapbox-gl').ExpressionSpecification;
 }): void => {
   if (!map.getLayer(layerId)) {
     map.addLayer({

@@ -1,7 +1,7 @@
 import { TripOgPreviewPanel } from '../components/admin/TripOgPreviewPanel';
 import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from '@/app/navigation';
 import {
     ArrowSquareOut,
     DotsThreeVertical,

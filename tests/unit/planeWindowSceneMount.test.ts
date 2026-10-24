@@ -7,30 +7,9 @@ const source = fs.readFileSync(
     'utf8',
 );
 
-/**
- * A structural test, deliberately.
- *
- * The bug: PlaneWindow renders `null` until it has mounted, so it can never be
- * captured into prerendered HTML. That means on the first pass there is no host
- * element, and the effect that creates the cloud scene bails. With an empty
- * dependency array it then never ran again, so the scene never mounted at all
- * and the window kept its static fallback forever — shipped and live before it
- * was noticed.
- *
- * The fix keeps the host element in state rather than a ref, so attaching it
- * wakes the effect. A ref does not re-render, which is what made the timing
- * fragile in the first place.
- *
- * This cannot be covered behaviourally here: the effect also requires a WebGL
- * context, and jsdom has none, so a rendering test would bail for the same
- * reason whether or not the bug is present and would pass either way. Asserting
- * the dependency directly is the honest way to pin it.
- */
+// Static SSR output and theme behavior are covered in windowShade.browser.test.tsx.
+// Keep the optional WebGL host dependency regression isolated from GPU availability.
 describe('PlaneWindow cloud scene mount', () => {
-    it('renders nothing until mounted, so it cannot reach prerendered HTML', () => {
-        expect(source).toContain('if (!mounted || !isHomePathname()) return null;');
-    });
-
     it('drives the scene effect off the host node, not render ordering', () => {
         const effectStart = source.indexOf("void import('./cloudScene')");
         expect(effectStart, 'cloud scene import not found').toBeGreaterThan(-1);

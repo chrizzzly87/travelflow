@@ -57,6 +57,12 @@ describe('trip video API regression coverage', () => {
     expect((await handler(req('', { headers: { range: 'bytes=99-' } }))).status).toBe(416);
     expect((await handler(req('&r=old'))).status).toBe(404);
   });
+  it('omits the ETag when storage returns no optional validator', async () => {
+    mocks.getWithMetadata.mockResolvedValue({ data: new Uint8Array(10).buffer });
+    const response = await handler(req());
+    expect(response.status).toBe(200);
+    expect(response.headers.has('etag')).toBe(false);
+  });
   it('returns immediately when a render is already claimed', async () => {
     mocks.manage.mockResolvedValue(true); mocks.claim.mockResolvedValue({ claimed: false, state: { status: 'queued' } });
     expect(await (await handler(req('', { method: 'POST', body: '{}' }))).json()).toMatchObject({ status: 'queued' });

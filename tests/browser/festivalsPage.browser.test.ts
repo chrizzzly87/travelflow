@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -12,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../services/analyticsService', () => ({
   trackEvent: (...args: unknown[]) => mocks.trackEvent(...args),
-  getAnalyticsDebugAttributes: (...args: unknown[]) => mocks.getAnalyticsDebugAttributes(...args),
+  getAnalyticsDebugAttributes: (eventName: string) => mocks.getAnalyticsDebugAttributes(eventName),
 }));
 
 // The marketing chrome pulls in the whole app shell; the page body is what matters here.
@@ -43,7 +44,7 @@ const LocationProbe: React.FC = () => {
   return React.createElement('output', { 'data-testid': 'location-search' }, location.search);
 };
 
-const renderAt = (entry: string) => render(
+const renderAt = async (entry: string) => await render(
   React.createElement(
     MemoryRouter,
     { initialEntries: [entry] },
@@ -52,7 +53,7 @@ const renderAt = (entry: string) => render(
   ),
 );
 
-const renderPage = () => renderAt('/inspirations/events-and-festivals');
+const renderPage = async () => await renderAt('/inspirations/events-and-festivals');
 
 describe('pages/inspirations/FestivalsPage', () => {
   beforeEach(() => {
@@ -68,21 +69,21 @@ describe('pages/inspirations/FestivalsPage', () => {
     vi.useRealTimers();
   });
 
-  it('renders every catalogued festival as a card', () => {
-    renderPage();
+  it('renders every catalogued festival as a card', async () => {
+    await renderPage();
     const cards = screen.getAllByRole('article');
     expect(cards).toHaveLength(FESTIVAL_CATALOG.length);
   });
 
-  it('shows a country flag icon rather than an emoji flag', () => {
-    const { container } = renderPage();
+  it('shows a country flag icon rather than an emoji flag', async () => {
+    const { container } = await renderPage();
     // FlagIcon renders flagpack `fp` spans; emoji flags would be bare text nodes.
     expect(container.querySelectorAll('span.fp').length).toBeGreaterThan(0);
     expect(container.textContent).not.toMatch(/[\u{1F1E6}-\u{1F1FF}]{2}/u);
   });
 
-  it('orders the grid soonest first', () => {
-    renderPage();
+  it('orders the grid soonest first', async () => {
+    await renderPage();
     const headings = screen.getAllByRole('heading', { level: 2 }).map((node) => node.textContent);
     const expected = sortFestivalsByNextOccurrence(FESTIVAL_CATALOG.map((entry) => entry.event), FIXED_NOW)
       .map((item) => item.event.name);
@@ -92,23 +93,23 @@ describe('pages/inspirations/FestivalsPage', () => {
     expect(headings.indexOf('Sydney New Year Fireworks')).toBeLessThan(headings.indexOf('Songkran'));
   });
 
-  it('labels approximate festivals with "usually" copy and never a fabricated day', () => {
-    renderPage();
+  it('labels approximate festivals with "usually" copy and never a fabricated day', async () => {
+    await renderPage();
     const holiCard = screen.getByRole('heading', { level: 2, name: 'Holi' }).closest('article');
     expect(holiCard).not.toBeNull();
     expect(within(holiCard as HTMLElement).getByText(/festivals\.date\.usually/)).toBeInTheDocument();
     expect(within(holiCard as HTMLElement).getByText(/festivals\.precision\.approximate/)).toBeInTheDocument();
   });
 
-  it('labels fixed-date festivals with a real formatted date', () => {
-    renderPage();
+  it('labels fixed-date festivals with a real formatted date', async () => {
+    await renderPage();
     const songkranCard = screen.getByRole('heading', { level: 2, name: 'Songkran' }).closest('article');
     expect(within(songkranCard as HTMLElement).getByText(/\d/)).toBeInTheDocument();
     expect(within(songkranCard as HTMLElement).queryByText(/festivals\.date\.usually/)).toBeNull();
   });
 
-  it('emits Event JSON-LD without inventing dates for approximate festivals', () => {
-    const { container } = renderPage();
+  it('emits Event JSON-LD without inventing dates for approximate festivals', async () => {
+    const { container } = await renderPage();
     const script = container.querySelector('script[type="application/ld+json"]');
     const payload = JSON.parse(script?.textContent || '{}');
 
@@ -129,7 +130,7 @@ describe('pages/inspirations/FestivalsPage', () => {
 
   it('filters by region and tracks the interaction', async () => {
     const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
     const oceaniaCount = FESTIVAL_CATALOG.filter((entry) => entry.regionId === 'oceania').length;
     await user.click(screen.getByRole('button', { name: 'inspirations.subpages.festivals.regions.oceania' }));
@@ -140,7 +141,7 @@ describe('pages/inspirations/FestivalsPage', () => {
 
   it('filters by month and can be cleared again', async () => {
     const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
     const aprilCount = FESTIVAL_CATALOG.filter((entry) => entry.event.month === 4).length;
     await user.click(screen.getByRole('button', { name: 'Apr' }));
@@ -153,7 +154,7 @@ describe('pages/inspirations/FestivalsPage', () => {
 
   it('mirrors the active filters into the query string so the view is shareable', async () => {
     const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
     await user.click(screen.getByRole('button', { name: 'inspirations.subpages.festivals.regions.oceania' }));
     await user.click(screen.getByRole('button', { name: 'Apr' }));
@@ -163,15 +164,15 @@ describe('pages/inspirations/FestivalsPage', () => {
     expect(search).toContain('month=4');
   });
 
-  it('restores state from the query string on first render', () => {
-    renderAt('/inspirations/events-and-festivals?region=oceania');
+  it('restores state from the query string on first render', async () => {
+    await renderAt('/inspirations/events-and-festivals?region=oceania');
 
     const oceaniaCount = FESTIVAL_CATALOG.filter((entry) => entry.regionId === 'oceania').length;
     expect(screen.getAllByRole('article')).toHaveLength(oceaniaCount);
   });
 
-  it('links festival cards to a prefilled create-trip URL', () => {
-    renderPage();
+  it('links festival cards to a prefilled create-trip URL', async () => {
+    await renderPage();
     const songkranCard = screen.getByRole('heading', { level: 2, name: 'Songkran' }).closest('article');
     const planLink = within(songkranCard as HTMLElement)
       .getByRole('link', { name: /festivals\.planCta/ });

@@ -44,9 +44,9 @@ The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.t
 | `admin-airports.ts` | `/api/internal/admin/airports` | Admin airport reference catalog: `GET` reads the airport list and catalog metadata (falls back to the bundled repo snapshot when Supabase is not configured); `POST` with `action: "sync"` re-syncs the catalog and `action: "update"` edits one airport. Admin role checked via `get_current_user_access`. | API |
 | `admin-destinations.ts` | `/api/internal/admin/destinations` | Admin destination catalog: `GET` loads it, `POST` saves changes. Proves the caller's admin role via `get_current_user_access`, then writes on the service role. | API |
 | `admin-billing-paddle-reconcile.ts` | `/api/internal/admin/billing/paddle/reconcile` | `POST`-only admin action that reconciles subscription state against the Paddle API (live or sandbox). | API |
-| `site-og-meta.ts` | Explicit static+localized allowlist in `netlify.toml` (home, marketing pages, legal pages, `/create-trip`, `/example/*`, localized variants) | Injects SEO & Open Graph meta tags with static-first OG image lookup and dynamic fallback | Middleware |
+| `site-og-meta.ts` | Unbound in Start | Historical HTML middleware; the shared metadata resolver now feeds the native document | Historical |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
-| `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
+| `trip-og-meta.ts` | Unbound in Start | Historical HTML middleware; public summary resolver reused through a validated server function | Historical |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
 | `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip/site OG image endpoints directly | Dev tool |
 | `trip-map-preview.ts` | `/api/trip-map-preview` | Renders a trip's static map and returns the image bytes under our own origin, cached durably at the CDN so one render serves every viewer until the trip changes. Falls back to an uncacheable redirect when the provider render cannot be fetched. See `docs/TRIP_MAP_PREVIEW_CACHING.md`. | API proxy |
@@ -60,33 +60,16 @@ The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.t
 
 ## Architecture
 
-```
-Blog pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.html
-                         │
-                         ├─▶ static OG manifest lookup (`/images/og/site/generated/manifest.json`)
-                         │         │
-                         │         └─▶ `/images/og/site/generated/*.png` (preferred)
-                         │
-                         └─▶ fallback OG URL (`/api/og/site?...`) when no static match
+The Start root document owns public metadata. Site metadata comes from the shared
+resolver; public trip/share summaries cross the validated server function in
+`src/server/tripMetadata.ts`. Existing `site-og-meta.ts` and `trip-og-meta.ts`
+implementations are no longer bound to HTML routes. Do not restore an HTML rewrite
+layer or an SPA fallback on top of native Start routing.
 
-Example template pages (`/example/*`) ──▶ site-og-meta.ts ──▶ force dynamic OG (`/api/og/trip?...`)
-                         │
-                         └─▶ skips static-site manifest so example previews match trip/share card layout
-
-Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA index.html
-                         │
-                         ▼ (OG image URL points to)
-                    trip-og-image.tsx
-
-/api/trip-map-preview ──▶ trip-map-preview.ts ──fetch──▶ Mapbox / Google Static Maps
-                                    └──image bytes + durable CDN cache──▶ browser
-/api/trip-share-resolve ──▶ trip-share-resolve.ts ──JSON──▶ share token + canonical /s path
-/api/runtime/location ──▶ runtime-location.ts ──JSON──▶ normalized Netlify geo snapshot
-```
-
-- **Middleware functions** (`*-meta.ts`) call `context.next()` to get the SPA HTML, then rewrite `<head>` tags before returning the response.
-- **Image generators** (`*-image.tsx`) return standalone `ImageResponse` objects (server-rendered React → PNG).
-- **API proxies** (`trip-map-preview.ts`, `place-photo.ts`) return direct responses or redirects; no middleware chaining. Where we are allowed to hold the bytes, prefer returning them: a redirect moves the request to the provider's origin, where our CDN cannot cache it and every visitor is billed again.
+Image generators (`*-image.tsx`) still return PNG responses. API proxies and
+explicit API Edge Function bindings remain in `netlify.toml`; their authorization
+and provider isolation are independent of document rendering. See
+[Start deployment](NETLIFY_TANSTACK_START.md) for the adapter boundary.
 
 ## Configuration rules
 
@@ -104,12 +87,11 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 - Use explicit path allowlists (for example: `/`, `/blog`, `/blog/*`, `/api/og/*`) and keep static/internal platform paths outside edge middleware.
 - CI fails if a catch-all edge binding is added.
 
-### Site metadata scope policy
+### Document metadata ownership
 
-- `site-og-meta` must only be mapped to the explicit static/example allowlist in `netlify.toml`.
-- Allowed groups: `/`, static marketing pages, legal pages, `/blog*`, `/inspirations*`, `/create-trip`, `/example/*`, and locale-prefixed variants for active locales.
-- Forbidden: catch-all patterns, admin/profile/api routes, or broad locale catch-alls (for example `/de/*`).
-- CI fails if `site-og-meta` is configured outside the approved allowlist.
+Do not bind `site-og-meta` or `trip-og-meta` to document paths in the migrated app.
+Keep native `head` output and status codes intact. Static OG-image generation remains
+useful: image generation and HTML metadata ownership are separate concerns.
 
 ## Static OG build workflow
 
@@ -222,11 +204,11 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 
 | Function | Cache-Control | Notes |
 |---|---|---|
-| `site-og-meta.ts` | `s-maxage=900, stale-while-revalidate=86400` | 15 min CDN, 1 day stale |
+| Native Start document | `no-store` | Current conservative policy; prerendered static output is served by the platform |
 | `site-og-image.tsx` | `s-maxage=43200, stale-while-revalidate=604800` | 12 hour CDN, 7 day stale |
 | `/images/og/site/generated/*` | `max-age=31536000, immutable` | Build-time generated static OG assets |
-| `trip-og-meta.ts` (shared) | `s-maxage=300, stale-while-revalidate=86400` | 5 min CDN, 1 day stale |
-| `trip-og-meta.ts` (private) | `s-maxage=120, stale-while-revalidate=3600` | 2 min CDN, 1 hour stale |
+
+
 | `trip-og-image.tsx` (versioned) | `s-maxage=31536000` | 1 year immutable |
 | `trip-og-image.tsx` (default) | `s-maxage=1800, stale-while-revalidate=86400` | 30 min CDN, 1 day stale |
 | `trip-map-preview.ts` | `max-age=86400` | 24 hour browser + CDN |
