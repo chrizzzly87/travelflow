@@ -89,7 +89,7 @@ vendor patches, dependency-age bypasses or suppressed hydration errors.
   the profile and retained title/activities across a full document reload. Only
   this new test trip was edited. It exposed an extra return night (#576); this
   proves the live create/persist/reopen transport, not correct duration before the fix.
-- [ ] Prepare final release metadata and production rollout/rollback record when a
+- [x] Prepare final release metadata and production rollout/rollback record when a
   production promotion is actually approved. Keep the single migration release
   note draft until then; never invent a production publication timestamp.
 
