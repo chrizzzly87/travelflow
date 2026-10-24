@@ -2,6 +2,8 @@ import * as React from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { CaretDown, CaretUp, Check } from '@phosphor-icons/react';
 
+import { cn } from '@/lib/utils';
+
 const Select = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;
@@ -12,12 +14,12 @@ const SelectTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
-    className={[
+    className={cn(
       'flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground dark:border-border dark:bg-card dark:text-foreground',
       'outline-none ring-offset-white placeholder:text-muted-foreground focus-visible:border-accent-400 dark:placeholder:text-muted-foreground',
       'disabled:cursor-not-allowed disabled:opacity-50',
-      className || '',
-    ].join(' ')}
+      className,
+    )}
     {...props}
   >
     {/* The value has to truncate on its own: a long option in a narrow
@@ -36,10 +38,10 @@ const SelectScrollUpButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
     ref={ref}
-    className={[
+    className={cn(
       'flex cursor-pointer items-center justify-center py-1 text-muted-foreground dark:text-muted-foreground',
-      className || '',
-    ].join(' ')}
+      className,
+    )}
     {...props}
   >
     <CaretUp weight="bold" className="size-4" />
@@ -53,10 +55,10 @@ const SelectScrollDownButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
     ref={ref}
-    className={[
+    className={cn(
       'flex cursor-pointer items-center justify-center py-1 text-muted-foreground dark:text-muted-foreground',
-      className || '',
-    ].join(' ')}
+      className,
+    )}
     {...props}
   >
     <CaretDown weight="bold" className="size-4" />
@@ -71,25 +73,25 @@ const SelectContent = React.forwardRef<
   <SelectPrimitive.Portal container={portalContainer}>
     <SelectPrimitive.Content
       ref={ref}
-      className={[
+      className={cn(
         'relative z-[1755] max-h-80 min-w-[10rem] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-lg dark:border-border dark:bg-card dark:text-foreground dark:shadow-none',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         position === 'popper'
           ? 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1'
           : '',
-        className || '',
-      ].join(' ')}
+        className,
+      )}
       position={position}
       {...props}
     >
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
-        className={[
+        className={cn(
           'p-1',
           position === 'popper'
             ? 'w-full min-w-[var(--radix-select-trigger-width)]'
             : '',
-        ].join(' ')}
+        )}
       >
         {children}
       </SelectPrimitive.Viewport>
@@ -105,10 +107,10 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={[
+    className={cn(
       'px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground',
-      className || '',
-    ].join(' ')}
+      className,
+    )}
     {...props}
   />
 ));
@@ -124,19 +126,19 @@ const SelectItem = React.forwardRef<
 >(({ className, children, indicatorPosition = 'left', ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
-    className={[
+    className={cn(
       'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 text-sm text-foreground outline-none dark:text-foreground',
       indicatorPosition === 'right' ? 'pl-2 pr-8' : 'pl-8 pr-2',
       'data-[highlighted]:bg-accent-100 data-[highlighted]:text-accent-900 dark:data-[highlighted]:bg-accent-400/25 dark:data-[highlighted]:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      className || '',
-    ].join(' ')}
+      className,
+    )}
     {...props}
   >
     <span
-      className={[
+      className={cn(
         'absolute top-1/2 flex size-3.5 -translate-y-1/2 items-center justify-center',
         indicatorPosition === 'right' ? 'right-2' : 'left-2',
-      ].join(' ')}
+      )}
     >
       <SelectPrimitive.ItemIndicator>
         <Check weight="bold" className="size-4 text-accent-600 dark:text-accent-300" />
@@ -154,10 +156,10 @@ const SelectSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Separator
     ref={ref}
-    className={[
+    className={cn(
       '-mx-1 my-1 h-px bg-secondary dark:bg-secondary',
-      className || '',
-    ].join(' ')}
+      className,
+    )}
     {...props}
   />
 ));

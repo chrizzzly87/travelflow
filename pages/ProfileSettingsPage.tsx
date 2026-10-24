@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, NavLink, useLocation, useNavigate } from '@/app/navigation';
-import { CaretRight, SpinnerGap } from '@phosphor-icons/react';
+import { CaretRight } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Switch } from '../components/ui/switch';
+import { Textarea } from '../components/ui/textarea';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../config/locales';
@@ -31,6 +34,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/
 import { buildPath } from '../config/routes';
 import { showAppToast } from '../components/ui/appToast';
 import { resolveBillingAccessUntil, resolveBillingLifecycleState, resolveEffectiveBillingTierKey } from '../lib/billing/subscriptionState';
+
+// Profile actions are the shared `Button` at 40px with the page's rounder corners.
+const profileActionClassName = 'rounded-lg px-4 font-semibold has-[>svg]:px-4';
 
 type Mode = 'settings' | 'onboarding';
 
@@ -917,32 +923,24 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.firstName')}</span>
-	                                        <input
-	                                            ref={firstNameInputRef}
-	                                            aria-label={t('settings.fields.firstName')}
-	                                            value={form.firstName}
+                                        <Input
+                                            ref={firstNameInputRef}
+                                            aria-label={t('settings.fields.firstName')}
+                                            value={form.firstName}
                                             onChange={(event) => updateField('firstName', event.target.value)}
                                             aria-invalid={requiredFieldErrors.firstName}
-                                            className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
-                                                requiredFieldErrors.firstName
-                                                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                                                    : 'border-border focus:border-accent-400 focus:ring-accent-200'
-                                            }`}
+                                            className="rounded-lg aria-invalid:border-rose-400 aria-invalid:ring-rose-100"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.lastName')}</span>
-	                                        <input
-	                                            ref={lastNameInputRef}
-	                                            aria-label={t('settings.fields.lastName')}
-	                                            value={form.lastName}
+                                        <Input
+                                            ref={lastNameInputRef}
+                                            aria-label={t('settings.fields.lastName')}
+                                            value={form.lastName}
                                             onChange={(event) => updateField('lastName', event.target.value)}
                                             aria-invalid={requiredFieldErrors.lastName}
-                                            className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
-                                                requiredFieldErrors.lastName
-                                                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                                                    : 'border-border focus:border-accent-400 focus:ring-accent-200'
-                                            }`}
+                                            className="rounded-lg aria-invalid:border-rose-400 aria-invalid:ring-rose-100"
                                         />
                                     </label>
                                 </div>
@@ -968,7 +966,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             </button>
                                         )}
                                     </span>
-                                    <input
+                                    <Input
                                         ref={usernameInputRef}
                                         aria-label={t('settings.fields.username')}
                                         value={form.username}
@@ -1002,11 +1000,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         autoCapitalize="none"
                                         spellCheck={false}
                                         readOnly={isUsernameLocked}
-                                        className={`h-9 w-full rounded-lg border px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 ${
-                                            isUsernameLocked
-                                                ? 'border-border bg-secondary text-muted-foreground'
-                                            : 'border-border bg-card text-foreground'
-                                        }`}
+                                        className={`h-9 rounded-lg ${isUsernameLocked ? 'bg-secondary text-muted-foreground' : ''}`}
                                     />
                                     <p className={`text-xs font-medium ${usernameStatusTone}`}>{usernameStatus}</p>
                                     {usernameSuggestions.length > 0 && (
@@ -1039,12 +1033,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.bio')}</span>
-	                                    <textarea
-	                                        aria-label={t('settings.fields.bio')}
-	                                        value={form.bio}
+                                    <Textarea
+                                        aria-label={t('settings.fields.bio')}
+                                        value={form.bio}
                                         onChange={(event) => updateField('bio', clampBio(event.target.value))}
                                         rows={3}
-                                        className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                        className="field-sizing-fixed rounded-lg text-sm md:text-sm"
                                         maxLength={160}
                                     />
                                     <p className="text-xs text-muted-foreground">{t('settings.bioHelp')}</p>
@@ -1073,17 +1067,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('settings.fields.city')}</span>
-	                                        <input
-	                                            ref={cityInputRef}
-	                                            aria-label={t('settings.fields.city')}
-	                                            value={form.city}
+                                        <Input
+                                            ref={cityInputRef}
+                                            aria-label={t('settings.fields.city')}
+                                            value={form.city}
                                             onChange={(event) => updateField('city', event.target.value)}
                                             aria-invalid={requiredFieldErrors.city}
-                                            className={`h-9 w-full rounded-md border px-2.5 text-xs outline-none focus:ring-2 ${
-                                                requiredFieldErrors.city
-                                                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                                                    : 'border-border focus:border-accent-400 focus:ring-accent-200'
-                                            }`}
+                                            className="h-9 ps-2.5 pe-2.5 text-xs aria-invalid:border-rose-400 aria-invalid:ring-rose-100"
                                         />
                                     </label>
                                     <label htmlFor="profile-language-select" className="space-y-1">
@@ -1197,22 +1187,25 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 </p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    size="lg"
                                                     onClick={handleResubscribe}
                                                     disabled={isBillingLoading || isManageBillingSubmitting}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-amber-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className={`${profileActionClassName} bg-amber-600 text-white hover:bg-amber-700`}
                                                 >
                                                     {t('settings.billing.resubscribeCta')}
-                                                </button>
-                                                <button
+                                                </Button>
+                                                <Button
                                                     type="button"
+                                                    size="lg"
+                                                    variant="outline"
                                                     onClick={() => void openBillingManagement('manage')}
                                                     disabled={isBillingLoading || isManageBillingSubmitting}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 bg-card px-4 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                                                    className={`${profileActionClassName} border-amber-300 bg-card text-amber-900 hover:bg-amber-100 hover:text-amber-900 dark:border-amber-400/30 dark:bg-card dark:text-amber-200 dark:hover:bg-amber-400/12`}
                                                 >
                                                     {t('settings.billing.manageCta')}
-                                                </button>
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -1233,22 +1226,25 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 </p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    size="lg"
                                                     onClick={handleResubscribe}
                                                     disabled={isBillingLoading || isManageBillingSubmitting}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className={profileActionClassName}
                                                 >
                                                     {t('settings.billing.resubscribeCta')}
-                                                </button>
-                                                <button
+                                                </Button>
+                                                <Button
                                                     type="button"
+                                                    size="lg"
+                                                    variant="outline"
                                                     onClick={() => void openBillingManagement('manage')}
                                                     disabled={isBillingLoading || isManageBillingSubmitting}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className={profileActionClassName}
                                                 >
                                                     {t('settings.billing.manageCta')}
-                                                </button>
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -1282,39 +1278,42 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-3">
-                                    <button
+                                    <Button
                                         type="button"
+                                        size="lg"
                                         onClick={() => void openBillingManagement('manage')}
-                                        disabled={isBillingLoading || isManageBillingSubmitting || !hasPaidTier}
-                                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={isBillingLoading || !hasPaidTier}
+                                        loading={isManageBillingSubmitting}
+                                        className={profileActionClassName}
                                         {...getAnalyticsDebugAttributes('profile_settings__billing--manage')}
                                     >
-                                        {isManageBillingSubmitting ? <SpinnerGap size={15} className="animate-spin" /> : null}
                                         {t('settings.billing.manageCta')}
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="button"
+                                        size="lg"
+                                        variant="outline"
                                         onClick={() => void openBillingManagement('cancel')}
-                                        disabled={isBillingLoading || isCancelBillingSubmitting || !hasPaidTier}
-                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={isBillingLoading || !hasPaidTier}
+                                        loading={isCancelBillingSubmitting}
+                                        className={profileActionClassName}
                                         {...getAnalyticsDebugAttributes('profile_settings__billing--cancel')}
                                     >
-                                        {isCancelBillingSubmitting ? <SpinnerGap size={15} className="animate-spin" /> : null}
                                         {t('settings.billing.cancelCta')}
-                                    </button>
+                                    </Button>
                                 </div>
                             </section>
 
                             <div className="mt-6 flex flex-wrap items-center gap-3">
-                                <button
+                                <Button
                                     type="submit"
-                                    disabled={isSaving}
-                                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    size="lg"
+                                    loading={isSaving}
+                                    className={profileActionClassName}
                                     {...getAnalyticsDebugAttributes(mode === 'onboarding' ? 'profile__onboarding--submit' : 'profile__settings--save')}
                                 >
-                                    {isSaving ? <SpinnerGap size={15} className="animate-spin" /> : null}
                                     {mode === 'onboarding' ? t('settings.actions.saveAndContinue') : t('settings.actions.save')}
-                                </button>
+                                </Button>
                                 {Object.values(requiredFieldErrors).some(Boolean) && (
                                     <span className="text-xs font-semibold text-amber-700 dark:text-amber-200">
                                         {t('settings.requiredHint')}

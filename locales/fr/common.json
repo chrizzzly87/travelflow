@@ -923,5 +923,11 @@
       "iosStepShare": "Touchez Partager",
       "iosStepAdd": "puis « Sur l'écran d'accueil »"
     }
+  },
+  "routeError": {
+    "title": "Cette page ne s'est pas chargée",
+    "body": "Un problème est survenu de notre côté. Réessaie : tes voyages sont en sécurité.",
+    "retry": "Réessayer",
+    "home": "Aller à l'accueil"
   }
 }

@@ -595,6 +595,44 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
   });
 
+  it('marks the billing management action busy and disabled while the portal link loads', async () => {
+    let resolveUrls: (value: unknown) => void = () => {};
+    mocks.getPaddleSubscriptionManagementUrls.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveUrls = resolve;
+    }));
+    const assignMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, assign: assignMock },
+      writable: true,
+    });
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.billing.title')).toBeInTheDocument();
+    });
+
+    const manageButton = screen.getByRole('button', { name: 'settings.billing.manageCta' });
+    expect(manageButton).not.toHaveAttribute('aria-busy');
+    await user.click(manageButton);
+
+    await waitFor(() => {
+      expect(manageButton).toHaveAttribute('aria-busy', 'true');
+    });
+    expect(manageButton).toBeDisabled();
+
+    resolveUrls({
+      provider: 'paddle',
+      providerSubscriptionId: 'sub_123',
+      cancelUrl: 'https://vendors.paddle.test/cancel',
+      updatePaymentMethodUrl: 'https://vendors.paddle.test/manage',
+    });
+    await waitFor(() => {
+      expect(assignMock).toHaveBeenCalledWith('https://vendors.paddle.test/manage');
+    });
+  });
+
   it('allows Paddle management lookup even when the local subscription row is missing', async () => {
     const assignMock = vi.fn();
     Object.defineProperty(window, 'location', {

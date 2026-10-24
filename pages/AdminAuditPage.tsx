@@ -33,6 +33,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { showAppToast } from '../components/ui/appToast';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { cn } from '../lib/utils';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
 import {
@@ -1563,28 +1566,28 @@ export const AdminAuditPage: React.FC = () => {
             showDateRange={false}
             actions={(
                 <div className="flex flex-wrap items-center gap-2">
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={() => void exportReplayBundle()}
-                        disabled={isLoading || isExportingReplay || visibleLogs.length === 0}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isLoading || visibleLogs.length === 0}
+                        loading={isExportingReplay}
+                        icon={<DownloadSimple />}
+                        className="gap-1.5 rounded-lg bg-card px-3 text-xs font-semibold dark:bg-card"
                     >
-                        {isExportingReplay
-                            ? <SpinnerGap size={14} className="animate-spin" />
-                            : <DownloadSimple size={14} />}
                         Export replay
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={() => void exportSelectedReplayBundle()}
-                        disabled={isLoading || isExportingReplay || selectedEntryKeys.length === 0}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isLoading || selectedEntryKeys.length === 0}
+                        loading={isExportingReplay}
+                        icon={<DownloadSimple />}
+                        className="gap-1.5 rounded-lg bg-card px-3 text-xs font-semibold dark:bg-card"
                     >
-                        {isExportingReplay
-                            ? <SpinnerGap size={14} className="animate-spin" />
-                            : <DownloadSimple size={14} />}
                         Export selected ({selectedEntryKeys.length})
-                    </button>
+                    </Button>
                     <AdminReloadButton
                         onClick={() => void loadLogs()}
                         isLoading={isLoading}
@@ -1724,15 +1727,15 @@ export const AdminAuditPage: React.FC = () => {
                         Action pill legend
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 font-semibold text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
+                        <Badge variant="info" className="text-[11px] font-semibold">
                             Primary action
-                        </span>
-                        <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-foreground">
+                        </Badge>
+                        <Badge variant="neutral" className="text-[11px] font-semibold">
                             Event origin
-                        </span>
-                        <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+                        </Badge>
+                        <Badge variant="warning" className="text-[11px] font-semibold">
                             Field facet
-                        </span>
+                        </Badge>
                         <span className="text-muted-foreground">
                             Use the action code chip copy button for raw event keys.
                         </span>
@@ -1926,16 +1929,17 @@ export const AdminAuditPage: React.FC = () => {
                                         )}
                                         {isColumnVisible('action') && (
                                             <td className="px-3 py-2 text-xs">
-                                            <span
-                                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}
+                                            <Badge
+                                                variant="neutral"
+                                                className={cn('text-[11px] font-semibold', actionPresentation.className)}
                                                 title={log.action}
                                             >
                                                 {actionPresentation.label}
-                                            </span>
+                                            </Badge>
                                             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-muted-foreground dark:text-foreground">
+                                                <Badge variant="neutral" className="text-[11px] font-semibold text-muted-foreground dark:text-foreground">
                                                     {eventTypeLabel}
-                                                </span>
+                                                </Badge>
                                                 <span className="max-w-[220px] truncate font-mono" title={log.action}>
                                                     {log.action}
                                                 </span>
@@ -1953,13 +1957,14 @@ export const AdminAuditPage: React.FC = () => {
                                             {secondaryFacets.length > 0 && (
                                                 <div className="mt-1 flex flex-wrap items-center gap-1">
                                                     {secondaryFacets.map((facet, facetIndex) => (
-                                                        <span
+                                                        <Badge
                                                             key={`${timelineEntry.kind}-${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
-                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                            variant="neutral"
+                                                            className={cn('text-[10px] font-semibold', facet.className)}
                                                             title={facet.code}
                                                         >
                                                             {facet.label}
-                                                        </span>
+                                                        </Badge>
                                                     ))}
                                                 </div>
                                             )}
@@ -1968,12 +1973,13 @@ export const AdminAuditPage: React.FC = () => {
                                         {isColumnVisible('target') && (
                                             <td className="px-3 py-2 text-xs text-muted-foreground">
                                             <div className="inline-flex items-center gap-1.5">
-                                                <span
-                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getTargetPillClass(log.target_type)}`}
+                                                <Badge
+                                                    variant="neutral"
+                                                    className={cn('text-[11px] font-semibold', getTargetPillClass(log.target_type))}
                                                     title={`Raw target type: ${log.target_type}`}
                                                 >
                                                     {targetLabel}
-                                                </span>
+                                                </Badge>
                                                 {targetCanOpenDrawer && (
                                                     <button
                                                         type="button"

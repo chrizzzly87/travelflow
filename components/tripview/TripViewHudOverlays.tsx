@@ -9,6 +9,8 @@ import type { TripPaywallActivationMode } from '../../config/paywall';
 import type { ITrip, ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
+import { useLoginModal } from '../../hooks/useLoginModal';
 import { CopyTripButton } from './CopyTripButton';
 import { TripClaimRecoveryBoundary } from './tripClaimRecoveryBoundary';
 import { tripDockCardBottomClass } from './tripBottomDock';
@@ -68,6 +70,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     onClaimConflictLogin,
 }) => {
     const { t } = useTranslation(['common', 'pricing']);
+    const { isLoginModalOpen } = useLoginModal();
     const paywallRequiresLogin = paywallActivationMode === 'login_modal';
     const showPendingAuthModal = pendingAuthModalStage !== 'hidden';
     const showClaimConflictModal = claimConflictModalVisible;
@@ -115,8 +118,16 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
             )}
 
             {isPaywallLocked && (
+                // A persistent lock card, not a modal: nothing dismisses it, and the
+                // header and status banner around it stay usable while the planner
+                // behind it is already inert (`pointer-events-none`). Trapping focus
+                // here would strand the user on a trip they cannot leave.
                 <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
-                    <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none">
+                    <section
+                        aria-labelledby="trip-paywall-overlay-title"
+                        data-testid="trip-paywall-lock-card"
+                        className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
+                    >
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_320px]">
                             <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
@@ -124,7 +135,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                             {t('tripPaywall.overlay.eyebrow')}
                                         </p>
-                                        <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
+                                        <h2 id="trip-paywall-overlay-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                             {paywallRequiresLogin
                                                 ? t('tripPaywall.overlay.title.login')
                                                 : t('tripPaywall.overlay.title.direct')}
@@ -198,17 +209,21 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </ul>
                             </aside>
                         </div>
-                    </div>
+                    </section>
                 </div>
             )}
 
             {showPendingAuthModal && (
-                <div className="fixed inset-0 z-[1495] flex items-end justify-center bg-slate-950/45 p-3 backdrop-blur-sm sm:items-center sm:p-4">
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="trip-pending-auth-title"
-                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
+                // Nothing closes this modal — it ends when the auth flow does — so
+                // Escape and outside clicks are swallowed. The login modal owns its
+                // own focus boundary, so this one steps aside while that is open.
+                <Dialog open={!isLoginModalOpen}>
+                    <DialogContent
+                        data-testid="trip-pending-auth-dialog"
+                        overlayClassName="z-[1495] bg-slate-950/45 backdrop-blur-sm"
+                        onEscapeKeyDown={(event) => event.preventDefault()}
+                        onInteractOutside={(event) => event.preventDefault()}
+                        className="z-[1496] block top-auto bottom-3 w-[calc(100vw-1.5rem)] max-w-xl max-h-[calc(100dvh-1.5rem)] translate-y-0 overflow-auto rounded-2xl sm:top-1/2 sm:bottom-auto sm:w-[calc(100vw-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:-translate-y-1/2"
                     >
                         {pendingAuthModalStage === 'loading' ? (
                             <div className="p-5 sm:p-6">
@@ -220,12 +235,12 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                             {t('tripView.pendingAuth.eyebrowLoading')}
                                         </p>
-                                        <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                                        <DialogTitle className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                                             {t('tripView.pendingAuth.titleLoading')}
-                                        </h2>
-                                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                        </DialogTitle>
+                                        <DialogDescription className="mt-2 text-sm leading-6 text-muted-foreground">
                                             {t('tripView.pendingAuth.descriptionLoading')}
-                                        </p>
+                                        </DialogDescription>
                                     </div>
                                 </div>
                                 <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
@@ -240,18 +255,18 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                                 {t('tripView.pendingAuth.eyebrowLocked')}
                                             </p>
-                                            <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
+                                            <DialogTitle className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                                 {t('tripView.pendingAuth.titleLocked')}
-                                            </h2>
+                                            </DialogTitle>
                                         </div>
                                         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                             <WarningCircle size={20} weight="duotone" />
                                         </span>
                                     </div>
 
-                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                                    <DialogDescription className="mt-3 text-sm leading-6 text-muted-foreground">
                                         {t('tripView.pendingAuth.descriptionLocked')}
-                                    </p>
+                                    </DialogDescription>
 
                                     <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
                                         {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
@@ -298,8 +313,8 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </aside>
                             </div>
                         )}
-                    </div>
-                </div>
+                    </DialogContent>
+                </Dialog>
             )}
 
             {showGenerationOverlay && (

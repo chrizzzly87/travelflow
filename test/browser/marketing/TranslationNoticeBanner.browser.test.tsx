@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from '@/tests/helpers/routerHarness';
 
@@ -47,7 +47,8 @@ describe('components/marketing/TranslationNoticeBanner', () => {
 
     fireEvent.click(contactLink);
 
-    expect(screen.getByTestId('contact-state')).toHaveTextContent('reason=bug_report');
+    // Pages see the new URL once the navigation commits, not while it is pending.
+    await waitFor(() => expect(screen.getByTestId('contact-state')).toHaveTextContent('reason=bug_report'));
     expect(screen.getByTestId('contact-state')).toHaveAttribute('data-state', JSON.stringify({
       reason: 'bug_report',
       subReason: 'translation_wrong_misleading',

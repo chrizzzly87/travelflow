@@ -246,6 +246,34 @@ the user's attention is elsewhere on the page.
 
 ---
 
+## `badge.tsx` — status, tier and role pills
+
+Every status/tier/role pill is a `Badge`. Do not hand-roll
+`<span className="rounded-full border px-2 py-0.5 … bg-emerald-50 …">`. Variants:
+
+| Variant | Use |
+|---|---|
+| `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` | The shadcn originals, unchanged. `outline` is the base for a pill tinted by a domain palette (activity types). |
+| `success` | Active, activated, accepted, succeeded (emerald). |
+| `warning` | Pending, queued, expired, suspended, past due (amber). |
+| `danger` | Failed, deleted, canceled, never accepted (red, same as `Alert variant="danger"`). |
+| `info` | Invited, informational markers (sky). |
+| `accent` | Brand-tinted markers: admin role, active subscription (the `accent-*` tokens). |
+| `neutral` | Free tier, archived, plain role (`border-border bg-secondary`). |
+
+The tones use the same light and dark palette as the `Alert` tones and
+`adminBillingStatusClassName`, so `resolveAdminBillingStatusTone(...)` can be passed straight in
+as the variant. Admin tables use a denser pill; pass the size on the call site:
+
+```tsx
+<Badge variant="success" className="text-[11px] font-semibold">Active</Badge>
+```
+
+A colour with no semantic tone (violet for the premium tier, indigo targets) goes on top of
+`neutral` via `className`; `cn` lets the caller's border/background/text win.
+
+---
+
 ## `number-input.tsx`
 
 Numeric field. The native spinners are suppressed, so pass `steppers` when the value should be

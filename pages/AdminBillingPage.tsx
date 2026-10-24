@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, WarningCircle } from '@phosphor-icons/react';
 import { BarChart, BarList, DonutChart, Metric, Text, Title } from '@tremor/react';
 import { Link, useSearchParams } from '@/app/navigation';
 
@@ -12,6 +12,8 @@ import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { showAppToast } from '../components/ui/appToast';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import {
     adminListBillingSubscriptions,
     adminReconcilePaddleSubscriptions,
@@ -23,7 +25,6 @@ import {
     type AdminBillingWebhookEventRecord,
 } from '../services/adminService';
 import {
-    adminBillingStatusClassName,
     buildAdminBillingAtRiskChartData,
     buildAdminBillingCurrentMrrCards,
     buildAdminBillingMrrByTierChartData,
@@ -78,13 +79,14 @@ const formatPayloadJson = (value: Record<string, unknown> | null | undefined): s
     }
 };
 
-const statusPill = (value: string | null | undefined) => {
-    const tone = resolveAdminBillingStatusTone(normalizeAdminBillingStatus(value));
-    return [
-        'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold capitalize',
-        adminBillingStatusClassName(tone),
-    ].join(' ');
-};
+const StatusPill = ({ value, children }: { value: string | null | undefined; children: React.ReactNode }) => (
+    <Badge
+        variant={resolveAdminBillingStatusTone(normalizeAdminBillingStatus(value))}
+        className="px-2.5 py-1 font-semibold capitalize"
+    >
+        {children}
+    </Badge>
+);
 
 const webhookMessageClassName = (status: string | null | undefined) => {
     const normalizedStatus = normalizeAdminBillingStatus(status);
@@ -331,15 +333,15 @@ export const AdminBillingPage: React.FC = () => {
             onDateRangeChange={setDateRange}
             actions={(
                 <div className="flex flex-wrap items-center gap-2">
-                    <button
+                    <Button
                         type="button"
                         onClick={() => void handleReconcile()}
-                        disabled={isReconciling}
-                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        loading={isReconciling}
+                        icon={<ArrowsClockwise weight="bold" />}
+                        className="rounded-lg px-3 font-semibold"
                     >
-                        {isReconciling ? <SpinnerGap size={14} className="animate-spin" /> : <ArrowsClockwise size={14} weight="bold" />}
                         Reconcile Paddle
-                    </button>
+                    </Button>
                     <AdminReloadButton
                         onClick={() => void loadData()}
                         isLoading={isLoading}
@@ -366,10 +368,10 @@ export const AdminBillingPage: React.FC = () => {
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs font-semibold text-foreground">
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Processed {lastReconcileSummary.processed}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Duplicates {lastReconcileSummary.duplicates}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Unresolved {lastReconcileSummary.unresolved}</span>
-                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Failed {lastReconcileSummary.failed}</span>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Processed {lastReconcileSummary.processed}</Badge>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Duplicates {lastReconcileSummary.duplicates}</Badge>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Unresolved {lastReconcileSummary.unresolved}</Badge>
+                            <Badge variant="outline" className="bg-card px-2.5 py-1 font-semibold">Failed {lastReconcileSummary.failed}</Badge>
                         </div>
                     </div>
                 </section>
@@ -625,9 +627,9 @@ export const AdminBillingPage: React.FC = () => {
                                             </td>
                                             <td className="border-b border-border py-4 pe-4">
                                                 <div className="flex flex-col gap-2">
-                                                    <span className={statusPill(resolveAdminBillingLifecycleStatus(record))}>
+                                                    <StatusPill value={resolveAdminBillingLifecycleStatus(record)}>
                                                         {humanizeAdminBillingStatus(resolveAdminBillingLifecycleStatus(record))}
-                                                    </span>
+                                                    </StatusPill>
                                                     <span className="text-xs text-muted-foreground">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
                                                 </div>
                                             </td>
@@ -679,7 +681,7 @@ export const AdminBillingPage: React.FC = () => {
                                     <div className="space-y-2">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className="font-semibold text-foreground">{humanizeEventType(record.event_type)}</span>
-                                            <span className={statusPill(record.status)}>{humanizeAdminBillingStatus(record.status)}</span>
+                                            <StatusPill value={record.status}>{humanizeAdminBillingStatus(record.status)}</StatusPill>
                                         </div>
                                         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                             <span>{formatDateTime(record.occurred_at)}</span>

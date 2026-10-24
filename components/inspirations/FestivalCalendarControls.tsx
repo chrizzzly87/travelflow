@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowsClockwise, CalendarHeart, Funnel } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { Button } from '../ui/button';
 import type { FestivalRegionId } from '../../services/festivalCatalogService';
 import {
   countActiveFestivalFilters,
@@ -21,12 +22,9 @@ interface FestivalCalendarControlsProps {
   totalCount: number;
 }
 
-const chipClass = (isActive: boolean): string => [
-  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
-  isActive
-    ? 'border-accent-500 bg-accent-500 text-white'
-    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30',
-].join(' ');
+// Filter chips are `Button variant="toggle"`: the pressed fill comes from `aria-pressed`, so the
+// selection is announced as well as painted. The pill shape and border are the calendar's own.
+const chipClassName = 'h-auto gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold aria-pressed:border-transparent not-aria-pressed:hover:border-accent-300 not-aria-pressed:hover:bg-card not-aria-pressed:hover:text-accent-700 dark:not-aria-pressed:hover:border-accent-400/30 dark:not-aria-pressed:hover:text-accent-200';
 
 /**
  * Region and month filters for the festivals index.
@@ -70,18 +68,20 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
           })}
         </p>
         {hasActiveFestivalFilters(state) ? (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
+            icon={<ArrowsClockwise size={14} weight="bold" className="size-3.5" />}
             onClick={() => {
               dispatch({ type: 'clear-filters' });
               trackEvent('inspirations__festival_filter--clear', { active_filters: activeFilterCount });
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+            className="h-auto rounded-full bg-transparent px-3 py-1.5 text-xs font-bold text-muted-foreground shadow-none has-[>svg]:px-3 hover:border-accent-300 hover:bg-transparent hover:text-accent-700 dark:bg-transparent dark:hover:border-accent-400/30 dark:hover:bg-transparent dark:hover:text-accent-200"
             {...getAnalyticsDebugAttributes('inspirations__festival_filter--clear', { active_filters: activeFilterCount })}
           >
-            <ArrowsClockwise size={14} weight="bold" />
             {t('inspirations.subpages.festivals.clearFilters')}
-          </button>
+          </Button>
         ) : null}
       </div>
 
@@ -93,16 +93,18 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
           {availableRegions.map((region) => {
             const isActive = state.regions.includes(region);
             return (
-              <button
+              <Button
                 key={region}
                 type="button"
+                variant="toggle"
+                size="sm"
                 aria-pressed={isActive}
                 onClick={() => handleToggleRegion(region)}
-                className={chipClass(isActive)}
+                className={chipClassName}
                 {...getAnalyticsDebugAttributes('inspirations__festival_filter--region', { region })}
               >
                 {t(`inspirations.subpages.festivals.regions.${region}`)}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -114,28 +116,32 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
           {t('inspirations.subpages.festivals.filterMonth')}
         </legend>
         <div className="flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
+            variant="toggle"
+            size="sm"
             aria-pressed={state.month === null}
             onClick={() => handleSetMonth(null)}
-            className={chipClass(state.month === null)}
+            className={chipClassName}
             {...getAnalyticsDebugAttributes('inspirations__festival_filter--month', { month: 0 })}
           >
             {t('inspirations.subpages.festivals.filterAll')}
-          </button>
+          </Button>
           {availableMonths.map((month) => {
             const isActive = state.month === month;
             return (
-              <button
+              <Button
                 key={month}
                 type="button"
+                variant="toggle"
+                size="sm"
                 aria-pressed={isActive}
                 onClick={() => handleSetMonth(isActive ? null : month)}
-                className={chipClass(isActive)}
+                className={chipClassName}
                 {...getAnalyticsDebugAttributes('inspirations__festival_filter--month', { month })}
               >
                 {monthLabels[month - 1]}
-              </button>
+              </Button>
             );
           })}
         </div>

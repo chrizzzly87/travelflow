@@ -62,6 +62,20 @@ native route matching.
   crawling account links. `pnpm prerender:validate` checks every emitted locale,
   direction, canonical URL and heading, rejects competing directory indexes, and
   verifies the separate offline shell.
+- Response caching is per area (`app/routing/cachePolicy.ts`). The root defaults to
+  `no-store`; the `_public` area lets Netlify's CDN keep the document for an hour with
+  stale-while-revalidate while browsers revalidate. This is only safe because public
+  SSR reads no cookies or request headers; adding such a read requires a
+  `Netlify-Vary` or opting the page out.
+- The trip area's `pendingComponent` is the planner-shaped `TripAreaLoadingShell`,
+  excluded from code splitting, so a server-rendered trip/share/example document
+  already has the planner's shape. It reads stored pane sizes only after hydration.
+- Trip/share Open Graph metadata is resolved in root `beforeLoad` only while rendering
+  on the server (`src/document/tripMetadataPolicy.ts`); client navigations and
+  preloads never wait on that server function.
+- Routes without their own `errorComponent` use `RouteErrorPage`: translated copy,
+  retry (a full reload for chunks removed by a deploy) and a plain link home. Never
+  render `error.message`.
 - Auth, account, admin, creation, library and trip workspace areas currently declare
   `ssr: false`. Their browser session and local trip storage are not serialized into
   a public server response. The root still supplies the document and safe metadata.
@@ -121,6 +135,19 @@ API for new route-aware code. Do not add a BrowserRouter, HistoryRouter, descrip
 interpreter, manually imported deferred route table, or a second global prefetch graph.
 Before removing an old warmup, verify which domain resource it warmed: route chunks
 belong to the router; an expensive map SDK still needs an explicit feature decision.
+
+A pending navigation updates `state.location` before the new matches commit, and the
+previous page stays mounted until then (`defaultPendingMs: Infinity`). Page code must
+therefore never read the destination URL as its own: the adapter's `useLocation`
+presents the committed leaf match's URL while a navigation is pending, and
+`useSearchParams` reads its own match and ignores writes once the latest location no
+longer resolves to that route (#586). Native code gets the same guarantee from
+`Route.useSearch()` / `useMatch`. The adapter hands every URL to the router as `href`,
+so path, query and fragment are parsed before matching and hover preloads; a `?` inside
+`to` would otherwise be treated as part of the pathname.
+
+Hover preloads are reused for 30 seconds by default and 10 seconds on owned/shared
+trips; entering a trip without a fresh preload always refetches.
 
 The search codec preserves repeated query values and existing plain-string URL
 contracts. Changing it requires navigation regressions for query, hash, history state
