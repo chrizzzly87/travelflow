@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowsClockwise, CheckCircle, SpinnerGap, Stack } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
@@ -259,7 +260,7 @@ export const AdminTiersPage: React.FC = () => {
             );
             await refreshTierSnapshot(tierKey);
         } catch (error) {
-            setErrorMessage(`Could not reapply ${PLAN_CATALOG[tierKey].publicName} to existing customers. Try again in a moment.`);
+            setErrorMessage(toAdminErrorMessage(error, `Could not reapply ${PLAN_CATALOG[tierKey].publicName} to existing customers. Try again in a moment.`, 'admin-tiers'));
         } finally {
             setIsReapplying(null);
         }

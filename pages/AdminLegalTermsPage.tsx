@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CheckCircle, FileText } from '@phosphor-icons/react';
@@ -124,7 +125,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                 return buildDraftFromBase(current, rows);
             });
         } catch (error) {
-            setErrorMessage('Could not load the terms versions. Reload to try again.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not load the terms versions. Reload to try again.', 'admin-legal'));
         } finally {
             setIsLoading(false);
         }
@@ -199,7 +200,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                 `Published ${published.version} as the current terms (${published.requiresReaccept ? 'force re-accept' : 'inform only'}).`
             );
         } catch (error) {
-            setErrorMessage('Could not publish this terms version. Your draft is still here; try publishing again.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not publish this terms version. Your draft is still here; try publishing again.', 'admin-legal'));
         } finally {
             setIsPublishing(false);
         }
@@ -217,7 +218,7 @@ export const AdminLegalTermsPage: React.FC = () => {
             await loadVersions({ keepDraft: true });
             setActionMessage(`Set ${updated.version} as the current terms (${updated.requiresReaccept ? 'force re-accept' : 'inform only'}).`);
         } catch (error) {
-            setErrorMessage(`Could not make ${version} the current terms. Try again in a moment.`);
+            setErrorMessage(toAdminErrorMessage(error, `Could not make ${version} the current terms. Try again in a moment.`, 'admin-legal'));
         } finally {
             setIsPublishing(false);
         }

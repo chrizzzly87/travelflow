@@ -22,8 +22,10 @@ summary: "Every admin screen now runs in one modern shell with a command palette
 - [ ] [Internal] 🪜 Fixed responsive layouts that silently stayed in their mobile arrangement: two Tailwind entry sheets shipped in one bundle in the wrong order, so a plain utility from one beat a breakpoint variant from the other. There is now a single Tailwind entry, with a test that keeps it that way.
 - [ ] [Internal] 🌗 Fixed unreadable success, warning and error alert text in dark mode: the description kept its light-theme ink on the dark wash.
 - [ ] [Internal] 🪟 Hand-rolled overlays in the AI benchmark and the row menus on Users and Trips are now real dialogs and dropdown menus, with focus handling and Escape.
-- [ ] [Internal] 🛡️ Trips, Audit log, Settings, Tiers, Legal terms and OG tools show an authored sentence instead of a raw exception when a request fails.
+- [ ] [Internal] 🛡️ Every admin screen shows an authored sentence instead of raw database or gateway text when a request fails, through one shared helper; permission, expired-session and network failures get their own sentences, and validation and "re-run the migration" hints still come through.
 - [ ] [Internal] 🧷 Fixed a batch of smaller admin bugs: the AI benchmark tab bar sliding under the header, Worker health showing dead search and date filters, Settings showing "Loading…" forever after a failed load, cost-per-day dates a day off west of UTC, invisible provider logos and diff colours in dark mode, mouse-only column resizing on Airports, and a grid template on Trips that never applied.
+- [ ] [Internal] 🧊 Frozen table columns stay opaque when a row is selected or sorted, so scrolled columns no longer show through them, and their divider and shadow follow the reading direction.
+- [ ] [Internal] 🔁 Switching the country filter on Recommendations can no longer let a slower, older response overwrite the newer list.
 - [ ] [Internal] 🐛 Fixed the admin shell throwing on cross-tab storage events because it referenced a constant it never imported.
 - [ ] [Internal] 🔓 The local dev admin bypass now also works when the browser already holds an anonymous guest session.
 - [ ] [Internal] 🧪 Added coverage for the shell (breadcrumbs, command palette, sidebar collapse, mobile sheet, page filters), the chart primitives and the navigation config.

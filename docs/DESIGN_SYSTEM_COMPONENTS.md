@@ -400,6 +400,13 @@ add their own outer padding. Nav entries, sections and command-palette keywords 
    Every tinted class needs its `dark:` pair, or use a component that already has one.
 5. **Spacing.** Stack sections with `flex flex-col gap-4` (or `gap-6` between unrelated
    groups) rather than ad-hoc `mt-*` on each block.
+6. **Errors.** Never render `error.message`. Pass every caught error through
+   `toAdminErrorMessage(error, 'Authored fallback sentence.', 'admin-<screen>')` from
+   `services/adminErrorMessages.ts`: it shows an `AdminUserFacingError`'s text, maps
+   permission, session and network failures to authored sentences, keeps a short list of
+   SQL sentences written for people, and otherwise shows the fallback and logs the raw
+   error. Throw `AdminUserFacingError` from a service when its message is written for an
+   admin (validation, "re-run the migration").
 
 ---
 

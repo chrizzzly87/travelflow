@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { ArrowRight, Info, X } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
@@ -205,7 +206,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
             const next = await adminGetAiWorkerHealth({ limit: WORKER_CHECK_FETCH_LIMIT });
             setData(next);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'Failed to load worker health.');
+            setError(toAdminErrorMessage(loadError, 'Failed to load worker health.', 'admin-worker-health'));
         } finally {
             setLoading(false);
         }

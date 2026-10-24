@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { ChatCircleDots, CheckCircle, Compass, MapTrifold, Sparkle, SpinnerGap } from '@phosphor-icons/react';
 
 import { AdminShell } from '../components/admin/AdminShell';
@@ -75,7 +76,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
             })
             .catch((cause: unknown) => {
                 if (!active) return;
-                setError('Could not load the current settings. Reload the page to try again.');
+                setError(toAdminErrorMessage(cause, 'Could not load the current settings. Reload the page to try again.', 'admin-settings'));
                 setStatus('idle');
             });
         return () => { active = false; };
@@ -133,8 +134,8 @@ export const AdminGlobalSettingsPage: React.FC = () => {
             setSettings(saved);
             setDraft(saved);
             setSavedAt(Date.now());
-        } catch {
-            setError('The settings were not saved. Your changes are still here; try saving again.');
+        } catch (saveError) {
+            setError(toAdminErrorMessage(saveError, 'The settings were not saved. Your changes are still here; try saving again.', 'admin-settings'));
         } finally {
             setStatus('idle');
         }

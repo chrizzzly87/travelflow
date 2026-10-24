@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -174,7 +175,7 @@ export const AdminBillingPage: React.FC = () => {
             setSubscriptions(nextSubscriptions);
             setEvents(nextEvents);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load billing workspace.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not load billing workspace.', 'admin-billing'));
         } finally {
             setIsLoading(false);
         }
@@ -346,7 +347,7 @@ export const AdminBillingPage: React.FC = () => {
                     : `Fetched ${result.summary.fetched}, replayed ${result.summary.eligible}, processed ${result.summary.processed}, duplicates ${result.summary.duplicates}, unresolved ${result.summary.unresolved}.`,
             });
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Could not reconcile Paddle subscriptions.';
+            const message = toAdminErrorMessage(error, 'Could not reconcile Paddle subscriptions.', 'admin-billing');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',

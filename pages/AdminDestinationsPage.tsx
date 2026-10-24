@@ -1,4 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import {
     ArrowSquareOut,
     CheckCircle,
@@ -108,7 +109,7 @@ export const AdminDestinationsPage: React.FC = () => {
             setCatalog(next);
             setSelection((current) => current || (next.guides[0] ? { targetKind: 'guide', targetId: next.guides[0].id } : null));
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'Could not load destination content.');
+            setError(toAdminErrorMessage(loadError, 'Could not load destination content.', 'admin-destinations'));
         } finally {
             setLoading(false);
         }
@@ -179,7 +180,7 @@ export const AdminDestinationsPage: React.FC = () => {
             }));
             showAppToast({ title: editorStatus === 'published' ? 'Destination override published' : 'Destination draft saved', tone: 'success' });
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : 'Could not save the override.');
+            setError(toAdminErrorMessage(saveError, 'Could not save the override.', 'admin-destinations'));
         } finally {
             setSaving(false);
         }
@@ -200,7 +201,7 @@ export const AdminDestinationsPage: React.FC = () => {
             setEditorStatus('draft'); setEditorNote(''); setEditorJson('{}');
             showAppToast({ title: 'Destination override reset', tone: 'success' });
         } catch (resetError) {
-            setError(resetError instanceof Error ? resetError.message : 'Could not reset the override.');
+            setError(toAdminErrorMessage(resetError, 'Could not reset the override.', 'admin-destinations'));
         } finally {
             setSaving(false);
         }

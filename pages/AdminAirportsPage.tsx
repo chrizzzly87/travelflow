@@ -1,4 +1,5 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { useSearchParams } from 'react-router-dom';
 import {
     AirplaneTakeoff,
@@ -861,7 +862,7 @@ const AdminAirportTester: React.FC<{
             setLastLookupFilterSignature(filterSignature);
         } catch (error) {
             setLookupResult(null);
-            setLookupError(error instanceof Error ? error.message : 'Airport lookup failed.');
+            setLookupError(toAdminErrorMessage(error, 'Airport lookup failed.', 'admin-airports'));
         } finally {
             setLookupLoading(false);
             manualLookupInFlightRef.current = false;
@@ -1727,7 +1728,7 @@ export const AdminAirportsPage: React.FC = () => {
             setEditorDirty(false);
             setEditorMode('edit');
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load airport catalog.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not load airport catalog.', 'admin-airports'));
         } finally {
             setLoading(false);
         }
@@ -1997,7 +1998,7 @@ export const AdminAirportsPage: React.FC = () => {
             showAppToast({
                 id: loadingToastId,
                 title: 'Airport sync failed',
-                description: error instanceof Error ? error.message : 'Could not sync the airport catalog.',
+                description: toAdminErrorMessage(error, 'Could not sync the airport catalog.', 'admin-airports'),
                 tone: 'remove',
             });
         } finally {
@@ -2085,7 +2086,7 @@ export const AdminAirportsPage: React.FC = () => {
             showAppToast({
                 id: loadingToastId,
                 title: editorMode === 'create' ? 'Airport create failed' : 'Airport save failed',
-                description: error instanceof Error ? error.message : (editorMode === 'create' ? 'Could not create the airport.' : 'Could not update the airport.'),
+                description: toAdminErrorMessage(error, (editorMode === 'create' ? 'Could not create the airport.' : 'Could not update the airport.'), 'admin-airports'),
                 tone: 'remove',
             });
         } finally {
@@ -2158,7 +2159,7 @@ export const AdminAirportsPage: React.FC = () => {
                 tone: 'add',
             });
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Bulk airport update failed.';
+            const message = toAdminErrorMessage(error, 'Bulk airport update failed.', 'admin-airports');
             showAppToast({
                 id: loadingToastId,
                 title: message === 'Bulk airport edit canceled.' ? 'Bulk airport edit canceled' : 'Bulk airport edit failed',
@@ -2237,7 +2238,7 @@ export const AdminAirportsPage: React.FC = () => {
             showAppToast({
                 id: loadingToastId,
                 title: 'Airport delete failed',
-                description: error instanceof Error ? error.message : 'Could not delete the selected airports.',
+                description: toAdminErrorMessage(error, 'Could not delete the selected airports.', 'admin-airports'),
                 tone: 'remove',
             });
         } finally {
@@ -2311,7 +2312,7 @@ export const AdminAirportsPage: React.FC = () => {
             showAppToast({
                 id: loadingToastId,
                 title: 'Airport delete failed',
-                description: error instanceof Error ? error.message : 'Could not delete the airport.',
+                description: toAdminErrorMessage(error, 'Could not delete the airport.', 'admin-airports'),
                 tone: 'remove',
             });
         } finally {

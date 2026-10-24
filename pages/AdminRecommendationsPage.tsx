@@ -1,4 +1,5 @@
-import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import {
     CheckCircle,
     DownloadSimple,
@@ -190,17 +191,24 @@ export const AdminRecommendationsPage: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Only the latest request may write: switching the country filter while an
+    // earlier catalog is still in flight must not let the stale one land last.
+    const latestLoadRef = useRef(0);
     const load = async (nextCountry: string) => {
+        const requestId = latestLoadRef.current + 1;
+        latestLoadRef.current = requestId;
         setLoading(true);
         setError(null);
         try {
             const catalog = await adminGetRecommendationCatalog(nextCountry);
+            if (requestId !== latestLoadRef.current) return;
             setRows(catalog.rows);
             setCountries(catalog.countries);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'Could not load the recommendation library.');
+            if (requestId !== latestLoadRef.current) return;
+            setError(toAdminErrorMessage(loadError, 'Could not load the recommendation library.', 'admin-recommendations'));
         } finally {
-            setLoading(false);
+            if (requestId === latestLoadRef.current) setLoading(false);
         }
     };
 
@@ -249,7 +257,7 @@ export const AdminRecommendationsPage: React.FC = () => {
             setEditor(rowToEditor(saved));
             showAppToast({ title: 'Recommendation saved', tone: 'success' });
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : 'Could not save the recommendation.');
+            setError(toAdminErrorMessage(saveError, 'Could not save the recommendation.', 'admin-recommendations'));
         } finally {
             setSaving(false);
         }
@@ -261,7 +269,7 @@ export const AdminRecommendationsPage: React.FC = () => {
             setRows((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
             if (selectedId === updated.id) setEditor(rowToEditor(updated));
         } catch (statusError) {
-            setError(statusError instanceof Error ? statusError.message : 'Could not change the status.');
+            setError(toAdminErrorMessage(statusError, 'Could not change the status.', 'admin-recommendations'));
         }
     };
 
@@ -282,7 +290,7 @@ export const AdminRecommendationsPage: React.FC = () => {
             startNew();
             showAppToast({ title: 'Recommendation deleted', tone: 'success' });
         } catch (deleteError) {
-            setError(deleteError instanceof Error ? deleteError.message : 'Could not delete the recommendation.');
+            setError(toAdminErrorMessage(deleteError, 'Could not delete the recommendation.', 'admin-recommendations'));
         } finally {
             setSaving(false);
         }
@@ -315,7 +323,7 @@ export const AdminRecommendationsPage: React.FC = () => {
             showAppToast({ title: `Imported ${imported} recommendations`, tone: 'success' });
             await load(country);
         } catch (importError) {
-            setError(importError instanceof Error ? importError.message : 'Could not import the dataset.');
+            setError(toAdminErrorMessage(importError, 'Could not import the dataset.', 'admin-recommendations'));
         } finally {
             setSaving(false);
         }

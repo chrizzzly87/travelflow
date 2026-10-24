@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { ArrowLeft } from '@phosphor-icons/react';
 import { Area, Bar, CartesianGrid, Cell, ComposedChart, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import { AdminBarList, type AdminBarListItem } from '../components/admin/AdminBarList';
@@ -466,7 +467,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                 setTelemetryProviderFilter('all');
             }
         } catch (telemetryLoadError) {
-            setTelemetryError(telemetryLoadError instanceof Error ? telemetryLoadError.message : 'Failed to load AI telemetry');
+            setTelemetryError(toAdminErrorMessage(telemetryLoadError, 'Failed to load AI telemetry', 'admin-ai-telemetry'));
             setTelemetrySummary(null);
             setTelemetrySeries([]);
             setMonthlyCostSeries([]);

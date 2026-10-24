@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { useSearchParams } from 'react-router-dom';
 import {
     AppleLogo,
@@ -726,11 +727,9 @@ const getUserReferenceText = (user: AdminUserRecord): string => {
     return `${name} (${user.user_id})`;
 };
 
-const getUnknownErrorMessage = (error: unknown, fallback: string): string => {
-    if (error instanceof Error && error.message.trim()) return error.message.trim();
-    if (typeof error === 'string' && error.trim()) return error.trim();
-    return fallback;
-};
+const getUnknownErrorMessage = (error: unknown, fallback: string): string => (
+    toAdminErrorMessage(error, fallback, 'admin-users')
+);
 
 const summarizeBulkDeleteFailures = (details: string[]): string => {
     if (details.length === 0) return '';
@@ -1506,7 +1505,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load linked user profile.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load linked user profile.', 'admin-users'));
             });
 
         return () => {
@@ -1638,7 +1637,7 @@ export const AdminUsersPage: React.FC = () => {
             setDiffModalBeforeLabel(snapshots.before_label || 'Before version');
             setDiffModalAfterLabel(snapshots.after_label || 'After version');
         } catch (error) {
-            setDiffModalError(error instanceof Error ? error.message : 'Could not load trip snapshots.');
+            setDiffModalError(toAdminErrorMessage(error, 'Could not load trip snapshots.', 'admin-users'));
         } finally {
             setIsDiffModalLoading(false);
         }
@@ -1655,7 +1654,7 @@ export const AdminUsersPage: React.FC = () => {
             setUsers(rows);
             writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not load users.';
+            const reason = toAdminErrorMessage(error, 'Could not load users.', 'admin-users');
             if (!options.preserveErrorMessage) {
                 setErrorMessage(reason);
             }
@@ -1712,7 +1711,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load full user profile.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load full user profile.', 'admin-users'));
             });
 
         setUserTrips([]);
@@ -1727,7 +1726,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load user trips.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load user trips.', 'admin-users'));
             })
             .finally(() => {
                 if (!active) return;
@@ -1741,7 +1740,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setUserChangeLogsError(error instanceof Error ? error.message : 'Could not load user change logs.');
+                setUserChangeLogsError(toAdminErrorMessage(error, 'Could not load user change logs.', 'admin-users'));
             })
             .finally(() => {
                 if (!active) return;
@@ -2149,7 +2148,7 @@ export const AdminUsersPage: React.FC = () => {
             setMessage('User updated.');
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not save user.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not save user.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2177,7 +2176,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `"${userName}" can now change username immediately.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not reset username cooldown.';
+            const reason = toAdminErrorMessage(error, 'Could not reset username cooldown.', 'admin-users');
             setErrorMessage(reason);
             showAppToast({
                 id: loadingToastId,
@@ -2212,7 +2211,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `"${userName}" is now marked as pending Terms acceptance.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not reset terms acceptance.';
+            const reason = toAdminErrorMessage(error, 'Could not reset terms acceptance.', 'admin-users');
             setErrorMessage(reason);
             showAppToast({
                 id: loadingToastId,
@@ -2278,7 +2277,7 @@ export const AdminUsersPage: React.FC = () => {
                                         description: `${quotedUserName} was restored and can sign in again.`,
                                     });
                                 } catch (undoError) {
-                                    const reason = undoError instanceof Error ? undoError.message : 'Could not restore user.';
+                                    const reason = toAdminErrorMessage(undoError, 'Could not restore user.', 'admin-users');
                                     showAppToast({
                                         id: undoLoadingToastId,
                                         tone: 'error',
@@ -2302,7 +2301,7 @@ export const AdminUsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not update user status.';
+            const reason = toAdminErrorMessage(error, 'Could not update user status.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2359,7 +2358,7 @@ export const AdminUsersPage: React.FC = () => {
                     : `${quotedUserName} was permanently deleted.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not hard-delete user.';
+            const reason = toAdminErrorMessage(error, 'Could not hard-delete user.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2404,7 +2403,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} were soft-deleted successfully.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not soft-delete selected users.';
+            const reason = toAdminErrorMessage(error, 'Could not soft-delete selected users.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2528,7 +2527,7 @@ export const AdminUsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not hard-delete selected users.';
+            const reason = toAdminErrorMessage(error, 'Could not hard-delete selected users.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2653,13 +2652,13 @@ export const AdminUsersPage: React.FC = () => {
                 await loadUsers();
             } catch (deleteError) {
                 await loadUsers();
-                const deleteMessage = deleteError instanceof Error ? deleteError.message : 'Could not hard-delete user after transfer.';
+                const deleteMessage = toAdminErrorMessage(deleteError, 'Could not hard-delete user after transfer.', 'admin-users');
                 setErrorMessage(
                     `Trips were transferred to ${getUserReferenceText(targetUser)}, but hard delete failed: ${deleteMessage} Retry hard delete for the source user if needed.`
                 );
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not transfer trips before hard delete.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not transfer trips before hard delete.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2680,7 +2679,7 @@ export const AdminUsersPage: React.FC = () => {
                 setUserTrips(rows);
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not update trip.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not update trip.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2700,7 +2699,7 @@ export const AdminUsersPage: React.FC = () => {
             setMessage('Invite sent successfully.');
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not invite user.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not invite user.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2721,7 +2720,7 @@ export const AdminUsersPage: React.FC = () => {
             setMessage('User created successfully.');
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not create user.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not create user.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }

@@ -193,14 +193,13 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         syncAdminRuntimeFlags();
     }, [syncAdminRuntimeFlags]);
 
+    // Side effects stay out of the state updater, which may run twice.
     const toggleSidebar = useCallback(() => {
-        setIsSidebarCollapsed((current) => {
-            const next = !current;
-            persistSidebarCollapseState(next);
-            trackEvent('admin__menu--collapse_toggle', { collapsed: next });
-            return next;
-        });
-    }, []);
+        const next = !isSidebarCollapsed;
+        setIsSidebarCollapsed(next);
+        persistSidebarCollapseState(next);
+        trackEvent('admin__menu--collapse_toggle', { collapsed: next });
+    }, [isSidebarCollapsed]);
 
     useEffect(() => {
         syncAdminRuntimeFlags();
@@ -393,7 +392,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 const isLast = index === breadcrumbs.length - 1;
                                 return (
                                     <li
-                                        key={`${crumb}-${index}`}
+                                        key={crumb}
                                         className={cn('flex min-w-0 items-center gap-1.5', !isLast && 'hidden sm:flex')}
                                     >
                                         <CaretRight className="hidden size-3 shrink-0 text-muted-foreground/70 sm:block rtl:rotate-180" aria-hidden="true" />

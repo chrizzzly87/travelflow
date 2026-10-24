@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
 import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, Warning, X } from '@phosphor-icons/react';
 import { useSearchParams } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
@@ -96,13 +97,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Errors this page throws itself carry an authored sentence that is safe to show.
 // Anything else (RPC, network, Supabase) is logged and replaced with a fallback, so a
 // raw exception never reaches the admin UI.
-class AuditUserFacingError extends Error {}
+// Audit's own validation sentences are user-facing; everything else is mapped.
+const AuditUserFacingError = AdminUserFacingError;
 
-const toAuditErrorMessage = (error: unknown, fallback: string): string => {
-    if (error instanceof AuditUserFacingError) return error.message;
-    console.error('[admin-audit]', error);
-    return fallback;
-};
+const toAuditErrorMessage = (error: unknown, fallback: string): string => (
+    toAdminErrorMessage(error, fallback, 'admin-audit')
+);
 
 type AuditActorFilter = typeof ACTOR_FILTER_VALUES[number];
 type AuditTimePreset = typeof AUDIT_TIME_PRESETS[number];

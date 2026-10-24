@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Hourglass, SuitcaseRolling, UserMinus, UsersThree } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
@@ -99,7 +100,7 @@ export const AdminDashboardPage: React.FC = () => {
             setUsers(nextUsers);
             setTrips(nextTrips);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load dashboard metrics.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not load dashboard metrics.', 'admin-overview'));
         } finally {
             setIsLoading(false);
         }

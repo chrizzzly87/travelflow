@@ -1,4 +1,5 @@
 import { TripOgPreviewPanel } from '../components/admin/TripOgPreviewPanel';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -373,10 +374,9 @@ const getGenerationJobTone = (state: TripGenerationJobSummary['state']): AdminSt
 };
 
 // Show the authored sentence; keep the raw exception in the console for diagnosis.
-const reportAdminTripsError = (fallback: string, error: unknown): string => {
-    console.error(`[admin-trips] ${fallback}`, error);
-    return fallback;
-};
+const reportAdminTripsError = (fallback: string, error: unknown): string => (
+    toAdminErrorMessage(error, fallback, 'admin-trips')
+);
 
 const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
     const state = trip.generation_state;

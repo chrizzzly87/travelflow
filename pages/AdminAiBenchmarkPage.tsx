@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AdminUserFacingError, toAdminErrorMessage, toBenchmarkApiErrorSentence } from '../services/adminErrorMessages';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
     Plus,
@@ -1165,21 +1166,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         try {
             payload = (raw ? JSON.parse(raw) : { ok: response.ok }) as BenchmarkApiResponse;
         } catch {
-            // A non-JSON body is usually a gateway or timeout page. Show it only
-            // when it is a short plain-text sentence, never as raw HTML.
-            const plainText = raw.trim();
-            payload = {
-                ok: response.ok,
-                error: plainText && !plainText.startsWith('<') && plainText.length <= 300 ? plainText : undefined,
-            };
+            // A non-JSON body is a gateway or timeout page, never an authored message.
+            payload = { ok: response.ok };
         }
         if (!response.ok) {
             if (response.status === 404 && path.startsWith('/api/internal/ai/benchmark')) {
-                throw new Error(
+                throw new AdminUserFacingError(
                     'AI Benchmark API is unavailable (404). Start the app with `pnpm dev:netlify` and open the benchmark from http://localhost:8888.'
                 );
             }
-            throw new Error(payload.error || `Benchmark API request failed (${response.status})`);
+            throw new AdminUserFacingError(toBenchmarkApiErrorSentence(payload.error, response.status));
         }
 
         return payload;
@@ -1202,7 +1198,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             }
         } catch (catalogError) {
             if (!options?.silent) {
-                setError(catalogError instanceof Error ? catalogError.message : 'Could not refresh the OpenRouter model catalog.');
+                setError(toAdminErrorMessage(catalogError, 'Could not refresh the OpenRouter model catalog.', 'admin-ai-benchmark'));
             }
         } finally {
             setModelCatalogLoading(false);
@@ -1279,7 +1275,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             }
             return normalized;
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : 'Failed to save benchmark preferences.');
+            setError(toAdminErrorMessage(saveError, 'Failed to save benchmark preferences.', 'admin-ai-benchmark'));
             return null;
         }
     }, [
@@ -1311,7 +1307,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 applyMaskScenario(preset.scenario);
             }
         } catch (preferencesError) {
-            setError(preferencesError instanceof Error ? preferencesError.message : 'Failed to load benchmark preferences');
+            setError(toAdminErrorMessage(preferencesError, 'Failed to load benchmark preferences', 'admin-ai-benchmark'));
             const fallback = normalizePreferencesForClient({});
             setModelTargetIds(fallback.modelTargets);
             setPresetConfigs(fallback.presets);
@@ -1371,7 +1367,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 setSearchParams(next, { replace: true });
             }
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'Failed to load benchmark session');
+            setError(toAdminErrorMessage(loadError, 'Failed to load benchmark session', 'admin-ai-benchmark'));
             setSession(null);
             setRuns([]);
             setSummary(null);
@@ -1452,7 +1448,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 }, 2000);
             } catch (pollError) {
                 if (cancelled) return;
-                setError(pollError instanceof Error ? pollError.message : 'Failed to refresh running benchmark session');
+                setError(toAdminErrorMessage(pollError, 'Failed to refresh running benchmark session', 'admin-ai-benchmark'));
             }
         };
 
@@ -1488,7 +1484,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             setSnapshotCheapestModel(cheapest);
             setSnapshotBestValueModel(bestValue);
         } catch (snapshotError) {
-            setSnapshotTelemetryError(snapshotError instanceof Error ? snapshotError.message : 'Failed to load 7-day telemetry snapshot');
+            setSnapshotTelemetryError(toAdminErrorMessage(snapshotError, 'Failed to load 7-day telemetry snapshot', 'admin-ai-benchmark'));
             setSnapshotTelemetrySummary(null);
             setSnapshotFastestModel(null);
             setSnapshotCheapestModel(null);
@@ -1699,7 +1695,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 void refreshTelemetryData();
             }
         } catch (runError) {
-            setError(runError instanceof Error ? runError.message : 'Benchmark run failed');
+            setError(toAdminErrorMessage(runError, 'Benchmark run failed', 'admin-ai-benchmark'));
             setRuns((current) => {
                 const next: BenchmarkRun[] = current.map((run) => {
                     if (!run.id.startsWith('optimistic-')) return run;
@@ -1777,7 +1773,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const cancelledCount = typeof payload.cancelled === 'number' ? payload.cancelled : 0;
             setMessage(`Cancelled ${cancelledCount} active run${cancelledCount === 1 ? '' : 's'}.`);
         } catch (cancelError) {
-            setError(cancelError instanceof Error ? cancelError.message : 'Failed to cancel benchmark run(s)');
+            setError(toAdminErrorMessage(cancelError, 'Failed to cancel benchmark run(s)', 'admin-ai-benchmark'));
         } finally {
             setCancelling(false);
         }
@@ -1831,7 +1827,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         try {
             await updateRunFeedback(run, { rating: nextRating });
         } catch (ratingError) {
-            setError(ratingError instanceof Error ? ratingError.message : 'Failed to save run rating');
+            setError(toAdminErrorMessage(ratingError, 'Failed to save run rating', 'admin-ai-benchmark'));
         } finally {
             setRatingSavingRunId(null);
         }
@@ -1853,7 +1849,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         try {
             await updateRunFeedback(run, { comment: draft || null });
         } catch (commentError) {
-            setError(commentError instanceof Error ? commentError.message : 'Failed to save run comment');
+            setError(toAdminErrorMessage(commentError, 'Failed to save run comment', 'admin-ai-benchmark'));
         } finally {
             setCommentSavingRunId(null);
         }
@@ -1878,7 +1874,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 generatedAt: new Date().toISOString(),
             });
         } catch (promptError) {
-            setError(promptError instanceof Error ? promptError.message : 'Failed to build prompt preview');
+            setError(toAdminErrorMessage(promptError, 'Failed to build prompt preview', 'admin-ai-benchmark'));
         }
     }, [buildScenario]);
 
@@ -1948,7 +1944,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const fileName = `${(session.name || 'benchmark-session').replace(/[^a-zA-Z0-9._-]+/g, '-')}-exports.zip`;
             downloadBlob(blob, fileName);
         } catch (downloadError) {
-            setError(downloadError instanceof Error ? downloadError.message : 'Failed to export benchmark ZIP');
+            setError(toAdminErrorMessage(downloadError, 'Failed to export benchmark ZIP', 'admin-ai-benchmark'));
         } finally {
             setLoading(false);
         }
@@ -1992,7 +1988,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 setError(payload.error || 'Cleanup may be incomplete.');
             }
         } catch (cleanupError) {
-            setError(cleanupError instanceof Error ? cleanupError.message : 'Failed to clean benchmark session');
+            setError(toAdminErrorMessage(cleanupError, 'Failed to clean benchmark session', 'admin-ai-benchmark'));
         } finally {
             setLoading(false);
         }
@@ -2025,7 +2021,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             if (!options?.silent) setMessage('Frontend AI model settings saved.');
             return settings;
         } catch (settingsError) {
-            setError(settingsError instanceof Error ? settingsError.message : 'Could not save frontend AI model settings.');
+            setError(toAdminErrorMessage(settingsError, 'Could not save frontend AI model settings.', 'admin-ai-benchmark'));
             return null;
         }
     }, [aiRuntimeSettings, fetchBenchmarkApi, liveOpenRouterModels]);

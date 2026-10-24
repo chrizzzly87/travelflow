@@ -130,7 +130,8 @@ describe('AdminGlobalSettingsPage', () => {
     const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
     render(React.createElement(AdminGlobalSettingsPage));
 
-    await screen.findByText('Could not load the current settings. Reload the page to try again.');
+    // A network failure gets the shared network sentence, never the raw text.
+    await screen.findByText('The request could not reach the server. Check your connection, then retry.');
     expect(screen.queryByText('Loading the current settings…')).toBeNull();
     expect(screen.queryByText(/internal\.example/)).toBeNull();
   });
