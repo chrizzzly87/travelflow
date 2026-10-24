@@ -19,6 +19,7 @@ import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
+import { AdminUserFacingError } from './adminErrorMessages';
 import type { RecommendationRow } from '../shared/recommendationRows';
 import type { RecommendationStatus } from '../shared/recommendations';
 
@@ -367,22 +368,22 @@ const requireSupabase = () => {
     return supabase;
 };
 
-const mapTermsRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+// A missing or outdated migration is the one RPC failure an admin can fix
+// themselves, so that hint is user-facing; any other raw RPC text is not.
+const toTermsRpcError = (rawMessage: string | null | undefined, fallbackMessage: string): Error => {
     const message = (rawMessage || '').trim();
-    if (!message) return fallbackMessage;
     if (/column reference "is_current" is ambiguous/i.test(message)) {
-        return `${message}. Please re-run the latest /docs/supabase.sql migration for Terms admin functions.`;
+        return new AdminUserFacingError('Terms admin functions are outdated. Re-run the latest /docs/supabase.sql migration.');
     }
-    return message;
+    return new Error(message || fallbackMessage);
 };
 
-const mapBillingRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+const toBillingRpcError = (rawMessage: string | null | undefined, fallbackMessage: string): Error => {
     const message = (rawMessage || '').trim();
-    if (!message) return fallbackMessage;
     if (/admin_(list_billing_(subscriptions|webhook_events)|get_billing_dashboard)/i.test(message) || /billing\.read/i.test(message)) {
-        return `${message}. Please re-run the latest /docs/supabase.sql migration for billing admin functions.`;
+        return new AdminUserFacingError('Billing admin functions are missing or outdated. Re-run the latest /docs/supabase.sql migration.');
     }
-    return message;
+    return new Error(message || fallbackMessage);
 };
 
 const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
@@ -504,7 +505,7 @@ export const adminUpdateUserProfile = async (
         ? normalizeProfileCountryCode(payload.country)
         : '';
     if (typeof payload.country === 'string' && payload.country.trim() && !normalizedCountry) {
-        throw new Error('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
+        throw new AdminUserFacingError('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
     }
     const client = requireSupabase();
     const rpcPayload = {
@@ -719,7 +720,7 @@ export const adminListBillingSubscriptions = async (
         p_search: options.search ?? null,
     });
     if (error) {
-        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing subscriptions.'));
+        throw toBillingRpcError(error.message, 'Could not load billing subscriptions.');
     }
     return (Array.isArray(data) ? data : []) as AdminBillingSubscriptionRecord[];
 };
@@ -770,7 +771,7 @@ export const adminListBillingWebhookEvents = async (
         p_search: options.search ?? null,
     });
     if (error) {
-        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing webhook events.'));
+        throw toBillingRpcError(error.message, 'Could not load billing webhook events.');
     }
     return (Array.isArray(data) ? data : []) as AdminBillingWebhookEventRecord[];
 };
@@ -812,7 +813,7 @@ export const adminGetBillingDashboard = async (): Promise<AdminBillingDashboardR
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_get_billing_dashboard');
     if (error) {
-        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing dashboard.'));
+        throw toBillingRpcError(error.message, 'Could not load billing dashboard.');
     }
 
     const row = Array.isArray(data) ? data[0] : data;
@@ -1189,10 +1190,10 @@ export const adminPublishTermsVersion = async (
     const bindingLocale = (payload.bindingLocale || 'de').trim() || 'de';
     const summary = typeof payload.summary === 'string' ? payload.summary.trim() : '';
 
-    if (!version) throw new Error('Version is required.');
-    if (!title) throw new Error('Title is required.');
-    if (!lastUpdated) throw new Error('Last updated date is required.');
-    if (!contentDe || !contentEn) throw new Error('Both DE and EN terms content are required.');
+    if (!version) throw new AdminUserFacingError('Version is required.');
+    if (!title) throw new AdminUserFacingError('Title is required.');
+    if (!lastUpdated) throw new AdminUserFacingError('Last updated date is required.');
+    if (!contentDe || !contentEn) throw new AdminUserFacingError('Both DE and EN terms content are required.');
 
     if (shouldUseAdminMockData()) {
         const now = new Date().toISOString();
@@ -1226,7 +1227,7 @@ export const adminPublishTermsVersion = async (
         p_make_current: payload.makeCurrent ?? true,
     });
 
-    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not publish terms version.'));
+    if (error) throw toTermsRpcError(error.message, 'Could not publish terms version.');
     const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
     if (!row) throw new Error('Terms publish RPC returned no version payload.');
     return row;
@@ -1237,7 +1238,7 @@ export const adminSetCurrentTermsVersion = async (
     options?: { requiresReaccept?: boolean | null; effectiveAt?: string | null }
 ): Promise<LegalTermsVersionRecord> => {
     const normalizedVersion = version.trim();
-    if (!normalizedVersion) throw new Error('Version is required.');
+    if (!normalizedVersion) throw new AdminUserFacingError('Version is required.');
 
     if (shouldUseAdminMockData()) {
         const now = new Date().toISOString();
@@ -1266,7 +1267,7 @@ export const adminSetCurrentTermsVersion = async (
             : null,
     });
 
-    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not switch current terms version.'));
+    if (error) throw toTermsRpcError(error.message, 'Could not switch current terms version.');
     const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
     if (!row) throw new Error('Terms version switch RPC returned no payload.');
     return row;

@@ -337,6 +337,79 @@ middle of the timeline.
 
 ---
 
+## `chart.tsx` — shadcn charts on Recharts
+
+The chart primitives for every data view. `ChartContainer` takes a `ChartConfig`
+(`{ seriesKey: { label, color } }`) and exposes each colour as `--color-<key>` on the
+container, so marks use `fill={chartColor(key)}` and follow the theme. Series colours come
+from the `--chart-1` … `--chart-5` tokens in `index.css` (brand indigo, emerald, amber,
+violet, rose — the same order in both themes). `ChartTooltipContent` and `ChartLegendContent`
+render the themed tooltip and legend.
+
+- **Recharts finds axes, grids and bars among its direct children.** Never wrap `XAxis`,
+  `YAxis` or `Bar` in a fragment or a helper component: the chart renders with no axes and no
+  error. Pick between two axes with two conditionals instead.
+- Tremor was removed; do not add `@tremor/react` back. Admin screens use `AdminBarChart`
+  (below) unless they need a different mark.
+
+---
+
+## Admin workspace (`components/admin/`)
+
+Every admin route renders inside `AdminShell`, and every admin screen builds its surfaces
+from the pieces below. The visual contract is `docs/DESIGN.md`; this is the parts list.
+
+### `AdminShell`
+
+Sidebar (collapsible to an icon rail, `⌘B`), top bar with breadcrumbs, `⌘K` command
+palette, theme toggle, and the page header. Props: `title`, `description`, `actions`
+(the page's primary and secondary actions), and the optional page filters
+`searchValue`/`onSearchValueChange` and `dateRange`/`onDateRangeChange`; hide those with
+`showGlobalSearch={false}` / `showDateRange={false}` when the page has no use for them.
+The shell already provides the page padding and a `max-w-[1600px]` column — pages must not
+add their own outer padding. Nav entries, sections and command-palette keywords live in
+`adminNavConfig.ts`.
+
+### Surfaces and headings
+
+| Component | Use for |
+|---|---|
+| `AdminSurfaceCard` | The one panel: `rounded-lg`, one-pixel border, `bg-card`, `p-4`, no shadow. Override padding with `className` (`p-0` for a flush table). |
+| `AdminSectionHeader` | The heading row inside a panel or above a section: `title`, one-line `description`, `actions` at the inline end. Sentence case. |
+| `AdminStatCard` | A KPI tile: `label`, large tabular `value`, optional `icon`, one-line `hint` with a `hintTone`, and `children` for a progress bar or breakdown. Lay them out in `grid gap-4 sm:grid-cols-2 xl:grid-cols-4`. |
+| `AdminEmptyState` | "Nothing here" for a table, list or chart, with one sentence naming the next action. |
+| `AdminErrorAlert` | A failed load or save above the surface it affects (an authored sentence, never a raw exception). |
+| `AdminStatusBadge` | Status pills in tables and headers. Tones: `neutral`, `info`, `success`, `warning`, `danger`, `accent`; the leading dot repeats the tone so state never rests on colour alone. |
+| `AdminBarChart` | Bar or stacked bar chart (`index`, `categories`, `stacked`, `layout="vertical"`, `colors`, `valueFormatter`). Set the height through `className` (default `h-64`). |
+| `AdminBarList` | Ranked rows with label, tabular value and a thin share track (`scale="max"` or `"total"`, `sortOrder`, one `color` or the palette with swatches). Use it for breakdowns and leaderboards instead of a chart. |
+| `AdminReloadButton` | The outline "Reload" action with a spinning icon while loading. |
+
+### Rules for admin screens
+
+1. **Use the shared pieces.** `Button` for every action (see above), `Badge`/`AdminStatusBadge`
+   for pills, `Table` for repeated records, `Tabs` for distinct jobs, `Dialog` for overlays,
+   `Select`/`DropdownMenu` for choices. A hand-rolled `<button className="rounded-lg border …">`
+   is a review comment.
+2. **Geometry.** Panels `rounded-lg`, controls `rounded-md`, pills `rounded-full`. No
+   `rounded-xl`/`rounded-2xl` and no `shadow-*` on panels inside admin.
+3. **Type.** Sentence case everywhere. No uppercase tracked "eyebrow" labels
+   (`text-[11px] uppercase tracking-[0.12em]`): a section label is `text-xs font-medium
+   text-muted-foreground`, a panel title is `AdminSectionHeader`. Table headers come from
+   `TableHead` as they are. Numbers that line up or update get `tabular-nums`.
+4. **Colour.** Neutral surfaces; tint only state (badges, alerts) and the one primary action.
+   Every tinted class needs its `dark:` pair, or use a component that already has one.
+5. **Spacing.** Stack sections with `flex flex-col gap-4` (or `gap-6` between unrelated
+   groups) rather than ad-hoc `mt-*` on each block.
+6. **Errors.** Never render `error.message`. Pass every caught error through
+   `toAdminErrorMessage(error, 'Authored fallback sentence.', 'admin-<screen>')` from
+   `services/adminErrorMessages.ts`: it shows an `AdminUserFacingError`'s text, maps
+   permission, session and network failures to authored sentences, keeps a short list of
+   SQL sentences written for people, and otherwise shows the fallback and logs the raw
+   error. Throw `AdminUserFacingError` from a service when its message is written for an
+   admin (validation, "re-run the migration").
+
+---
+
 ## Where to put a new shared component
 
 1. It is a generic primitive with no product knowledge → `components/ui/`, and add a section here.

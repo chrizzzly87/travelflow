@@ -1,12 +1,12 @@
 # Admin Workspace Follow-ups
 
-Last updated: 2026-02-18
+Last updated: 2026-10-24
 
 This note captures open admin/user-management items that are intentionally deferred, plus where to resume implementation quickly.
 
 ## Confirmed Open UI Items (Deferred)
 
-- [ ] Left sidebar does not behave correctly with long table pages and does not use full usable window height in all cases.
+- [x] Left sidebar does not behave correctly with long table pages and does not use full usable window height in all cases.
   - Symptom: on long data-table pages, shell feels visually broken and left rail/viewport behavior is inconsistent.
   - Primary file: `components/admin/AdminShell.tsx`
   - Current layout areas to revisit:
@@ -15,7 +15,8 @@ This note captures open admin/user-management items that are intentionally defer
     - Header stickiness and interaction with long table sections.
   - Decision pending: keep viewport-pinned shell (independent scroll regions) vs page-scroll shell (single document flow).
 
-- [ ] Full admin-shell layout pass to simplify and stabilize spacing/height behavior across all admin pages.
+- [x] Full admin-shell layout pass to simplify and stabilize spacing/height behavior across all admin pages.
+  - Done 2026-10-24 in the admin redesign: viewport-pinned sidebar with its own scroll region, page-scroll content, one shared page header.
   - Primary file: `components/admin/AdminShell.tsx`
   - Affected pages: `pages/AdminDashboardPage.tsx`, `pages/AdminUsersPage.tsx`, `pages/AdminTripsPage.tsx`, `pages/AdminTiersPage.tsx`, `pages/AdminAuditPage.tsx`
 

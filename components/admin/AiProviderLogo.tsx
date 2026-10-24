@@ -1,5 +1,6 @@
 import React from 'react';
 import { getAiProviderMetadata } from '../../config/aiProviderCatalog';
+import { cn } from '../../lib/utils';
 
 interface AiProviderLogoProps {
     provider: string;
@@ -73,10 +74,12 @@ export const AiProviderLogo: React.FC<AiProviderLogoProps> = ({
         <span
             aria-hidden="true"
             title={`${metadata.label} logo`}
-            className={[
-                'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card',
-                className || '',
-            ].join(' ').trim()}
+            className={cn(
+                // Brand marks are drawn for a light ground, so the badge stays
+                // white in dark mode too; otherwise dark logos vanish.
+                'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-white',
+                className,
+            )}
             style={{ width: size, height: size, fontSize, lineHeight: 1 }}
         >
             {asset ? (
@@ -88,7 +91,7 @@ export const AiProviderLogo: React.FC<AiProviderLogoProps> = ({
                     className="size-[72%] object-contain"
                 />
             ) : (
-                <span className="font-bold uppercase tracking-tight text-muted-foreground">AI</span>
+                <span className="font-semibold tracking-tight text-slate-500">AI</span>
             )}
         </span>
     );

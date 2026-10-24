@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AdminUserFacingError, toAdminErrorMessage, toBenchmarkApiErrorSentence } from '../services/adminErrorMessages';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
     Plus,
@@ -6,8 +7,6 @@ import {
     DownloadSimple,
     Trash,
     CheckCircle,
-    WarningCircle,
-    HourglassHigh,
     Smiley,
     SmileyMeh,
     SmileySad,
@@ -59,20 +58,23 @@ import {
 } from '../utils/aiBenchmarkTargets';
 import { useAuth } from '../hooks/useAuth';
 import { AdminShell } from '../components/admin/AdminShell';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { Alert, AlertDescription } from '../components/ui/alert';
 import { AppModal } from '../components/ui/app-modal';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '../components/ui/card';
+import { Checkbox } from '../components/ui/checkbox';
 import { Input } from '../components/ui/input';
+import { SearchInput } from '../components/ui/search-input';
 import { Switch } from '../components/ui/switch';
+import { Textarea } from '../components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -271,20 +273,20 @@ const SATISFACTION_META: Record<SatisfactionRating, { label: string; icon: React
     good: {
         label: 'Good',
         icon: <Smiley size={14} weight="fill" />,
-        activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
-        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
+        activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-400/12 dark:text-emerald-200 dark:hover:bg-emerald-400/20 dark:hover:text-emerald-100',
+        idleClass: 'text-muted-foreground',
     },
     medium: {
         label: 'Medium',
         icon: <SmileyMeh size={14} weight="fill" />,
-        activeClass: 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
-        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
+        activeClass: 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/12 dark:text-amber-200 dark:hover:bg-amber-400/20 dark:hover:text-amber-100',
+        idleClass: 'text-muted-foreground',
     },
     bad: {
         label: 'Bad',
         icon: <SmileySad size={14} weight="fill" />,
-        activeClass: 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
-        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
+        activeClass: 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 dark:border-rose-400/30 dark:bg-rose-400/12 dark:text-rose-200 dark:hover:bg-rose-400/20 dark:hover:text-rose-100',
+        idleClass: 'text-muted-foreground',
     },
 };
 
@@ -414,6 +416,14 @@ const isRunCancelledByUser = (run: BenchmarkRun): boolean => {
     if (run.status !== 'failed') return false;
     if (!run.error_message) return false;
     return run.error_message.startsWith('Cancelled by user.');
+};
+
+const RUN_STATUS_META: Record<BenchmarkRun['status'] | 'cancelled', { label: string; tone: AdminStatusTone }> = {
+    queued: { label: 'Queued', tone: 'neutral' },
+    running: { label: 'Running', tone: 'info' },
+    completed: { label: 'Completed', tone: 'success' },
+    failed: { label: 'Failed', tone: 'danger' },
+    cancelled: { label: 'Cancelled', tone: 'warning' },
 };
 
 const truncate = (value: string, max: number): string => {
@@ -673,7 +683,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return presets[0]?.id || '';
     });
     const latestSessionBootstrapRef = useRef(false);
-    const resultsSectionRef = useRef<HTMLElement | null>(null);
+    const resultsSectionRef = useRef<HTMLDivElement | null>(null);
     const hasPendingRunsRef = useRef(false);
     const handledImportTokenRef = useRef<string | null>(null);
     const pendingImportedScenarioRef = useRef<ReturnType<typeof decodeBenchmarkScenarioImportPayload> | null>(null);
@@ -731,7 +741,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return groups;
     }, {}), [filteredModels]);
     const modelProviderOptions = useMemo(
-        () => Array.from(new Set(sortedModels.map((model) => model.providerLabel))).sort((left, right) => left.localeCompare(right)),
+        () => Array.from(new Set<string>(sortedModels.map((model) => model.providerLabel))).sort((left, right) => left.localeCompare(right)),
         [sortedModels],
     );
 
@@ -833,7 +843,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     ), [selectedTemplateJson]);
 
     const providerOptions = useMemo(() => {
-        const values = Array.from(new Set(runs.flatMap((run) => (run.provider ? [run.provider] : []))));
+        const values = Array.from(new Set<string>(runs.flatMap((run) => (run.provider ? [run.provider] : []))));
         values.sort((left, right) => {
             const orderDelta = getAiProviderSortOrder(left) - getAiProviderSortOrder(right);
             if (orderDelta !== 0) return orderDelta;
@@ -1156,18 +1166,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         try {
             payload = (raw ? JSON.parse(raw) : { ok: response.ok }) as BenchmarkApiResponse;
         } catch {
-            payload = {
-                ok: response.ok,
-                error: raw || undefined,
-            };
+            // A non-JSON body is a gateway or timeout page, never an authored message.
+            payload = { ok: response.ok };
         }
         if (!response.ok) {
             if (response.status === 404 && path.startsWith('/api/internal/ai/benchmark')) {
-                throw new Error(
+                throw new AdminUserFacingError(
                     'AI Benchmark API is unavailable (404). Start the app with `pnpm dev:netlify` and open the benchmark from http://localhost:8888.'
                 );
             }
-            throw new Error(payload.error || `Benchmark API request failed (${response.status})`);
+            throw new AdminUserFacingError(toBenchmarkApiErrorSentence(payload.error, response.status));
         }
 
         return payload;
@@ -1190,7 +1198,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             }
         } catch (catalogError) {
             if (!options?.silent) {
-                setError(catalogError instanceof Error ? catalogError.message : 'Could not refresh the OpenRouter model catalog.');
+                setError(toAdminErrorMessage(catalogError, 'Could not refresh the OpenRouter model catalog.', 'admin-ai-benchmark'));
             }
         } finally {
             setModelCatalogLoading(false);
@@ -1267,7 +1275,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             }
             return normalized;
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : 'Failed to save benchmark preferences.');
+            setError(toAdminErrorMessage(saveError, 'Failed to save benchmark preferences.', 'admin-ai-benchmark'));
             return null;
         }
     }, [
@@ -1299,7 +1307,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 applyMaskScenario(preset.scenario);
             }
         } catch (preferencesError) {
-            setError(preferencesError instanceof Error ? preferencesError.message : 'Failed to load benchmark preferences');
+            setError(toAdminErrorMessage(preferencesError, 'Failed to load benchmark preferences', 'admin-ai-benchmark'));
             const fallback = normalizePreferencesForClient({});
             setModelTargetIds(fallback.modelTargets);
             setPresetConfigs(fallback.presets);
@@ -1359,7 +1367,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 setSearchParams(next, { replace: true });
             }
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'Failed to load benchmark session');
+            setError(toAdminErrorMessage(loadError, 'Failed to load benchmark session', 'admin-ai-benchmark'));
             setSession(null);
             setRuns([]);
             setSummary(null);
@@ -1440,7 +1448,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 }, 2000);
             } catch (pollError) {
                 if (cancelled) return;
-                setError(pollError instanceof Error ? pollError.message : 'Failed to refresh running benchmark session');
+                setError(toAdminErrorMessage(pollError, 'Failed to refresh running benchmark session', 'admin-ai-benchmark'));
             }
         };
 
@@ -1476,7 +1484,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             setSnapshotCheapestModel(cheapest);
             setSnapshotBestValueModel(bestValue);
         } catch (snapshotError) {
-            setSnapshotTelemetryError(snapshotError instanceof Error ? snapshotError.message : 'Failed to load 7-day telemetry snapshot');
+            setSnapshotTelemetryError(toAdminErrorMessage(snapshotError, 'Failed to load 7-day telemetry snapshot', 'admin-ai-benchmark'));
             setSnapshotTelemetrySummary(null);
             setSnapshotFastestModel(null);
             setSnapshotCheapestModel(null);
@@ -1687,7 +1695,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 void refreshTelemetryData();
             }
         } catch (runError) {
-            setError(runError instanceof Error ? runError.message : 'Benchmark run failed');
+            setError(toAdminErrorMessage(runError, 'Benchmark run failed', 'admin-ai-benchmark'));
             setRuns((current) => {
                 const next: BenchmarkRun[] = current.map((run) => {
                     if (!run.id.startsWith('optimistic-')) return run;
@@ -1765,7 +1773,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const cancelledCount = typeof payload.cancelled === 'number' ? payload.cancelled : 0;
             setMessage(`Cancelled ${cancelledCount} active run${cancelledCount === 1 ? '' : 's'}.`);
         } catch (cancelError) {
-            setError(cancelError instanceof Error ? cancelError.message : 'Failed to cancel benchmark run(s)');
+            setError(toAdminErrorMessage(cancelError, 'Failed to cancel benchmark run(s)', 'admin-ai-benchmark'));
         } finally {
             setCancelling(false);
         }
@@ -1819,7 +1827,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         try {
             await updateRunFeedback(run, { rating: nextRating });
         } catch (ratingError) {
-            setError(ratingError instanceof Error ? ratingError.message : 'Failed to save run rating');
+            setError(toAdminErrorMessage(ratingError, 'Failed to save run rating', 'admin-ai-benchmark'));
         } finally {
             setRatingSavingRunId(null);
         }
@@ -1841,7 +1849,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         try {
             await updateRunFeedback(run, { comment: draft || null });
         } catch (commentError) {
-            setError(commentError instanceof Error ? commentError.message : 'Failed to save run comment');
+            setError(toAdminErrorMessage(commentError, 'Failed to save run comment', 'admin-ai-benchmark'));
         } finally {
             setCommentSavingRunId(null);
         }
@@ -1866,7 +1874,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 generatedAt: new Date().toISOString(),
             });
         } catch (promptError) {
-            setError(promptError instanceof Error ? promptError.message : 'Failed to build prompt preview');
+            setError(toAdminErrorMessage(promptError, 'Failed to build prompt preview', 'admin-ai-benchmark'));
         }
     }, [buildScenario]);
 
@@ -1936,7 +1944,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const fileName = `${(session.name || 'benchmark-session').replace(/[^a-zA-Z0-9._-]+/g, '-')}-exports.zip`;
             downloadBlob(blob, fileName);
         } catch (downloadError) {
-            setError(downloadError instanceof Error ? downloadError.message : 'Failed to export benchmark ZIP');
+            setError(toAdminErrorMessage(downloadError, 'Failed to export benchmark ZIP', 'admin-ai-benchmark'));
         } finally {
             setLoading(false);
         }
@@ -1980,7 +1988,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 setError(payload.error || 'Cleanup may be incomplete.');
             }
         } catch (cleanupError) {
-            setError(cleanupError instanceof Error ? cleanupError.message : 'Failed to clean benchmark session');
+            setError(toAdminErrorMessage(cleanupError, 'Failed to clean benchmark session', 'admin-ai-benchmark'));
         } finally {
             setLoading(false);
         }
@@ -2013,7 +2021,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             if (!options?.silent) setMessage('Frontend AI model settings saved.');
             return settings;
         } catch (settingsError) {
-            setError(settingsError instanceof Error ? settingsError.message : 'Could not save frontend AI model settings.');
+            setError(toAdminErrorMessage(settingsError, 'Could not save frontend AI model settings.', 'admin-ai-benchmark'));
             return null;
         }
     }, [aiRuntimeSettings, fetchBenchmarkApi, liveOpenRouterModels]);
@@ -2213,25 +2221,24 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return getValidationWarnings(validationModalRun.validation_checks);
     }, [validationModalRun]);
 
+    const presetFieldLabelClass = 'text-xs font-medium text-muted-foreground';
+
     return (
         <AdminShell
-            title="AI Benchmark"
-            description="Compare trip quality, latency, and cost."
+            title="AI benchmark"
+            description="Compare trip quality, latency and cost across models."
             showGlobalSearch={false}
             showDateRange={false}
         >
-            <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
+            <div className="flex w-full flex-col gap-4">
 
-                {error && (
-                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                        {error}
-                    </section>
-                )}
+                {error && <AdminErrorAlert message={error} />}
 
                 {message && (
-                    <section className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                        {message}
-                    </section>
+                    <Alert variant="success" role="status">
+                        <CheckCircle weight="fill" />
+                        <AlertDescription>{message}</AlertDescription>
+                    </Alert>
                 )}
 
                 <Tabs
@@ -2239,789 +2246,792 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     onValueChange={(value) => setWorkspaceTab(value as 'setup' | 'results' | 'insights')}
                     className="flex flex-col gap-4"
                 >
-                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur dark:ring-0 dark:shadow-none">
+                    {/* top-16 clears the shell's sticky 56px top bar; top-2 slid under it. */}
+                    <div className="sticky top-16 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card/95 p-2 backdrop-blur">
                         <TabsList className="grid w-full grid-cols-3 sm:w-auto">
                             <TabsTrigger value="setup">Setup</TabsTrigger>
-                            <TabsTrigger value="results">Results · {runs.length}</TabsTrigger>
+                            <TabsTrigger value="results">Results · <span className="tabular-nums">{runs.length}</span></TabsTrigger>
                             <TabsTrigger value="insights">Insights</TabsTrigger>
                         </TabsList>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Badge variant={accessToken ? 'secondary' : 'destructive'}>
+                            <AdminStatusBadge tone={accessToken ? 'success' : 'danger'}>
                                 {accessToken ? 'Admin connected' : 'Re-auth required'}
-                            </Badge>
+                            </AdminStatusBadge>
                             <span className="tabular-nums">{runnableTargets.length} active models</span>
                         </div>
                     </div>
 
                     <TabsContent value="insights" className="mt-0">
+                        <AdminSurfaceCard className="flex flex-col gap-4">
+                            <AdminSectionHeader
+                                title="7-day telemetry"
+                                description="Quick rankings from the last week. Open the telemetry page for charts and filters."
+                                actions={(
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => void refreshTelemetryData()}
+                                            disabled={snapshotTelemetryLoading}
+                                            aria-busy={snapshotTelemetryLoading || undefined}
+                                        >
+                                            <ArrowClockwise className={snapshotTelemetryLoading ? 'animate-spin' : ''} />
+                                            Refresh snapshot
+                                        </Button>
+                                        <Button asChild variant="ghost" size="sm">
+                                            <Link to="/admin/ai-benchmark/telemetry">Open telemetry page</Link>
+                                        </Button>
+                                    </>
+                                )}
+                            />
 
-                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h3 className="text-base font-semibold text-foreground">7-day telemetry quick view</h3>
-                            <p className="text-xs text-muted-foreground">
-                                Three quick ranking cards. Open the full telemetry page for detailed charts and filters.
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => void refreshTelemetryData()}
-                                disabled={snapshotTelemetryLoading}
-                                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                <ArrowClockwise size={14} className={snapshotTelemetryLoading ? 'animate-spin' : ''} />
-                                Refresh snapshot
-                            </button>
-                            <Link
-                                to="/admin/ai-benchmark/telemetry"
-                                className="inline-flex items-center rounded border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                            >
-                                Open telemetry page
-                            </Link>
-                        </div>
-                    </div>
+                            {snapshotTelemetryError && <AdminErrorAlert message={snapshotTelemetryError} />}
 
-                    {snapshotTelemetryError && (
-                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                            {snapshotTelemetryError}
-                        </div>
-                    )}
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                <AdminStatCard
+                                    label="Calls"
+                                    value={snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}
+                                    isLoading={snapshotTelemetryLoading}
+                                />
+                                <AdminStatCard
+                                    label="Success rate"
+                                    value={snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}
+                                    isLoading={snapshotTelemetryLoading}
+                                />
+                                <AdminStatCard
+                                    label="Cost"
+                                    value={snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}
+                                    isLoading={snapshotTelemetryLoading}
+                                />
+                            </div>
 
-                    <div className="mt-3 rounded-xl border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground">
-                        Calls: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}</span>
-                        <span className="mx-2 text-muted-foreground">•</span>
-                        Success: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}</span>
-                        <span className="mx-2 text-muted-foreground">•</span>
-                        Cost: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}</span>
-                    </div>
-
-                    <div className="mt-3 grid gap-3 xl:grid-cols-3">
-                        {snapshotTelemetryCards.map((card) => (
-                            <article key={card.id} className="rounded-xl border border-border bg-card p-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{card.title}</p>
-                                <p className="mt-1 text-xl font-black text-foreground">{card.metric}</p>
-                                <p className="mt-1 text-xs font-semibold text-foreground">
-                                    {card.model ? (
-                                        <ProviderLabel
-                                            provider={card.model.provider}
-                                            model={card.model.model}
-                                            providerClassName="font-semibold text-foreground"
-                                            modelClassName="text-muted-foreground"
-                                            logoSize={13}
-                                        />
-                                    ) : 'No model yet'}
-                                </p>
-                                <p className="mt-1 text-[11px] text-muted-foreground">{card.detail}</p>
-                            </article>
-                        ))}
-                    </div>
-                </section>
-
+                            <div className="grid gap-4 xl:grid-cols-3">
+                                {snapshotTelemetryCards.map((card) => (
+                                    <AdminStatCard
+                                        key={card.id}
+                                        label={card.title}
+                                        value={card.metric}
+                                        hint={card.detail}
+                                        isLoading={snapshotTelemetryLoading}
+                                    >
+                                        <div className="text-sm">
+                                            {card.model ? (
+                                                <ProviderLabel
+                                                    provider={card.model.provider}
+                                                    model={card.model.model}
+                                                    providerClassName="font-medium text-foreground"
+                                                    modelClassName="truncate text-muted-foreground"
+                                                    logoSize={14}
+                                                />
+                                            ) : <span className="text-muted-foreground">No model yet</span>}
+                                        </div>
+                                    </AdminStatCard>
+                                ))}
+                            </div>
+                        </AdminSurfaceCard>
                     </TabsContent>
 
                     <TabsContent value="setup" className="mt-0">
-
-                <Card className="gap-0 rounded-lg border-border py-0 shadow-sm">
-                    <CardHeader className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-start sm:justify-between md:px-6">
-                        <div>
-                            <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
-                                Benchmark setup
-                                <Badge variant="secondary">{runnableTargets.length} active</Badge>
-                                <Badge variant="outline">{selectedTargets.length} selected</Badge>
-                            </CardTitle>
-                            <CardDescription className="mt-1">Choose one trip template, tune execution, then compare the selected models.</CardDescription>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <Button
-                                type="button"
-                                onClick={() => {
-                                    scrollToResults();
-                                    void runBenchmark();
-                                }}
-                                disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
-                            >
-                                <Play data-icon="inline-start" weight="fill" />
-                                Run {runnableTargets.length} model{runnableTargets.length === 1 ? '' : 's'}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={cancelActiveRunsInSession}
-                                disabled={loading || cancelling || !session || !hasPendingRuns}
-                            >
-                                <StopCircle data-icon="inline-start" />
-                                Stop
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={cleanupSession}
-                                disabled={loading || cancelling || !session || hasPendingRuns}
-                            >
-                                <Trash data-icon="inline-start" />
-                                Clear
-                            </Button>
-                        </div>
-                    </CardHeader>
-
-                    <CardContent className="divide-y divide-border px-0">
-                        <section className="grid gap-4 p-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(240px,1fr)_minmax(300px,1.4fr)] md:p-6">
-                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
-                                Trip template
-                                <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
-                                    <SelectTrigger aria-label="Trip template" className="h-9">
-                                        <SelectValue placeholder="Choose a template" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {presetConfigs.map((preset) => (
-                                                <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
-                                            ))}
-                                            <SelectItem value={CUSTOM_JSON_PRESET_ID}>{CUSTOM_JSON_PRESET_NAME}</SelectItem>
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </label>
-
-                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
-                                Session name
-                                <Input
-                                    aria-label="Session name"
-                                    value={sessionName}
-                                    onChange={(event) => setSessionName(event.target.value)}
-                                    className="h-9"
-                                />
-                            </label>
-
-                            <div className="min-w-0 rounded-md border border-border bg-secondary p-3">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className="truncate text-sm font-semibold text-foreground">{selectedPreset?.name || 'Template'}</span>
-                                            <Badge variant="outline" className="h-5 text-[10px]">{selectedPreset?.kind || 'system'}</Badge>
-                                        </div>
-                                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                            {selectedPreset?.description || 'No description saved for this template.'}
-                                        </p>
-                                    </div>
-                                    <Button type="button" variant="outline" size="xs" onClick={() => setTemplateDetailsOpen(true)}>
-                                        Details
-                                    </Button>
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                    <Badge variant="secondary">{destinations || 'No destination'}</Badge>
-                                    <Badge variant="outline">{dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}</Badge>
-                                    <Badge variant="outline">{budget}</Badge>
-                                    <Badge variant="outline">{pace}</Badge>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="p-4 md:p-6">
-                            <div className="mb-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-                                <div>
-                                    <h3 className="text-sm font-semibold text-foreground">Execution</h3>
-                                    <p className="text-xs text-muted-foreground">Run defaults apply unless a model has its own reasoning setting below.</p>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{Math.max(0, runnableTargets.length - benchmarkConcurrency)} queued</span>
-                                    <span aria-hidden="true">·</span>
-                                    <span>{preferencesLoaded ? 'Saved preferences ready' : 'Loading preferences'}</span>
-                                </div>
-                            </div>
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
-                                    Run default reasoning
-                                    <Select value={benchmarkReasoningMode} onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}>
-                                        <SelectTrigger aria-label="Run default reasoning" className="h-9"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                <SelectItem value="provider-default">Model default</SelectItem>
-                                                {AI_REASONING_EFFORTS.map((effort) => (
-                                                    <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                    <span className="font-normal text-muted-foreground">Used by {reasoningTargets.length} compatible model{reasoningTargets.length === 1 ? '' : 's'}.</span>
-                                </label>
-
-                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
-                                    Parallel requests
-                                    <Select value={String(benchmarkConcurrency)} onValueChange={(value) => setBenchmarkConcurrency(Number(value))}>
-                                        <SelectTrigger aria-label="Parallel requests" className="h-9"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {Array.from({ length: BENCHMARK_CONCURRENCY_MAX }, (_, index) => index + 1).map((count) => (
-                                                    <SelectItem key={count} value={String(count)}>{count} at a time</SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                    <span className="font-normal text-muted-foreground">Lower reduces provider contention and timeout risk.</span>
-                                </label>
-
-                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
-                                    Time limit
-                                    <Input
-                                        type="number"
-                                        aria-label="Timeout seconds"
-                                        min={BENCHMARK_TIMEOUT_MIN_SECONDS}
-                                        max={BENCHMARK_TIMEOUT_MAX_SECONDS}
-                                        step={5}
-                                        value={benchmarkTimeoutSeconds}
-                                        className="h-9"
-                                        onChange={(event) => {
-                                            const parsed = Number(event.target.value);
-                                            setBenchmarkTimeoutSeconds(Number.isFinite(parsed)
-                                                ? Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
-                                                : BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
-                                        }}
-                                    />
-                                    <span className="font-normal text-muted-foreground">Seconds per model; actual latency stays visible.</span>
-                                </label>
-
-                                <div className="flex min-h-[76px] items-start justify-between gap-3 rounded-md border border-border bg-secondary p-3">
-                                    <div>
-                                        <div className="text-xs font-medium text-foreground">Compact output</div>
-                                        <p className="mt-1 text-xs text-muted-foreground">Shorter JSON, faster comparisons.</p>
-                                    </div>
-                                    <Switch aria-label="Compact output" checked={compactBenchmarkOutput} onCheckedChange={setCompactBenchmarkOutput} />
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="p-4 md:p-6">
-                            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-                                <div>
-                                    <h3 className="text-sm font-semibold text-foreground">Models</h3>
-                                    <p className="text-xs text-muted-foreground">Set each model’s reasoning, active status, and single-run actions.</p>
-                                </div>
-                                <Button type="button" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns}>
-                                    <Plus data-icon="inline-start" />
-                                    Add models
-                                </Button>
-                            </div>
-
-                            <div className="mb-3 grid gap-3 rounded-md border border-border bg-secondary p-3 lg:grid-cols-[minmax(260px,1fr)_auto]">
-                                <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
-                                    Frontend default model
-                                    <Select
-                                        value={aiRuntimeSettings.defaultModelId}
-                                        onValueChange={(value) => void persistAiRuntimeSettings({
-                                            defaultModelId: value,
-                                            approvedOpenRouterModels: Array.from(new Set([
-                                                ...aiRuntimeSettings.approvedOpenRouterModels,
-                                                ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
-                                            ])),
-                                        })}
-                                    >
-                                        <SelectTrigger aria-label="Frontend default model" className="h-9 bg-card">
-                                            <SelectValue placeholder="Choose the frontend model" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {sortedModels.filter((model) => model.availability === 'active').map((model) => (
-                                                    <SelectItem key={model.id} value={model.id}>{model.providerShortName} · {model.label}</SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </label>
-                                <div className="flex flex-wrap items-end gap-2">
-                                    <Button type="button" variant="outline" size="sm" onClick={activateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}>
-                                        <ToggleRight data-icon="inline-start" /> Activate all
-                                    </Button>
-                                    <Button type="button" variant="outline" size="sm" onClick={deactivateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}>
-                                        <ToggleLeft data-icon="inline-start" /> Deactivate all
-                                    </Button>
-                                    <Button type="button" variant="destructive" size="sm" onClick={() => void removeAllModelTargets()} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
-                                        <Trash data-icon="inline-start" /> Remove all
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="overflow-hidden rounded-md border border-border">
-                                {selectedTargets.length === 0 ? (
-                                    <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-                                        No benchmark models selected. Add models to build a comparison set.
-                                    </div>
-                                ) : (
-                                    <Table>
-                                        <TableHeader className="bg-secondary">
-                                            <TableRow>
-                                                <TableHead className="ps-4">Model</TableHead>
-                                                <TableHead className="w-[220px]">Reasoning</TableHead>
-                                                <TableHead className="w-[110px]">Active</TableHead>
-                                                <TableHead className="w-[100px] pe-4 text-end">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {selectedTargets.map((model) => {
-                                                const isActive = !inactiveTargetIdSet.has(model.id);
-                                                const singleTarget: AiBenchmarkRunTarget = { provider: model.provider, model: model.model, label: model.label };
-                                                return (
-                                                    <TableRow key={model.id} className={!isActive ? 'bg-secondary/70 text-muted-foreground' : undefined}>
-                                                        <TableCell className="ps-4">
-                                                            <div className="flex items-center gap-2 font-medium text-foreground">
-                                                                <AiProviderLogo provider={model.provider} model={model.model} size={20} />
-                                                                <span className="truncate">{model.label}</span>
-                                                                {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend</Badge>}
-                                                            </div>
-                                                            <div className="ps-7 text-xs text-muted-foreground">{model.providerShortName} · {model.model}</div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <ModelReasoningSelect
-                                                                model={model}
-                                                                runDefault={benchmarkReasoningMode}
-                                                                value={modelReasoningModes[model.id]}
-                                                                onChange={(value) => setModelReasoningModes((current) => {
-                                                                    if (value === undefined) {
-                                                                        const next = { ...current };
-                                                                        delete next[model.id];
-                                                                        return next;
-                                                                    }
-                                                                    return { ...current, [model.id]: value };
-                                                                })}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-2">
-                                                                <Switch
-                                                                    checked={isActive}
-                                                                    onCheckedChange={() => toggleModelTargetActive(model.id)}
-                                                                    disabled={loading || cancelling || hasPendingRuns}
-                                                                    aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${model.label}`}
-                                                                />
-                                                                <span className="text-xs text-muted-foreground">{isActive ? 'On' : 'Off'}</span>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="pe-4">
-                                                            <div className="flex justify-end gap-1">
-                                                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => { scrollToResults(); runSingleTarget(singleTarget); }} disabled={loading || cancelling || hasPendingRuns} aria-label={`Run ${model.label} only`} title={`Run ${model.label} only`}>
-                                                                    <Play weight="fill" />
-                                                                </Button>
-                                                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => void removeModelTarget(model.id)} disabled={loading || cancelling || hasPendingRuns} aria-label={`Remove ${model.label}`} title={`Remove ${model.label}`}>
-                                                                    <X />
-                                                                </Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
+                        <AdminSurfaceCard className="p-0">
+                            <AdminSectionHeader
+                                className="border-b border-border p-4 md:px-6"
+                                title={(
+                                    <span className="flex flex-wrap items-center gap-2">
+                                        Benchmark setup
+                                        <Badge variant="secondary" className="tabular-nums">{runnableTargets.length} active</Badge>
+                                        <Badge variant="outline" className="tabular-nums">{selectedTargets.length} selected</Badge>
+                                    </span>
                                 )}
+                                description="Choose one trip template, tune execution, then compare the selected models."
+                                actions={(
+                                    <>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => {
+                                                scrollToResults();
+                                                void runBenchmark();
+                                            }}
+                                            disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
+                                        >
+                                            <Play weight="fill" />
+                                            Run {runnableTargets.length} model{runnableTargets.length === 1 ? '' : 's'}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={cancelActiveRunsInSession}
+                                            disabled={loading || cancelling || !session || !hasPendingRuns}
+                                        >
+                                            <StopCircle />
+                                            Stop
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={cleanupSession}
+                                            disabled={loading || cancelling || !session || hasPendingRuns}
+                                        >
+                                            <Trash />
+                                            Clear
+                                        </Button>
+                                    </>
+                                )}
+                            />
+
+                            <div className="divide-y divide-border">
+                                <section className="grid gap-4 p-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(240px,1fr)_minmax(300px,1.4fr)] md:p-6">
+                                    <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
+                                        Trip template
+                                        <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
+                                            <SelectTrigger aria-label="Trip template" className="h-9">
+                                                <SelectValue placeholder="Choose a template" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {presetConfigs.map((preset) => (
+                                                        <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+                                                    ))}
+                                                    <SelectItem value={CUSTOM_JSON_PRESET_ID}>{CUSTOM_JSON_PRESET_NAME}</SelectItem>
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
+
+                                    <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
+                                        Session name
+                                        <Input
+                                            aria-label="Session name"
+                                            value={sessionName}
+                                            onChange={(event) => setSessionName(event.target.value)}
+                                            className="h-9"
+                                        />
+                                    </label>
+
+                                    <div className="min-w-0 rounded-md border border-border bg-secondary p-3">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                                    <span className="min-w-0 truncate text-sm font-semibold text-foreground">{selectedPreset?.name || 'Template'}</span>
+                                                    <Badge variant="outline">{selectedPreset?.kind === 'custom' ? 'Custom' : 'System'}</Badge>
+                                                </div>
+                                                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                                    {selectedPreset?.description || 'No description saved for this template.'}
+                                                </p>
+                                            </div>
+                                            <Button type="button" variant="outline" size="xs" onClick={() => setTemplateDetailsOpen(true)}>
+                                                Details
+                                            </Button>
+                                        </div>
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                            <Badge variant="secondary" className="max-w-full truncate">{destinations || 'No destination'}</Badge>
+                                            <Badge variant="outline">{dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}</Badge>
+                                            <Badge variant="outline">{budget}</Badge>
+                                            <Badge variant="outline">{pace}</Badge>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section className="flex flex-col gap-3 p-4 md:p-6">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title="Execution"
+                                        description="Run defaults apply unless a model has its own reasoning setting below."
+                                        actions={(
+                                            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span className="tabular-nums">{Math.max(0, runnableTargets.length - benchmarkConcurrency)} queued</span>
+                                                <span aria-hidden="true">·</span>
+                                                <span>{preferencesLoaded ? 'Saved preferences ready' : 'Loading preferences'}</span>
+                                            </span>
+                                        )}
+                                    />
+                                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                        <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
+                                            Run default reasoning
+                                            <Select value={benchmarkReasoningMode} onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}>
+                                                <SelectTrigger aria-label="Run default reasoning" className="h-9"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectItem value="provider-default">Model default</SelectItem>
+                                                        {AI_REASONING_EFFORTS.map((effort) => (
+                                                            <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                            <span className="font-normal text-muted-foreground">Used by {reasoningTargets.length} compatible model{reasoningTargets.length === 1 ? '' : 's'}.</span>
+                                        </label>
+
+                                        <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
+                                            Parallel requests
+                                            <Select value={String(benchmarkConcurrency)} onValueChange={(value) => setBenchmarkConcurrency(Number(value))}>
+                                                <SelectTrigger aria-label="Parallel requests" className="h-9"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {Array.from({ length: BENCHMARK_CONCURRENCY_MAX }, (_, index) => index + 1).map((count) => (
+                                                            <SelectItem key={count} value={String(count)}>{count} at a time</SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                            <span className="font-normal text-muted-foreground">Lower reduces provider contention and timeout risk.</span>
+                                        </label>
+
+                                        <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
+                                            Time limit
+                                            <Input
+                                                type="number"
+                                                aria-label="Timeout seconds"
+                                                min={BENCHMARK_TIMEOUT_MIN_SECONDS}
+                                                max={BENCHMARK_TIMEOUT_MAX_SECONDS}
+                                                step={5}
+                                                value={benchmarkTimeoutSeconds}
+                                                className="h-9 tabular-nums"
+                                                onChange={(event) => {
+                                                    const parsed = Number(event.target.value);
+                                                    setBenchmarkTimeoutSeconds(Number.isFinite(parsed)
+                                                        ? Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
+                                                        : BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
+                                                }}
+                                            />
+                                            <span className="font-normal text-muted-foreground">Seconds per model; actual latency stays visible.</span>
+                                        </label>
+
+                                        <div className="flex min-h-[76px] items-start justify-between gap-3 rounded-md border border-border bg-secondary p-3">
+                                            <div>
+                                                <div className="text-xs font-medium text-foreground">Compact output</div>
+                                                <p className="mt-1 text-xs text-muted-foreground">Shorter JSON, faster comparisons.</p>
+                                            </div>
+                                            <Switch aria-label="Compact output" checked={compactBenchmarkOutput} onCheckedChange={setCompactBenchmarkOutput} />
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section className="flex flex-col gap-3 p-4 md:p-6">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title="Models"
+                                        description="Set each model’s reasoning, active status, and single-run actions."
+                                        actions={(
+                                            <Button type="button" variant="outline" size="sm" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns}>
+                                                <Plus />
+                                                Add models
+                                            </Button>
+                                        )}
+                                    />
+
+                                    <div className="grid gap-3 rounded-md border border-border bg-secondary p-3 lg:grid-cols-[minmax(260px,1fr)_auto]">
+                                        <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
+                                            Frontend default model
+                                            <Select
+                                                value={aiRuntimeSettings.defaultModelId}
+                                                onValueChange={(value) => void persistAiRuntimeSettings({
+                                                    defaultModelId: value,
+                                                    approvedOpenRouterModels: Array.from(new Set([
+                                                        ...aiRuntimeSettings.approvedOpenRouterModels,
+                                                        ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
+                                                    ])),
+                                                })}
+                                            >
+                                                <SelectTrigger aria-label="Frontend default model" className="h-9 bg-card">
+                                                    <SelectValue placeholder="Choose the frontend model" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {sortedModels.filter((model) => model.availability === 'active').map((model) => (
+                                                            <SelectItem key={model.id} value={model.id}>{model.providerShortName} · {model.label}</SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </label>
+                                        <div className="flex flex-wrap items-end gap-2">
+                                            <Button type="button" variant="outline" size="sm" onClick={activateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}>
+                                                <ToggleRight /> Activate all
+                                            </Button>
+                                            <Button type="button" variant="outline" size="sm" onClick={deactivateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}>
+                                                <ToggleLeft /> Deactivate all
+                                            </Button>
+                                            <Button type="button" variant="destructive" size="sm" onClick={() => void removeAllModelTargets()} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
+                                                <Trash /> Remove all
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {selectedTargets.length === 0 ? (
+                                        <AdminEmptyState
+                                            title="No benchmark models selected"
+                                            description="Add models to build a comparison set."
+                                        />
+                                    ) : (
+                                        <div className="overflow-hidden rounded-md border border-border">
+                                            <Table>
+                                                <TableHeader className="bg-secondary">
+                                                    <TableRow className="hover:bg-transparent">
+                                                        <TableHead className="ps-4">Model</TableHead>
+                                                        <TableHead className="w-[220px]">Reasoning</TableHead>
+                                                        <TableHead className="w-[110px]">Active</TableHead>
+                                                        <TableHead className="w-[100px] pe-4 text-end">Actions</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {selectedTargets.map((model) => {
+                                                        const isActive = !inactiveTargetIdSet.has(model.id);
+                                                        const singleTarget: AiBenchmarkRunTarget = { provider: model.provider, model: model.model, label: model.label };
+                                                        return (
+                                                            <TableRow key={model.id} className={!isActive ? 'bg-secondary/70 text-muted-foreground' : undefined}>
+                                                                <TableCell className="ps-4">
+                                                                    <div className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                                                                        <AiProviderLogo provider={model.provider} model={model.model} size={20} />
+                                                                        <span className="min-w-0 truncate">{model.label}</span>
+                                                                        {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend</Badge>}
+                                                                    </div>
+                                                                    <div className="ps-7 font-mono text-xs text-muted-foreground">{model.providerShortName} · {model.model}</div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <ModelReasoningSelect
+                                                                        model={model}
+                                                                        runDefault={benchmarkReasoningMode}
+                                                                        value={modelReasoningModes[model.id]}
+                                                                        onChange={(value) => setModelReasoningModes((current) => {
+                                                                            if (value === undefined) {
+                                                                                const next = { ...current };
+                                                                                delete next[model.id];
+                                                                                return next;
+                                                                            }
+                                                                            return { ...current, [model.id]: value };
+                                                                        })}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Switch
+                                                                            checked={isActive}
+                                                                            onCheckedChange={() => toggleModelTargetActive(model.id)}
+                                                                            disabled={loading || cancelling || hasPendingRuns}
+                                                                            aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${model.label}`}
+                                                                        />
+                                                                        <span className="text-xs text-muted-foreground">{isActive ? 'On' : 'Off'}</span>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="pe-4">
+                                                                    <div className="flex justify-end gap-1">
+                                                                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => { scrollToResults(); runSingleTarget(singleTarget); }} disabled={loading || cancelling || hasPendingRuns} aria-label={`Run ${model.label} only`} title={`Run ${model.label} only`}>
+                                                                            <Play weight="fill" />
+                                                                        </Button>
+                                                                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => void removeModelTarget(model.id)} disabled={loading || cancelling || hasPendingRuns} aria-label={`Remove ${model.label}`} title={`Remove ${model.label}`}>
+                                                                            <X />
+                                                                        </Button>
+                                                                    </div>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">{COST_ESTIMATE_FOOTNOTE}</p>
+                                </section>
                             </div>
-                            <p className="mt-2 text-xs text-muted-foreground">{COST_ESTIMATE_FOOTNOTE}</p>
-                        </section>
-                    </CardContent>
-                </Card>
-
-
+                        </AdminSurfaceCard>
                     </TabsContent>
 
                     <TabsContent value="results" className="mt-0">
-
-                <section ref={resultsSectionRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground">Benchmark runs</h3>
-                            <p className="text-xs text-muted-foreground">
-                                Session: {session ? `${session.name || 'Unnamed'} (${session.share_token})` : 'No session loaded'}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => downloadAllZip(false)}
-                                disabled={loading || !session || runs.length === 0}
-                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                <DownloadSimple size={14} />
-                                Download all
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => downloadAllZip(true)}
-                                disabled={loading || !session || runs.length === 0}
-                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                <DownloadSimple size={14} />
-                                Download all + logs
-                            </button>
-                            <Select value={providerFilter} onValueChange={setProviderFilter}>
-                                <SelectTrigger className="h-8 w-[180px] text-xs">
-                                    <SelectValue placeholder="All providers" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All providers</SelectItem>
-                                    {providerOptions.map((provider) => (
-                                        <SelectItem key={provider} value={provider}>
-                                            <ProviderLabel
-                                                provider={provider}
-                                                providerClassName="text-foreground"
-                                                logoSize={12}
-                                            />
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
-	                                <input
-	                                    type="checkbox"
-	                                    aria-label="Hide failed"
-	                                    checked={hideFailedRuns}
-                                    onChange={(event) => setHideFailedRuns(event.target.checked)}
-                                />
-                                Hide failed
-                            </label>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
-	                                <input
-	                                    type="checkbox"
-	                                    aria-label="Only warnings"
-	                                    checked={onlyWarningRuns}
-                                    onChange={(event) => setOnlyWarningRuns(event.target.checked)}
-                                />
-                                Only warnings
-                            </label>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
-	                                <input
-	                                    type="checkbox"
-	                                    aria-label="Only unrated"
-	                                    checked={onlyUnratedRuns}
-                                    onChange={(event) => setOnlyUnratedRuns(event.target.checked)}
-                                />
-                                Only unrated
-                            </label>
-                        </div>
-                    </div>
-
-                    {summary && (
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground sm:grid-cols-4">
-                            <div className="rounded border border-border bg-secondary px-2 py-1">
-                                <span className="font-semibold text-foreground">Completed:</span> {summary.completed}/{summary.total}
-                            </div>
-                            <div className="rounded border border-border bg-secondary px-2 py-1">
-                                <span className="font-semibold text-foreground">Failed:</span> {summary.failed}
-                            </div>
-                            <div className="rounded border border-border bg-secondary px-2 py-1">
-                                <span className="font-semibold text-foreground">Avg latency:</span> {formatDuration(summary.averageLatencyMs)}
-                            </div>
-                            <div className="rounded border border-border bg-secondary px-2 py-1">
-                                <span className="font-semibold text-foreground">Total est.:</span> {hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'}
-                            </div>
-                        </div>
-                    )}
-
-                    <p className="mt-2 text-[11px] text-muted-foreground">
-                        Cost column uses exact provider cost when returned; otherwise it falls back to the catalog estimate for that model.
-                    </p>
-
-                    <div className="mt-3 overflow-x-auto">
-                        <table className="min-w-full border-collapse text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-border bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
-                                    <th className="px-3 py-2">Model</th>
-                                    <th className="px-3 py-2">Status</th>
-                                    <th className="px-3 py-2">
-                                        <button
+                        <AdminSurfaceCard ref={resultsSectionRef} className="flex flex-col gap-4">
+                            <AdminSectionHeader
+                                title="Benchmark runs"
+                                description={session ? `Session: ${session.name || 'Unnamed'} (${session.share_token})` : 'No session loaded'}
+                                actions={(
+                                    <>
+                                        <Button
                                             type="button"
-                                            onClick={() => setRunSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
-                                            className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => downloadAllZip(false)}
+                                            disabled={loading || !session || runs.length === 0}
                                         >
-                                            Run at
-                                            <ArrowsDownUp size={12} />
-                                        </button>
-                                    </th>
-                                    <th className="px-3 py-2">Latency</th>
-                                    <th className="px-3 py-2">Structure</th>
-                                    <th className="px-3 py-2">Cost</th>
-                                    <th className="px-3 py-2">Trip</th>
-                                    <th className="px-3 py-2">Rank</th>
-                                    <th className="px-3 py-2">Comment</th>
-                                    <th className="px-3 py-2">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {displayRuns.length === 0 && (
-                                    <tr>
-                                        <td colSpan={10} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                                            {loading ? 'Loading benchmark runs...' : 'No runs yet. Configure targets and click Test all.'}
-                                        </td>
-                                    </tr>
+                                            <DownloadSimple />
+                                            Download all
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => downloadAllZip(true)}
+                                            disabled={loading || !session || runs.length === 0}
+                                        >
+                                            <DownloadSimple />
+                                            Download all + logs
+                                        </Button>
+                                    </>
                                 )}
+                            />
 
-                                {displayRuns.map((run) => {
-                                    const isFailed = run.status === 'failed';
-                                    const isCompleted = run.status === 'completed';
-                                    const isPending = isRunActive(run);
-                                    const isCancelled = isRunCancelledByUser(run);
-                                    const statusIcon = isCancelled
-                                        ? <StopCircle size={15} className="text-amber-700 dark:text-amber-200" />
-                                        : isFailed
-                                            ? <WarningCircle size={15} className="text-rose-600" />
-                                        : isCompleted
-                                            ? <CheckCircle size={15} className="text-emerald-600" />
-                                            : <HourglassHigh size={15} className="text-amber-600" />;
-                                    const statusLabel = isCancelled ? 'cancelled' : run.status;
-                                    const parsedError = parseRunError(run.error_message);
-                                    const hasErrorDetails = Boolean(run.error_message);
-                                    const validationStats = getValidationCheckStats(run.validation_checks);
-                                    const validationWarnings = getValidationWarnings(run.validation_checks);
-                                    const warningCount = validationWarnings.length;
-                                    const hasValidationDetails = validationStats.total > 0 || (run.validation_errors?.length || 0) > 0 || warningCount > 0 || run.schema_valid !== null;
-                                    const costEstimateLabel = getModelCostEstimateLabel(run.provider, run.model);
-                                    const persistedComment = normalizeRunCommentDraft(run.run_comment || '');
-                                    const commentDraft = runCommentDrafts[run.id] ?? run.run_comment ?? '';
-                                    const normalizedCommentDraft = normalizeRunCommentDraft(commentDraft);
-                                    const commentLength = normalizedCommentDraft.length;
-                                    const isCommentDirty = normalizedCommentDraft !== persistedComment;
-                                    const isCommentTooLong = commentLength > BENCHMARK_RUN_COMMENT_MAX_LENGTH;
-                                    const canEditComment = !isPending && !run.id.startsWith('optimistic-');
-                                    const isCommentSaveBusy = commentSavingRunId === run.id;
-                                    const canSaveComment = canEditComment && isCommentDirty && !isCommentTooLong && !isCommentSaveBusy && !loading;
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                <Select value={providerFilter} onValueChange={setProviderFilter}>
+                                    <SelectTrigger aria-label="Filter runs by provider" className="h-8 w-[180px] text-xs">
+                                        <SelectValue placeholder="All providers" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All providers</SelectItem>
+                                        {providerOptions.map((provider) => (
+                                            <SelectItem key={provider} value={provider}>
+                                                <ProviderLabel
+                                                    provider={provider}
+                                                    providerClassName="text-foreground"
+                                                    logoSize={12}
+                                                />
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Checkbox
+                                        aria-label="Hide failed"
+                                        checked={hideFailedRuns}
+                                        onCheckedChange={(checked) => setHideFailedRuns(checked === true)}
+                                    />
+                                    Hide failed
+                                </label>
+                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Checkbox
+                                        aria-label="Only warnings"
+                                        checked={onlyWarningRuns}
+                                        onCheckedChange={(checked) => setOnlyWarningRuns(checked === true)}
+                                    />
+                                    Only warnings
+                                </label>
+                                <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Checkbox
+                                        aria-label="Only unrated"
+                                        checked={onlyUnratedRuns}
+                                        onCheckedChange={(checked) => setOnlyUnratedRuns(checked === true)}
+                                    />
+                                    Only unrated
+                                </label>
+                            </div>
 
-                                    return (
-                                        <tr key={run.id} className="border-b border-border align-top">
-                                            <td className="px-3 py-2">
-                                                <div className="font-semibold text-foreground">
-                                                    <ProviderLabel provider={run.provider} model={run.model} />
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">run #{run.run_index}</div>
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <div className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-foreground">
-                                                    {statusIcon}
-                                                    {statusLabel}
-                                                </div>
-                                                {run.error_message && (
-                                                    <div className="mt-1 max-w-[320px] space-y-1 text-xs text-rose-700 dark:text-rose-200">
-                                                        <div>{parsedError.shortMessage}</div>
-                                                        {hasErrorDetails && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setErrorModalRun(run)}
-                                                                className="rounded border border-rose-300 bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
-                                                            >
-                                                                Details
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-3 py-2 text-xs text-muted-foreground">{formatTimestamp(getRunTimestampIso(run))}</td>
-                                            <td className="px-3 py-2 text-sm text-foreground"><RunLatency run={run} /></td>
-                                            <td className="px-3 py-2 text-sm text-foreground">
-                                                <div className="space-y-1">
-                                                    <div>
-                                                        {run.schema_valid === null ? '—' : run.schema_valid ? 'Valid' : 'Invalid'}
-                                                        {validationStats.total > 0 && (
-                                                            <span className="ml-1 text-xs text-muted-foreground">({validationStats.passed}/{validationStats.total})</span>
-                                                        )}
-                                                    </div>
-                                                    {warningCount > 0 && (
-                                                        <div className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                                            {warningCount} warning{warningCount === 1 ? '' : 's'}
+                            {summary && (
+                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                    <AdminStatCard label="Completed" value={`${summary.completed}/${summary.total}`} />
+                                    <AdminStatCard label="Failed" value={summary.failed} />
+                                    <AdminStatCard label="Avg latency" value={formatDuration(summary.averageLatencyMs)} />
+                                    <AdminStatCard label="Total est." value={hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'} />
+                                </div>
+                            )}
+
+                            <p className="text-xs text-muted-foreground">
+                                Cost column uses exact provider cost when returned; otherwise it falls back to the catalog estimate for that model.
+                            </p>
+
+                            <div className="overflow-hidden rounded-md border border-border">
+                                <Table>
+                                    <TableHeader className="bg-secondary">
+                                        <TableRow className="hover:bg-transparent">
+                                            <TableHead className="ps-3">Model</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead aria-sort={runSortDirection === 'asc' ? 'ascending' : 'descending'}>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="xs"
+                                                    className="-ms-2 font-medium text-muted-foreground"
+                                                    onClick={() => setRunSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
+                                                    title={runSortDirection === 'desc' ? 'Newest first — click for oldest first' : 'Oldest first — click for newest first'}
+                                                >
+                                                    Run at
+                                                    <ArrowsDownUp />
+                                                </Button>
+                                            </TableHead>
+                                            <TableHead>Latency</TableHead>
+                                            <TableHead>Structure</TableHead>
+                                            <TableHead>Cost</TableHead>
+                                            <TableHead>Trip</TableHead>
+                                            <TableHead>Rating</TableHead>
+                                            <TableHead>Comment</TableHead>
+                                            <TableHead className="pe-3">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {displayRuns.length === 0 && (
+                                            <TableRow className="hover:bg-transparent">
+                                                <TableCell colSpan={10} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                                                    {loading ? 'Loading benchmark runs…' : 'No runs yet. Add models in Setup, then run the benchmark.'}
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+
+                                        {displayRuns.map((run) => {
+                                            const isPending = isRunActive(run);
+                                            const isCancelled = isRunCancelledByUser(run);
+                                            const statusMeta = RUN_STATUS_META[isCancelled ? 'cancelled' : run.status] || RUN_STATUS_META.queued;
+                                            const parsedError = parseRunError(run.error_message);
+                                            const hasErrorDetails = Boolean(run.error_message);
+                                            const validationStats = getValidationCheckStats(run.validation_checks);
+                                            const validationWarnings = getValidationWarnings(run.validation_checks);
+                                            const warningCount = validationWarnings.length;
+                                            const hasValidationDetails = validationStats.total > 0 || (run.validation_errors?.length || 0) > 0 || warningCount > 0 || run.schema_valid !== null;
+                                            const costEstimateLabel = getModelCostEstimateLabel(run.provider, run.model);
+                                            const persistedComment = normalizeRunCommentDraft(run.run_comment || '');
+                                            const commentDraft = runCommentDrafts[run.id] ?? run.run_comment ?? '';
+                                            const normalizedCommentDraft = normalizeRunCommentDraft(commentDraft);
+                                            const commentLength = normalizedCommentDraft.length;
+                                            const isCommentDirty = normalizedCommentDraft !== persistedComment;
+                                            const isCommentTooLong = commentLength > BENCHMARK_RUN_COMMENT_MAX_LENGTH;
+                                            const canEditComment = !isPending && !run.id.startsWith('optimistic-');
+                                            const isCommentSaveBusy = commentSavingRunId === run.id;
+                                            const canSaveComment = canEditComment && isCommentDirty && !isCommentTooLong && !isCommentSaveBusy && !loading;
+
+                                            return (
+                                                <TableRow key={run.id} className="[&>td]:align-top">
+                                                    <TableCell className="ps-3">
+                                                        <div className="font-medium text-foreground">
+                                                            <ProviderLabel provider={run.provider} model={run.model} />
                                                         </div>
-                                                    )}
-                                                    {hasValidationDetails && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setValidationModalRun(run)}
-                                                            className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground hover:bg-secondary"
-                                                        >
-                                                            Checks
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-2 text-sm text-foreground">
-                                                {typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd) ? (
-                                                    formatUsd(run.cost_usd)
-                                                ) : costEstimateLabel ? (
-                                                    <div className="space-y-0.5">
-                                                        <div>{costEstimateLabel}</div>
-                                                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">catalog est.</div>
-                                                    </div>
-                                                ) : '—'}
-                                            </td>
-                                            <td className="px-3 py-2 text-sm">
-                                                {run.trip_id ? (
-                                                    <a
-                                                        href={`/trip/${encodeURIComponent(run.trip_id)}`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="font-semibold text-accent-700 hover:underline dark:text-accent-200"
-                                                    >
-                                                        Open trip
-                                                    </a>
-                                                ) : '—'}
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <div className="flex items-center gap-1">
-                                                    {(Object.keys(SATISFACTION_META) as SatisfactionRating[]).map((rating) => {
-                                                        const isActive = run.satisfaction_rating === rating;
-                                                        const isDisabled = loading || isPending || ratingSavingRunId === run.id || commentSavingRunId === run.id;
-                                                        const meta = SATISFACTION_META[rating];
-                                                        return (
-                                                            <button
-                                                                key={rating}
-                                                                type="button"
-                                                                aria-label={`Mark run ${run.id} as ${meta.label}`}
-                                                                title={meta.label}
-                                                                onClick={() => updateRunRating(run, isActive ? null : rating)}
-                                                                disabled={isDisabled}
-                                                                className={[
-                                                                    'inline-flex items-center justify-center rounded-md border px-1.5 py-1 transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-                                                                    isActive ? meta.activeClass : meta.idleClass,
-                                                                ].join(' ')}
-                                                            >
-                                                                {meta.icon}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <div className="w-[250px] space-y-1.5">
-	                                                    <textarea
-	                                                        aria-label={`Comment for run ${run.id}`}
-	                                                        value={commentDraft}
-                                                        onChange={(event) => {
-                                                            const nextValue = event.target.value;
-                                                            setRunCommentDrafts((current) => ({
-                                                                ...current,
-                                                                [run.id]: nextValue,
-                                                            }));
-                                                        }}
-                                                        disabled={!canEditComment || isCommentSaveBusy}
-                                                        maxLength={BENCHMARK_RUN_COMMENT_MAX_LENGTH}
-                                                        rows={2}
-                                                        placeholder={canEditComment ? 'Add run note…' : 'Comment after run completes'}
-                                                        className="w-full resize-y rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-secondary dark:text-foreground"
-                                                    />
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className={`text-[10px] ${isCommentTooLong ? 'text-rose-600' : 'text-muted-foreground'}`}>
-                                                            {commentLength}/{BENCHMARK_RUN_COMMENT_MAX_LENGTH}
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => void saveRunComment(run)}
-                                                            disabled={!canSaveComment}
-                                                            className="rounded border border-border bg-card px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                                                        >
-                                                            {isCommentSaveBusy ? 'Saving…' : 'Save'}
-                                                        </button>
-                                                    </div>
-                                                    {run.run_comment_updated_at && (
-                                                        <div className="text-[10px] text-muted-foreground">
-                                                            Saved {formatTimestamp(run.run_comment_updated_at)}
+                                                        <div className="text-xs tabular-nums text-muted-foreground">Run #{run.run_index}</div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <AdminStatusBadge tone={statusMeta.tone}>{statusMeta.label}</AdminStatusBadge>
+                                                        {run.error_message && (
+                                                            <div className="mt-1.5 flex max-w-[320px] flex-col items-start gap-1 whitespace-normal text-xs text-rose-700 dark:text-rose-200">
+                                                                <div className="break-words">{parsedError.shortMessage}</div>
+                                                                {hasErrorDetails && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="xs"
+                                                                        onClick={() => setErrorModalRun(run)}
+                                                                        aria-label={`Error details for run #${run.run_index}`}
+                                                                    >
+                                                                        Details
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs tabular-nums text-muted-foreground">{formatTimestamp(getRunTimestampIso(run))}</TableCell>
+                                                    <TableCell className="text-sm text-foreground"><RunLatency run={run} /></TableCell>
+                                                    <TableCell className="text-sm text-foreground">
+                                                        <div className="flex flex-col items-start gap-1">
+                                                            <div>
+                                                                {run.schema_valid === null ? '—' : run.schema_valid ? 'Valid' : 'Invalid'}
+                                                                {validationStats.total > 0 && (
+                                                                    <span className="ms-1 text-xs tabular-nums text-muted-foreground">({validationStats.passed}/{validationStats.total})</span>
+                                                                )}
+                                                            </div>
+                                                            {warningCount > 0 && (
+                                                                <AdminStatusBadge tone="warning">
+                                                                    {warningCount} warning{warningCount === 1 ? '' : 's'}
+                                                                </AdminStatusBadge>
+                                                            )}
+                                                            {hasValidationDetails && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="xs"
+                                                                    onClick={() => setValidationModalRun(run)}
+                                                                    aria-label={`Validation checks for run #${run.run_index}`}
+                                                                >
+                                                                    Checks
+                                                                </Button>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <div className="flex flex-wrap gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => rerunTarget(run)}
-                                                        disabled={loading || cancelling || isPending}
-                                                        className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                                                    >
-                                                        Rerun
-                                                    </button>
-                                                    {isPending && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => cancelRun(run)}
-                                                            disabled={cancelling}
-                                                            className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
-                                                        >
-                                                            Abort
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => downloadRow(run)}
-                                                        disabled={isPending}
-                                                        className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                                                    >
-                                                        JSON
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm tabular-nums text-foreground">
+                                                        {typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd) ? (
+                                                            formatUsd(run.cost_usd)
+                                                        ) : costEstimateLabel ? (
+                                                            <div className="space-y-0.5">
+                                                                <div>{costEstimateLabel}</div>
+                                                                <div className="text-xs text-muted-foreground">Catalog est.</div>
+                                                            </div>
+                                                        ) : '—'}
+                                                    </TableCell>
+                                                    <TableCell className="text-sm">
+                                                        {run.trip_id ? (
+                                                            <a
+                                                                href={`/trip/${encodeURIComponent(run.trip_id)}`}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="font-medium text-accent-700 underline-offset-4 hover:underline dark:text-accent-200"
+                                                            >
+                                                                Open trip
+                                                            </a>
+                                                        ) : '—'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-1">
+                                                            {(Object.keys(SATISFACTION_META) as SatisfactionRating[]).map((rating) => {
+                                                                const isActive = run.satisfaction_rating === rating;
+                                                                const isDisabled = loading || isPending || ratingSavingRunId === run.id || commentSavingRunId === run.id;
+                                                                const meta = SATISFACTION_META[rating];
+                                                                return (
+                                                                    <Button
+                                                                        key={rating}
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="icon-xs"
+                                                                        aria-label={`Mark run ${run.id} as ${meta.label}`}
+                                                                        aria-pressed={isActive}
+                                                                        title={meta.label}
+                                                                        onClick={() => updateRunRating(run, isActive ? null : rating)}
+                                                                        disabled={isDisabled}
+                                                                        className={isActive ? meta.activeClass : meta.idleClass}
+                                                                    >
+                                                                        {meta.icon}
+                                                                    </Button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="w-[250px] space-y-1.5 whitespace-normal">
+                                                            <Textarea
+                                                                aria-label={`Comment for run ${run.id}`}
+                                                                value={commentDraft}
+                                                                onChange={(event) => {
+                                                                    const nextValue = event.target.value;
+                                                                    setRunCommentDrafts((current) => ({
+                                                                        ...current,
+                                                                        [run.id]: nextValue,
+                                                                    }));
+                                                                }}
+                                                                disabled={!canEditComment || isCommentSaveBusy}
+                                                                maxLength={BENCHMARK_RUN_COMMENT_MAX_LENGTH}
+                                                                rows={2}
+                                                                placeholder={canEditComment ? 'Add run note…' : 'Comment after run completes'}
+                                                                className="min-h-0 resize-y bg-card px-2 py-1 text-xs md:text-xs"
+                                                            />
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className={`text-xs tabular-nums ${isCommentTooLong ? 'text-rose-600 dark:text-rose-300' : 'text-muted-foreground'}`}>
+                                                                    {commentLength}/{BENCHMARK_RUN_COMMENT_MAX_LENGTH}
+                                                                </span>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="xs"
+                                                                    onClick={() => void saveRunComment(run)}
+                                                                    disabled={!canSaveComment}
+                                                                >
+                                                                    {isCommentSaveBusy ? 'Saving…' : 'Save'}
+                                                                </Button>
+                                                            </div>
+                                                            {run.run_comment_updated_at && (
+                                                                <div className="text-xs text-muted-foreground">
+                                                                    Saved {formatTimestamp(run.run_comment_updated_at)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="pe-3">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="xs"
+                                                                onClick={() => rerunTarget(run)}
+                                                                disabled={loading || cancelling || isPending}
+                                                            >
+                                                                Rerun
+                                                            </Button>
+                                                            {isPending && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="xs"
+                                                                    onClick={() => cancelRun(run)}
+                                                                    disabled={cancelling}
+                                                                    className="border-amber-300 text-amber-800 hover:bg-amber-50 hover:text-amber-900 dark:border-amber-400/30 dark:text-amber-200 dark:hover:bg-amber-400/12 dark:hover:text-amber-100"
+                                                                >
+                                                                    Abort
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="xs"
+                                                                onClick={() => downloadRow(run)}
+                                                                disabled={isPending}
+                                                                title="Download this run as JSON"
+                                                            >
+                                                                <DownloadSimple />
+                                                                JSON
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
 
-                    <div className="mt-4 rounded-xl border border-border bg-secondary p-3">
-                        <h4 className="text-sm font-semibold text-foreground">Model dashboard</h4>
-                        <p className="text-[11px] text-muted-foreground">Averages are computed from persisted runs in the loaded session.</p>
+                            <section className="flex flex-col gap-3 border-t border-border pt-4">
+                                <AdminSectionHeader
+                                    as="h3"
+                                    title="Model dashboard"
+                                    description="Averages are computed from persisted runs in the loaded session."
+                                />
 
-                        <div className="mt-2 overflow-x-auto">
-                            <table className="min-w-full border-collapse text-left text-xs">
-                                <thead>
-                                    <tr className="border-b border-border uppercase tracking-wide text-muted-foreground">
-                                        <th className="px-2 py-1.5">Model</th>
-                                        <th className="px-2 py-1.5">Avg time</th>
-                                        <th className="px-2 py-1.5">Avg cost</th>
-                                        <th className="px-2 py-1.5">Avg tokens</th>
-                                        <th className="px-2 py-1.5">Success</th>
-                                        <th className="px-2 py-1.5">Repair</th>
-                                        <th className="px-2 py-1.5">Avg satisfaction</th>
-                                        <th className="px-2 py-1.5">Votes</th>
-                                        <th className="px-2 py-1.5">Runs</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {modelDashboardRows.length === 0 && (
-                                        <tr>
-                                            <td colSpan={9} className="px-2 py-4 text-center text-muted-foreground">
-                                                No model metrics yet.
-                                            </td>
-                                        </tr>
-                                    )}
-
-                                    {modelDashboardRows.map((row) => {
-                                        const satisfactionClass = row.averageRatingScore === null
-                                            ? 'text-muted-foreground'
-                                            : row.averageRatingScore >= 2.5
-                                                ? 'text-emerald-700 dark:text-emerald-200'
-                                                : row.averageRatingScore >= 1.75
-                                                    ? 'text-amber-700 dark:text-amber-200'
-                                                    : 'text-rose-700 dark:text-rose-200';
-                                        return (
-                                            <tr key={`${row.provider}-${row.model}`} className="border-b border-border/70">
-                                                <td className="px-2 py-1.5 font-semibold text-foreground">
-                                                    <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
-                                                </td>
-                                                <td className="px-2 py-1.5 text-foreground">{formatDuration(row.averageLatencyMs)}</td>
-                                                <td className="px-2 py-1.5 text-foreground">{formatUsd(row.averageCostUsd)}</td>
-                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{row.averageTotalTokens?.toLocaleString() ?? '—'}</td>
-                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{Math.round(row.successRate * 100)}%</td>
-                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{Math.round(row.repairRate * 100)}%</td>
-                                                <td className={`px-2 py-1.5 font-semibold ${satisfactionClass}`}>
-                                                    {row.averageRatingScore === null ? 'No votes' : `${row.averageRatingScore.toFixed(2)} / 3`}
-                                                </td>
-                                                <td className="px-2 py-1.5 text-foreground">{row.ratingCount}</td>
-                                                <td className="px-2 py-1.5 text-foreground">{row.totalRuns}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
+                                {modelDashboardRows.length === 0 ? (
+                                    <AdminEmptyState
+                                        title="No model metrics yet"
+                                        description="Run the benchmark to see averages per model."
+                                        className="py-6"
+                                    />
+                                ) : (
+                                    <div className="overflow-hidden rounded-md border border-border">
+                                        <Table className="text-xs">
+                                            <TableHeader className="bg-secondary">
+                                                <TableRow className="hover:bg-transparent">
+                                                    <TableHead className="ps-3">Model</TableHead>
+                                                    <TableHead>Avg time</TableHead>
+                                                    <TableHead>Avg cost</TableHead>
+                                                    <TableHead>Avg tokens</TableHead>
+                                                    <TableHead>Success</TableHead>
+                                                    <TableHead>Repair</TableHead>
+                                                    <TableHead>Avg satisfaction</TableHead>
+                                                    <TableHead>Votes</TableHead>
+                                                    <TableHead className="pe-3">Runs</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {modelDashboardRows.map((row) => {
+                                                    const satisfactionClass = row.averageRatingScore === null
+                                                        ? 'text-muted-foreground'
+                                                        : row.averageRatingScore >= 2.5
+                                                            ? 'text-emerald-700 dark:text-emerald-200'
+                                                            : row.averageRatingScore >= 1.75
+                                                                ? 'text-amber-700 dark:text-amber-200'
+                                                                : 'text-rose-700 dark:text-rose-200';
+                                                    return (
+                                                        <TableRow key={`${row.provider}-${row.model}`}>
+                                                            <TableCell className="ps-3 font-medium text-foreground">
+                                                                <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
+                                                            </TableCell>
+                                                            <TableCell className="tabular-nums text-foreground">{formatDuration(row.averageLatencyMs)}</TableCell>
+                                                            <TableCell className="tabular-nums text-foreground">{formatUsd(row.averageCostUsd)}</TableCell>
+                                                            <TableCell className="tabular-nums text-foreground">{row.averageTotalTokens?.toLocaleString() ?? '—'}</TableCell>
+                                                            <TableCell className="tabular-nums text-foreground">{Math.round(row.successRate * 100)}%</TableCell>
+                                                            <TableCell className="tabular-nums text-foreground">{Math.round(row.repairRate * 100)}%</TableCell>
+                                                            <TableCell className={`font-medium tabular-nums ${satisfactionClass}`}>
+                                                                {row.averageRatingScore === null ? 'No votes' : `${row.averageRatingScore.toFixed(2)} / 3`}
+                                                            </TableCell>
+                                                            <TableCell className="tabular-nums text-foreground">{row.ratingCount}</TableCell>
+                                                            <TableCell className="pe-3 tabular-nums text-foreground">{row.totalRuns}</TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </section>
+                        </AdminSurfaceCard>
                     </TabsContent>
                 </Tabs>
 
@@ -3047,7 +3057,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </div>
                     )}
                 >
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <div className="grid gap-2 sm:grid-cols-4">
                             {[
                                 { label: 'Route', value: destinations || 'Not set' },
@@ -3055,8 +3065,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 { label: 'Budget', value: budget },
                                 { label: 'Pace', value: pace },
                             ].map((item) => (
-                                <div key={item.label} className="rounded-md border border-border bg-secondary p-3">
-                                    <div className="text-[11px] font-medium text-muted-foreground">{item.label}</div>
+                                <div key={item.label} className="min-w-0 rounded-md border border-border bg-secondary p-3">
+                                    <div className="text-xs font-medium text-muted-foreground">{item.label}</div>
                                     <div className="mt-1 truncate text-sm font-semibold text-foreground" title={item.value}>{item.value}</div>
                                 </div>
                             ))}
@@ -3069,14 +3079,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <p className="text-xs text-muted-foreground">The normalized input sent through the classic benchmark contract.</p>
                                 </div>
                                 {selectedPresetId === CUSTOM_JSON_PRESET_ID && (
-                                    <Badge variant={customScenarioDraftParse.error ? 'destructive' : 'secondary'}>
+                                    <AdminStatusBadge tone={customScenarioDraftParse.error ? 'danger' : 'neutral'} className="max-w-full truncate">
                                         {customScenarioDraftParse.error || `Mapped as ${customScenarioDraftParse.flow}`}
-                                    </Badge>
+                                    </AdminStatusBadge>
                                 )}
                             </div>
 
                             {selectedPresetId === CUSTOM_JSON_PRESET_ID ? (
-                                <div className="space-y-2">
+                                <div className="flex flex-col gap-2">
                                     <textarea
                                         aria-label="Custom scenario JSON"
                                         value={customScenarioJsonDraft}
@@ -3086,7 +3096,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         }}
                                         rows={16}
                                         spellCheck={false}
-                                        className="min-h-[320px] w-full rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100 outline-none focus:border-accent-400"
+                                        className="min-h-[320px] w-full rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100 outline-none focus-visible:border-accent-400 focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                         placeholder='{"destinationPrompt":"Berlin, Germany","options":{"budget":"Medium"}}'
                                     />
                                     <div className="flex flex-wrap justify-end gap-2">
@@ -3120,15 +3130,21 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </div>
                     )}
                 >
-                    <div className="space-y-4">
-                        <div className="rounded-xl border border-border bg-secondary/80 p-3">
+                    <div className="flex flex-col gap-4">
+                        <div className="rounded-lg border border-border bg-secondary p-3">
                             <div className="mb-3 flex items-center justify-between gap-3">
-                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-foreground"><Funnel size={15} /> Catalog filters</div>
-                                <Button type="button" variant="ghost" size="sm" onClick={() => void loadModelCatalog()} disabled={modelCatalogLoading}>
-                                    <ArrowClockwise className={modelCatalogLoading ? 'animate-spin' : ''} data-icon="inline-start" /> Refresh OpenRouter
+                                <div className="inline-flex items-center gap-2 text-xs font-medium text-foreground"><Funnel size={15} aria-hidden="true" /> Catalog filters</div>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => void loadModelCatalog()} disabled={modelCatalogLoading} aria-busy={modelCatalogLoading || undefined}>
+                                    <ArrowClockwise className={modelCatalogLoading ? 'animate-spin' : ''} /> Refresh OpenRouter
                                 </Button>
                             </div>
-                            <Input aria-label="Search provider, label, or model id" value={modelFilter} onChange={(event) => setModelFilter(event.target.value)} placeholder="Search provider, model, or exact OpenRouter ID" />
+                            <SearchInput
+                                aria-label="Search provider, label, or model id"
+                                value={modelFilter}
+                                onChange={(event) => setModelFilter(event.currentTarget.value)}
+                                onClear={() => setModelFilter('')}
+                                placeholder="Search provider, model, or exact OpenRouter ID"
+                            />
                             <div className="mt-3 grid gap-2 sm:grid-cols-3">
                                 <Select value={modelProviderFilter} onValueChange={setModelProviderFilter}>
                                     <SelectTrigger aria-label="Filter model provider"><SelectValue placeholder="All providers" /></SelectTrigger>
@@ -3162,16 +3178,19 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     }} aria-label="Show older models" />
                                     Show older models
                                 </label>
-                                <span className="text-xs text-muted-foreground">{filteredModels.length} compatible models</span>
+                                <span className="text-xs tabular-nums text-muted-foreground">{filteredModels.length} compatible models</span>
                             </div>
                         </div>
-                        <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
+                        <div className="max-h-[55vh] space-y-3 overflow-y-auto pe-1">
                             {filteredModels.length === 0 && (
-                                <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No compatible models match these filters. Try showing older models or clearing a filter.</div>
+                                <AdminEmptyState
+                                    title="No compatible models match these filters"
+                                    description="Try showing older models or clearing a filter."
+                                />
                             )}
-                            {Object.entries(groupedModels).map(([providerLabel, models]) => (
+                            {Object.entries(groupedModels).map(([providerLabel, models]: [string, AiModelCatalogItem[]]) => (
                                 <div key={providerLabel} className="space-y-1">
-                                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                         <AiProviderLogo provider={models[0]?.provider || providerLabel} model={models[0]?.model} size={12} />
                                         <span>{providerLabel}</span>
                                     </div>
@@ -3184,31 +3203,32 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     key={model.id}
                                                     type="button"
                                                     disabled={disabled}
+                                                    aria-pressed={selected}
                                                     onClick={() => toggleModelDraft(model.id)}
                                                     className={[
-                                                        'flex w-full items-center justify-between rounded-md border p-2 text-left text-xs',
+                                                        'flex w-full items-center justify-between rounded-md border p-2 text-start text-xs outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
                                                         selected
-                                                            ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
+                                                            ? 'border-accent-300 bg-accent-50 text-accent-900 dark:border-accent-400/30 dark:bg-accent-400/12 dark:text-accent-200'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary',
                                                         disabled ? 'cursor-not-allowed opacity-50' : '',
                                                     ].join(' ')}
                                                 >
                                                     <span className="flex min-w-0 flex-col gap-1">
-                                                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                                                        <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
                                                             <AiProviderLogo provider={model.provider} model={model.model} size={12} />
                                                             <span className="min-w-0 truncate font-semibold">{model.label}</span>
-                                                            {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary" className="h-5 text-[10px]">Frontend default</Badge>}
-                                                            {model.catalogSource === 'openrouter-live' && <Badge variant="outline" className="h-5 text-[10px]">Live</Badge>}
-                                                            {model.isFree && <Badge variant="outline" className="h-5 text-[10px]">Free</Badge>}
+                                                            {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend default</Badge>}
+                                                            {model.catalogSource === 'openrouter-live' && <Badge variant="outline">Live</Badge>}
+                                                            {model.isFree && <Badge variant="outline">Free</Badge>}
                                                         </span>
-                                                        <span className="truncate text-[10px] font-normal text-muted-foreground">
+                                                        <span className="truncate text-xs font-normal text-muted-foreground">
                                                             {model.contextLength ? `${Math.round(model.contextLength / 1000)}k context · ` : ''}
                                                             {model.supportsReasoning
                                                                 ? `Reasoning ${model.reasoningMandatory ? 'required' : 'optional'} · ${model.reasoningEfforts?.join(', ') || 'provider controlled'}${model.defaultReasoningEffort ? ` · default ${model.defaultReasoningEffort}` : ''}`
                                                                 : 'No configurable reasoning'}
                                                         </span>
                                                     </span>
-                                                    <span className="ml-2 shrink-0 text-[10px] text-muted-foreground">{model.estimatedCostPerQueryLabel}</span>
+                                                    <span className="ms-2 shrink-0 text-xs tabular-nums text-muted-foreground">{model.estimatedCostPerQueryLabel}</span>
                                                 </button>
                                             );
                                         })}
@@ -3228,58 +3248,47 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     mobileSheet={false}
                     footer={(
                         <div className="flex items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setPresetEditor(null)}
-                                className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
-                            >
+                            <Button type="button" variant="outline" size="sm" onClick={() => setPresetEditor(null)}>
                                 Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void savePresetDraft()}
-                                className="rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700"
-                            >
+                            </Button>
+                            <Button type="button" size="sm" onClick={() => void savePresetDraft()}>
                                 Save preset
-                            </button>
+                            </Button>
                         </div>
                     )}
                 >
                     {presetEditor && (
                         <div className="grid grid-cols-1 gap-3">
-                            <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
-	                                <input
-	                                    aria-label="Name"
-	                                    value={presetEditor.name}
+                            <label className="flex flex-col gap-1.5">
+                                <span className={presetFieldLabelClass}>Name</span>
+                                <Input
+                                    aria-label="Name"
+                                    value={presetEditor.name}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, name: event.target.value } : current)}
-                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
-                            <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</span>
-	                                <input
-	                                    aria-label="Description"
-	                                    value={presetEditor.description}
+                            <label className="flex flex-col gap-1.5">
+                                <span className={presetFieldLabelClass}>Description</span>
+                                <Input
+                                    aria-label="Description"
+                                    value={presetEditor.description}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, description: event.target.value } : current)}
-                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
-                            <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Destinations</span>
-	                                <input
-	                                    aria-label="Destinations"
-	                                    value={presetEditor.scenario.destinations}
+                            <label className="flex flex-col gap-1.5">
+                                <span className={presetFieldLabelClass}>Destinations</span>
+                                <Input
+                                    aria-label="Destinations"
+                                    value={presetEditor.scenario.destinations}
                                     onChange={(event) => updatePresetDraftScenario('destinations', event.target.value)}
-                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date mode</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Date mode</span>
                                     <Select
                                         value={presetEditor.scenario.dateInputMode}
                                         onValueChange={(value) => updatePresetDraftScenario('dateInputMode', value as BenchmarkMaskScenario['dateInputMode'])}
@@ -3295,12 +3304,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </div>
 
                                 {presetEditor.scenario.dateInputMode === 'flex' ? (
-                                    <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Flex weeks</span>
-	                                        <input
-	                                            type="number"
-	                                            aria-label="Flex weeks"
-	                                            min={1}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className={presetFieldLabelClass}>Flex weeks</span>
+                                        <Input
+                                            type="number"
+                                            aria-label="Flex weeks"
+                                            min={1}
                                             max={12}
                                             value={presetEditor.scenario.flexWeeks}
                                             onChange={(event) => {
@@ -3308,18 +3317,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 const normalized = Number.isFinite(next) ? Math.min(12, Math.max(1, Math.round(next))) : 1;
                                                 updatePresetDraftScenario('flexWeeks', normalized);
                                             }}
-                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 ) : (
-                                    <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start date</span>
-	                                        <input
-	                                            type="date"
-	                                            aria-label="Start date"
-	                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className={presetFieldLabelClass}>Start date</span>
+                                        <Input
+                                            type="date"
+                                            aria-label="Start date"
+                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
                                             onChange={(event) => updatePresetDraftScenario('startDate', event.target.value)}
-                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 )}
@@ -3327,19 +3334,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {presetEditor.scenario.dateInputMode === 'exact' ? (
-                                    <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">End date</span>
-	                                        <input
-	                                            type="date"
-	                                            aria-label="End date"
-	                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className={presetFieldLabelClass}>End date</span>
+                                        <Input
+                                            type="date"
+                                            aria-label="End date"
+                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
                                             onChange={(event) => updatePresetDraftScenario('endDate', event.target.value)}
-                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 ) : (
-                                    <div className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Flex window</span>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className={presetFieldLabelClass}>Flex window</span>
                                         <Select
                                             value={presetEditor.scenario.flexWindow}
                                             onValueChange={(value) => updatePresetDraftScenario('flexWindow', value as BenchmarkMaskScenario['flexWindow'])}
@@ -3358,8 +3364,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </div>
                                 )}
 
-                                <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Round trip</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Round trip</span>
                                     <Select
                                         value={presetEditor.scenario.roundTrip ? 'yes' : 'no'}
                                         onValueChange={(value) => updatePresetDraftScenario('roundTrip', value === 'yes')}
@@ -3376,8 +3382,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Budget</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Budget</span>
                                     <Select value={presetEditor.scenario.budget} onValueChange={(value) => updatePresetDraftScenario('budget', value)}>
                                         <SelectTrigger aria-label="Budget">
                                             <SelectValue placeholder="Budget" />
@@ -3390,8 +3396,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pace</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Pace</span>
                                     <Select value={presetEditor.scenario.pace} onValueChange={(value) => updatePresetDraftScenario('pace', value)}>
                                         <SelectTrigger aria-label="Pace">
                                             <SelectValue placeholder="Pace" />
@@ -3406,35 +3412,33 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Specific cities</span>
-	                                    <input
-	                                        aria-label="Specific cities"
-	                                        value={presetEditor.scenario.specificCities}
+                                <label className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Specific cities</span>
+                                    <Input
+                                        aria-label="Specific cities"
+                                        value={presetEditor.scenario.specificCities}
                                         onChange={(event) => updatePresetDraftScenario('specificCities', event.target.value)}
-                                        className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Stops</span>
-	                                    <input
-	                                        type="number"
-	                                        aria-label="Stops"
-	                                        min={1}
+                                <label className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Stops</span>
+                                    <Input
+                                        type="number"
+                                        aria-label="Stops"
+                                        min={1}
                                         max={20}
                                         value={presetEditor.scenario.numCities ?? ''}
                                         onChange={(event) => {
                                             const next = event.target.value ? Number(event.target.value) : null;
                                             updatePresetDraftScenario('numCities', Number.isFinite(next as number) ? (next as number) : null);
                                         }}
-                                        className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Traveler setup</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Traveler setup</span>
                                     <Select
                                         value={presetEditor.scenario.travelerSetup}
                                         onValueChange={(value) => updatePresetDraftScenario('travelerSetup', value as BenchmarkMaskScenario['travelerSetup'])}
@@ -3450,8 +3454,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trip style</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Trip style</span>
                                     <Select
                                         value={presetEditor.scenario.tripStyleMask}
                                         onValueChange={(value) => updatePresetDraftScenario('tripStyleMask', value as BenchmarkMaskScenario['tripStyleMask'])}
@@ -3466,8 +3470,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Transport</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className={presetFieldLabelClass}>Transport</span>
                                     <Select
                                         value={presetEditor.scenario.transportMask}
                                         onValueChange={(value) => updatePresetDraftScenario('transportMask', value as BenchmarkMaskScenario['transportMask'])}
@@ -3485,23 +3489,22 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes/interests</span>
-	                                <textarea
-	                                    aria-label="Notes/interests"
-	                                    rows={3}
+                            <label className="flex flex-col gap-1.5">
+                                <span className={presetFieldLabelClass}>Notes/interests</span>
+                                <Textarea
+                                    aria-label="Notes/interests"
+                                    rows={3}
                                     value={presetEditor.scenario.notes}
                                     onChange={(event) => updatePresetDraftScenario('notes', event.target.value)}
-                                    className="w-full resize-y rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="resize-y"
                                 />
                             </label>
 
                             <label className="inline-flex items-center gap-2 text-sm text-foreground">
-	                                <input
-	                                    type="checkbox"
-	                                    aria-label="Route lock"
-	                                    checked={presetEditor.scenario.routeLock}
-                                    onChange={(event) => updatePresetDraftScenario('routeLock', event.target.checked)}
+                                <Checkbox
+                                    aria-label="Route lock"
+                                    checked={presetEditor.scenario.routeLock}
+                                    onCheckedChange={(checked) => updatePresetDraftScenario('routeLock', checked === true)}
                                 />
                                 Route lock (metadata only)
                             </label>
@@ -3509,152 +3512,109 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     )}
                 </AppModal>
 
-                {promptModal && (
-                    <div className="fixed inset-0 z-[1990] flex items-center justify-center bg-slate-950/45 p-4">
-                        <button
-                            type="button"
-                            aria-label="Close generated benchmark prompt"
-                            className="absolute inset-0 cursor-default"
-                            onClick={() => setPromptModal(null)}
+                <AppModal
+                    isOpen={Boolean(promptModal)}
+                    onClose={() => setPromptModal(null)}
+                    title="Generated benchmark prompt"
+                    description={promptModal ? formatTimestamp(promptModal.generatedAt) : undefined}
+                    closeLabel="Close generated benchmark prompt"
+                    size="xl"
+                    mobileSheet={false}
+                    footer={(
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={copyPromptToClipboard}>
+                                Copy
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={downloadPromptText}>
+                                <DownloadSimple />
+                                Download .txt
+                            </Button>
+                            <Button type="button" size="sm" onClick={() => setPromptModal(null)}>
+                                Close
+                            </Button>
+                        </div>
+                    )}
+                >
+                    {promptModal && (
+                        <Textarea
+                            aria-label="Prompt"
+                            value={promptModal.prompt}
+                            readOnly
+                            rows={18}
+                            className="bg-secondary font-mono text-xs md:text-xs"
                         />
-                        <div
-                            className="relative z-10 w-full max-w-4xl rounded-xl border border-border bg-card shadow-2xl dark:shadow-none"
-                        >
-                            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                                <div>
-                                    <h4 className="text-sm font-semibold text-foreground">Generated benchmark prompt</h4>
-                                    <p className="text-xs text-muted-foreground">{formatTimestamp(promptModal.generatedAt)}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={copyPromptToClipboard}
-                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                    >
-                                        Copy
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={downloadPromptText}
-                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                    >
-                                        Download .txt
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPromptModal(null)}
-                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="p-4">
-	                                <textarea
-	                                    aria-label="Prompt"
-	                                    value={promptModal.prompt}
-                                    readOnly
-                                    rows={18}
-                                    className="w-full rounded-md border border-border bg-secondary px-3 py-2 font-mono text-xs text-foreground outline-none"
+                    )}
+                </AppModal>
+
+                <AppModal
+                    isOpen={Boolean(errorModalRun)}
+                    onClose={() => setErrorModalRun(null)}
+                    title="Run error details"
+                    closeLabel="Close run error details"
+                    size="lg"
+                    mobileSheet={false}
+                >
+                    {errorModalRun && (
+                        <div className="flex flex-col gap-3">
+                            <p className="text-xs text-muted-foreground">
+                                <ProviderLabel
+                                    provider={errorModalRun.provider}
+                                    model={errorModalRun.model}
+                                    providerClassName="font-medium text-foreground"
+                                    modelClassName="text-muted-foreground"
+                                    logoSize={12}
                                 />
+                                <span className="ms-1 tabular-nums">· run #{errorModalRun.run_index}</span>
+                            </p>
+                            <div className="text-sm font-medium text-rose-700 dark:text-rose-300">
+                                {errorModalParsed?.shortMessage || 'Detailed provider error'}
                             </div>
+                            <pre className="max-h-[56vh] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed">
+                                <code className="language-json">{errorJsonSource}</code>
+                            </pre>
                         </div>
-                    </div>
-                )}
+                    )}
+                </AppModal>
 
-                {errorModalRun && (
-                    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4">
-                        <button
-                            type="button"
-                            aria-label="Close run error details"
-                            className="absolute inset-0 cursor-default"
-                            onClick={() => setErrorModalRun(null)}
-                        />
-                        <div
-                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                        >
-                            <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
-                                <div>
-                                    <h4 className="text-sm font-semibold text-slate-100">Run error details</h4>
-                                    <p className="text-xs text-muted-foreground">
-                                        <ProviderLabel
-                                            provider={errorModalRun.provider}
-                                            model={errorModalRun.model}
-                                            providerClassName="text-slate-300"
-                                            modelClassName="text-muted-foreground"
-                                            logoSize={12}
-                                        />
-                                        <span className="ml-1">· run #{errorModalRun.run_index}</span>
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setErrorModalRun(null)}
-                                    className="rounded border border-slate-600 px-2 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                <AppModal
+                    isOpen={Boolean(validationModalRun)}
+                    onClose={() => setValidationModalRun(null)}
+                    title="Validation details"
+                    closeLabel="Close validation details"
+                    size="lg"
+                    mobileSheet={false}
+                >
+                    {validationModalRun && (
+                        <div className="flex flex-col gap-3">
+                            <p className="text-xs text-muted-foreground">
+                                <ProviderLabel
+                                    provider={validationModalRun.provider}
+                                    model={validationModalRun.model}
+                                    providerClassName="font-medium text-foreground"
+                                    modelClassName="text-muted-foreground"
+                                    logoSize={12}
+                                />
+                                <span className="ms-1 tabular-nums">· run #{validationModalRun.run_index}</span>
+                            </p>
+                            <div>
+                                <AdminStatusBadge
+                                    tone={validationModalRun.schema_valid
+                                        ? (validationModalWarnings.length > 0 ? 'warning' : 'success')
+                                        : 'danger'}
                                 >
-                                    Close
-                                </button>
-                            </div>
-                            <div className="space-y-2 p-4">
-                                <div className="text-xs font-semibold text-rose-300">
-                                    {errorModalParsed?.shortMessage || 'Detailed provider error'}
-                                </div>
-                                <pre className="max-h-[56vh] overflow-auto rounded-lg bg-[#1f2937] p-3 text-xs leading-relaxed">
-                                    <code className="language-json">{errorJsonSource}</code>
-                                </pre>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {validationModalRun && (
-                    <div className="fixed inset-0 z-[1995] flex items-center justify-center bg-slate-950/45 p-4">
-                        <button
-                            type="button"
-                            aria-label="Close validation details"
-                            className="absolute inset-0 cursor-default"
-                            onClick={() => setValidationModalRun(null)}
-                        />
-                        <div
-                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                        >
-                            <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
-                                <div>
-                                    <h4 className="text-sm font-semibold text-slate-100">Validation details</h4>
-                                    <p className="text-xs text-muted-foreground">
-                                        <ProviderLabel
-                                            provider={validationModalRun.provider}
-                                            model={validationModalRun.model}
-                                            providerClassName="text-slate-300"
-                                            modelClassName="text-muted-foreground"
-                                            logoSize={12}
-                                        />
-                                        <span className="ml-1">· run #{validationModalRun.run_index}</span>
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setValidationModalRun(null)}
-                                    className="rounded border border-slate-600 px-2 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                            <div className="space-y-2 p-4">
-                                <div className="text-xs font-semibold text-sky-300">
                                     {validationModalRun.schema_valid
                                         ? (validationModalWarnings.length > 0
                                             ? `Validation passed with ${validationModalWarnings.length} warning${validationModalWarnings.length === 1 ? '' : 's'}`
                                             : 'Validation passed')
                                         : 'Validation failed'}
-                                </div>
-                                <pre className="max-h-[56vh] overflow-auto rounded-lg bg-[#1f2937] p-3 text-xs leading-relaxed">
-                                    <code className="language-json">{validationJsonSource}</code>
-                                </pre>
+                                </AdminStatusBadge>
                             </div>
+                            <pre className="max-h-[56vh] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed">
+                                <code className="language-json">{validationJsonSource}</code>
+                            </pre>
                         </div>
-                    </div>
-                )}
+                    )}
+                </AppModal>
 
             </div>
         </AdminShell>

@@ -56,7 +56,7 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
       group_id: 'buttons',
     });
 
-    await user.click(screen.getByRole('tab', { name: 'Inputs + Textareas' }));
+    await user.click(screen.getByRole('tab', { name: 'Inputs + textareas' }));
 
     await waitFor(() => {
       expect(mocks.trackEvent).toHaveBeenCalledWith('admin__design_playground_component_group--view', {
@@ -64,7 +64,7 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
       });
     });
 
-    await user.click(screen.getByRole('tab', { name: 'Country Select + Calendar' }));
+    await user.click(screen.getByRole('tab', { name: 'Country select + calendar' }));
 
     await waitFor(() => {
       expect(mocks.trackEvent).toHaveBeenCalledWith('admin__design_playground_component_group--view', {
@@ -106,21 +106,51 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
 
     render(React.createElement(AdminDesignSystemPlaygroundPage));
 
-    const dialogTabs = screen.getAllByRole('tab', { name: 'Dialogs + Drawers + Modals' });
+    const dialogTabs = screen.getAllByRole('tab', { name: 'Dialogs + drawers + modals' });
     await user.click(dialogTabs[dialogTabs.length - 1]);
 
-    const confirmButtons = await screen.findAllByRole('button', { name: 'Open Confirm Dialog (Danger)' });
+    const confirmButtons = await screen.findAllByRole('button', { name: 'Open confirm dialog (danger)' });
     await user.click(confirmButtons[confirmButtons.length - 1]);
     expect(mocks.confirmDialog).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Hard delete trip',
       tone: 'danger',
     }));
 
-    const promptButtons = screen.getAllByRole('button', { name: 'Open Prompt Dialog (URL + Validate)' });
+    const promptButtons = screen.getAllByRole('button', { name: 'Open prompt dialog (URL + validate)' });
     await user.click(promptButtons[promptButtons.length - 1]);
     expect(mocks.promptDialog).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Insert Link',
       inputType: 'url',
     }));
+  }, 25000);
+
+  it('demos the admin workspace primitives on their own tab', async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    class ResizeObserverMock {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    }
+    Object.assign(globalThis, { ResizeObserver: ResizeObserverMock });
+
+    render(React.createElement(AdminDesignSystemPlaygroundPage));
+
+    const adminTabs = screen.getAllByRole('tab', { name: 'Admin workspace' });
+    await user.click(adminTabs[adminTabs.length - 1]);
+
+    await waitFor(() => {
+      expect(mocks.trackEvent).toHaveBeenCalledWith('admin__design_playground_component_group--view', {
+        group_id: 'admin',
+      });
+    });
+    expect(screen.getByText('Total users')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Recent trips' })).toBeTruthy();
+    for (const tone of ['neutral', 'info', 'success', 'warning', 'danger', 'accent']) {
+      expect(screen.getByText(new RegExp(`· ${tone}$`))).toBeTruthy();
+    }
+    expect(screen.getByText('No trips in this range')).toBeTruthy();
+    expect(screen.getByText('The trip list did not load. Reload to try again.')).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Sample stacked bar chart of daily new and returning users' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Sample vertical bar chart of trips per country' })).toBeTruthy();
   }, 25000);
 });

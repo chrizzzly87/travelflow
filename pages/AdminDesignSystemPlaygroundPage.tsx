@@ -1,8 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, ChatCircleDots, CheckCircle, Eye, MapTrifold, PaintBrush, SlidersHorizontal, WarningCircle } from '@phosphor-icons/react';
+import { Bell, ChatCircleDots, CheckCircle, Eye, MagnifyingGlass, MapTrifold, PaintBrush, Plus, SlidersHorizontal, SuitcaseRolling, Trash, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminFilterMenu } from '../components/admin/AdminFilterMenu';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminBarChart } from '../components/admin/AdminBarChart';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
@@ -39,7 +46,10 @@ import {
     DrawerTitle,
 } from '../components/ui/drawer';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { SearchInput } from '../components/ui/search-input';
 import { SettingsCard, SettingsGroup, SettingsRow } from '../components/ui/settings-panel';
 import { NumberInput } from '../components/ui/number-input';
@@ -72,6 +82,7 @@ type ComponentGroupId =
     | 'dialogs'
     | 'settings'
     | 'cards'
+    | 'admin'
     | 'tables'
     | 'tooltips';
 
@@ -122,76 +133,83 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
     {
         id: 'buttons',
         title: 'Buttons',
-        description: 'Primary, secondary, neutral, destructive, and icon-only button treatments currently in use.',
-        sourcePath: 'components/navigation/SiteHeader.tsx',
+        description: 'The shared Button variants and sizes, plus the marketing CTA treatments that live outside admin.',
+        sourcePath: 'components/ui/button.tsx',
         usagePaths: ['pages/ProfilePage.tsx', 'components/TripManager.tsx', 'pages/AdminUsersPage.tsx'],
     },
     {
         id: 'inputs',
-        title: 'Inputs + Textareas',
+        title: 'Inputs + textareas',
         description: 'Shared text, numeric, animated-number, multiline, and read-only field treatments.',
         sourcePath: 'components/ui/number-input.tsx',
         usagePaths: ['components/ui/input.tsx', 'components/CountryInfo.tsx', 'components/DetailsPanel.tsx'],
     },
     {
         id: 'selects',
-        title: 'Select + Dropdown',
+        title: 'Select + dropdown',
         description: 'Shared Radix Select and admin dropdown/filter menu patterns.',
         sourcePath: 'components/ui/select.tsx',
         usagePaths: ['components/admin/AdminShell.tsx', 'pages/ProfileSettingsPage.tsx', 'components/admin/AdminFilterMenu.tsx'],
     },
     {
         id: 'travel_inputs',
-        title: 'Country Select + Calendar',
+        title: 'Country select + calendar',
         description: 'Create-trip destination selector variants and date-range calendar controls.',
         sourcePath: 'components/CountrySelect.tsx',
         usagePaths: ['pages/CreateTripClassicLabPage.tsx', 'pages/CreateTripV3Page.tsx', 'components/DateRangePicker.tsx'],
     },
     {
         id: 'switches',
-        title: 'Switches + Checkboxes',
+        title: 'Switches + checkboxes',
         description: 'Boolean controls used for visibility toggles and batch-selection flows.',
         sourcePath: 'components/ui/switch.tsx',
         usagePaths: ['components/ui/checkbox.tsx', 'pages/ProfilePage.tsx', 'pages/ProfileSettingsPage.tsx'],
     },
     {
         id: 'tabs',
-        title: 'Tabs + Segmented Controls',
+        title: 'Tabs + segmented controls',
         description: 'Tabbed navigation and segmented selectors used across profile and admin surfaces.',
         sourcePath: 'components/ui/tabs.tsx',
         usagePaths: ['pages/ProfilePage.tsx', 'pages/AdminOgToolsPage.tsx', 'components/profile/ProfileTripTabs.tsx'],
     },
     {
         id: 'dialogs',
-        title: 'Dialogs + Drawers + Modals',
+        title: 'Dialogs + drawers + modals',
         description: 'Overlay primitives for confirmations, detail sheets, and structured modal content.',
         sourcePath: 'components/ui/dialog.tsx',
         usagePaths: ['components/ui/drawer.tsx', 'components/ui/app-modal.tsx', 'components/AppDialogProvider.tsx'],
     },
     {
         id: 'settings',
-        title: 'Settings Panels',
+        title: 'Settings panels',
         description: 'Grouped settings surfaces: a card per product area, one caption column, one control track.',
         sourcePath: 'components/ui/settings-panel.tsx',
         usagePaths: ['pages/AdminGlobalSettingsPage.tsx', 'components/ui/label.tsx', 'docs/DESIGN_SYSTEM_COMPONENTS.md'],
     },
     {
         id: 'cards',
-        title: 'Cards + Badges + Chips',
+        title: 'Cards + badges + chips',
         description: 'Card containers and metadata badges used in admin and profile areas.',
         sourcePath: 'components/admin/AdminSurfaceCard.tsx',
         usagePaths: ['pages/AdminDashboardPage.tsx', 'components/profile/ProfileTripCard.tsx', 'pages/ProfileStampsPage.tsx'],
     },
     {
+        id: 'admin',
+        title: 'Admin workspace',
+        description: 'The building blocks every admin screen is made from: stat tiles, section headers, status badges, empty and error states, and bar charts.',
+        sourcePath: 'components/admin/AdminStatCard.tsx',
+        usagePaths: ['pages/AdminDashboardPage.tsx', 'components/admin/AdminBarChart.tsx', 'docs/DESIGN_SYSTEM_COMPONENTS.md'],
+    },
+    {
         id: 'tables',
-        title: 'Data Tables',
+        title: 'Data tables',
         description: 'Shared admin table patterns for sticky columns, sorted-state highlights, and stable fixed-width layouts.',
         sourcePath: 'components/admin/AdminDataTable.tsx',
         usagePaths: ['pages/AdminUsersPage.tsx', 'pages/AdminTripsPage.tsx', 'pages/AdminAuditPage.tsx'],
     },
     {
         id: 'tooltips',
-        title: 'Tooltip + Popover Patterns',
+        title: 'Tooltip + popover patterns',
         description: 'Global tooltip layer and anchored popover/dropdown menu patterns.',
         sourcePath: 'components/GlobalTooltipLayer.tsx',
         usagePaths: ['components/profile/ProfileTripCard.tsx', 'components/admin/AdminFilterMenu.tsx', 'components/tripview/TripViewHeader.tsx'],
@@ -251,9 +269,45 @@ const TOAST_SCENARIOS: ToastScenarioDefinition[] = [
     },
 ];
 
-const usagePillClassName = 'rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground dark:text-foreground';
-const previewPanelClassName = 'rounded-2xl border border-border bg-secondary p-4';
-const subtleHeadingClassName = 'text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground';
+const previewPanelClassName = 'rounded-lg border border-border bg-muted/40 p-4';
+const subtleHeadingClassName = 'text-xs font-medium text-muted-foreground';
+const sampleTileClassName = 'flex flex-col gap-2 rounded-lg border border-border bg-card p-3';
+
+const ADMIN_STATUS_TONES: Array<{ tone: AdminStatusTone; label: string }> = [
+    { tone: 'neutral', label: 'Draft' },
+    { tone: 'info', label: 'Queued' },
+    { tone: 'success', label: 'Succeeded' },
+    { tone: 'warning', label: 'Running' },
+    { tone: 'danger', label: 'Failed' },
+    { tone: 'accent', label: 'Example' },
+];
+
+// Small inline samples so the chart demos never depend on live data.
+const SAMPLE_STACKED_CHART_DATA = [
+    { day: '2026-10-14', 'New users': 12, 'Returning users': 30 },
+    { day: '2026-10-15', 'New users': 18, 'Returning users': 26 },
+    { day: '2026-10-16', 'New users': 9, 'Returning users': 34 },
+    { day: '2026-10-17', 'New users': 22, 'Returning users': 31 },
+    { day: '2026-10-18', 'New users': 15, 'Returning users': 28 },
+    { day: '2026-10-19', 'New users': 27, 'Returning users': 36 },
+    { day: '2026-10-20', 'New users': 19, 'Returning users': 40 },
+];
+const SAMPLE_STACKED_CHART_CATEGORIES = ['New users', 'Returning users'] as const;
+
+const SAMPLE_VERTICAL_CHART_DATA = [
+    { country: 'Japan', Trips: 48 },
+    { country: 'Italy', Trips: 36 },
+    { country: 'Thailand', Trips: 29 },
+    { country: 'Portugal', Trips: 21 },
+    { country: 'Peru', Trips: 12 },
+];
+const SAMPLE_VERTICAL_CHART_CATEGORIES = ['Trips'] as const;
+
+const GENERATION_TONE: Record<PlaygroundTableRow['generation'], AdminStatusTone> = {
+    succeeded: 'success',
+    running: 'warning',
+    failed: 'danger',
+};
 const sampleAdminTableRows: PlaygroundTableRow[] = [
     {
         id: 'row-1',
@@ -281,26 +335,20 @@ const sampleAdminTableRows: PlaygroundTableRow[] = [
     },
 ];
 
-const getPlaygroundGenerationPillClass = (value: PlaygroundTableRow['generation']): string => {
-    if (value === 'failed') return 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
-    if (value === 'running') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
-};
-
 const formatPlaygroundTimestamp = (value: string): string => new Date(value).toLocaleString();
 
 const ComponentUsageReferences: React.FC<{ definition: ComponentGroupDefinition }> = ({ definition }) => (
-    <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
         <div className={subtleHeadingClassName}>Where used</div>
-        <div className="space-y-1.5 text-xs text-foreground">
+        <div className="flex flex-col gap-1.5 text-xs text-foreground">
             <p>
-                Source component: <code className="rounded bg-secondary px-1 py-0.5 text-[11px]">{definition.sourcePath}</code>
+                Source component: <code className="rounded-sm bg-secondary px-1 py-0.5 font-mono text-xs">{definition.sourcePath}</code>
             </p>
             <div className="flex flex-wrap gap-1.5">
                 {definition.usagePaths.map((usagePath) => (
-                    <span key={`${definition.id}:${usagePath}`} className={usagePillClassName}>
+                    <Badge key={`${definition.id}:${usagePath}`} variant="outline" className="font-mono font-normal text-muted-foreground">
                         {usagePath}
-                    </span>
+                    </Badge>
                 ))}
             </div>
         </div>
@@ -308,10 +356,7 @@ const ComponentUsageReferences: React.FC<{ definition: ComponentGroupDefinition 
 );
 
 const GroupHeader: React.FC<{ definition: ComponentGroupDefinition }> = ({ definition }) => (
-    <header className="space-y-2">
-        <h2 className="text-lg font-semibold text-foreground">{definition.title}</h2>
-        <p className="text-sm text-muted-foreground">{definition.description}</p>
-    </header>
+    <AdminSectionHeader title={definition.title} description={definition.description} />
 );
 
 export const AdminDesignSystemPlaygroundPage: React.FC = () => {
@@ -642,58 +687,69 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const renderActiveGroupPreview = (): React.ReactNode => {
         if (activeGroup === 'buttons') {
             return (
-                <div className={`${previewPanelClassName} space-y-4`}>
-                    <div className="space-y-2">
-                        <p className={subtleHeadingClassName}>Product buttons (app surfaces)</p>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <button type="button" className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-accent-700">
-                                Primary
-                            </button>
-                            <button type="button" className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary">
-                                Secondary
-                            </button>
-                            <button type="button" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                                Destructive
-                            </button>
-                            <button type="button" className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary" aria-label="Open quick action" title="Open quick action">
-                                <Bell size={16} />
-                            </button>
-                            <button type="button" disabled className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-semibold text-muted-foreground">
-                                Disabled
-                            </button>
+                <div className={`${previewPanelClassName} flex flex-col gap-4`}>
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>Variants (components/ui/button)</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button type="button">Primary</Button>
+                            <Button type="button" variant="outline">Secondary</Button>
+                            <Button type="button" variant="secondary">Neutral</Button>
+                            <Button type="button" variant="ghost">Ghost</Button>
+                            <Button type="button" variant="soft">Soft accent</Button>
+                            <Button type="button" variant="destructive">Destructive</Button>
+                            <Button type="button" variant="link">Link</Button>
+                            <Button type="button" variant="outline" size="icon" aria-label="Open quick action" data-tooltip="Open quick action">
+                                <Bell />
+                            </Button>
+                            <Button type="button" disabled>Disabled</Button>
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <p className={subtleHeadingClassName}>Marketing + 404 + inspirations buttons</p>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>Sizes for dense admin tables</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button type="button" size="lg">Large</Button>
+                            <Button type="button" variant="outline">Default</Button>
+                            <Button type="button" variant="outline" size="sm"><Plus /> Small</Button>
+                            <Button type="button" variant="outline" size="xs">Extra small</Button>
+                            <Button type="button" variant="ghost" size="icon-sm" aria-label="Delete sample row" data-tooltip="Delete sample row">
+                                <Trash />
+                            </Button>
+                            <Button type="button" variant="outline" shortcut="⌘K" aria-keyshortcuts="Meta+K">
+                                <MagnifyingGlass /> Search
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>Marketing, 404 and inspirations buttons (public pages only, never in admin)</p>
+                        {/* Replicas of the public marketing CTAs. Their large radii and
+                            shadows are intentional on those pages; they are catalogued
+                            here, not reused, so they stay outside the admin geometry rules. */}
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                             <button
                                 type="button"
-                                className="rounded-2xl bg-accent-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-accent-200 transition-all hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 hover:scale-[1.02] active:scale-[0.98]"
+                                className="rounded-2xl bg-accent-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-accent-200 transition-all hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 hover:scale-[1.02] active:scale-[0.98] dark:shadow-none"
                             >
                                 Hero / 404 primary CTA
                             </button>
                             <button
                                 type="button"
-                                className="rounded-2xl border border-border bg-card px-7 py-3 text-base font-bold text-foreground transition-all hover:border-slate-400 hover:text-foreground hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] dark:shadow-none"
+                                className="rounded-2xl border border-border bg-card px-7 py-3 text-base font-bold text-foreground transition-all hover:border-slate-400 hover:scale-[1.02] active:scale-[0.98] dark:hover:border-slate-500"
                             >
                                 Hero secondary action
                             </button>
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:shadow-none"
+                                className="inline-flex items-center justify-center gap-1 rounded-2xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground transition-all hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                             >
                                 Inspirations section action
                             </button>
+                            <button
+                                type="button"
+                                className="rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:bg-accent-50 hover:scale-[1.03] hover:shadow-xl active:scale-[0.98] dark:hover:bg-accent-400/12 dark:text-accent-200 dark:shadow-none"
+                            >
+                                Feature-page highlight CTA
+                            </button>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <p className={subtleHeadingClassName}>Feature-page highlight CTA</p>
-                        <button
-                            type="button"
-                            className="rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:bg-accent-50 hover:scale-[1.03] hover:shadow-xl active:scale-[0.98] dark:hover:bg-accent-400/12 dark:text-accent-200 dark:shadow-none"
-                        >
-                            Primary
-                        </button>
                     </div>
                 </div>
             );
@@ -701,8 +757,8 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
 
         if (activeGroup === 'inputs') {
             return (
-                <div className={`${previewPanelClassName} grid gap-3 lg:grid-cols-2`}>
-                    <div className="space-y-1 lg:col-span-2">
+                <div className={`${previewPanelClassName} grid gap-4 lg:grid-cols-2`}>
+                    <div className="flex flex-col gap-1.5 lg:col-span-2">
                         <div className={subtleHeadingClassName}>Search input (shared)</div>
                         <SearchInput
                             placeholder="Search a provider or model…"
@@ -715,7 +771,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             absolutely positioned icon over a padded input — see docs/DESIGN_SYSTEM_COMPONENTS.md.
                         </p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1.5">
                         <div className={subtleHeadingClassName}>Number input with steppers</div>
                         <NumberInput
                             aria-label="Sample stepper"
@@ -728,7 +784,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             onChange={(event) => setSampleSettingsAge(Number(event.target.value) || 1)}
                         />
                     </div>
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1.5">
                         <label htmlFor={sampleTextInputId} className={subtleHeadingClassName}>Text input</label>
                         <Input
                             id={sampleTextInputId}
@@ -736,16 +792,16 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             className="bg-card"
                         />
                     </div>
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1.5">
                         <label htmlFor={sampleReadonlyInputId} className={subtleHeadingClassName}>Readonly input</label>
                         <Input
                             id={sampleReadonlyInputId}
                             value="readonly_handle"
                             readOnly
-                            className="border-border bg-secondary text-muted-foreground"
+                            className="bg-muted text-muted-foreground"
                         />
                     </div>
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1.5">
                         <label htmlFor={sampleNumberInputId} className={subtleHeadingClassName}>Animated number input</label>
                         <NumberInput
                             id={sampleNumberInputId}
@@ -757,7 +813,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             className="bg-card"
                         />
                     </div>
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1.5">
                         <span className={subtleHeadingClassName}>Animated display number</span>
                         <div className="flex h-10 items-center rounded-md border border-border bg-card px-3 text-sm text-foreground">
                             <AnimatedNumber
@@ -768,13 +824,12 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             />
                         </div>
                     </div>
-                    <label className="space-y-1 lg:col-span-2">
+                    <label className="flex flex-col gap-1.5 lg:col-span-2">
                         <span className={subtleHeadingClassName}>Textarea</span>
-	                        <textarea
-	                            aria-label="Textarea"
-	                            rows={3}
+                        <Textarea
+                            aria-label="Textarea"
+                            rows={3}
                             defaultValue="This sample keeps the same spacing, border, and focus style used in profile/admin forms."
-                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                         />
                     </label>
                 </div>
@@ -784,8 +839,8 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
         if (activeGroup === 'selects') {
             return (
                 <div className={`${previewPanelClassName} grid gap-4 lg:grid-cols-2`}>
-                    <div className="space-y-2">
-                        <div className={subtleHeadingClassName}>Shared Select</div>
+                    <div className="flex flex-col gap-2">
+                        <div className={subtleHeadingClassName}>Shared select</div>
                         <Select value={sampleSelectValue} onValueChange={setSampleSelectValue}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Choose sort" />
@@ -798,7 +853,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         </Select>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <div className={subtleHeadingClassName}>Admin dropdown / popover menu</div>
                         <AdminFilterMenu
                             label="Trip status"
@@ -818,11 +873,11 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
         if (activeGroup === 'travel_inputs') {
             return (
                 <div className={`${previewPanelClassName} grid gap-4 lg:grid-cols-2`}>
-                    <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+                    <div className={sampleTileClassName}>
                         <div className={subtleHeadingClassName}>Create-trip destination select</div>
                         <CountrySelect value={sampleDestinationValue} onChange={setSampleDestinationValue} />
                     </div>
-                    <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+                    <div className={sampleTileClassName}>
                         <div className={subtleHeadingClassName}>Profile/admin country-region select</div>
                         <ProfileCountryRegionSelect
                             value={sampleCountryCode}
@@ -832,7 +887,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             onValueChange={setSampleCountryCode}
                         />
                     </div>
-                    <div className="space-y-2 rounded-xl border border-border bg-card p-3 lg:col-span-2">
+                    <div className={`${sampleTileClassName} lg:col-span-2`}>
                         <div className={subtleHeadingClassName}>Create-trip date range calendar</div>
                         <DateRangePicker
                             startDate={sampleStartDate}
@@ -850,14 +905,14 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
         if (activeGroup === 'switches') {
             return (
                 <div className={`${previewPanelClassName} grid gap-4 md:grid-cols-2`}>
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
                         <span className="text-sm font-medium text-foreground">Show only public trips</span>
-                        <Switch checked={sampleSwitchEnabled} onCheckedChange={setSampleSwitchEnabled} />
-                    </div>
-                    <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
-                        <Checkbox checked={sampleCheckboxEnabled} onCheckedChange={(value) => setSampleCheckboxEnabled(Boolean(value))} />
+                        <Switch checked={sampleSwitchEnabled} onCheckedChange={setSampleSwitchEnabled} aria-label="Show only public trips" />
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
+                        <Checkbox checked={sampleCheckboxEnabled} onCheckedChange={(value) => setSampleCheckboxEnabled(Boolean(value))} aria-label="Select trip for batch actions" />
                         <span className="text-sm font-medium text-foreground">Select trip for batch actions</span>
-                    </div>
+                    </label>
                 </div>
             );
         }
@@ -866,18 +921,18 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
             return (
                 <div className={previewPanelClassName}>
                     <Tabs value={sampleInnerTab} onValueChange={(value) => setSampleInnerTab(value as 'overview' | 'details' | 'activity')}>
-                        <TabsList variant="default" className="border border-border bg-card p-1">
+                        <TabsList>
                             <TabsTrigger value="overview">Overview</TabsTrigger>
                             <TabsTrigger value="details">Details</TabsTrigger>
                             <TabsTrigger value="activity">Activity</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="overview" className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground">
+                        <TabsContent value="overview" className="mt-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
                             Overview tab content sample.
                         </TabsContent>
-                        <TabsContent value="details" className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground">
+                        <TabsContent value="details" className="mt-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
                             Details tab content sample.
                         </TabsContent>
-                        <TabsContent value="activity" className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground">
+                        <TabsContent value="activity" className="mt-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
                             Activity tab content sample.
                         </TabsContent>
                     </Tabs>
@@ -887,86 +942,87 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
 
         if (activeGroup === 'dialogs') {
             return (
-                <div className={`${previewPanelClassName} space-y-3`}>
+                <div className={`${previewPanelClassName} flex flex-col gap-3`}>
                     <div className="flex flex-wrap gap-2">
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={() => setIsDialogOpen(true)}
-                            className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
                         >
-                            Open Dialog
-                        </button>
-                        <button
+                            Open dialog
+                        </Button>
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={() => setIsDrawerOpen(true)}
-                            className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
                         >
-                            Open Drawer
-                        </button>
-                        <button
+                            Open drawer
+                        </Button>
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={() => setIsSidePanelOpen(true)}
-                            className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
                         >
-                            Open Sidepanel
-                        </button>
-                        <button
+                            Open side panel
+                        </Button>
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={() => setIsModalOpen(true)}
-                            className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
                         >
-                            Open App Modal
-                        </button>
+                            Open app modal
+                        </Button>
                     </div>
 
-                    <div className="space-y-2 rounded-xl border border-border bg-card p-3">
-                        <p className={subtleHeadingClassName}>Shared App Dialog Provider (confirm + prompt)</p>
+                    <div className={sampleTileClassName}>
+                        <p className={subtleHeadingClassName}>Shared app dialog provider (confirm + prompt)</p>
                         <div className="grid gap-2 md:grid-cols-2">
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
                                 onClick={() => {
                                     void handleConfirmDefaultSample();
                                 }}
-                                className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
                             >
-                                Open Confirm Dialog (Default)
-                            </button>
-                            <button
+                                Open confirm dialog (default)
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="destructive"
                                 onClick={() => {
                                     void handleConfirmDangerSample();
                                 }}
-                                className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                             >
-                                Open Confirm Dialog (Danger)
-                            </button>
-                            <button
+                                Open confirm dialog (danger)
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="outline"
                                 onClick={() => {
                                     void handlePromptDangerSample();
                                 }}
-                                className="rounded-lg border border-rose-300 bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary dark:border-rose-400/30"
                             >
-                                Open Prompt Dialog (Danger Text)
-                            </button>
-                            <button
+                                Open prompt dialog (danger text)
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="outline"
                                 onClick={() => {
                                     void handlePromptOptionalSample();
                                 }}
-                                className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
                             >
-                                Open Prompt Dialog (Optional Text)
-                            </button>
-                            <button
+                                Open prompt dialog (optional text)
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="outline"
+                                className="md:col-span-2"
                                 onClick={() => {
                                     void handlePromptUrlSample();
                                 }}
-                                className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary md:col-span-2"
                             >
-                                Open Prompt Dialog (URL + Validate)
-                            </button>
+                                Open prompt dialog (URL + validate)
+                            </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
                             {appDialogResult}
@@ -989,13 +1045,13 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                 ))}
                             </DialogBody>
                             <DialogFooter>
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
                                     onClick={() => setIsDialogOpen(false)}
-                                    className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground"
                                 >
                                     Close
-                                </button>
+                                </Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -1007,13 +1063,13 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                 <DrawerDescription>Bottom sheet behavior from the shared drawer wrapper.</DrawerDescription>
                             </DrawerHeader>
                             <DrawerFooter>
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
                                     onClick={() => setIsDrawerOpen(false)}
-                                    className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground"
                                 >
                                     Close
-                                </button>
+                                </Button>
                             </DrawerFooter>
                         </DrawerContent>
                     </Drawer>
@@ -1034,13 +1090,13 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                     This sample mirrors the admin right-side detail panel behavior.
                                 </div>
                                 <DrawerFooter className="border-t border-border">
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="outline"
                                         onClick={() => setIsSidePanelOpen(false)}
-                                        className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground"
                                     >
                                         Close
-                                    </button>
+                                    </Button>
                                 </DrawerFooter>
                             </div>
                         </DrawerContent>
@@ -1061,7 +1117,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
 
         if (activeGroup === 'settings') {
             return (
-                <div className={`${previewPanelClassName} space-y-4`}>
+                <div className={`${previewPanelClassName} flex flex-col gap-4`}>
                     <SettingsGroup>
                         <SettingsCard
                             icon={<ChatCircleDots weight="duotone" />}
@@ -1121,7 +1177,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         </SettingsCard>
                     </SettingsGroup>
 
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <div className={subtleHeadingClassName}>Alert tones</div>
                         <Alert variant="success">
                             <CheckCircle weight="duotone" />
@@ -1145,21 +1201,138 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
             return (
                 <div className={`${previewPanelClassName} grid gap-4 lg:grid-cols-2`}>
                     <AdminSurfaceCard>
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">Trip summary card</p>
-                                <p className="mt-1 text-xs text-muted-foreground">Card container with consistent admin border/shadow treatment.</p>
-                            </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">Active</span>
-                        </div>
+                        <AdminSectionHeader
+                            as="h3"
+                            title="Trip summary card"
+                            description="One flat panel: rounded-lg, a one-pixel border, no shadow."
+                            actions={<AdminStatusBadge tone="success">Active</AdminStatusBadge>}
+                        />
                     </AdminSurfaceCard>
-                    <div className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
+                    <AdminSurfaceCard className="flex flex-col gap-3">
                         <p className="text-sm font-semibold text-foreground">Badge + chip stack</p>
                         <div className="flex flex-wrap gap-2">
-                            <span className="rounded-full border border-accent-200 bg-accent-50 px-2 py-1 text-[11px] font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">Example</span>
-                            <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">Archived</span>
-                            <span className="rounded-full border border-border bg-secondary px-2 py-1 text-[11px] font-semibold text-foreground">Private</span>
+                            <AdminStatusBadge tone="accent">Example</AdminStatusBadge>
+                            <AdminStatusBadge tone="danger">Archived</AdminStatusBadge>
+                            <AdminStatusBadge tone="neutral" dot={false}>Private</AdminStatusBadge>
+                            <Badge variant="secondary">Badge secondary</Badge>
+                            <Badge variant="outline">Badge outline</Badge>
                         </div>
+                    </AdminSurfaceCard>
+                </div>
+            );
+        }
+
+        if (activeGroup === 'admin') {
+            return (
+                <div className={`${previewPanelClassName} flex flex-col gap-6`}>
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>AdminStatCard</p>
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            <AdminStatCard
+                                label="Total users"
+                                value="1,284"
+                                icon={<UsersThree />}
+                                hint="+48 in the last 7 days"
+                                hintTone="positive"
+                            />
+                            <AdminStatCard
+                                label="Trips created"
+                                value="3,912"
+                                icon={<SuitcaseRolling />}
+                                hint="12% fewer than last week"
+                                hintTone="negative"
+                            />
+                            <AdminStatCard
+                                label="Pending renders"
+                                value="27"
+                                hint="Queue above the usual 10"
+                                hintTone="warning"
+                            />
+                            <AdminStatCard label="Plan mix" value="64%" hint="On the free tier">
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary" aria-hidden="true">
+                                        <div className="h-full w-[64%] rounded-full bg-accent-500" />
+                                    </div>
+                                    <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+                                        <span>Free 64%</span>
+                                        <span>Paid 36%</span>
+                                    </div>
+                                </div>
+                            </AdminStatCard>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>AdminSectionHeader with actions</p>
+                        <AdminSurfaceCard>
+                            <AdminSectionHeader
+                                as="h3"
+                                title="Recent trips"
+                                description="The latest trips across every account."
+                                actions={(
+                                    <>
+                                        <AdminReloadButton onClick={() => undefined} />
+                                        <Button type="button"><Plus /> New trip</Button>
+                                    </>
+                                )}
+                            />
+                        </AdminSurfaceCard>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <p className={subtleHeadingClassName}>AdminStatusBadge tones</p>
+                        <div className="flex flex-wrap gap-2">
+                            {ADMIN_STATUS_TONES.map(({ tone, label }) => (
+                                <AdminStatusBadge key={tone} tone={tone}>{label} · {tone}</AdminStatusBadge>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="flex flex-col gap-2">
+                            <p className={subtleHeadingClassName}>AdminEmptyState</p>
+                            <AdminEmptyState
+                                className="bg-card"
+                                icon={<SuitcaseRolling />}
+                                title="No trips in this range"
+                                description="Widen the date range or clear the search to see more trips."
+                                action={<Button type="button" variant="outline" size="sm">Clear filters</Button>}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <p className={subtleHeadingClassName}>AdminErrorAlert</p>
+                            <AdminErrorAlert
+                                title="Could not load trips"
+                                message="The trip list did not load. Reload to try again."
+                                action={<Button type="button" variant="outline" size="xs">Retry</Button>}
+                            />
+                            <AdminErrorAlert message="The settings were not saved. Your changes are still here." />
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <AdminSurfaceCard className="flex flex-col gap-3">
+                            <AdminSectionHeader as="h3" title="AdminBarChart, stacked" description="Daily signups split by new and returning users." />
+                            <AdminBarChart
+                                data={SAMPLE_STACKED_CHART_DATA}
+                                index="day"
+                                categories={SAMPLE_STACKED_CHART_CATEGORIES}
+                                stacked
+                                className="h-56"
+                                ariaLabel="Sample stacked bar chart of daily new and returning users"
+                            />
+                        </AdminSurfaceCard>
+                        <AdminSurfaceCard className="flex flex-col gap-3">
+                            <AdminSectionHeader as="h3" title="AdminBarChart, vertical" description="Trips per destination country." />
+                            <AdminBarChart
+                                data={SAMPLE_VERTICAL_CHART_DATA}
+                                index="country"
+                                categories={SAMPLE_VERTICAL_CHART_CATEGORIES}
+                                layout="vertical"
+                                className="h-56"
+                                ariaLabel="Sample vertical bar chart of trips per country"
+                            />
+                        </AdminSurfaceCard>
                     </div>
                 </div>
             );
@@ -1167,11 +1340,11 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
 
         if (activeGroup === 'tables') {
             return (
-                <div className={`${previewPanelClassName} space-y-3`}>
-                    <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+                <div className={`${previewPanelClassName} flex flex-col gap-3`}>
+                    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
                         Reference wrapper: `Table` provides `overflow-x-auto` + `overscroll-behavior: none`; admin list tables keep explicit sticky key-column widths while non-sticky columns auto-size from content.
                     </div>
-                    <div ref={sampleTableScrollRef} className="rounded-xl border border-border bg-card">
+                    <div ref={sampleTableScrollRef} className="overflow-hidden rounded-lg border border-border bg-card">
                         <Table className="w-[max(100%,980px)]">
                             <TableHeader className="bg-secondary">
                                 <TableRow>
@@ -1189,7 +1362,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                         />
                                     </TableHead>
                                     <TableHead
-                                        className={`sticky left-[56px] z-30 w-[320px] min-w-[320px] max-w-[320px] px-4 py-3 font-semibold text-foreground ${getAdminStickyHeaderCellClass({
+                                        className={`sticky left-[56px] z-30 w-[320px] min-w-[320px] max-w-[320px] px-4 py-3 font-medium text-muted-foreground ${getAdminStickyHeaderCellClass({
                                             isScrolled: isSampleTableScrolledHorizontally,
                                             isFirst: false,
                                             isSorted: isSampleTableSorted('trip'),
@@ -1203,7 +1376,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                             onClick={() => toggleSampleTableSort('trip')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isSampleTableSorted('owner') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-medium text-muted-foreground ${isSampleTableSorted('owner') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Owner"
                                             isActive={isSampleTableSorted('owner')}
@@ -1211,7 +1384,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                             onClick={() => toggleSampleTableSort('owner')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isSampleTableSorted('generation') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-medium text-muted-foreground ${isSampleTableSorted('generation') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Generation"
                                             isActive={isSampleTableSorted('generation')}
@@ -1219,7 +1392,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                             onClick={() => toggleSampleTableSort('generation')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isSampleTableSorted('updated') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-medium text-muted-foreground ${isSampleTableSorted('updated') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Last update"
                                             isActive={isSampleTableSorted('updated')}
@@ -1268,9 +1441,9 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                                 {row.owner}
                                             </TableCell>
                                             <TableCell className={`px-4 py-3 ${isSampleTableSorted('generation') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${getPlaygroundGenerationPillClass(row.generation)}`}>
+                                                <AdminStatusBadge tone={GENERATION_TONE[row.generation]}>
                                                     {row.generation}
-                                                </span>
+                                                </AdminStatusBadge>
                                             </TableCell>
                                             <TableCell className={`px-4 py-3 text-sm text-foreground ${isSampleTableSorted('updated') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 {formatPlaygroundTimestamp(row.updated)}
@@ -1287,18 +1460,18 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
 
         return (
             <div className={`${previewPanelClassName} grid gap-4 lg:grid-cols-2`}>
-                <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+                <div className={sampleTileClassName}>
                     <p className={subtleHeadingClassName}>Global tooltip sample</p>
-                    <button
+                    <Button
                         type="button"
-                        className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground"
-                        aria-label="Shows destination metadata"
-                        title="Shows destination metadata"
+                        variant="outline"
+                        className="w-fit"
+                        data-tooltip="Shows destination metadata"
                     >
                         Hover me (tooltip)
-                    </button>
+                    </Button>
                 </div>
-                <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+                <div className={sampleTileClassName}>
                     <p className={subtleHeadingClassName}>Popover / anchored menu sample</p>
                     <AdminFilterMenu
                         label="Team members"
@@ -1317,33 +1490,31 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
 
     return (
         <AdminShell
-            title="Design System Playground"
-            description="Read-only admin lab for shared components, interaction states, and notification QA."
+            title="Design system"
+            description="Read-only lab for shared components, interaction states and notification QA."
             showGlobalSearch={false}
             showDateRange={false}
         >
-            <section className="space-y-4">
-                <AdminSurfaceCard className="space-y-4">
-                    <header className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-2">
-                            <p className={subtleHeadingClassName}>Component groups</p>
-                            <h1 className="text-xl font-semibold text-foreground">Shared UI inventory</h1>
-                            <p className="max-w-3xl text-sm text-muted-foreground">
-                                Preview component families and states side-by-side. This page is read-only and does not persist changes.
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground dark:text-foreground">
-                            <Eye size={14} weight="duotone" />
-                            Admin-only preview lab
-                        </div>
-                    </header>
+            <div className="flex flex-col gap-6">
+                <AdminSurfaceCard className="flex flex-col gap-4">
+                    <AdminSectionHeader
+                        title="Shared UI inventory"
+                        description="Preview component families and states side by side. Nothing on this page persists."
+                        actions={(
+                            <AdminStatusBadge tone="neutral" dot={false}>
+                                <Eye size={12} weight="duotone" aria-hidden="true" />
+                                Admin-only preview lab
+                            </AdminStatusBadge>
+                        )}
+                    />
 
                     <Tabs value={activeGroup} onValueChange={(value) => setActiveGroup(value as ComponentGroupId)}>
-                        <TabsList variant="default" className="w-full flex-wrap border border-border bg-secondary p-1">
+                        <TabsList className="h-auto w-full flex-wrap justify-start">
                             {COMPONENT_GROUPS.map((group) => (
                                 <TabsTrigger
                                     key={group.id}
                                     value={group.id}
+                                    className="flex-none"
                                     {...getAnalyticsDebugAttributes('admin__design_playground_component_group--view', {
                                         group_id: group.id,
                                     })}
@@ -1354,7 +1525,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         </TabsList>
 
                         {COMPONENT_GROUPS.map((group) => (
-                            <TabsContent key={`group:${group.id}`} value={group.id} className="space-y-4 pt-2">
+                            <TabsContent key={`group:${group.id}`} value={group.id} className="flex flex-col gap-4 pt-2">
                                 <GroupHeader definition={group} />
                                 <ComponentUsageReferences definition={group} />
                                 {group.id === activeGroupDefinition.id && renderActiveGroupPreview()}
@@ -1362,20 +1533,15 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         ))}
                     </Tabs>
                 </AdminSurfaceCard>
-            </section>
 
-            <section className="mt-6">
-                <AdminSurfaceCard className="space-y-4">
-                    <header className="space-y-2">
-                        <p className={subtleHeadingClassName}>Notification lab</p>
-                        <h2 className="text-xl font-semibold text-foreground">Toast scenario trigger</h2>
-                        <p className="text-sm text-muted-foreground">
-                            Trigger canonical toast variants through the shared `showAppToast(...)` pipeline for manual QA checks.
-                        </p>
-                    </header>
+                <AdminSurfaceCard className="flex flex-col gap-4">
+                    <AdminSectionHeader
+                        title="Toast scenario trigger"
+                        description={<>Trigger canonical toast variants through the shared <code className="font-mono text-xs">showAppToast(...)</code> pipeline for manual QA.</>}
+                    />
 
-                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-                        <div className="space-y-1.5">
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                        <div className="flex flex-col gap-1.5">
                             <Select
                                 value={notificationScenarioId}
                                 onValueChange={(value) => setNotificationScenarioId(value as ToastScenarioId)}
@@ -1394,52 +1560,48 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             <p className="text-xs text-muted-foreground">{activeNotificationScenario.helperText}</p>
                         </div>
 
-                        <button
+                        <Button
                             type="button"
                             onClick={() => triggerNotificationScenario(notificationScenarioId)}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-accent-600 bg-accent-600 px-4 text-sm font-semibold text-white transition hover:bg-accent-700"
                             {...getAnalyticsDebugAttributes('admin__design_playground_toast--trigger', {
                                 scenario_id: notificationScenarioId,
                             })}
                         >
-                            <Bell size={16} weight="duotone" />
+                            <Bell weight="duotone" aria-hidden="true" />
                             Trigger toast
-                        </button>
+                        </Button>
                     </div>
 
                     <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                         {TOAST_SCENARIOS.map((scenario) => (
-                            <button
+                            <Button
                                 key={`quick-toast:${scenario.id}`}
                                 type="button"
+                                variant="outline"
+                                size="sm"
+                                className="justify-start text-start"
                                 onClick={() => {
                                     setNotificationScenarioId(scenario.id);
                                     triggerNotificationScenario(scenario.id);
                                 }}
-                                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-secondary"
                             >
-                                <Bell size={14} weight="duotone" className="shrink-0 text-muted-foreground" />
-                                {scenario.label}
-                            </button>
+                                <Bell weight="duotone" className="text-muted-foreground" aria-hidden="true" />
+                                <span className="truncate">{scenario.label}</span>
+                            </Button>
                         ))}
                     </div>
                 </AdminSurfaceCard>
-            </section>
 
-            <section className="mt-6">
-                <AdminSurfaceCard className="space-y-3">
-                    <header className="space-y-2">
-                        <p className={subtleHeadingClassName}>Coverage notes</p>
-                        <h2 className="text-base font-semibold text-foreground">Current playground intent</h2>
-                    </header>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex items-start gap-2"><PaintBrush size={16} className="mt-0.5 shrink-0 text-muted-foreground" /> Mirrors existing shared component patterns before larger design-system consolidation.</li>
-                        <li className="flex items-start gap-2"><SlidersHorizontal size={16} className="mt-0.5 shrink-0 text-muted-foreground" /> Keeps interactions local only; no backend writes, no profile/trip persistence side effects.</li>
-                        <li className="flex items-start gap-2"><Bell size={16} className="mt-0.5 shrink-0 text-muted-foreground" /> Notification lab fires only through `showAppToast(...)` for consistent UX + QA parity.</li>
-                        <li className="flex items-start gap-2"><Eye size={16} className="mt-0.5 shrink-0 text-muted-foreground" /> New shared components should be introduced in this playground before broad rollout and listed here when added.</li>
+                <AdminSurfaceCard className="flex flex-col gap-3">
+                    <AdminSectionHeader title="Current playground intent" />
+                    <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+                        <li className="flex items-start gap-2"><PaintBrush size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> Mirrors the shared component patterns that screens actually use.</li>
+                        <li className="flex items-start gap-2"><SlidersHorizontal size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> Keeps interactions local only; no backend writes, no profile or trip persistence side effects.</li>
+                        <li className="flex items-start gap-2"><Bell size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> The notification lab fires only through <code className="font-mono text-xs">showAppToast(...)</code> for consistent UX and QA parity.</li>
+                        <li className="flex items-start gap-2"><Eye size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> New shared components land in this playground before broad rollout, and are listed here when added.</li>
                     </ul>
                 </AdminSurfaceCard>
-            </section>
+            </div>
         </AdminShell>
     );
 };

@@ -237,4 +237,27 @@ describe('pages/AdminTripsPage pagination', () => {
     expect(screen.getByText('Attempt metadata JSON')).toBeInTheDocument();
     expect(screen.getByText(/"details": "Provider request timed out after 120000ms."/)).toBeInTheDocument();
   });
+  it('shows an authored sentence instead of the raw exception when trips fail to load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.adminListTrips.mockRejectedValue(new Error('pg: relation "trips" leaked detail'));
+
+    renderPage();
+
+    expect(await screen.findByText('Could not load trips.')).toBeInTheDocument();
+    expect(screen.queryByText(/leaked detail/)).toBeNull();
+    consoleError.mockRestore();
+  });
+
+  it('opens the row actions menu with the trip actions', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText('Showing 1-25 of 30')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'Open trip actions' })[0]);
+
+    expect(await screen.findByRole('menuitem', { name: 'Preview trip' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Hard delete trip' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Soft-delete trip' })).toBeInTheDocument();
+  });
 });

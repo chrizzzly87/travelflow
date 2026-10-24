@@ -12,6 +12,22 @@ The shared components that implement this contract are catalogued in `docs/DESIG
 4. **Use progressive disclosure.** Keep JSON, diagnostics, advanced controls, and destructive actions available without making them compete with the main workflow.
 5. **Make system state explicit.** Loading, queued, running, saved, disabled, and error states need plain labels; color is supporting information, not the only signal.
 
+## Workspace shell
+
+Every admin route renders inside `AdminShell` (`components/admin/AdminShell.tsx`):
+
+- **Sidebar** pinned to the viewport with its own scroll area, grouped into Workspace,
+  Operations, Content and Tools (`adminNavConfig.ts`). It collapses to an icon rail with
+  `⌘B` or the top-bar toggle and remembers the choice. On narrow screens it is a real dialog
+  sheet (focus trap, Escape, backdrop, focus restored to the menu button).
+- **Top bar**: sidebar toggle, breadcrumb (`Admin › Section › Screen`) and theme toggle.
+- **Command palette** (`⌘K`, or the sidebar search): every screen by name or keyword, plus
+  theme and "back to TravelFlow".
+- **Page header**: title, one-line description, then the page's search, date range and
+  actions in one control strip.
+
+Pages provide content only; the shell owns padding, max width and the page header.
+
 ## Page structure
 
 Use this hierarchy for configuration and data-heavy pages:

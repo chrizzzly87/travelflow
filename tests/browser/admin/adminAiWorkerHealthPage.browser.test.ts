@@ -127,14 +127,14 @@ describe('pages/AdminAiWorkerHealthPage', () => {
       expect(mocks.adminGetAiWorkerHealth).toHaveBeenCalledTimes(1);
     });
 
-    expect(screen.getByRole('heading', { name: 'Worker Health' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Worker health' })).toBeInTheDocument();
     expect(screen.getAllByText('Detected stale queued jobs and re-kicked the worker.').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'What the canary proves' })).toHaveAttribute(
       'data-tooltip',
       expect.stringContaining('synthetic probe'),
     );
     expect(screen.getByText('Recent checks')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open AI Telemetry' })).toHaveAttribute('href', '/admin/ai-benchmark/telemetry');
+    expect(screen.getByRole('link', { name: 'Open AI telemetry' })).toHaveAttribute('href', '/admin/ai-benchmark/telemetry');
   });
 
   it('paginates recent checks and resets to page one when filters change', async () => {

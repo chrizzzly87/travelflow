@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
 import { useSearchParams } from 'react-router-dom';
 import {
     AppleLogo,
@@ -11,12 +12,15 @@ import {
     FacebookLogo,
     GithubLogo,
     GoogleLogo,
+    Hourglass,
     Key,
     Question,
     SpinnerGap,
     Trash,
     X,
+    UserCheck,
     UserPlus,
+    UsersThree,
     WarningCircle,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
@@ -54,6 +58,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import {
     Table,
     TableBody,
@@ -75,14 +89,20 @@ import {
     getAdminStickyHeaderCellClass,
 } from '../components/admin/AdminDataTableUtils';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
+import { cn } from '../lib/utils';
 import {
-    adminBillingStatusClassName,
     humanizeAdminBillingStatus,
     normalizeAdminBillingStatus,
     resolveAdminBillingStatusTone,
@@ -259,7 +279,7 @@ interface UserLoginProfile {
 const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     password: {
         label: 'Username/password',
-        className: 'border-border bg-secondary text-foreground',
+        className: 'border-border bg-secondary text-secondary-foreground',
         icon: Key,
     },
     google: {
@@ -279,12 +299,12 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     },
     apple: {
         label: 'Apple',
-        className: 'border-slate-400 bg-secondary text-foreground',
+        className: 'border-slate-400 bg-secondary text-foreground dark:border-slate-500',
         icon: AppleLogo,
     },
     github: {
         label: 'GitHub',
-        className: 'border-zinc-400 bg-secondary text-foreground',
+        className: 'border-zinc-400 bg-secondary text-foreground dark:border-zinc-500',
         icon: GithubLogo,
     },
     discord: {
@@ -545,11 +565,11 @@ const getActivationStatusLabel = (status: UserActivationStatus): string => {
     return 'Anonymous';
 };
 
-const activationPillClass = (status: UserActivationStatus): string => {
-    if (status === 'activated') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
-    if (status === 'invited') return 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30';
-    if (status === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
+const activationStatusTone = (status: UserActivationStatus): AdminStatusTone => {
+    if (status === 'activated') return 'success';
+    if (status === 'invited') return 'info';
+    if (status === 'pending') return 'warning';
+    return 'accent';
 };
 
 const normalizeProviderKey = (value: string | null | undefined): string => {
@@ -689,10 +709,10 @@ const getUserTermsStateLabel = (state: UserTermsState): string => {
     return 'Never accepted';
 };
 
-const getUserTermsStatePillClass = (state: UserTermsState): string => {
-    if (state === 'latest') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
-    if (state === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+const getUserTermsStateTone = (state: UserTermsState): AdminStatusTone => {
+    if (state === 'latest') return 'success';
+    if (state === 'pending') return 'warning';
+    return 'danger';
 };
 
 const getUserTermsSortRank = (state: UserTermsState): number => {
@@ -707,11 +727,9 @@ const getUserReferenceText = (user: AdminUserRecord): string => {
     return `${name} (${user.user_id})`;
 };
 
-const getUnknownErrorMessage = (error: unknown, fallback: string): string => {
-    if (error instanceof Error && error.message.trim()) return error.message.trim();
-    if (typeof error === 'string' && error.trim()) return error.trim();
-    return fallback;
-};
+const getUnknownErrorMessage = (error: unknown, fallback: string): string => (
+    toAdminErrorMessage(error, fallback, 'admin-users')
+);
 
 const summarizeBulkDeleteFailures = (details: string[]): string => {
     if (details.length === 0) return '';
@@ -737,14 +755,11 @@ const buildSingleHardDeleteMessage = (
             <p>
                 Hard delete permanently removes the <strong>auth account</strong>, <strong>profile data</strong>, and <strong>all owned trips{tripSuffix}</strong>.
             </p>
-            <ul className="list-disc space-y-1 pl-5">
+            <ul className="list-disc space-y-1 ps-5">
                 <li>Auth account and profile data are permanently removed.</li>
                 <li>{tripLine}</li>
                 <li>Use soft delete instead if you may need to restore this user later.</li>
             </ul>
-            <p>
-                Use soft delete instead if you may need to restore this user later.
-            </p>
             {ownedTripCount > 0 ? (
                 <p>
                     To keep trips, cancel and use <strong>Transfer trips + hard delete</strong> first.
@@ -767,7 +782,7 @@ const buildSingleSoftDeleteMessage = (userName: string): React.ReactNode => {
             <p>
                 Soft delete keeps the account and related data in the database so this user can be restored later.
             </p>
-            <ul className="list-disc space-y-1 pl-5">
+            <ul className="list-disc space-y-1 ps-5">
                 <li>The user cannot sign in while the account is soft-deleted.</li>
                 <li>An admin can restore the user later.</li>
             </ul>
@@ -793,7 +808,7 @@ const buildBulkHardDeleteMessage = (
             <p>
                 It also permanently removes <strong>{selectedTrips}</strong> owned trip{selectedTrips === 1 ? '' : 's'} in total.
             </p>
-            <ul className="list-disc space-y-1 pl-5">
+            <ul className="list-disc space-y-1 ps-5">
                 <li>Use soft delete if these users might need to be restored later.</li>
                 {selectedTrips > 0 ? (
                     <li>Cancel and transfer trips from each user drawer if you need to preserve trip data.</li>
@@ -819,7 +834,7 @@ const buildTransferAndHardDeleteMessage = (
         <p>
             Transfer <strong>{transferCount}</strong> trip{transferCount === 1 ? '' : 's'} from <strong>{sourceUser}</strong> to <strong>{targetUser}</strong>?
         </p>
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc space-y-1 ps-5">
             <li>Step 1: Transfer all owned trips to the target account.</li>
             <li>Step 2: Hard-delete the source user (auth + profile only).</li>
             <li>Result: trips remain accessible under the new owner.</li>
@@ -867,16 +882,12 @@ const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<st
     JSON.stringify(toStableComparableJson(left)) === JSON.stringify(toStableComparableJson(right))
 );
 
-const rolePillClass = (role: 'admin' | 'user') => (
-    role === 'admin'
-        ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
-        : 'border-border bg-secondary text-foreground'
-);
+const roleTone = (role: 'admin' | 'user'): AdminStatusTone => (role === 'admin' ? 'accent' : 'neutral');
 
-const statusPillClass = (status: UserAccountStatus) => {
-    if (status === 'active') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
-    if (status === 'disabled') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
-    return 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+const accountStatusTone = (status: UserAccountStatus): AdminStatusTone => {
+    if (status === 'active') return 'success';
+    if (status === 'disabled') return 'warning';
+    return 'danger';
 };
 
 const formatAccountStatusLabel = (status: UserAccountStatus): string => {
@@ -924,18 +935,18 @@ const getUserSubscriptionStatusLabel = (status: UserSubscriptionStatus): string 
     return humanizeAdminBillingStatus(status);
 };
 
-const subscriptionStatusPillClass = (status: UserSubscriptionStatus): string => (
-    adminBillingStatusClassName(resolveAdminBillingStatusTone(status === 'canceled_grace' ? 'grace' : status))
+const subscriptionStatusTone = (status: UserSubscriptionStatus): AdminStatusTone => (
+    resolveAdminBillingStatusTone(status === 'canceled_grace' ? 'grace' : status)
 );
 
 const resolveUserSubscriptionDowngradeAt = (user: AdminUserRecord): string | null => (
     user.grace_ends_at || user.current_period_end || user.cancel_at || null
 );
 
-const tierPillClass = (tier: PlanTierKey) => {
-    if (tier === 'tier_premium') return 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
-    if (tier === 'tier_mid') return 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30';
-    return 'border-border bg-secondary text-foreground';
+const tierTone = (tier: PlanTierKey): AdminStatusTone => {
+    if (tier === 'tier_premium') return 'accent';
+    if (tier === 'tier_mid') return 'info';
+    return 'neutral';
 };
 
 interface CreateInviteDraft {
@@ -967,69 +978,33 @@ const INITIAL_DIRECT_DRAFT: CreateDirectDraft = {
 const UserRowActionsMenu: React.FC<{
     disabled: boolean;
     isDeleted: boolean;
+    userName: string;
     onOpenDetails: () => void;
     onSoftDelete: () => void;
-}> = ({ disabled, isDeleted, onOpenDetails, onSoftDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const onPointer = (event: PointerEvent) => {
-            if (!containerRef.current) return;
-            if (containerRef.current.contains(event.target as Node)) return;
-            setIsOpen(false);
-        };
-        const onEscape = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape') return;
-            setIsOpen(false);
-        };
-        window.addEventListener('pointerdown', onPointer);
-        window.addEventListener('keydown', onEscape);
-        return () => {
-            window.removeEventListener('pointerdown', onPointer);
-            window.removeEventListener('keydown', onEscape);
-        };
-    }, [isOpen]);
-
-    return (
-        <div className="relative" ref={containerRef}>
-            <button
+}> = ({ disabled, isDeleted, userName, onOpenDetails, onSoftDelete }) => (
+    <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild disabled={disabled}>
+            <Button
                 type="button"
-                onClick={() => setIsOpen((current) => !current)}
+                variant="ghost"
+                size="icon-sm"
                 disabled={disabled}
-                className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:text-foreground"
-                aria-label="Open user actions"
+                aria-label={`Open actions for ${userName}`}
+                data-tooltip="User actions"
             >
-                <DotsThreeVertical size={16} />
-            </button>
-            {isOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[170px] rounded-lg border border-border bg-card p-1 shadow-xl dark:shadow-none">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsOpen(false);
-                            onOpenDetails();
-                        }}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-secondary"
-                    >
-                        Open details
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsOpen(false);
-                            onSoftDelete();
-                        }}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-amber-800 hover:bg-amber-50 dark:hover:bg-amber-400/12 dark:text-amber-200"
-                    >
-                        {isDeleted ? 'Restore user' : 'Soft-delete user'}
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
+                <DotsThreeVertical weight="bold" />
+            </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[170px]">
+            <DropdownMenuItem onSelect={onOpenDetails}>
+                Open details
+            </DropdownMenuItem>
+            <DropdownMenuItem variant={isDeleted ? 'default' : 'destructive'} onSelect={onSoftDelete}>
+                {isDeleted ? 'Restore user' : 'Soft-delete user'}
+            </DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenu>
+);
 
 interface LoginFilterCounts {
     password: number;
@@ -1173,33 +1148,34 @@ const LoginTypeFilterMenu: React.FC<{
 
     return (
         <div>
-            <button
+            <Button
                 ref={triggerRef}
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-none`}
+                className="h-8 w-fit gap-0 border-dashed px-3 text-xs"
                 aria-label="Filter by login type"
+                aria-haspopup="true"
                 aria-expanded={isOpen}
             >
-                <Key size={14} className="mr-2 text-muted-foreground shrink-0" weight="duotone" />
+                <Key size={14} className="me-2 shrink-0 text-muted-foreground" weight="duotone" />
                 <span>Login type</span>
-                
-                <div className="mx-2 flex h-4 items-center">
-                    <div className="h-full w-[1px] bg-slate-200" />
-                </div>
-                
-                <span className="inline-flex items-center rounded-sm bg-secondary px-1 font-normal text-foreground max-w-[220px] truncate">
+                <span className="mx-2 h-4 w-px bg-border" aria-hidden="true" />
+                <span className="inline-flex max-w-[220px] items-center truncate rounded-sm bg-secondary px-1 font-normal text-secondary-foreground">
                     {selectedLabelSummary}
                 </span>
-            </button>
+            </Button>
 
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
+                    role="group"
+                    aria-label="Login type filters"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
@@ -1209,10 +1185,10 @@ const LoginTypeFilterMenu: React.FC<{
                     <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                         Login type
                     </div>
-                    <div className="h-px bg-secondary" />
+                    <div className="h-px bg-border" />
                     <div className="space-y-0.5 p-1">
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
-                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-secondary hover:text-foreground">
+                            <div className="me-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
@@ -1220,10 +1196,10 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Username/password</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{counts.password}</span>
+                            <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.password}</span>
                         </label>
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
-                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-secondary hover:text-foreground">
+                            <div className="me-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
                                     onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
@@ -1231,9 +1207,9 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Social</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{counts.social}</span>
+                            <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.social}</span>
                         </label>
-                        <div className={`ms-6 space-y-0.5 border-l-2 border-border pl-2 ${socialEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
+                        <div className={cn('ms-6 space-y-0.5 border-s-2 border-border ps-2', !socialEnabled && 'pointer-events-none opacity-50')}>
                             {SOCIAL_PROVIDER_OPTIONS.map((option) => {
                                 const checked = socialEnabled
                                     && (selectedSocialProviders.length === 0 || selectedSocialProviderSet.has(option.value));
@@ -1242,24 +1218,24 @@ const LoginTypeFilterMenu: React.FC<{
                                 return (
                                     <label
                                         key={`social-provider-filter-${option.value}`}
-                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-secondary hover:text-foreground group"
+                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-secondary hover:text-foreground"
                                     >
-                                        <div className="mr-2 flex size-3.5 shrink-0 items-center justify-center">
+                                        <div className="me-2 flex size-3.5 shrink-0 items-center justify-center">
                                             <Checkbox
                                                 checked={checked}
                                                 onCheckedChange={() => toggleSocialProvider(option.value)}
                                                 className="size-3.5 rounded-[2px]"
                                             />
                                         </div>
-                                        <Icon size={12} className="mr-1.5 text-muted-foreground" />
+                                        <Icon size={12} className="me-1.5 text-muted-foreground" />
                                         <span>{option.label}</span>
-                                        <span className="ml-auto text-[10px] text-muted-foreground">{counts.socialProviders[option.value]}</span>
+                                        <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.socialProviders[option.value]}</span>
                                     </label>
                                 );
                             })}
                         </div>
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
-                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-secondary hover:text-foreground">
+                            <div className="me-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
@@ -1267,24 +1243,26 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Unknown</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{counts.unknown}</span>
+                            <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.unknown}</span>
                         </label>
                     </div>
                     {selectedLoginTypeSet.size > 0 && (
                         <>
-                            <div className="h-px bg-secondary" />
+                            <div className="h-px bg-border" />
                             <div className="p-1">
-                                <button
+                                <Button
                                     type="button"
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => {
                                         onSelectedLoginTypesChange([]);
                                         onSelectedSocialProvidersChange([]);
                                         setIsOpen(false);
                                     }}
-                                    className="relative flex w-full cursor-default select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground"
+                                    className="w-full"
                                 >
                                     Clear filters
-                                </button>
+                                </Button>
                             </div>
                         </>
                     )}
@@ -1527,7 +1505,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load linked user profile.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load linked user profile.', 'admin-users'));
             });
 
         return () => {
@@ -1659,7 +1637,7 @@ export const AdminUsersPage: React.FC = () => {
             setDiffModalBeforeLabel(snapshots.before_label || 'Before version');
             setDiffModalAfterLabel(snapshots.after_label || 'After version');
         } catch (error) {
-            setDiffModalError(error instanceof Error ? error.message : 'Could not load trip snapshots.');
+            setDiffModalError(toAdminErrorMessage(error, 'Could not load trip snapshots.', 'admin-users'));
         } finally {
             setIsDiffModalLoading(false);
         }
@@ -1676,7 +1654,7 @@ export const AdminUsersPage: React.FC = () => {
             setUsers(rows);
             writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not load users.';
+            const reason = toAdminErrorMessage(error, 'Could not load users.', 'admin-users');
             if (!options.preserveErrorMessage) {
                 setErrorMessage(reason);
             }
@@ -1733,7 +1711,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load full user profile.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load full user profile.', 'admin-users'));
             });
 
         setUserTrips([]);
@@ -1748,7 +1726,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load user trips.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load user trips.', 'admin-users'));
             })
             .finally(() => {
                 if (!active) return;
@@ -1762,7 +1740,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setUserChangeLogsError(error instanceof Error ? error.message : 'Could not load user change logs.');
+                setUserChangeLogsError(toAdminErrorMessage(error, 'Could not load user change logs.', 'admin-users'));
             })
             .finally(() => {
                 if (!active) return;
@@ -2170,7 +2148,7 @@ export const AdminUsersPage: React.FC = () => {
             setMessage('User updated.');
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not save user.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not save user.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2198,7 +2176,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `"${userName}" can now change username immediately.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not reset username cooldown.';
+            const reason = toAdminErrorMessage(error, 'Could not reset username cooldown.', 'admin-users');
             setErrorMessage(reason);
             showAppToast({
                 id: loadingToastId,
@@ -2233,7 +2211,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `"${userName}" is now marked as pending Terms acceptance.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not reset terms acceptance.';
+            const reason = toAdminErrorMessage(error, 'Could not reset terms acceptance.', 'admin-users');
             setErrorMessage(reason);
             showAppToast({
                 id: loadingToastId,
@@ -2299,7 +2277,7 @@ export const AdminUsersPage: React.FC = () => {
                                         description: `${quotedUserName} was restored and can sign in again.`,
                                     });
                                 } catch (undoError) {
-                                    const reason = undoError instanceof Error ? undoError.message : 'Could not restore user.';
+                                    const reason = toAdminErrorMessage(undoError, 'Could not restore user.', 'admin-users');
                                     showAppToast({
                                         id: undoLoadingToastId,
                                         tone: 'error',
@@ -2323,7 +2301,7 @@ export const AdminUsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not update user status.';
+            const reason = toAdminErrorMessage(error, 'Could not update user status.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2380,7 +2358,7 @@ export const AdminUsersPage: React.FC = () => {
                     : `${quotedUserName} was permanently deleted.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not hard-delete user.';
+            const reason = toAdminErrorMessage(error, 'Could not hard-delete user.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2425,7 +2403,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} were soft-deleted successfully.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not soft-delete selected users.';
+            const reason = toAdminErrorMessage(error, 'Could not soft-delete selected users.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2549,7 +2527,7 @@ export const AdminUsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not hard-delete selected users.';
+            const reason = toAdminErrorMessage(error, 'Could not hard-delete selected users.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2674,13 +2652,13 @@ export const AdminUsersPage: React.FC = () => {
                 await loadUsers();
             } catch (deleteError) {
                 await loadUsers();
-                const deleteMessage = deleteError instanceof Error ? deleteError.message : 'Could not hard-delete user after transfer.';
+                const deleteMessage = toAdminErrorMessage(deleteError, 'Could not hard-delete user after transfer.', 'admin-users');
                 setErrorMessage(
                     `Trips were transferred to ${getUserReferenceText(targetUser)}, but hard delete failed: ${deleteMessage} Retry hard delete for the source user if needed.`
                 );
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not transfer trips before hard delete.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not transfer trips before hard delete.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2701,7 +2679,7 @@ export const AdminUsersPage: React.FC = () => {
                 setUserTrips(rows);
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not update trip.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not update trip.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2721,7 +2699,7 @@ export const AdminUsersPage: React.FC = () => {
             setMessage('Invite sent successfully.');
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not invite user.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not invite user.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2742,7 +2720,7 @@ export const AdminUsersPage: React.FC = () => {
             setMessage('User created successfully.');
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not create user.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not create user.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2763,8 +2741,8 @@ export const AdminUsersPage: React.FC = () => {
 
     return (
         <AdminShell
-            title="User Provisioning"
-            description="Manage users, identity state, tiers, access roles, and trip ownership from one workspace."
+            title="Users"
+            description="Manage identity, tiers, roles and trip ownership for every account."
             searchValue={searchValue}
             onSearchValueChange={(value) => {
                 setSearchValue(value);
@@ -2782,244 +2760,264 @@ export const AdminUsersPage: React.FC = () => {
                         isLoading={isLoadingUsers}
                         label="Reload"
                     />
-                    <button
-                        type="button"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white hover:bg-accent-700"
-                    >
-                        <UserPlus size={14} />
+                    <Button type="button" onClick={() => setIsCreateDialogOpen(true)}>
+                        <UserPlus />
                         Create user
-                    </button>
+                    </Button>
                 </>
             )}
         >
-            {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                    {errorMessage}
-                </section>
-            )}
+            <div className="flex flex-col gap-4">
+            {errorMessage && <AdminErrorAlert message={errorMessage} />}
             {dataSourceNotice && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                    {dataSourceNotice}
-                </section>
+                <Alert variant="warning">
+                    <WarningCircle weight="fill" />
+                    <AlertDescription>{dataSourceNotice}</AlertDescription>
+                </Alert>
             )}
             {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                    {message}
-                </section>
+                <Alert variant="success">
+                    <UserCheck weight="fill" />
+                    <AlertDescription>{message}</AlertDescription>
+                </Alert>
             )}
             {isSaving && (
-                <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
-                    <span className="inline-flex items-center gap-2 font-medium">
-                        <SpinnerGap size={14} className="animate-spin" />
-                        Processing admin changes. Please wait…
-                    </span>
-                </section>
+                <Alert aria-live="polite">
+                    <SpinnerGap className="animate-spin" />
+                    <AlertDescription>Processing admin changes. Please wait…</AlertDescription>
+                </Alert>
             )}
 
-            <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Total users</p>
-                    <p className="mt-2 text-3xl font-semibold text-foreground">
-                        <AdminCountUpNumber value={usersSummary.total} />
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">Within active table scope</p>
-                </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Active account ratio</p>
-                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700 dark:text-emerald-200">
-                        <AdminCountUpNumber value={usersSummary.activeRatioPct} />
-                        <span className="text-xl">%</span>
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                        <AdminCountUpNumber value={usersSummary.activeAccounts} /> active accounts
-                    </p>
-                </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Pending activation</p>
-                    <p className="mt-2 text-3xl font-semibold text-amber-700 dark:text-amber-200">
-                        <AdminCountUpNumber value={usersSummary.pendingActivation} />
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{usersSummary.pendingRatioPct}% of visible users</p>
-                </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Activation mix</p>
-                        <ChartBarHorizontal size={16} className="text-muted-foreground" />
-                    </div>
-                    <div className="mt-3 space-y-2">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <AdminStatCard
+                    label="Total users"
+                    icon={<UsersThree />}
+                    value={<AdminCountUpNumber value={usersSummary.total} />}
+                    hint="Within active table scope"
+                    isLoading={isLoadingUsers}
+                />
+                <AdminStatCard
+                    label="Active account ratio"
+                    icon={<UserCheck />}
+                    value={(
+                        <span className="inline-flex items-baseline gap-0.5">
+                            <AdminCountUpNumber value={usersSummary.activeRatioPct} />
+                            <span className="text-lg text-muted-foreground">%</span>
+                        </span>
+                    )}
+                    hint={<><AdminCountUpNumber value={usersSummary.activeAccounts} /> active accounts</>}
+                    hintTone="positive"
+                    isLoading={isLoadingUsers}
+                />
+                <AdminStatCard
+                    label="Pending activation"
+                    icon={<Hourglass />}
+                    value={<AdminCountUpNumber value={usersSummary.pendingActivation} />}
+                    hint={`${usersSummary.pendingRatioPct}% of visible users`}
+                    hintTone={usersSummary.pendingActivation > 0 ? 'warning' : 'neutral'}
+                    isLoading={isLoadingUsers}
+                />
+                <AdminStatCard
+                    label="Activation mix"
+                    icon={<ChartBarHorizontal />}
+                    value={`${usersSummary.total > 0 ? Math.round((usersSummary.activationBuckets.activated / usersSummary.total) * 100) : 0}%`}
+                    hint="Activated accounts"
+                    isLoading={isLoadingUsers}
+                >
+                    <ul className="flex flex-col gap-2">
                         {USER_ACTIVATION_VALUES.map((activation) => {
                             const count = usersSummary.activationBuckets[activation];
                             const pct = usersSummary.total > 0 ? Math.round((count / usersSummary.total) * 100) : 0;
                             return (
-                                <div key={`activation-mix-${activation}`} className="space-y-1">
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                <li key={`activation-mix-${activation}`} className="flex flex-col gap-1">
+                                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                                         <span>{getActivationStatusLabel(activation)}</span>
-                                        <span>{count} ({pct}%)</span>
+                                        <span className="tabular-nums">{count} ({pct}%)</span>
                                     </div>
-                                    <div className="h-1.5 rounded-full bg-secondary">
-                                        <div className="h-1.5 rounded-full bg-slate-500 transition-[width] duration-500" style={{ width: `${pct}%` }} />
+                                    <div
+                                        className="h-1.5 overflow-hidden rounded-full bg-secondary"
+                                        role="progressbar"
+                                        aria-label={`${getActivationStatusLabel(activation)} share`}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={pct}
+                                    >
+                                        <div className="h-full rounded-full bg-chart-1 transition-[width] duration-500" style={{ width: `${pct}%` }} />
                                     </div>
-                                </div>
+                                </li>
                             );
                         })}
-                    </div>
-                </article>
-            </section>
+                    </ul>
+                </AdminStatCard>
+            </div>
 
-            <section
-                className={`relative rounded-2xl border border-border bg-card p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
+            <AdminSurfaceCard
+                className={cn('relative flex flex-col gap-3', isSaving && 'pointer-events-none opacity-80')}
                 aria-busy={isSaving}
             >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-sm font-semibold text-foreground">Users</h2>
-                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                        <AdminFilterMenu
-                            label="Activation"
-                            options={activationFilterOptions}
-                            selectedValues={activationFilters}
-                            onSelectedValuesChange={(next) => {
-                                setActivationFilters(next as UserActivationStatus[]);
-                                setPage(1);
-                            }}
-                        />
-                        <LoginTypeFilterMenu
-                            selectedLoginTypes={loginTypeFilters}
-                            selectedSocialProviders={socialProviderFilters}
-                            counts={loginFilterCounts}
-                            onSelectedLoginTypesChange={(next) => {
-                                setLoginTypeFilters(next);
-                                setPage(1);
-                            }}
-                            onSelectedSocialProvidersChange={(next) => {
-                                setSocialProviderFilters(next);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="# Trips"
-                            options={tripFilterOptions}
-                            selectedValues={tripFilters}
-                            onSelectedValuesChange={(next) => {
-                                setTripFilters(next as UserTripFilter[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Status"
-                            options={statusFilterOptions}
-                            selectedValues={statusFilters}
-                            onSelectedValuesChange={(next) => {
-                                setStatusFilters(next as UserAccountStatus[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Role"
-                            options={roleFilterOptions}
-                            selectedValues={roleFilters}
-                            onSelectedValuesChange={(next) => {
-                                setRoleFilters(next as Array<'admin' | 'user'>);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Tier"
-                            options={tierFilterOptions}
-                            selectedValues={tierFilters}
-                            onSelectedValuesChange={(next) => {
-                                setTierFilters(next as PlanTierKey[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Subscription"
-                            options={subscriptionFilterOptions}
-                            selectedValues={subscriptionFilters}
-                            onSelectedValuesChange={(next) => {
-                                setSubscriptionFilters(next as UserSubscriptionStatus[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="ToC"
-                            options={termsFilterOptions}
-                            selectedValues={termsFilters}
-                            onSelectedValuesChange={(next) => {
-                                setTermsFilters(next as UserTermsState[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Columns"
-                            options={visibleUserColumnOptions}
-                            selectedValues={visibleColumns}
-                            onSelectedValuesChange={(next) => {
-                                setVisibleColumns(sanitizeUserVisibleColumns(next));
-                            }}
-                        />
-                        <button
-                            type="button"
-                            onClick={handleExportUsersCsv}
-                            disabled={filteredUsers.length === 0}
-                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ArrowSquareOut size={14} />
-                            Export CSV
-                        </button>
-                        <button
-                            type="button"
-                            onClick={resetTableFilters}
-                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
-                        >
-                            <X size={14} />
-                            Reset
-                        </button>
-                    </div>
+                <AdminSectionHeader
+                    title="All users"
+                    description={(
+                        <>
+                            Cleanup shortcut: filter <span className="font-medium text-foreground"># Trips</span> by
+                            <span className="font-medium text-foreground"> No trips + no profile data</span>.
+                        </>
+                    )}
+                    actions={(
+                        <>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleExportUsersCsv}
+                                disabled={filteredUsers.length === 0}
+                            >
+                                <ArrowSquareOut />
+                                Export CSV
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={resetTableFilters}
+                            >
+                                <X />
+                                Reset
+                            </Button>
+                        </>
+                    )}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                    <AdminFilterMenu
+                        label="Activation"
+                        options={activationFilterOptions}
+                        selectedValues={activationFilters}
+                        onSelectedValuesChange={(next) => {
+                            setActivationFilters(next as UserActivationStatus[]);
+                            setPage(1);
+                        }}
+                    />
+                    <LoginTypeFilterMenu
+                        selectedLoginTypes={loginTypeFilters}
+                        selectedSocialProviders={socialProviderFilters}
+                        counts={loginFilterCounts}
+                        onSelectedLoginTypesChange={(next) => {
+                            setLoginTypeFilters(next);
+                            setPage(1);
+                        }}
+                        onSelectedSocialProvidersChange={(next) => {
+                            setSocialProviderFilters(next);
+                            setPage(1);
+                        }}
+                    />
+                    <AdminFilterMenu
+                        label="# Trips"
+                        options={tripFilterOptions}
+                        selectedValues={tripFilters}
+                        onSelectedValuesChange={(next) => {
+                            setTripFilters(next as UserTripFilter[]);
+                            setPage(1);
+                        }}
+                    />
+                    <AdminFilterMenu
+                        label="Status"
+                        options={statusFilterOptions}
+                        selectedValues={statusFilters}
+                        onSelectedValuesChange={(next) => {
+                            setStatusFilters(next as UserAccountStatus[]);
+                            setPage(1);
+                        }}
+                    />
+                    <AdminFilterMenu
+                        label="Role"
+                        options={roleFilterOptions}
+                        selectedValues={roleFilters}
+                        onSelectedValuesChange={(next) => {
+                            setRoleFilters(next as Array<'admin' | 'user'>);
+                            setPage(1);
+                        }}
+                    />
+                    <AdminFilterMenu
+                        label="Tier"
+                        options={tierFilterOptions}
+                        selectedValues={tierFilters}
+                        onSelectedValuesChange={(next) => {
+                            setTierFilters(next as PlanTierKey[]);
+                            setPage(1);
+                        }}
+                    />
+                    <AdminFilterMenu
+                        label="Subscription"
+                        options={subscriptionFilterOptions}
+                        selectedValues={subscriptionFilters}
+                        onSelectedValuesChange={(next) => {
+                            setSubscriptionFilters(next as UserSubscriptionStatus[]);
+                            setPage(1);
+                        }}
+                    />
+                    <AdminFilterMenu
+                        label="ToC"
+                        options={termsFilterOptions}
+                        selectedValues={termsFilters}
+                        onSelectedValuesChange={(next) => {
+                            setTermsFilters(next as UserTermsState[]);
+                            setPage(1);
+                        }}
+                    />
+                    <AdminFilterMenu
+                        label="Columns"
+                        options={visibleUserColumnOptions}
+                        selectedValues={visibleColumns}
+                        onSelectedValuesChange={(next) => {
+                            setVisibleColumns(sanitizeUserVisibleColumns(next));
+                        }}
+                    />
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                    Cleanup shortcut: use <span className="font-semibold text-foreground"># Trips</span> and select
-                    <span className="font-semibold text-foreground"> No trips + no profile data</span>.
-                </p>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
-                    <span className="text-xs font-semibold text-foreground">
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-secondary/60 px-3 py-2" aria-label="Bulk actions" role="group">
+                    <span className="text-xs font-medium tabular-nums text-foreground">
                         {selectedVisibleUsers.length} selected
                     </span>
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
+                        size="xs"
                         onClick={() => void handleBulkSoftDeleteUsers()}
                         disabled={isSaving || selectedVisibleUsers.length === 0}
-                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                        className="h-7 px-2.5"
                     >
                         Soft-delete selected
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
+                        variant="destructive"
+                        size="xs"
                         onClick={() => void handleBulkHardDeleteUsers()}
                         disabled={isSaving || selectedVisibleUsers.every((user) => !isUserHardDeleteEligible(user))}
-                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
+                        className="h-7 px-2.5"
                     >
-                        <Trash size={12} />
+                        <Trash />
                         Hard delete selected
-                    </button>
+                    </Button>
                     {selectedVisibleUsers.length > 0 && (
-                        <button
+                        <Button
                             type="button"
+                            variant="ghost"
+                            size="xs"
                             onClick={() => setSelectedUserIds(new Set())}
-                            className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary"
+                            className="h-7 px-2.5"
                         >
                             Clear
-                        </button>
+                        </Button>
                     )}
                 </div>
 
-                <div ref={usersTableScrollRef} className="mt-3 rounded-xl border border-border bg-card">
+                <div ref={usersTableScrollRef} className="overflow-hidden rounded-md border border-border">
                     <Table className="w-[max(100%,1320px)]">
                         <TableHeader className="bg-secondary">
                             <TableRow>
                                 <TableHead
-                                    className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyHeaderCellClass({
+                                    className={`sticky start-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 ${getAdminStickyHeaderCellClass({
                                         isScrolled: isUsersTableScrolledHorizontally,
                                         isFirst: hasStickyUserColumnPair,
                                     })}`}
@@ -3033,7 +3031,7 @@ export const AdminUsersPage: React.FC = () => {
                                 </TableHead>
                                 {isUserColumnVisible('user') && (
                                     <TableHead
-                                        className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 font-semibold text-foreground ${getAdminStickyHeaderCellClass({
+                                        className={`sticky start-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 text-start ${getAdminStickyHeaderCellClass({
                                             isScrolled: isUsersTableScrolledHorizontally,
                                             isFirst: false,
                                             isSorted: isUserSortedColumn('name'),
@@ -3049,7 +3047,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('login') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Login"
                                             isActive={isUserSortedColumn('email')}
@@ -3059,7 +3057,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('trips') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Trips"
                                             isActive={isUserSortedColumn('total_trips')}
@@ -3069,7 +3067,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('activation') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Activation"
                                             isActive={isUserSortedColumn('activation_status')}
@@ -3079,7 +3077,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('role') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Role"
                                             isActive={isUserSortedColumn('system_role')}
@@ -3089,7 +3087,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('tier') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Tier"
                                             isActive={isUserSortedColumn('tier_key')}
@@ -3099,7 +3097,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('subscription') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Subscription"
                                             isActive={isUserSortedColumn('subscription_status')}
@@ -3109,7 +3107,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('status') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Status"
                                             isActive={isUserSortedColumn('account_status')}
@@ -3119,7 +3117,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('toc') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="ToC"
                                             isActive={isUserSortedColumn('terms_accepted_version')}
@@ -3129,7 +3127,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('last_visit') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Last sign-in"
                                             isActive={isUserSortedColumn('last_sign_in_at')}
@@ -3139,7 +3137,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('last_log') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Last log"
                                             isActive={isUserSortedColumn('updated_at')}
@@ -3149,7 +3147,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('created') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 text-start ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Created"
                                             isActive={isUserSortedColumn('created_at')}
@@ -3158,7 +3156,7 @@ export const AdminUsersPage: React.FC = () => {
                                         />
                                     </TableHead>
                                 )}
-                                <TableHead className="px-4 py-3 text-right font-semibold text-foreground">Actions</TableHead>
+                                <TableHead className="px-4 text-end text-muted-foreground">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -3178,7 +3176,7 @@ export const AdminUsersPage: React.FC = () => {
                                         data-state={isSelected ? 'selected' : undefined}
                                     >
                                         <TableCell
-                                            className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyBodyCellClass({
+                                            className={`sticky start-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyBodyCellClass({
                                                 isSelected,
                                                 isScrolled: isUsersTableScrolledHorizontally,
                                                 isFirst: hasStickyUserColumnPair,
@@ -3194,7 +3192,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </TableCell>
                                         {isUserColumnVisible('user') && (
                                             <TableCell
-                                                className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 ${getAdminStickyBodyCellClass({
+                                                className={`sticky start-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 ${getAdminStickyBodyCellClass({
                                                     isSelected,
                                                     isScrolled: isUsersTableScrolledHorizontally,
                                                     isFirst: false,
@@ -3206,18 +3204,18 @@ export const AdminUsersPage: React.FC = () => {
                                                     type="button"
                                                     onClick={() => openUserDetail(user.user_id)}
                                                     title="Open details drawer"
-                                                    className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700 dark:hover:text-accent-200"
+                                                    className="group/user block w-full min-w-0 cursor-pointer rounded-sm text-start outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                                 >
-                                                    <div className="truncate text-sm font-semibold text-foreground group-hover:underline group-hover:decoration-slate-400">{userName}</div>
+                                                    <div className="truncate text-sm font-medium text-foreground group-hover/user:underline group-hover/user:decoration-muted-foreground">{userName}</div>
                                                     <div className="truncate text-xs text-muted-foreground">{user.email || 'No email address'}</div>
-                                                    <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+                                                    <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
                                                         <span className="shrink-0">UUID:</span>
                                                         <CopyableUuid
                                                             value={user.user_id}
                                                             focusable={false}
-                                                            className="relative w-full min-w-0 max-w-[214px] flex-1 overflow-hidden pr-8 align-middle"
+                                                            className="relative w-full min-w-0 max-w-[214px] flex-1 overflow-hidden pe-8 align-middle"
                                                             textClassName="block max-w-full truncate text-[11px]"
-                                                            hintClassName="absolute right-1 top-1/2 -translate-y-1/2 text-[9px]"
+                                                            hintClassName="absolute end-1 top-1/2 -translate-y-1/2 text-[9px]"
                                                         />
                                                     </div>
                                                 </button>
@@ -3229,40 +3227,34 @@ export const AdminUsersPage: React.FC = () => {
                                                     {getLoginPills(user).map((pill) => {
                                                         const Icon = pill.icon;
                                                         return (
-                                                            <span key={`${user.user_id}-login-pill-${pill.label}`} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}>
-                                                                <Icon size={11} />
+                                                            <AdminStatusBadge key={`${user.user_id}-login-pill-${pill.label}`} dot={false} className={pill.className}>
+                                                                <Icon size={12} aria-hidden="true" />
                                                                 {pill.label}
-                                                            </span>
+                                                            </AdminStatusBadge>
                                                         );
                                                     })}
                                                     {activationStatus === 'pending' && (
-                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                                            Needs activation
-                                                        </span>
+                                                        <AdminStatusBadge tone="warning">Needs activation</AdminStatusBadge>
                                                     )}
                                                     {activationStatus === 'invited' && (
-                                                        <span className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
-                                                            Invite sent
-                                                        </span>
+                                                        <AdminStatusBadge tone="info">Invite sent</AdminStatusBadge>
                                                     )}
                                                     {activationStatus === 'anonymous' && (
-                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                                            Temp
-                                                        </span>
+                                                        <AdminStatusBadge tone="warning">Temp</AdminStatusBadge>
                                                     )}
                                                 </div>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('trips') && (
                                             <TableCell className={`px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="font-semibold text-foreground hover:text-accent-700 dark:hover:text-accent-200">
+                                                <div className="font-medium tabular-nums text-foreground">
                                                     {getUserTotalTrips(user)} total
                                                 </div>
-                                                <div className="text-[11px] text-muted-foreground">
+                                                <div className="text-xs tabular-nums text-muted-foreground">
                                                     {getUserActiveTrips(user)} active
                                                 </div>
                                                 {isTriplessNoData && (
-                                                    <div className="text-[11px] font-semibold text-amber-700 dark:text-amber-200">
+                                                    <div className="text-xs font-medium text-amber-700 dark:text-amber-200">
                                                         No profile data
                                                     </div>
                                                 )}
@@ -3270,33 +3262,33 @@ export const AdminUsersPage: React.FC = () => {
                                         )}
                                         {isUserColumnVisible('activation') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
+                                                <AdminStatusBadge tone={activationStatusTone(activationStatus)}>
                                                     {getActivationStatusLabel(activationStatus)}
-                                                </span>
+                                                </AdminStatusBadge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('role') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
+                                                <AdminStatusBadge tone={roleTone(user.system_role)} dot={false}>
                                                     {user.system_role === 'admin' ? 'Admin' : 'User'}
-                                                </span>
+                                                </AdminStatusBadge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('tier') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
+                                                <AdminStatusBadge tone={tierTone(user.tier_key)} dot={false}>
                                                     {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
-                                                </span>
+                                                </AdminStatusBadge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('subscription') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="flex min-w-[132px] flex-col gap-1">
-                                                    <span className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(subscriptionStatus)}`}>
+                                                    <AdminStatusBadge tone={subscriptionStatusTone(subscriptionStatus)}>
                                                         {getUserSubscriptionStatusLabel(subscriptionStatus)}
-                                                    </span>
+                                                    </AdminStatusBadge>
                                                     {user.provider_subscription_id ? (
-                                                        <span className="truncate text-[11px] font-mono text-muted-foreground" title={user.provider_subscription_id}>
+                                                        <span className="max-w-[180px] truncate font-mono text-[11px] text-muted-foreground" title={user.provider_subscription_id}>
                                                             {user.provider_subscription_id}
                                                         </span>
                                                     ) : null}
@@ -3305,17 +3297,17 @@ export const AdminUsersPage: React.FC = () => {
                                         )}
                                         {isUserColumnVisible('status') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
+                                                <AdminStatusBadge tone={accountStatusTone(accountStatus)}>
                                                     {formatAccountStatusLabel(accountStatus)}
-                                                </span>
+                                                </AdminStatusBadge>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('toc') && (
                                             <TableCell className={`px-4 py-3 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getUserTermsStatePillClass(termsState)}`}>
+                                                <AdminStatusBadge tone={getUserTermsStateTone(termsState)}>
                                                     {getUserTermsStateLabel(termsState)}
-                                                </span>
-                                                <div className="mt-1 text-[11px] text-muted-foreground">
+                                                </AdminStatusBadge>
+                                                <div className="mt-1 text-xs text-muted-foreground">
                                                     {user.terms_accepted_version || 'No accepted version'}
                                                 </div>
                                             </TableCell>
@@ -3326,7 +3318,7 @@ export const AdminUsersPage: React.FC = () => {
                                                     <span className="block font-medium text-foreground" title={formatTimestamp(user.last_sign_in_at)}>
                                                         {formatRelativeTimestamp(user.last_sign_in_at, 'No visit yet')}
                                                     </span>
-                                                    <span className="block text-[11px] text-muted-foreground">
+                                                    <span className="block text-xs text-muted-foreground">
                                                         {formatOptionalTimestamp(user.last_sign_in_at)}
                                                     </span>
                                                 </div>
@@ -3338,7 +3330,7 @@ export const AdminUsersPage: React.FC = () => {
                                                     <span className="block font-medium text-foreground" title={formatOptionalTimestamp(user.updated_at)}>
                                                         {formatRelativeTimestamp(user.updated_at, 'No logs yet')}
                                                     </span>
-                                                    <span className="block text-[11px] text-muted-foreground">
+                                                    <span className="block text-xs text-muted-foreground">
                                                         {formatOptionalTimestamp(user.updated_at)}
                                                     </span>
                                                 </div>
@@ -3349,10 +3341,11 @@ export const AdminUsersPage: React.FC = () => {
                                                 {formatOptionalTimestamp(user.created_at)}
                                             </TableCell>
                                         )}
-                                        <TableCell className="px-4 py-3 text-right">
+                                        <TableCell className="px-4 py-3 text-end">
                                             <UserRowActionsMenu
                                                 disabled={isSaving}
                                                 isDeleted={accountStatus === 'deleted'}
+                                                userName={userName}
                                                 onOpenDetails={() => openUserDetail(user.user_id)}
                                                 onSoftDelete={() => {
                                                     void handleSoftDelete(user);
@@ -3363,9 +3356,13 @@ export const AdminUsersPage: React.FC = () => {
                                 );
                             })}
                             {pagedUsers.length === 0 && !isLoadingUsers && (
-                                <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={usersTableColumnCount}>
-                                        No users match your filters.
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell className="p-4" colSpan={usersTableColumnCount}>
+                                        <AdminEmptyState
+                                            icon={<UsersThree />}
+                                            title="No users match your filters"
+                                            description="Clear a filter, widen the date range or reset the table to see more accounts."
+                                        />
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -3383,47 +3380,50 @@ export const AdminUsersPage: React.FC = () => {
                     </Table>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="tabular-nums">
                         {filteredUsers.length === 0
                             ? 'Showing 0 users'
                             : `Showing ${(page - 1) * PAGE_SIZE + 1}-${Math.min(page * PAGE_SIZE, filteredUsers.length)} of ${filteredUsers.length}`}
                     </span>
-                    <div className="flex items-center gap-1">
-                        <button
+                    <div className="flex items-center gap-2">
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="xs"
                             onClick={() => setPage((current) => Math.max(current - 1, 1))}
                             disabled={page === 1}
-                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                         >
                             Prev
-                        </button>
-                        <span>Page {page} / {pageCount}</span>
-                        <button
+                        </Button>
+                        <span className="tabular-nums">Page {page} / {pageCount}</span>
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="xs"
                             onClick={() => setPage((current) => Math.min(current + 1, pageCount))}
                             disabled={page >= pageCount}
-                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                         >
                             Next
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 {isSaving && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-card/45 backdrop-blur-[1px]">
-                        <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm dark:shadow-none">
-                            <SpinnerGap size={13} className="animate-spin" />
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-card/45 backdrop-blur-[1px]">
+                        <span className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground">
+                            <SpinnerGap size={14} className="animate-spin" />
                             Applying changes…
                         </span>
                     </div>
                 )}
-            </section>
+            </AdminSurfaceCard>
+            </div>
 
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogContent className="w-[min(96vw,760px)]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-                            <UserPlus size={16} className="text-accent-700 dark:text-accent-200" />
+                            <UserPlus size={16} className="text-accent-700 dark:text-accent-200" aria-hidden="true" />
                             Create user
                         </DialogTitle>
                         <DialogDescription>
@@ -3432,61 +3432,63 @@ export const AdminUsersPage: React.FC = () => {
                     </DialogHeader>
 
                     <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-5">
-                        <div className="inline-flex rounded-lg border border-border p-0.5 text-xs">
-                            <button
+                        <div className="inline-flex gap-0.5 rounded-md border border-border p-0.5" role="group" aria-label="Creation mode">
+                            <Button
                                 type="button"
+                                variant="toggle"
+                                size="sm"
+                                aria-pressed={createMode === 'invite'}
                                 onClick={() => setCreateMode('invite')}
-                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'invite' ? 'bg-slate-900 text-white' : 'text-muted-foreground'}`}
+                                className="h-7"
                             >
-                                <span className="inline-flex items-center gap-1">
-                                    <EnvelopeSimple size={13} />
-                                    Invite
-                                </span>
-                            </button>
-                            <button
+                                <EnvelopeSimple />
+                                Invite
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="toggle"
+                                size="sm"
+                                aria-pressed={createMode === 'direct'}
                                 onClick={() => setCreateMode('direct')}
-                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'direct' ? 'bg-slate-900 text-white' : 'text-muted-foreground'}`}
+                                className="h-7"
                             >
-                                <span className="inline-flex items-center gap-1">
-                                    <UserPlus size={13} />
-                                    Direct
-                                </span>
-                            </button>
+                                <UserPlus />
+                                Direct
+                            </Button>
                         </div>
 
                         {createMode === 'invite' ? (
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-	                                    <input
-	                                        aria-label="Email"
-	                                        value={inviteDraft.email}
+                                <label className="flex flex-col gap-1.5 sm:col-span-2">
+                                    <span className="text-xs font-medium text-muted-foreground">Email</span>
+                                        <Input
+                                            aria-label="Email"
+                                            value={inviteDraft.email}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9"
                                     />
                                 </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                    <input
-	                                        aria-label="First name"
-	                                        value={inviteDraft.firstName}
+                                <label className="flex flex-col gap-1.5">
+                                    <span className="text-xs font-medium text-muted-foreground">First name</span>
+                                        <Input
+                                            aria-label="First name"
+                                            value={inviteDraft.firstName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9"
                                     />
                                 </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                    <input
-	                                        aria-label="Last name"
-	                                        value={inviteDraft.lastName}
+                                <label className="flex flex-col gap-1.5">
+                                    <span className="text-xs font-medium text-muted-foreground">Last name</span>
+                                        <Input
+                                            aria-label="Last name"
+                                            value={inviteDraft.lastName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9"
                                     />
                                 </label>
-                                <div className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Starting tier</span>
+                                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                    <span className="text-xs font-medium text-muted-foreground">Starting tier</span>
                                     <Select
                                         value={inviteDraft.tierKey}
                                         onValueChange={(value) => setInviteDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
@@ -3504,59 +3506,58 @@ export const AdminUsersPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <button
+                                    <Button
                                         type="button"
                                         onClick={() => void submitCreateInvite()}
                                         disabled={isSaving || !inviteDraft.email.trim()}
-                                        className="inline-flex h-9 items-center rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-50"
                                     >
                                         Send invite
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         ) : (
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-	                                    <input
-	                                        aria-label="Email"
-	                                        value={directDraft.email}
+                                <label className="flex flex-col gap-1.5 sm:col-span-2">
+                                    <span className="text-xs font-medium text-muted-foreground">Email</span>
+                                        <Input
+                                            aria-label="Email"
+                                            value={directDraft.email}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9"
                                     />
                                 </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                    <input
-	                                        aria-label="First name"
-	                                        value={directDraft.firstName}
+                                <label className="flex flex-col gap-1.5">
+                                    <span className="text-xs font-medium text-muted-foreground">First name</span>
+                                        <Input
+                                            aria-label="First name"
+                                            value={directDraft.firstName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9"
                                     />
                                 </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                    <input
-	                                        aria-label="Last name"
-	                                        value={directDraft.lastName}
+                                <label className="flex flex-col gap-1.5">
+                                    <span className="text-xs font-medium text-muted-foreground">Last name</span>
+                                        <Input
+                                            aria-label="Last name"
+                                            value={directDraft.lastName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9"
                                     />
                                 </label>
-                                <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Initial password</span>
-	                                    <input
-	                                        aria-label="Initial password"
-	                                        value={directDraft.password}
+                                <label className="flex flex-col gap-1.5 sm:col-span-2">
+                                    <span className="text-xs font-medium text-muted-foreground">Initial password</span>
+                                        <Input
+                                            aria-label="Initial password"
+                                            value={directDraft.password}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, password: event.target.value }))}
                                         type="password"
                                         placeholder="Minimum 8 characters"
-                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                        className="h-9"
                                     />
                                 </label>
-                                <div className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Starting tier</span>
+                                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                    <span className="text-xs font-medium text-muted-foreground">Starting tier</span>
                                     <Select
                                         value={directDraft.tierKey}
                                         onValueChange={(value) => setDirectDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
@@ -3574,14 +3575,13 @@ export const AdminUsersPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <button
+                                    <Button
                                         type="button"
                                         onClick={() => void submitCreateDirect()}
                                         disabled={isSaving || !directDraft.email.trim() || !directDraft.password.trim()}
-                                        className="inline-flex h-9 items-center rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                                     >
                                         Create user
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -3631,7 +3631,7 @@ export const AdminUsersPage: React.FC = () => {
                     ) : (
                         <div className="flex h-full flex-col">
                             <div className="border-b border-border px-5 py-4">
-                                <h2 className="text-base font-semibold text-foreground">{getUserDisplayName(selectedUser)}</h2>
+                                <h2 className="truncate text-base font-semibold text-foreground">{getUserDisplayName(selectedUser)}</h2>
                                 <p className="truncate text-sm text-muted-foreground">
                                     {selectedUser.email || (
                                         <CopyableUuid
@@ -3642,31 +3642,31 @@ export const AdminUsersPage: React.FC = () => {
                                     )}
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                                    <p className="text-xs font-semibold text-muted-foreground">
+                                    <p className="text-xs font-medium tabular-nums text-muted-foreground">
                                         {selectedUserTripStats.active} active trips / {selectedUserTripStats.total} total trips
                                     </p>
                                     <div className="flex flex-wrap items-center gap-2">
                                         {selectedUserTripsPageLink && (
-                                            <a
-                                                href={selectedUserTripsPageLink}
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                            >
-                                                Open in Trips
-                                                <ArrowSquareOut size={12} />
-                                            </a>
+                                            <Button asChild variant="outline" size="xs" className="h-7 px-2.5">
+                                                <a href={selectedUserTripsPageLink}>
+                                                    Open in Trips
+                                                    <ArrowSquareOut className="rtl:-scale-x-100" />
+                                                </a>
+                                            </Button>
                                         )}
                                         {selectedUserPublicProfilePath ? (
-                                            <a
-                                                href={selectedUserPublicProfilePath}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                            >
-                                                Open public profile
-                                                <ArrowSquareOut size={12} />
-                                            </a>
+                                            <Button asChild variant="outline" size="xs" className="h-7 px-2.5">
+                                                <a
+                                                    href={selectedUserPublicProfilePath}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    Open public profile
+                                                    <ArrowSquareOut className="rtl:-scale-x-100" />
+                                                </a>
+                                            </Button>
                                         ) : (
-                                            <span className="text-[11px] font-semibold text-muted-foreground">
+                                            <span className="text-xs text-muted-foreground">
                                                 Public profile unavailable (missing username)
                                             </span>
                                         )}
@@ -3674,38 +3674,38 @@ export const AdminUsersPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-4">
-                                <section className="space-y-3 rounded-xl border border-border p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Profile and access</h3>
+                            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+                                <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
+                                <AdminSectionHeader as="h3" title="Profile and access" />
                                 <div className="grid gap-3 sm:grid-cols-2">
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                        <input
-	                                            aria-label="First name"
-	                                            value={profileDraft.firstName}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">First name</span>
+                                            <Input
+                                                aria-label="First name"
+                                                value={profileDraft.firstName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9"
                                         />
                                     </label>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                        <input
-	                                            aria-label="Last name"
-	                                            value={profileDraft.lastName}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Last name</span>
+                                            <Input
+                                                aria-label="Last name"
+                                                value={profileDraft.lastName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9"
                                         />
                                     </label>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Username</span>
-	                                        <input
-	                                            aria-label="Username"
-	                                            value={profileDraft.username}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Username</span>
+                                            <Input
+                                                aria-label="Username"
+                                                value={profileDraft.username}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, username: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9"
                                         />
                                     </label>
-                                    <div className="space-y-1 rounded-lg border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground sm:col-span-2">
+                                    <div className="space-y-1 rounded-md border border-border bg-secondary/60 px-3 py-2 text-xs text-muted-foreground sm:col-span-2">
                                         <div>Self-service username changes are limited to once every {USERNAME_CHANGE_COOLDOWN_DAYS} days.</div>
                                         <div>Last recorded username change: {formatOptionalTimestamp(selectedUser.username_changed_at)}.</div>
                                         <div>
@@ -3714,17 +3714,19 @@ export const AdminUsersPage: React.FC = () => {
                                                 : 'Cooldown is currently not active.'}
                                         </div>
                                         <div>Use the admin action below to revoke cooldown immediately.</div>
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="outline"
+                                            size="xs"
                                             onClick={() => void handleResetUsernameCooldown()}
                                             disabled={isSaving || !selectedUserUsernameCooldown.isActive}
-                                            className="mt-1 inline-flex h-7 items-center rounded-md border border-border bg-card px-2.5 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
+                                            className="mt-1 h-7 px-2.5"
                                         >
                                             Revoke cooldown
-                                        </button>
+                                        </Button>
                                     </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gender</span>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Gender</span>
                                         <Select
                                             value={profileDraft.gender || GENDER_UNSET_VALUE}
                                             onValueChange={(value) => {
@@ -3749,8 +3751,8 @@ export const AdminUsersPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Country/Region</span>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Country/Region</span>
                                         <ProfileCountryRegionSelect
                                             value={profileDraft.country}
                                             placeholder="Search country or region"
@@ -3760,26 +3762,26 @@ export const AdminUsersPage: React.FC = () => {
                                             onValueChange={(nextCode) => setProfileDraft((current) => ({ ...current, country: nextCode }))}
                                         />
                                     </div>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">City</span>
-	                                        <input
-	                                            aria-label="City"
-	                                            value={profileDraft.city}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">City</span>
+                                            <Input
+                                                aria-label="City"
+                                                value={profileDraft.city}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, city: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9"
                                         />
                                     </label>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preferred language</span>
-	                                        <input
-	                                            aria-label="Preferred language"
-	                                            value={profileDraft.preferredLanguage}
+                                    <label className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Preferred language</span>
+                                            <Input
+                                                aria-label="Preferred language"
+                                                value={profileDraft.preferredLanguage}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, preferredLanguage: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
+                                            className="h-9"
                                         />
                                     </label>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account status</span>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Account status</span>
                                         <Select
                                             value={profileDraft.accountStatus}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, accountStatus: value as 'active' | 'disabled' | 'deleted' }))}
@@ -3796,8 +3798,8 @@ export const AdminUsersPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Role</span>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Role</span>
                                         <Select
                                             value={profileDraft.role}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, role: value as 'admin' | 'user' }))}
@@ -3811,8 +3813,8 @@ export const AdminUsersPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tier</span>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">Tier</span>
                                         <Select
                                             value={tierDraft}
                                             onValueChange={(value) => setTierDraft(value as PlanTierKey)}
@@ -3832,58 +3834,60 @@ export const AdminUsersPage: React.FC = () => {
                                 </div>
                                 </section>
 
-                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Billing subscription</h3>
-                                    <a
-                                        href={`/admin/billing?q=${encodeURIComponent(selectedUser.provider_subscription_id || selectedUser.user_id)}`}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                    >
-                                        Open billing workspace
-                                        <ArrowSquareOut size={12} />
-                                    </a>
-                                </div>
+                                <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
+                                <AdminSectionHeader
+                                    as="h3"
+                                    title="Billing subscription"
+                                    actions={(
+                                        <Button asChild variant="outline" size="xs" className="h-7 px-2.5">
+                                            <a href={`/admin/billing?q=${encodeURIComponent(selectedUser.provider_subscription_id || selectedUser.user_id)}`}>
+                                                Open billing workspace
+                                                <ArrowSquareOut className="rtl:-scale-x-100" />
+                                            </a>
+                                        </Button>
+                                    )}
+                                />
                                 <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subscription status</span>
+                                    <div className="rounded-md border border-border bg-secondary/60 p-3">
+                                        <span className="text-xs font-medium text-muted-foreground">Subscription status</span>
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(resolveUserSubscriptionStatus(selectedUser))}`}>
+                                            <AdminStatusBadge tone={subscriptionStatusTone(resolveUserSubscriptionStatus(selectedUser))}>
                                                 {getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(selectedUser))}
-                                            </span>
-                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(selectedUser.tier_key)}`}>
-                                                {PLAN_CATALOG[selectedUser.tier_key].publicName}
-                                            </span>
+                                            </AdminStatusBadge>
+                                            <AdminStatusBadge tone={tierTone(selectedUser.tier_key)} dot={false}>
+                                                {PLAN_CATALOG[selectedUser.tier_key]?.publicName || selectedUser.tier_key}
+                                            </AdminStatusBadge>
                                         </div>
                                         <div className="mt-2 text-xs text-muted-foreground">
                                             Provider: {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recurring amount</span>
-                                        <div className="mt-2 text-sm font-semibold text-foreground">
+                                    <div className="rounded-md border border-border bg-secondary/60 p-3">
+                                        <span className="text-xs font-medium text-muted-foreground">Recurring amount</span>
+                                        <div className="mt-2 text-sm font-semibold tabular-nums text-foreground">
                                             {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
                                                 ? `${selectedUser.subscription_currency || '—'} ${(selectedUser.subscription_amount / 100).toFixed(2)}`
                                                 : '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Provider subscription ID</span>
+                                    <div className="rounded-md border border-border bg-secondary/60 p-3">
+                                        <span className="text-xs font-medium text-muted-foreground">Provider subscription ID</span>
                                         <div className="mt-2 break-all font-mono text-[11px] text-foreground">
                                             {selectedUser.provider_subscription_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Paddle price ID</span>
+                                    <div className="rounded-md border border-border bg-secondary/60 p-3">
+                                        <span className="text-xs font-medium text-muted-foreground">Paddle price ID</span>
                                         <div className="mt-2 break-all font-mono text-[11px] text-foreground">
                                             {selectedUser.provider_price_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current period end</span>
+                                    <div className="rounded-md border border-border bg-secondary/60 p-3">
+                                        <span className="text-xs font-medium text-muted-foreground">Current period end</span>
                                         <div className="mt-2 text-sm font-semibold text-foreground">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
                                     </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cancellation / grace</span>
+                                    <div className="rounded-md border border-border bg-secondary/60 p-3">
+                                        <span className="text-xs font-medium text-muted-foreground">Cancellation / grace</span>
                                         <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                                             <div>Cancel at: {formatOptionalTimestamp(selectedUser.cancel_at)}</div>
                                             <div>Canceled at: {formatOptionalTimestamp(selectedUser.canceled_at)}</div>
@@ -3891,10 +3895,10 @@ export const AdminUsersPage: React.FC = () => {
                                             <div>Downgrades at: {formatOptionalTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}</div>
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3 sm:col-span-2">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Latest billing event</span>
+                                    <div className="rounded-md border border-border bg-secondary/60 p-3 sm:col-span-2">
+                                        <span className="text-xs font-medium text-muted-foreground">Latest billing event</span>
                                         <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto]">
-                                            <div className="space-y-1">
+                                            <div className="flex flex-col gap-1.5">
                                                 <div className="font-semibold text-foreground">{selectedUser.subscription_last_event_type || 'No event recorded'}</div>
                                                 <div>{formatOptionalTimestamp(selectedUser.subscription_last_event_at)}</div>
                                                 <div className="break-all font-mono text-[11px] text-muted-foreground">{selectedUser.subscription_last_event_id || '—'}</div>
@@ -3904,72 +3908,85 @@ export const AdminUsersPage: React.FC = () => {
                                 </div>
                                 </section>
 
-                                <section className="mt-4 space-y-2 rounded-xl border border-border p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Entitlement overrides (advanced)</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Optional JSON object. Leave this field empty to inherit all limits from the selected tier.
-                                </p>
-	                                <textarea
-	                                    aria-label="Entitlement overrides"
-	                                    value={overrideDraft}
+                                <section className="flex flex-col gap-2 rounded-lg border border-border p-4">
+                                <AdminSectionHeader
+                                    as="h3"
+                                    title="Entitlement overrides (advanced)"
+                                    description="Optional JSON object. Leave this field empty to inherit all limits from the selected tier."
+                                />
+                                <Textarea
+                                    aria-label="Entitlement overrides"
+                                    value={overrideDraft}
                                     onChange={(event) => setOverrideDraft(event.target.value)}
                                     placeholder={`{\n  "maxActiveTrips": 15\n}`}
-                                    className="min-h-[140px] w-full rounded-lg border border-border px-3 py-2 font-mono text-xs"
+                                    className="min-h-[140px] font-mono text-xs"
                                 />
                                 {!overrideDraft.trim() && (
                                     <p className="text-xs text-muted-foreground">No override configured for this user.</p>
                                 )}
                                 </section>
 
-                                <section className="mt-4 flex flex-wrap gap-2 rounded-xl border border-border p-3">
-                                <button
+                                <section className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-4" aria-label="User actions">
+                                <Button
                                     type="button"
+                                    size="sm"
                                     onClick={() => void saveSelectedUser()}
                                     disabled={isSaving}
-                                    className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700 disabled:opacity-50"
                                 >
                                     Save user
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => void handleSoftDelete(selectedUser)}
                                     disabled={isSaving}
-                                    className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                 >
                                     {(selectedUser.account_status || 'active') === 'deleted' ? 'Restore user' : 'Soft-delete user'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => void handleHardDelete(selectedUser)}
-                                    disabled={isSaving || !isUserHardDeleteEligible(selectedUser)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
-                                >
-                                    <Trash size={13} />
-                                    Hard delete
-                                </button>
-                                {selectedUserTripStats.total > 0 && (
-                                    <button
+                                </Button>
+                                <span className="ms-auto flex flex-wrap items-center gap-2">
+                                    {selectedUserTripStats.total > 0 && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => void handleTransferTripsAndHardDelete(selectedUser)}
+                                            disabled={isSaving || isLoadingTrips}
+                                        >
+                                            Transfer trips + hard delete
+                                        </Button>
+                                    )}
+                                    <Button
                                         type="button"
-                                        onClick={() => void handleTransferTripsAndHardDelete(selectedUser)}
-                                        disabled={isSaving || isLoadingTrips}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 dark:hover:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => void handleHardDelete(selectedUser)}
+                                        disabled={isSaving || !isUserHardDeleteEligible(selectedUser)}
                                     >
-                                        Transfer trips + hard delete
-                                    </button>
-                                )}
+                                        <Trash />
+                                        Hard delete
+                                    </Button>
+                                </span>
                                 </section>
 
-                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Connected trips</h3>
+                                <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
+                                <AdminSectionHeader as="h3" title="Connected trips" />
                                 {isLoadingTrips ? (
-                                    <div className="text-sm text-muted-foreground">Loading trips…</div>
+                                    <div className="inline-flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+                                        <SpinnerGap size={14} className="animate-spin" />
+                                        Loading trips…
+                                    </div>
                                 ) : userTrips.length === 0 ? (
-                                    <div className="text-sm text-muted-foreground">No trips owned by this user.</div>
+                                    <AdminEmptyState
+                                        className="py-6"
+                                        title="No trips owned by this user"
+                                        description="Trips this user creates or receives by transfer will appear here."
+                                    />
                                 ) : (
                                     <div className="space-y-2">
-                                        <div className="max-h-[26rem] space-y-2 overflow-y-auto pr-1">
+                                        <div className="max-h-[26rem] space-y-2 overflow-y-auto pe-1">
                                             {pagedConnectedTrips.map((trip) => (
-                                                <article key={trip.trip_id} className="rounded-lg border border-border p-3">
+                                                <article key={trip.trip_id} className="rounded-md border border-border p-3">
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div className="min-w-0 flex-1">
                                                             <a
@@ -3977,7 +3994,7 @@ export const AdminUsersPage: React.FC = () => {
                                                                 target="_blank"
                                                                 rel="noreferrer"
                                                                 title="Open trip in a new tab"
-                                                                className="block text-sm font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                                className="block truncate text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                             >
                                                                 {trip.title || trip.trip_id}
                                                             </a>
@@ -3991,15 +4008,15 @@ export const AdminUsersPage: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-	                                                        <input
-	                                                            key={`${trip.trip_id}-${trip.updated_at}`}
-	                                                            type="datetime-local"
-	                                                            aria-label={`Trip expiration for ${trip.title || trip.trip_id}`}
-	                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
+                                                        <Input
+                                                            key={`${trip.trip_id}-${trip.updated_at}`}
+                                                            type="datetime-local"
+                                                            aria-label={`Trip expiration for ${trip.title || trip.trip_id}`}
+                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
                                                             onBlur={(event) => {
                                                                 void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
                                                             }}
-                                                            className="h-8 rounded border border-border px-2"
+                                                            className="h-8 w-auto text-xs"
                                                         />
                                                         <Select
                                                             value={trip.status}
@@ -4007,7 +4024,7 @@ export const AdminUsersPage: React.FC = () => {
                                                                 void handleTripPatch(trip, { status: value as 'active' | 'archived' | 'expired' });
                                                             }}
                                                         >
-                                                            <SelectTrigger className="h-8 !w-[132px] min-w-[132px] text-xs">
+                                                            <SelectTrigger className="h-8 !w-[132px] min-w-[132px] text-xs" aria-label={`Status for ${trip.title || trip.trip_id}`}>
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent>
@@ -4033,24 +4050,26 @@ export const AdminUsersPage: React.FC = () => {
                                         </div>
                                         {connectedTripsPageCount > 1 && (
                                             <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
-                                                <span>Page {connectedTripsPage} / {connectedTripsPageCount}</span>
-                                                <div className="flex items-center gap-1">
-                                                    <button
+                                                <span className="tabular-nums">Page {connectedTripsPage} / {connectedTripsPageCount}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
                                                         type="button"
+                                                        variant="outline"
+                                                        size="xs"
                                                         onClick={() => setConnectedTripsPage((current) => Math.max(current - 1, 1))}
                                                         disabled={connectedTripsPage <= 1}
-                                                        className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                     >
                                                         Prev
-                                                    </button>
-                                                    <button
+                                                    </Button>
+                                                    <Button
                                                         type="button"
+                                                        variant="outline"
+                                                        size="xs"
                                                         onClick={() => setConnectedTripsPage((current) => Math.min(current + 1, connectedTripsPageCount))}
                                                         disabled={connectedTripsPage >= connectedTripsPageCount}
-                                                        className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                     >
                                                         Next
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </div>
                                         )}
@@ -4058,61 +4077,72 @@ export const AdminUsersPage: React.FC = () => {
                                 )}
                                 </section>
 
-                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">User change log</h3>
-                                        <a
-                                            href={`/admin/audit?q=${encodeURIComponent(selectedUser.user_id)}`}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                        >
-                                            Open global audit
-                                            <ArrowSquareOut size={12} />
-                                        </a>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Showing the latest {USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.</p>
+                                <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title="User change log"
+                                        description={`Showing the latest ${USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.`}
+                                        actions={(
+                                            <Button asChild variant="outline" size="xs" className="h-7 px-2.5">
+                                                <a href={`/admin/audit?q=${encodeURIComponent(selectedUser.user_id)}`}>
+                                                    Open global audit
+                                                    <ArrowSquareOut className="rtl:-scale-x-100" />
+                                                </a>
+                                            </Button>
+                                        )}
+                                    />
                                     {userChangeLogsError && (
-                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                            {userChangeLogsError}
-                                        </div>
+                                        <Alert variant="warning">
+                                            <WarningCircle weight="fill" />
+                                            <AlertDescription>{userChangeLogsError}</AlertDescription>
+                                        </Alert>
                                     )}
                                     {isLoadingUserChangeLogs ? (
-                                        <div className="text-sm text-muted-foreground">Loading user change log…</div>
+                                        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+                                            <SpinnerGap size={14} className="animate-spin" />
+                                            Loading user change log…
+                                        </div>
                                     ) : selectedUserChangeEntries.length === 0 ? (
-                                        <div className="text-sm text-muted-foreground">No user-originated changes recorded for this account yet.</div>
+                                        <AdminEmptyState
+                                            className="py-6"
+                                            title="No changes recorded yet"
+                                            description="Profile, trip and account changes made by this user will appear here."
+                                        />
                                     ) : (
                                         <div className="space-y-2">
-                                            <div className="max-h-[30rem] space-y-2 overflow-y-auto pr-1">
+                                            <div className="max-h-[30rem] space-y-2 overflow-y-auto pe-1">
                                                 {pagedUserChangeEntries.map(({ log, actionPresentation, secondaryFacets, visibleDiffEntries, hiddenDiffCount }) => (
-                                                    <article key={log.id} className="rounded-lg border border-border p-3">
+                                                    <article key={log.id} className="rounded-md border border-border p-3">
                                                         <div className="flex flex-wrap items-center justify-between gap-2">
-                                                            <div className="text-[11px] font-semibold text-muted-foreground">
+                                                            <div className="text-xs font-medium tabular-nums text-muted-foreground">
                                                                 {formatTimestamp(log.created_at)}
                                                             </div>
-                                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
+                                                            <AdminStatusBadge dot={false} className={actionPresentation.className}>
                                                                 {actionPresentation.label}
-                                                            </span>
+                                                            </AdminStatusBadge>
                                                         </div>
                                                         {secondaryFacets.length > 0 && (
                                                             <div className="mt-1 flex flex-wrap items-center gap-1">
                                                                 {secondaryFacets.map((facet, facetIndex) => (
-                                                                    <span
+                                                                    <AdminStatusBadge
                                                                         key={`${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
-                                                                        className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                                        dot={false}
+                                                                        className={cn('h-auto py-0.5 text-[11px]', facet.className)}
                                                                         title={facet.code}
                                                                     >
                                                                         {facet.label}
-                                                                    </span>
+                                                                    </AdminStatusBadge>
                                                                 ))}
                                                             </div>
                                                         )}
-                                                        <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
-                                                            <div><span className="font-semibold text-foreground">Action:</span> <span className="font-mono">{log.action}</span></div>
+                                                        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                                            <div><span className="font-medium text-foreground">Action:</span> <span className="font-mono">{log.action}</span></div>
                                                             {log.source && (
-                                                                <div><span className="font-semibold text-foreground">Source:</span> {log.source}</div>
+                                                                <div><span className="font-medium text-foreground">Source:</span> {log.source}</div>
                                                             )}
                                                             {log.target_type === 'trip' && log.target_id && (
                                                                 <div className="break-all">
-                                                                    <span className="font-semibold text-foreground">Trip:</span>{' '}
+                                                                    <span className="font-medium text-foreground">Trip:</span>{' '}
                                                                     <CopyableUuid value={log.target_id} textClassName="break-all text-[11px]" hintClassName="text-[9px]" />
                                                                 </div>
                                                             )}
@@ -4120,16 +4150,16 @@ export const AdminUsersPage: React.FC = () => {
                                                         {visibleDiffEntries.length > 0 ? (
                                                             <div className="mt-2 space-y-2">
                                                                 {visibleDiffEntries.map((entry, entryIndex) => (
-                                                                    <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-border bg-secondary px-2 py-1.5">
-                                                                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                                                    <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-border bg-secondary/60 px-2 py-1.5">
+                                                                        <p className="text-xs font-medium text-muted-foreground">
                                                                             {formatFieldLabel(entry.key)}
                                                                         </p>
                                                                         <div className="mt-1 grid gap-1 lg:grid-cols-2">
-                                                                            <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
+                                                                            <div className="rounded-sm border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                                                 <span className="font-semibold">Before: </span>
                                                                                 <span className="break-all">{formatUserChangeDiffValue(entry, entry.beforeValue)}</span>
                                                                             </div>
-                                                                            <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
+                                                                            <div className="rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                                                 <span className="font-semibold">After: </span>
                                                                                 <span className="break-all">{formatUserChangeDiffValue(entry, entry.afterValue)}</span>
                                                                             </div>
@@ -4137,7 +4167,7 @@ export const AdminUsersPage: React.FC = () => {
                                                                     </article>
                                                                 ))}
                                                                 {hiddenDiffCount > 0 && (
-                                                                    <p className="text-[11px] font-semibold text-muted-foreground">
+                                                                    <p className="text-xs font-medium text-muted-foreground">
                                                                         +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
                                                                     </p>
                                                                 )}
@@ -4146,37 +4176,41 @@ export const AdminUsersPage: React.FC = () => {
                                                             <p className="mt-2 text-xs text-muted-foreground">No field diff recorded.</p>
                                                         )}
                                                         {canOpenUserChangeFullDiffModal(log) && (
-                                                            <button
+                                                            <Button
                                                                 type="button"
+                                                                variant="outline"
+                                                                size="xs"
                                                                 onClick={() => void openUserChangeFullDiffModal(log)}
-                                                                className="mt-2 inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                                                                className="mt-2 h-7 px-2.5"
                                                             >
                                                                 Show complete diff
-                                                            </button>
+                                                            </Button>
                                                         )}
                                                     </article>
                                                 ))}
                                             </div>
                                             {userChangeLogsPageCount > 1 && (
                                                 <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
-                                                    <span>Page {userChangeLogsPage} / {userChangeLogsPageCount}</span>
-                                                    <div className="flex items-center gap-1">
-                                                        <button
+                                                    <span className="tabular-nums">Page {userChangeLogsPage} / {userChangeLogsPageCount}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
                                                             type="button"
+                                                            variant="outline"
+                                                            size="xs"
                                                             onClick={() => setUserChangeLogsPage((current) => Math.max(current - 1, 1))}
                                                             disabled={userChangeLogsPage <= 1}
-                                                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                         >
                                                             Prev
-                                                        </button>
-                                                        <button
+                                                        </Button>
+                                                        <Button
                                                             type="button"
+                                                            variant="outline"
+                                                            size="xs"
                                                             onClick={() => setUserChangeLogsPage((current) => Math.min(current + 1, userChangeLogsPageCount))}
                                                             disabled={userChangeLogsPage >= userChangeLogsPageCount}
-                                                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                         >
                                                             Next
-                                                        </button>
+                                                        </Button>
                                                     </div>
                                                 </div>
                                             )}
@@ -4184,37 +4218,38 @@ export const AdminUsersPage: React.FC = () => {
                                     )}
                                 </section>
 
-                                <section className="mt-4 rounded-xl border border-border bg-secondary p-3">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Identity</h3>
-                                    <div className="mt-2 space-y-1 text-sm text-foreground">
-                                        <div><span className="font-semibold text-foreground">Name:</span> {getUserDisplayName(selectedUser)}</div>
-                                        <div><span className="font-semibold text-foreground">Email:</span> {selectedUser.email || 'No email'}</div>
+                                <section className="flex flex-col gap-3 rounded-lg border border-border bg-secondary/60 p-4">
+                                    <AdminSectionHeader as="h3" title="Identity" />
+                                    <div className="space-y-1 text-sm text-foreground">
+                                        <div><span className="font-medium text-foreground">Name:</span> {getUserDisplayName(selectedUser)}</div>
+                                        <div><span className="font-medium text-foreground">Email:</span> {selectedUser.email || 'No email'}</div>
                                         <div className="break-all">
-                                            <span className="font-semibold text-foreground">User ID:</span>{' '}
+                                            <span className="font-medium text-foreground">User ID:</span>{' '}
                                             <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
                                         </div>
-                                        <div><span className="font-semibold text-foreground">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
-                                        <div><span className="font-semibold text-foreground">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
-                                        <div><span className="font-semibold text-foreground">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
+                                        <div><span className="font-medium text-foreground">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
+                                        <div><span className="font-medium text-foreground">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
+                                        <div><span className="font-medium text-foreground">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span><span className="font-semibold text-foreground">Terms accepted version:</span> {selectedUser.terms_accepted_version || 'Not accepted yet'}</span>
-                                            <button
+                                            <span><span className="font-medium text-foreground">Terms accepted version:</span> {selectedUser.terms_accepted_version || 'Not accepted yet'}</span>
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="xs"
                                                 onClick={() => void handleResetTermsAcceptance()}
                                                 disabled={isSaving || !selectedUser.terms_accepted_version}
-                                                className="inline-flex h-6 items-center rounded-md border border-amber-300 bg-amber-50 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                             >
                                                 Reset ToC acceptance
-                                            </button>
+                                            </Button>
                                         </div>
-                                        <div><span className="font-semibold text-foreground">Terms accepted at:</span> {formatOptionalTimestamp(selectedUser.terms_accepted_at)}</div>
+                                        <div><span className="font-medium text-foreground">Terms accepted at:</span> {formatOptionalTimestamp(selectedUser.terms_accepted_at)}</div>
                                         <div>
-                                            <span className="font-semibold text-foreground">Last sign-in:</span>{' '}
+                                            <span className="font-medium text-foreground">Last sign-in:</span>{' '}
                                             {selectedUser.last_sign_in_at
                                                 ? `${formatRelativeTimestamp(selectedUser.last_sign_in_at, 'No visit yet')} (${formatTimestamp(selectedUser.last_sign_in_at)})`
                                                 : 'No visit yet'}
                                         </div>
-                                        <div><span className="font-semibold text-foreground">Last log:</span> {formatOptionalTimestamp(selectedUser.updated_at)}</div>
+                                        <div><span className="font-medium text-foreground">Last log:</span> {formatOptionalTimestamp(selectedUser.updated_at)}</div>
                                     </div>
                                 </section>
                             </div>

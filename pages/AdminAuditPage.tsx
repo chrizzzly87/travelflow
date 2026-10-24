@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, X } from '@phosphor-icons/react';
+import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
+import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, Warning, X } from '@phosphor-icons/react';
 import { useSearchParams } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { PlanTierKey } from '../types';
@@ -27,6 +28,13 @@ import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin
 import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTableUtils';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Button } from '../components/ui/button';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Checkbox } from '../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -85,6 +93,16 @@ const AUDIT_COLUMN_WIDTH_MIN: Record<AuditResizableColumnId, number> = {
     diff: 360,
 };
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Errors this page throws itself carry an authored sentence that is safe to show.
+// Anything else (RPC, network, Supabase) is logged and replaced with a fallback, so a
+// raw exception never reaches the admin UI.
+// Audit's own validation sentences are user-facing; everything else is mapped.
+const AuditUserFacingError = AdminUserFacingError;
+
+const toAuditErrorMessage = (error: unknown, fallback: string): string => (
+    toAdminErrorMessage(error, fallback, 'admin-audit')
+);
 
 type AuditActorFilter = typeof ACTOR_FILTER_VALUES[number];
 type AuditTimePreset = typeof AUDIT_TIME_PRESETS[number];
@@ -730,11 +748,11 @@ export const AdminAuditPage: React.FC = () => {
             setLogs(adminResult.value);
             writeAdminCache(AUDIT_CACHE_KEY, adminResult.value);
         } else {
-            const reason = adminResult.reason instanceof Error ? adminResult.reason.message : 'Could not load audit logs.';
+            const reason = toAuditErrorMessage(adminResult.reason, 'Could not load admin audit logs.');
             const cachedRows = readAdminCache<AdminAuditRecord[]>(AUDIT_CACHE_KEY, []);
             if (cachedRows.length > 0) {
                 setLogs(cachedRows);
-                notices.push(`Live admin audit logs failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser. Reason: ${reason}`);
+                notices.push(`Live admin audit logs failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser.`);
             } else {
                 setLogs([]);
                 hardFailures.push(reason);
@@ -745,11 +763,11 @@ export const AdminAuditPage: React.FC = () => {
             setUserChangeLogs(userResult.value);
             writeAdminCache(USER_CHANGE_CACHE_KEY, userResult.value);
         } else {
-            const reason = userResult.reason instanceof Error ? userResult.reason.message : 'Could not load user change logs.';
+            const reason = toAuditErrorMessage(userResult.reason, 'Could not load user change logs.');
             const cachedRows = readAdminCache<AdminUserChangeRecord[]>(USER_CHANGE_CACHE_KEY, []);
             if (cachedRows.length > 0) {
                 setUserChangeLogs(cachedRows);
-                notices.push(`Live user change logs failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser. Reason: ${reason}`);
+                notices.push(`Live user change logs failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser.`);
             } else {
                 setUserChangeLogs([]);
                 hardFailures.push(reason);
@@ -845,7 +863,7 @@ export const AdminAuditPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setUserDrawerError(error instanceof Error ? error.message : 'Could not load user profile.');
+                setUserDrawerError(toAuditErrorMessage(error, 'Could not load the live user profile.'));
             })
             .finally(() => {
                 if (!active) return;
@@ -872,7 +890,7 @@ export const AdminAuditPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setTripDrawerError(error instanceof Error ? error.message : 'Could not load trip details.');
+                setTripDrawerError(toAuditErrorMessage(error, 'Could not load the live trip details.'));
             })
             .finally(() => {
                 if (!active) return;
@@ -927,7 +945,7 @@ export const AdminAuditPage: React.FC = () => {
             });
             await loadLogs();
         } catch (error) {
-            setUserDrawerError(error instanceof Error ? error.message : 'Could not restore user.');
+            setUserDrawerError(toAuditErrorMessage(error, 'Could not restore this user. Try again.'));
         } finally {
             setIsRestoringUser(false);
         }
@@ -992,7 +1010,7 @@ export const AdminAuditPage: React.FC = () => {
             setDiffModalBeforeLabel(versionSnapshots.before_label || 'Before version');
             setDiffModalAfterLabel(versionSnapshots.after_label || 'After version');
         } catch (error) {
-            setDiffModalError(error instanceof Error ? error.message : 'Could not load trip snapshots.');
+            setDiffModalError(toAuditErrorMessage(error, 'Could not load trip snapshots. Showing event snapshots when available.'));
         } finally {
             setIsDiffModalLoading(false);
         }
@@ -1317,7 +1335,7 @@ export const AdminAuditPage: React.FC = () => {
             });
             const downloaded = downloadAdminForensicsReplayBundle(bundle, toForensicsReplayFileName(bundle.generated_at));
             if (!downloaded) {
-                throw new Error('Replay export is only available in browser context.');
+                throw new AuditUserFacingError('Replay export is only available in browser context.');
             }
             showAppToast({
                 tone: 'success',
@@ -1328,7 +1346,7 @@ export const AdminAuditPage: React.FC = () => {
                     + `${exportAuditId ? ` (audit id ${exportAuditId})` : ''}.`,
             });
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not export replay bundle.');
+            setErrorMessage(toAuditErrorMessage(error, 'Could not export the replay bundle.'));
         } finally {
             setIsExportingReplay(false);
         }
@@ -1408,28 +1426,28 @@ export const AdminAuditPage: React.FC = () => {
         try {
             if (entry.kind === 'user') {
                 if (action === 'trip.created') {
-                    if (!entry.log.target_id) throw new Error('Trip id missing for undo.');
+                    if (!entry.log.target_id) throw new AuditUserFacingError('Trip id missing for undo.');
                     await adminUpdateTrip(entry.log.target_id, { status: 'archived' });
                 } else if (action === 'trip.archived') {
-                    if (!entry.log.target_id) throw new Error('Trip id missing for undo.');
+                    if (!entry.log.target_id) throw new AuditUserFacingError('Trip id missing for undo.');
                     await adminUpdateTrip(entry.log.target_id, { status: 'active' });
                 } else if (action === 'trip.updated') {
-                    if (!entry.log.target_id) throw new Error('Trip id missing for undo.');
+                    if (!entry.log.target_id) throw new AuditUserFacingError('Trip id missing for undo.');
                     const metadata = asRecord(entry.log.metadata);
                     const versionId = asString(metadata.version_id);
                     const previousVersionId = asString(metadata.previous_version_id);
-                    if (!versionId) throw new Error('Version id missing for undo.');
+                    if (!versionId) throw new AuditUserFacingError('Version id missing for undo.');
                     const versionSnapshots = await adminGetTripVersionSnapshots({
                         tripId: entry.log.target_id,
                         afterVersionId: versionId,
                         beforeVersionId: previousVersionId,
                     });
                     if (!versionSnapshots) {
-                        throw new Error('Version snapshots unavailable for undo.');
+                        throw new AuditUserFacingError('Version snapshots unavailable for undo.');
                     }
                     const beforeSnapshot = asRecord(versionSnapshots.before_snapshot);
                     if (Object.keys(beforeSnapshot).length === 0) {
-                        throw new Error('No previous snapshot found for undo.');
+                        throw new AuditUserFacingError('No previous snapshot found for undo.');
                     }
                     await adminOverrideTripCommit({
                         tripId: entry.log.target_id,
@@ -1439,20 +1457,20 @@ export const AdminAuditPage: React.FC = () => {
                         metadata: buildUndoOverrideMetadata(entry),
                     });
                 } else if (action === 'profile.updated') {
-                    if (!entry.log.target_id) throw new Error('User id missing for undo.');
+                    if (!entry.log.target_id) throw new AuditUserFacingError('User id missing for undo.');
                     const patch = extractRevertibleProfilePatch(entry.log.before_data);
-                    if (!patch) throw new Error('No revertible profile fields found for this row.');
+                    if (!patch) throw new AuditUserFacingError('No revertible profile fields found for this row.');
                     await adminUpdateUserProfile(entry.log.target_id, patch);
                 } else {
-                    throw new Error('Undo is not supported for this action.');
+                    throw new AuditUserFacingError('Undo is not supported for this action.');
                 }
             } else {
-                if (!entry.log.target_id) throw new Error('Target id missing for undo.');
+                if (!entry.log.target_id) throw new AuditUserFacingError('Target id missing for undo.');
                 if (action === 'admin.trip.override_commit') {
                     const before = asRecord(entry.log.before_data);
                     const tripData = asRecord(before.data);
                     if (Object.keys(tripData).length === 0) {
-                        throw new Error('No previous trip snapshot found for this undo.');
+                        throw new AuditUserFacingError('No previous trip snapshot found for this undo.');
                     }
                     await adminOverrideTripCommit({
                         tripId: entry.log.target_id,
@@ -1477,12 +1495,12 @@ export const AdminAuditPage: React.FC = () => {
                         patch.ownerId = asString(before.owner_id);
                     }
                     if (Object.keys(patch).length === 0) {
-                        throw new Error('No revertible trip fields found for this row.');
+                        throw new AuditUserFacingError('No revertible trip fields found for this row.');
                     }
                     await adminUpdateTrip(entry.log.target_id, patch);
                 } else if (action === 'admin.user.update_profile' || action === 'admin.user.update_tier') {
                     const patch = extractRevertibleProfilePatch(entry.log.before_data);
-                    if (!patch) throw new Error('No revertible user fields found for this row.');
+                    if (!patch) throw new AuditUserFacingError('No revertible user fields found for this row.');
                     await adminUpdateUserProfile(entry.log.target_id, patch);
                 } else if (action === 'admin.user.update_overrides') {
                     const before = asRecord(entry.log.before_data);
@@ -1492,15 +1510,15 @@ export const AdminAuditPage: React.FC = () => {
                     const before = asRecord(entry.log.before_data);
                     const entitlements = asRecord(before.entitlements as Record<string, unknown> | null | undefined);
                     if (Object.keys(entitlements).length === 0) {
-                        throw new Error('No previous tier entitlements found for this row.');
+                        throw new AuditUserFacingError('No previous tier entitlements found for this row.');
                     }
                     const tierKey = entry.log.target_id;
                     if (!tierKey || !isPlanTierKey(tierKey)) {
-                        throw new Error('Tier key missing or invalid for undo.');
+                        throw new AuditUserFacingError('Tier key missing or invalid for undo.');
                     }
                     await adminUpdatePlanEntitlements(tierKey, entitlements);
                 } else {
-                    throw new Error('Undo is not supported for this action.');
+                    throw new AuditUserFacingError('Undo is not supported for this action.');
                 }
             }
             showAppToast({
@@ -1510,7 +1528,7 @@ export const AdminAuditPage: React.FC = () => {
             });
             await loadLogs();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not undo this change.');
+            setErrorMessage(toAuditErrorMessage(error, 'Could not undo this change.'));
         } finally {
             setRevertingEntryKey(null);
         }
@@ -1556,35 +1574,39 @@ export const AdminAuditPage: React.FC = () => {
 
     return (
         <AdminShell
-            title="Admin Audit Log"
-            description="Unified timeline of admin actions and user-originated account/trip changes for incident replay and support tracing."
+            title="Audit log"
+            description="Admin actions and user account and trip changes in one timeline, for incident replay and support tracing."
             searchValue={searchValue}
             onSearchValueChange={handleSearchValueChange}
             showDateRange={false}
             actions={(
                 <div className="flex flex-wrap items-center gap-2">
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={() => void exportReplayBundle()}
                         disabled={isLoading || isExportingReplay || visibleLogs.length === 0}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-busy={isExportingReplay || undefined}
+                        className="h-9"
                     >
                         {isExportingReplay
-                            ? <SpinnerGap size={14} className="animate-spin" />
-                            : <DownloadSimple size={14} />}
+                            ? <SpinnerGap className="animate-spin" />
+                            : <DownloadSimple />}
                         Export replay
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={() => void exportSelectedReplayBundle()}
                         disabled={isLoading || isExportingReplay || selectedEntryKeys.length === 0}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-busy={isExportingReplay || undefined}
+                        className="h-9"
                     >
                         {isExportingReplay
-                            ? <SpinnerGap size={14} className="animate-spin" />
-                            : <DownloadSimple size={14} />}
-                        Export selected ({selectedEntryKeys.length})
-                    </button>
+                            ? <SpinnerGap className="animate-spin" />
+                            : <DownloadSimple />}
+                        Export selected <span className="tabular-nums">({selectedEntryKeys.length})</span>
+                    </Button>
                     <AdminReloadButton
                         onClick={() => void loadLogs()}
                         isLoading={isLoading}
@@ -1593,21 +1615,23 @@ export const AdminAuditPage: React.FC = () => {
                 </div>
             )}
         >
+            <div className="flex flex-col gap-4">
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                    {errorMessage}
-                </section>
+                <AdminErrorAlert message={errorMessage} />
             )}
             {dataSourceNotice && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                    {dataSourceNotice}
-                </section>
+                <Alert variant="warning">
+                    <Warning weight="fill" />
+                    <AlertDescription>
+                        <p>{dataSourceNotice}</p>
+                    </AlertDescription>
+                </Alert>
             )}
 
-            <section className="mb-3 flex flex-wrap items-center gap-2">
-                <div className="inline-flex min-w-[176px] items-center gap-2">
+            <section className="flex flex-wrap items-center gap-2" aria-label="Audit filters">
+                <div className="inline-flex items-center gap-2">
                     <Select value={timePreset} onValueChange={(value) => handleTimePresetChange(value as AuditTimePreset)}>
-                        <SelectTrigger className="h-8 w-[180px]">
+                        <SelectTrigger className="h-8 w-[180px]" aria-label="Time range">
                             <SelectValue placeholder="Time range" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1619,13 +1643,15 @@ export const AdminAuditPage: React.FC = () => {
                         </SelectContent>
                     </Select>
                     {timePreset === 'custom' && (
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="sm"
                             onClick={() => setIsCustomRangeDialogOpen(true)}
-                            className="inline-flex h-8 items-center rounded-md border border-border bg-card px-2.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                            className="tabular-nums"
                         >
                             {formatAuditCustomRangeLabel(customStartDate, customEndDate)}
-                        </button>
+                        </Button>
                     )}
                 </div>
                 <AdminFilterMenu
@@ -1657,8 +1683,10 @@ export const AdminAuditPage: React.FC = () => {
                     selectedValues={visibleColumns}
                     onSelectedValuesChange={handleVisibleColumnsChange}
                 />
-                <button
+                <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                         setActionFilters(allActionFilterValues);
                         setTargetFilters([]);
@@ -1671,15 +1699,14 @@ export const AdminAuditPage: React.FC = () => {
                         setColumnWidths({ ...AUDIT_COLUMN_WIDTH_DEFAULTS });
                         setOffset(0);
                     }}
-                    className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
                 >
-                    <X size={14} />
+                    <X />
                     Reset
-                </button>
+                </Button>
             </section>
 
             <Dialog open={isCustomRangeDialogOpen} onOpenChange={setIsCustomRangeDialogOpen}>
-                <DialogContent className="w-[min(96vw,640px)] overflow-hidden rounded-2xl p-0">
+                <DialogContent className="w-[min(96vw,640px)] overflow-hidden rounded-lg p-0">
                     <DialogHeader className="border-b border-border">
                         <DialogTitle className="text-base font-semibold text-foreground">Custom time range</DialogTitle>
                         <DialogDescription className="text-sm text-muted-foreground">
@@ -1699,47 +1726,39 @@ export const AdminAuditPage: React.FC = () => {
                         />
                     </div>
                     <DialogFooter className="border-t border-border">
-                        <button
+                        <Button
                             type="button"
                             onClick={() => setIsCustomRangeDialogOpen(false)}
-                            className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-semibold text-foreground hover:bg-secondary"
                         >
                             Apply range
-                        </button>
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 text-xs text-muted-foreground">
-                    <p>
-                        {selectedEntryKeys.length} selected • {visibleLogs.length} matching entr{visibleLogs.length === 1 ? 'y' : 'ies'}
-                    </p>
-                    <p>
-                        Tip: drag column handles to resize. Diff/details starts wider by default.
-                    </p>
+            <AdminSurfaceCard className="flex flex-col gap-4">
+                <AdminSectionHeader
+                    title="Timeline"
+                    description={(
+                        <span className="tabular-nums">
+                            {selectedEntryKeys.length} selected · {visibleLogs.length} matching entr{visibleLogs.length === 1 ? 'y' : 'ies'}
+                        </span>
+                    )}
+                    actions={(
+                        <p className="text-xs text-muted-foreground">
+                            Drag a column edge to resize it.
+                        </p>
+                    )}
+                />
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Legend</span>
+                    <AdminStatusBadge tone="info" dot={false}>Primary action</AdminStatusBadge>
+                    <AdminStatusBadge tone="neutral" dot={false}>Event origin</AdminStatusBadge>
+                    <AdminStatusBadge tone="warning" dot={false}>Field facet</AdminStatusBadge>
+                    <span>Copy the raw event key from the action code chip.</span>
                 </div>
-                <div className="mb-3 rounded-lg border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground">
-                    <p className="font-semibold text-foreground">
-                        Action pill legend
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 font-semibold text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
-                            Primary action
-                        </span>
-                        <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-foreground">
-                            Event origin
-                        </span>
-                        <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                            Field facet
-                        </span>
-                        <span className="text-muted-foreground">
-                            Use the action code chip copy button for raw event keys.
-                        </span>
-                    </div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full table-fixed border-collapse text-left text-sm">
+                <div className="overflow-x-auto rounded-md border border-border">
+                    <table className="min-w-full table-fixed border-collapse text-start text-sm">
                         <colgroup>
                             <col style={{ width: 44 }} />
                             {isColumnVisible('when') && <col style={{ width: `${columnWidths.when}px` }} />}
@@ -1750,8 +1769,8 @@ export const AdminAuditPage: React.FC = () => {
                             {isColumnVisible('rowActions') && <col style={{ width: 170 }} />}
                         </colgroup>
                         <thead>
-                            <tr className="border-b border-border bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
-                                <th className="bg-secondary p-2">
+                            <tr className="border-b border-border bg-muted/50 text-sm">
+                                <th className="h-10 p-2 text-start align-middle">
                                     <Checkbox
                                         checked={areAllPageRowsSelected ? true : hasSomePageRowsSelected ? 'indeterminate' : false}
                                         onCheckedChange={(checked) => togglePageSelection(Boolean(checked))}
@@ -1759,7 +1778,7 @@ export const AdminAuditPage: React.FC = () => {
                                     />
                                 </th>
                                 {isColumnVisible('when') && (
-                                    <th className="relative px-3 py-2">
+                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
                                         When
                                         <button
                                             type="button"
@@ -1767,14 +1786,14 @@ export const AdminAuditPage: React.FC = () => {
                                                 event.preventDefault();
                                                 beginColumnResize('when', event.clientX);
                                             }}
-                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
                                             aria-label="Resize when column"
                                         />
                                     </th>
                                 )}
                                 {isColumnVisible('actor') && (
                                     <th
-                                        className="relative px-3 py-2"
+                                        className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground"
                                         style={{
                                             width: `${columnWidths.actor}px`,
                                             minWidth: `${columnWidths.actor}px`,
@@ -1788,13 +1807,13 @@ export const AdminAuditPage: React.FC = () => {
                                                 event.preventDefault();
                                                 beginColumnResize('actor', event.clientX);
                                             }}
-                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
                                             aria-label="Resize actor column"
                                         />
                                     </th>
                                 )}
                                 {isColumnVisible('action') && (
-                                    <th className="relative px-3 py-2">
+                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
                                         Action
                                         <button
                                             type="button"
@@ -1802,13 +1821,13 @@ export const AdminAuditPage: React.FC = () => {
                                                 event.preventDefault();
                                                 beginColumnResize('action', event.clientX);
                                             }}
-                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
                                             aria-label="Resize action column"
                                         />
                                     </th>
                                 )}
                                 {isColumnVisible('target') && (
-                                    <th className="relative px-3 py-2">
+                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
                                         Target
                                         <button
                                             type="button"
@@ -1816,26 +1835,26 @@ export const AdminAuditPage: React.FC = () => {
                                                 event.preventDefault();
                                                 beginColumnResize('target', event.clientX);
                                             }}
-                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
                                             aria-label="Resize target column"
                                         />
                                     </th>
                                 )}
                                 {isColumnVisible('diff') && (
-                                    <th className="relative px-3 py-2">
-                                        Diff & details
+                                    <th className="relative h-10 px-3 text-start align-middle font-medium text-muted-foreground">
+                                        Diff and details
                                         <button
                                             type="button"
                                             onMouseDown={(event) => {
                                                 event.preventDefault();
                                                 beginColumnResize('diff', event.clientX);
                                             }}
-                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            className="absolute inset-y-0 end-0 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring/50 focus-visible:outline-none"
                                             aria-label="Resize diff and details column"
                                         />
                                     </th>
                                 )}
-                                {isColumnVisible('rowActions') && <th className="px-3 py-2">Actions</th>}
+                                {isColumnVisible('rowActions') && <th className="h-10 px-3 text-start align-middle font-medium text-muted-foreground">Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -1904,7 +1923,7 @@ export const AdminAuditPage: React.FC = () => {
                                                                 });
                                                             }}
                                                             title="Open actor details"
-                                                            className="block w-full truncate text-left text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                            className="block w-full truncate text-start text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                         >
                                                             {actorEmail || 'Unknown actor'}
                                                         </button>
@@ -1927,35 +1946,38 @@ export const AdminAuditPage: React.FC = () => {
                                         {isColumnVisible('action') && (
                                             <td className="px-3 py-2 text-xs">
                                             <span
-                                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}
+                                                className={`inline-flex max-w-full items-center truncate rounded-full border px-2 py-0.5 text-xs font-medium ${actionPresentation.className}`}
                                                 title={log.action}
                                             >
                                                 {actionPresentation.label}
                                             </span>
                                             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-muted-foreground dark:text-foreground">
+                                                <AdminStatusBadge tone="neutral" dot={false}>
                                                     {eventTypeLabel}
-                                                </span>
-                                                <span className="max-w-[220px] truncate font-mono" title={log.action}>
+                                                </AdminStatusBadge>
+                                                <span className="min-w-0 max-w-[220px] truncate font-mono" title={log.action}>
                                                     {log.action}
                                                 </span>
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    variant="outline"
+                                                    size="xs"
                                                     onClick={() => void copyToClipboard(log.action, `action-${timelineEntry.kind}-${log.id}`)}
-                                                    className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-semibold text-muted-foreground hover:bg-secondary"
                                                     title="Copy raw action code"
+                                                    aria-label="Copy raw action code"
+                                                    className="text-muted-foreground"
                                                 >
-                                                    <CopySimple size={11} />
+                                                    <CopySimple />
                                                     Copy
-                                                </button>
-                                                {copiedToken === `action-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700 dark:text-emerald-200">Copied</span>}
+                                                </Button>
+                                                {copiedToken === `action-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700 dark:text-emerald-200" role="status">Copied</span>}
                                             </div>
                                             {secondaryFacets.length > 0 && (
                                                 <div className="mt-1 flex flex-wrap items-center gap-1">
                                                     {secondaryFacets.map((facet, facetIndex) => (
                                                         <span
                                                             key={`${timelineEntry.kind}-${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
-                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${facet.className}`}
                                                             title={facet.code}
                                                         >
                                                             {facet.label}
@@ -1967,26 +1989,28 @@ export const AdminAuditPage: React.FC = () => {
                                         )}
                                         {isColumnVisible('target') && (
                                             <td className="px-3 py-2 text-xs text-muted-foreground">
-                                            <div className="inline-flex items-center gap-1.5">
+                                            <div className="flex flex-wrap items-center gap-1.5">
                                                 <span
-                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getTargetPillClass(log.target_type)}`}
+                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${getTargetPillClass(log.target_type)}`}
                                                     title={`Raw target type: ${log.target_type}`}
                                                 >
                                                     {targetLabel}
                                                 </span>
                                                 {targetCanOpenDrawer && (
-                                                    <button
+                                                    <Button
                                                         type="button"
+                                                        variant="outline"
+                                                        size="xs"
                                                         onClick={() => openTargetDrawer(log)}
-                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                                                         title={`Open ${targetLabel.toLowerCase()} drawer`}
+                                                        aria-label={`Open ${targetLabel.toLowerCase()} details`}
                                                     >
                                                         Open
-                                                        <ArrowSquareOut size={11} />
-                                                    </button>
+                                                        <ArrowSquareOut />
+                                                    </Button>
                                                 )}
                                             </div>
-                                            <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                            <div className="mt-1 flex min-w-0 items-center gap-2 text-[11px] text-muted-foreground">
                                                 {log.target_id
                                                     ? (
                                                         <CopyableUuid
@@ -2002,23 +2026,23 @@ export const AdminAuditPage: React.FC = () => {
                                         {isColumnVisible('diff') && (
                                             <td className="px-3 py-2">
                                             {visibleDiffEntries.length > 0 ? (
-                                                <div className="space-y-2">
+                                                <div className="flex flex-col gap-2">
                                                     {visibleDiffEntries.map((entry, entryIndex) => (
-                                                        <article key={`${timelineEntry.kind}-${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-lg border border-border bg-secondary px-2 py-1.5">
-                                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                                        <article key={`${timelineEntry.kind}-${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-border bg-muted/50 px-2 py-1.5">
+                                                            <p className="text-xs font-medium text-muted-foreground">
                                                                 {formatFieldLabel(entry.key)}
                                                             </p>
                                                             <div className="mt-1 grid gap-1 lg:grid-cols-2">
-                                                                <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                                                                    <span className="font-semibold">Before: </span>
+                                                                <div className="min-w-0 rounded-sm border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
+                                                                    <span className="font-medium">Before: </span>
                                                                     <span className="break-all">
                                                                         {timelineEntry.kind === 'user'
                                                                             ? formatUserChangeDiffValue(entry, entry.beforeValue)
                                                                             : formatAuditValue(entry.beforeValue)}
                                                                     </span>
                                                                 </div>
-                                                                <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                                                                    <span className="font-semibold">After: </span>
+                                                                <div className="min-w-0 rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
+                                                                    <span className="font-medium">After: </span>
                                                                     <span className="break-all">
                                                                         {timelineEntry.kind === 'user'
                                                                             ? formatUserChangeDiffValue(entry, entry.afterValue)
@@ -2029,7 +2053,7 @@ export const AdminAuditPage: React.FC = () => {
                                                         </article>
                                                     ))}
                                                     {hiddenDiffCount > 0 && (
-                                                        <p className="text-[11px] font-semibold text-muted-foreground">
+                                                        <p className="text-xs font-medium text-muted-foreground tabular-nums">
                                                             +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
                                                         </p>
                                                     )}
@@ -2038,16 +2062,18 @@ export const AdminAuditPage: React.FC = () => {
                                                 <p className="text-xs text-muted-foreground">No field diff recorded.</p>
                                             )}
                                             {canShowFullDiff && (
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    variant="outline"
+                                                    size="xs"
                                                     onClick={() => void openFullDiffModal(timelineEntry)}
-                                                    className="mt-2 inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                                                    className="mt-2"
                                                 >
                                                     Show complete diff
-                                                </button>
+                                                </Button>
                                             )}
                                             {timelineEntry.kind === 'admin' && log.action === 'admin.user.hard_delete' && ownedTripsBeforeDelete !== null && (
-                                                <p className="mt-2 text-[11px] font-semibold text-rose-700 dark:text-rose-200">
+                                                <p className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-200">
                                                     Trip impact: {ownedTripsBeforeDelete} owned trip{ownedTripsBeforeDelete === 1 ? '' : 's'} deleted with this account.
                                                 </p>
                                             )}
@@ -2055,27 +2081,31 @@ export const AdminAuditPage: React.FC = () => {
                                         )}
                                         {isColumnVisible('rowActions') && (
                                             <td className="px-3 py-2">
-                                                <div className="flex flex-col gap-2">
-                                                    <button
+                                                <div className="flex flex-col gap-1.5">
+                                                    <Button
                                                         type="button"
+                                                        variant="outline"
+                                                        size="xs"
                                                         onClick={() => void exportSingleReplayEntry(timelineEntry)}
                                                         disabled={isExportingReplay}
-                                                        className="inline-flex h-7 items-center justify-center rounded-md border border-border px-2 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                                                     >
                                                         Export row
-                                                    </button>
+                                                    </Button>
                                                     {canUndo ? (
-                                                        <button
+                                                        <Button
                                                             type="button"
+                                                            variant="outline"
+                                                            size="xs"
                                                             onClick={() => void undoTimelineEntry(timelineEntry)}
                                                             disabled={Boolean(revertingEntryKey)}
-                                                            className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
+                                                            aria-busy={isUndoing || undefined}
+                                                            className="border-amber-300 text-amber-800 hover:bg-amber-50 hover:text-amber-900 dark:border-amber-400/30 dark:text-amber-200 dark:hover:bg-amber-400/12 dark:hover:text-amber-100"
                                                         >
                                                             {isUndoing ? 'Undoing…' : getUndoActionLabel(timelineEntry)}
-                                                        </button>
+                                                        </Button>
                                                     ) : (
-                                                        <span className="inline-flex h-7 items-center justify-center rounded-md border border-border px-2 text-[11px] font-medium text-muted-foreground">
-                                                            Undo n/a
+                                                        <span className="inline-flex h-6 items-center justify-center text-xs text-muted-foreground">
+                                                            Undo not available
                                                         </span>
                                                     )}
                                                 </div>
@@ -2086,15 +2116,18 @@ export const AdminAuditPage: React.FC = () => {
                             })}
                             {visibleLogs.length === 0 && !isLoading && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-muted-foreground" colSpan={tableColumnCount}>
-                                        No audit entries found for the current filters.
+                                    <td className="p-4" colSpan={tableColumnCount}>
+                                        <AdminEmptyState
+                                            title="No audit entries found for the current filters."
+                                            description="Widen the time range or reset the filters to see more entries."
+                                        />
                                     </td>
                                 </tr>
                             )}
                             {isLoading && (
                                 <tr>
                                     <td className="px-3 py-6 text-sm text-muted-foreground" colSpan={tableColumnCount}>
-                                        <span className="inline-flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-2" role="status">
                                             <SpinnerGap size={14} className="animate-spin" />
                                             Loading change logs…
                                         </span>
@@ -2104,31 +2137,34 @@ export const AdminAuditPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
-                    <p>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <p className="tabular-nums">
                         Showing {visibleLogs.length === 0 ? 0 : offset + 1}-{Math.min(offset + AUDIT_PAGE_SIZE, visibleLogs.length)} of {visibleLogs.length}
                         {' '}matching entr{visibleLogs.length === 1 ? 'y' : 'ies'}
                     </p>
                     <div className="flex items-center gap-2">
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="sm"
                             onClick={() => setOffset((current) => Math.max(0, current - AUDIT_PAGE_SIZE))}
                             disabled={!hasPreviousPage}
-                            className="inline-flex h-8 items-center rounded-lg border border-border px-3 font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Previous 50
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="sm"
                             onClick={() => setOffset((current) => current + AUDIT_PAGE_SIZE)}
                             disabled={!hasNextPage}
-                            className="inline-flex h-8 items-center rounded-lg border border-border px-3 font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Next 50
-                        </button>
+                        </Button>
                     </div>
                 </div>
-            </section>
+            </AdminSurfaceCard>
+            </div>
 
             <AdminJsonDiffModal
                 isOpen={isDiffModalOpen}
@@ -2173,21 +2209,24 @@ export const AdminAuditPage: React.FC = () => {
                                 )}
                             </p>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4">
+                        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
                             {userDrawerError && (
-                                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                    {userDrawerError}
-                                </div>
+                                <Alert variant="warning">
+                                    <Warning weight="fill" />
+                                    <AlertDescription>
+                                        <p>{userDrawerError}</p>
+                                    </AlertDescription>
+                                </Alert>
                             )}
                             {isLoadingUserProfile ? (
-                                <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
+                                <div role="status" className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                     Loading user profile…
                                 </div>
                             ) : (
                                 <>
-                                    <section className="space-y-3 rounded-xl border border-border p-3">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Identity</h3>
-                                        <div className="space-y-1 text-sm text-foreground">
+                                    <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
+                                        <h3 className="text-sm font-semibold text-foreground">Identity</h3>
+                                        <div className="flex flex-col gap-1 text-sm text-foreground">
                                             <div><span className="font-semibold text-foreground">Name:</span> {userIdentity.name || 'n/a'}</div>
                                             <div><span className="font-semibold text-foreground">Email:</span> {userIdentity.email || 'No email'}</div>
                                             <div className="break-all">
@@ -2209,11 +2248,13 @@ export const AdminAuditPage: React.FC = () => {
                                         </div>
                                     </section>
 
-                                    <section className="mt-3 rounded-xl border border-border p-3">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Actions</h3>
+                                    <section className="rounded-lg border border-border p-3">
+                                        <h3 className="text-sm font-semibold text-foreground">Actions</h3>
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={() => void restoreUserFromAudit()}
                                                 disabled={
                                                     isRestoringUser
@@ -2221,20 +2262,21 @@ export const AdminAuditPage: React.FC = () => {
                                                     || !selectedUserLog?.target_id
                                                     || !selectedUserProfile
                                                 }
-                                                className="inline-flex h-8 items-center rounded-lg border border-emerald-300 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30"
+                                                aria-busy={isRestoringUser || undefined}
+                                                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-400/30 dark:text-emerald-200 dark:hover:bg-emerald-400/12 dark:hover:text-emerald-100"
                                             >
                                                 {isRestoringUser ? 'Restoring…' : 'Restore user'}
-                                            </button>
+                                            </Button>
                                         </div>
                                         {resolvedUserAccountStatus !== 'deleted' && (
-                                            <p className="mt-2 text-[11px] text-muted-foreground">Restore is available only for soft-deleted users.</p>
+                                            <p className="mt-2 text-xs text-muted-foreground">Restore is available only for soft-deleted users.</p>
                                         )}
                                     </section>
 
                                     {Object.keys(selectedUserSnapshot).length > 0 && (
-                                        <details className="mt-3 rounded-xl border border-border bg-card p-3 text-[11px] text-muted-foreground">
-                                            <summary className="cursor-pointer font-semibold text-foreground">Audit snapshot</summary>
-                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
+                                        <details className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
+                                            <summary className="cursor-pointer font-medium text-foreground">Audit snapshot</summary>
+                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 dark:bg-slate-950">
                                                 {JSON.stringify(selectedUserSnapshot, null, 2)}
                                             </pre>
                                         </details>
@@ -2272,21 +2314,24 @@ export const AdminAuditPage: React.FC = () => {
                                 )}
                             </p>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4">
+                        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
                             {tripDrawerError && (
-                                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                    {tripDrawerError}
-                                </div>
+                                <Alert variant="warning">
+                                    <Warning weight="fill" />
+                                    <AlertDescription>
+                                        <p>{tripDrawerError}</p>
+                                    </AlertDescription>
+                                </Alert>
                             )}
                             {isLoadingTripRecord ? (
-                                <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
+                                <div role="status" className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                     Loading trip details…
                                 </div>
                             ) : (
                                 <>
-                                    <section className="space-y-3 rounded-xl border border-border p-3">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Trip metadata</h3>
-                                        <div className="space-y-1 text-sm text-foreground">
+                                    <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
+                                        <h3 className="text-sm font-semibold text-foreground">Trip metadata</h3>
+                                        <div className="flex flex-col gap-1 text-sm text-foreground">
                                             <div className="break-all">
                                                 <span className="font-semibold text-foreground">Trip ID:</span>{' '}
                                                 <CopyableUuid value={tripIdentity.tripId} textClassName="break-all text-sm" />
@@ -2305,8 +2350,11 @@ export const AdminAuditPage: React.FC = () => {
                                             <div><span className="font-semibold text-foreground">Updated:</span> {tripIdentity.updatedAt ? formatAuditValue(tripIdentity.updatedAt) : 'n/a'}</div>
                                         </div>
                                         {tripIdentity.ownerId && (
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-fit"
                                                 onClick={() => {
                                                     if (!tripIdentity.ownerId) return;
                                                     openTargetDrawer({
@@ -2322,28 +2370,28 @@ export const AdminAuditPage: React.FC = () => {
                                                         created_at: selectedTripLog?.created_at || tripIdentity.createdAt || FALLBACK_AUDIT_TIMESTAMP,
                                                     });
                                                 }}
-                                                className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                                             >
-                                                Open owner drawer
-                                            </button>
+                                                Open owner details
+                                            </Button>
                                         )}
                                         {tripIdentity.tripId && (
-                                            <a
-                                                href={`/trip/${encodeURIComponent(tripIdentity.tripId)}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary"
-                                            >
-                                                Open trip
-                                                <ArrowSquareOut size={12} />
-                                            </a>
+                                            <Button asChild variant="outline" size="sm" className="w-fit">
+                                                <a
+                                                    href={`/trip/${encodeURIComponent(tripIdentity.tripId)}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    Open trip
+                                                    <ArrowSquareOut />
+                                                </a>
+                                            </Button>
                                         )}
                                     </section>
 
                                     {Object.keys(selectedTripSnapshot).length > 0 && (
-                                        <details className="mt-3 rounded-xl border border-border bg-card p-3 text-[11px] text-muted-foreground">
-                                            <summary className="cursor-pointer font-semibold text-foreground">Audit snapshot</summary>
-                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
+                                        <details className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
+                                            <summary className="cursor-pointer font-medium text-foreground">Audit snapshot</summary>
+                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 dark:bg-slate-950">
                                                 {JSON.stringify(selectedTripSnapshot, null, 2)}
                                             </pre>
                                         </details>
