@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, WarningCircle } from '@phosphor-icons/react';
-import { AdminBarChart, AdminBarList, AdminDonutChart } from '../components/admin/charts';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
+import { AdminBarList } from '../components/admin/charts/AdminBarList';
+import { AdminDonutChart } from '../components/admin/charts/AdminDonutChart';
 import { AdminMetric, AdminText, AdminTitle } from '../components/admin/AdminText';
 import { Link, useSearchParams } from '@/app/navigation';
 

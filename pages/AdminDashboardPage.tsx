@@ -15,7 +15,7 @@ import {
     filterDashboardUsersByRange,
     TRIP_STATUS_STACKED_CATEGORIES,
 } from '../components/admin/adminDashboardChartData';
-import { AdminBarChart } from '../components/admin/charts';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
 import { AdminMetric, AdminProgressBar, AdminText, AdminTitle } from '../components/admin/AdminText';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 

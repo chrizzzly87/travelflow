@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowClockwise, ArrowLeft } from '@phosphor-icons/react';
-import {
-    AdminAreaChart,
-    AdminBarChart,
-    AdminBarList,
-    type AdminChartTooltipProps,
-    AdminDonutChart,
-} from '../components/admin/charts';
+import { AdminAreaChart } from '../components/admin/charts/AdminAreaChart';
+import { AdminBarChart } from '../components/admin/charts/AdminBarChart';
+import { AdminBarList } from '../components/admin/charts/AdminBarList';
+import { AdminDonutChart } from '../components/admin/charts/AdminDonutChart';
+import type { AdminChartTooltipProps } from '../components/admin/charts/chartPrimitives';
 import { AdminMetric, AdminSubtitle, AdminText, AdminTitle } from '../components/admin/AdminText';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';

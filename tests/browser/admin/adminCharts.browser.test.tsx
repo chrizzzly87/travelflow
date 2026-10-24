@@ -3,13 +3,11 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-    AdminAreaChart,
-    AdminBarChart,
-    AdminBarList,
-    type AdminChartTooltipProps,
-    AdminDonutChart,
-} from '../../../components/admin/charts';
+import { AdminAreaChart } from '../../../components/admin/charts/AdminAreaChart';
+import { AdminBarChart } from '../../../components/admin/charts/AdminBarChart';
+import { AdminBarList } from '../../../components/admin/charts/AdminBarList';
+import { AdminDonutChart } from '../../../components/admin/charts/AdminDonutChart';
+import type { AdminChartTooltipProps } from '../../../components/admin/charts/chartPrimitives';
 
 // recharts' ResponsiveContainer measures its parent; jsdom has no layout, so give
 // every element a fixed box and deliver one resize observation per target.
