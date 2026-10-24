@@ -61,13 +61,18 @@ The reason: for a server call to work, the key must be unrestricted by referrer
 — and that same key sits in the client bundle, where anyone can lift it and
 spend the project's quota.
 
-**Recorded decision (2026-09-04):** the owner accepted that trade-off for Maps
-grounding. `GOOGLE_MAPS_GROUNDING_API_KEY` is used when set;
-`VITE_GOOGLE_MAPS_API_KEY` is the fallback, and the run logs which source it
-used. The mitigation lives in Google Cloud, not in this code: cap the key's
-daily quota and restrict it to the APIs it needs. Take the same route for any
-future case — state the exposure, get the decision, record it, and log which
-credential is in play.
+**Recorded decision (2026-09-04, reversed 2026-10-24):** Maps grounding first
+fell back to `VITE_GOOGLE_MAPS_API_KEY`. On 2026-10-24 the live bundle was found
+to carry that key, which was also the Gemini key (`VITE_GEMINI_API_KEY` was set
+to the same value), and it was abused. Grounding now needs
+`GOOGLE_MAPS_GROUNDING_API_KEY`; there is no browser-key fallback.
+
+Every server credential gets its own key, restricted in Google Cloud to the APIs
+it calls. `pnpm runtime-env:validate` blocks a build when `VITE_GEMINI_API_KEY`
+is set or a `VITE_*` value equals a server secret, and `pnpm bundle:secrets:check`
+fails the build when a server secret's value appears in `dist/`
+(`scripts/lib/clientSecretGuard.mjs`). Both only see the variables available to
+the build.
 
 ## 5. Budget every run against the platform's hard limit
 

@@ -129,7 +129,7 @@ pnpm ai:eval:security -- --filter-first-n 1
 Required for local runs:
 
 - `OPENAI_API_KEY`
-- `GEMINI_API_KEY` or `VITE_GEMINI_API_KEY`
+- `GEMINI_API_KEY`
 
 Optional:
 

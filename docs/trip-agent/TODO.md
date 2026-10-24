@@ -45,7 +45,7 @@ Preview: [deploy-preview-487--travelflowapp.netlify.app](https://deploy-preview-
 - [x] Drive the `@` and `/` menus from the prompt textarea so arrow keys, filter-as-you-type and Enter work under preact/compat.
 - [x] Render attached context as chips inside the input surface (block-start addon), not beside it.
 - [x] Close out streaming messages and runs left behind by a reload, and offer to ask again.
-- [x] Fall back to the existing Maps key when no dedicated grounding key is set.
+- [x] Fall back to the existing Maps key when no dedicated grounding key is set (reversed 2026-10-24: the browser key leaked).
 - [x] Preview a proposal in the planner itself (calendar, timeline, map), with editing paused while it shows.
 - [x] Group cascading day shifts under the change that caused them, so a shortened stop reads as one decision.
 - [x] Vendor a shadcn-shaped questionnaire (multi-pick and single-pick) instead of `@shadcn/react`, which needs React 19.
@@ -177,7 +177,7 @@ session rather than against the issue text.
 ## Production gates
 
 - [ ] Configure `AI_GATEWAY_API_KEY` on Netlify and validate approved model discovery/routing.
-- [x] Maps grounding runs on the existing `VITE_GOOGLE_MAPS_API_KEY`, which is already set on Netlify; no second key was wanted and none is needed. `GOOGLE_MAPS_GROUNDING_API_KEY` stays as an optional override. The mitigation is in Google Cloud: cap that key's daily quota and restrict it to the APIs it needs.
+- [ ] Set `GOOGLE_MAPS_GROUNDING_API_KEY` on Netlify (server-only key, restricted to the Maps grounding API, daily quota capped). The browser Maps key is no longer accepted (2026-10-24: the shared key leaked through the client bundle).
 - [ ] Add deterministic fake Gateway/MCP browser E2E coverage.
 - [ ] Verify authenticated transcript reload, cancellation, quota refund, and stale-proposal paths in the deployed environment (unauthenticated endpoint guard is verified).
 - [ ] Build the English-only admin transcript and prompt-management workspace.

@@ -76,10 +76,9 @@ must arrive as a single new proposal, not a second competing one.
 
 `trip-agent-maps-mcp.ts` opens an HTTP MCP client against
 `https://mapstools.googleapis.com/mcp`, authenticated with
-`GOOGLE_MAPS_GROUNDING_API_KEY` when set, otherwise the existing
-`VITE_GOOGLE_MAPS_API_KEY` (owner decision, 2026-09-04; the run logs which
-source it used). A shared browser key must be quota-capped and API-restricted in
-Google Cloud, because it is readable in the client bundle.
+`GOOGLE_MAPS_GROUNDING_API_KEY`, a server-only key. Without it the specialists
+report "unavailable". The browser Maps key is never used here: it is readable in
+the client bundle.
 
 That server exposes `search_places`, `compute_routes`, `resolve_names`,
 `resolve_maps_urls` and `lookup_weather`. Each specialist sees only its own
