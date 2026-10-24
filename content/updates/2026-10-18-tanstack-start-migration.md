@@ -46,6 +46,7 @@ summary: "Framework migration under development and validation on an isolated pr
 - [ ] [Internal] 🧱 Server-render a planner-shaped fallback for the client-only trip area; add a default authored route error boundary.
 - [ ] [Internal] 🧩 Add Button icon/loading, Badge tones and one shared auth credentials form; merge Select classes; move admin pills and busy buttons to shared components.
 - [ ] [Internal] 🎞️ Preserve current sharing-image/video behavior in the native document head and resolve preview media against its own deployment origin.
+- [ ] [Internal] 🧷 Clear the full-project TypeScript backlog and gate `tsc --noEmit` in PR Quality and ci:local, fixing the runtime defects it surfaced.
 - [ ] [Internal] 📊 Replace the React-18-only admin chart package with shared recharts components (accessible figures, keyboard tooltips, theme tokens) and drop its unused dependencies.
 
 - [ ] [Fixed] 🛠️ Fix cold admin route crashes caused by global syntax-highlighter initialization; retain JSON highlighting without global language registration.

@@ -103,11 +103,12 @@ Netlify operations and testing guides describe the native structure.
 
 The full-project TypeScript backlog (#556) predates this migration. The previous React 18 candidate had 473 diagnostics. The accepted React 19 runtime has 351 diagnostics and zero new normalized
 file/error-code diagnostics against that baseline, recorded on PR #579.
-The backlog is being cleared in parallel branches grouped by directory. The services/,
-netlify/, scripts/, e2e/, config/, lib/ and data/ branch fixed its 73 diagnostics (354 total
-before, 281 after on that branch). `pnpm typecheck` (`tsc --noEmit -p .`) is now a PR Quality
-step and a `ci:local` stage (`pnpm ci:local --only=typecheck`); it stays red until the remaining
-directory branches merge, and a successful Vite build still does not mean a clean typecheck.
+It is now cleared (#556): `pnpm typecheck` (`tsc --noEmit -p .`) reports zero errors on PR
+#591 and runs as a PR Quality step and a `ci:local` stage. Fixing the types surfaced and
+fixed real defects with regression tests (an undeclared storage-key constant in the admin
+shell, an undeclared title in prompt dialogs, a profile section crashing on updates
+without messages, a partial AI runtime settings draft, admin airport sync toasts that
+vanished mid-run, and two queued-generation payload casts).
 
 ## Follow-up, not a first-release requirement
 
@@ -120,10 +121,16 @@ hosted preview with an admin session: the dashboard, billing and AI telemetry ch
 with real data, pointer tooltips, resize behaviour and the visual match in light and
 dark mode.
 
-Native route-search ownership polish is [#586](https://github.com/chrizzzly87/travelflow/issues/586):
-profile-list search parameters currently survive on trip links without affecting
-trip loading or persistence. Keep explicit versions, shares and prefills intact
-when addressing this separately.
+Route-search ownership (#586) is fixed on PR #591: pages read search from their own
+route match and see the committed URL while a navigation is pending, so a page being
+left can no longer write its query onto the next one. Explicit versions, shares and
+prefills are unchanged; hover preloads now parse the real query.
+
+PR #591 hosted acceptance (deploy preview, commit `cf6e2dd5`): two consecutive full runs
+of the production browser suite passed **94/94** each on Chromium and WebKit. Netlify
+reports public documents stored in its durable CDN cache (`cache-status: "Netlify
+Durable"; stored`), session documents (`/profile`, `/s/…`) bypassing it, retired planner
+URLs answering 301 with their query string, and `/admin` staying a 307.
 
 Further optional TripView decomposition, unused-JavaScript investigation and more
 micro-optimizations stay under #561. Do not postpone a correct, verified first
