@@ -1,3 +1,5 @@
+export { ADMIN_SCREEN_TITLES } from '../shared/adminScreenTitles';
+import { ADMIN_SCREEN_TITLES } from '../shared/adminScreenTitles';
 import { stripLocalePrefix } from '../config/routes';
 
 export interface PageTitleLabels {
@@ -61,26 +63,6 @@ const humanizeSegment = (segment: string): string => {
         .replace(/\b\p{L}/gu, (char) => char.toUpperCase());
 };
 
-/** Admin screen names for the document title, by route. */
-export const ADMIN_SCREEN_TITLES: Record<string, string> = {
-    '/admin/dashboard': 'Overview',
-    '/admin/settings': 'Settings',
-    '/admin/users': 'Users',
-    '/admin/trips': 'Trips',
-    '/admin/tiers': 'Plans',
-    '/admin/billing': 'Billing',
-    '/admin/audit': 'Audit log',
-    '/admin/airports': 'Airports',
-    '/admin/destinations': 'Destinations',
-    '/admin/recommendations': 'Recommendations',
-    '/admin/legal': 'Legal terms',
-    '/admin/ai-benchmark': 'AI benchmark',
-    '/admin/ai-benchmark/telemetry': 'AI telemetry',
-    '/admin/ai-benchmark/worker-health': 'Worker health',
-    '/admin/og-tools': 'OG tools',
-    '/admin/design-system-playground': 'Design system',
-    '/admin/component-playground': 'Component playground',
-};
 
 export const resolvePageTitle = ({
     pathname,

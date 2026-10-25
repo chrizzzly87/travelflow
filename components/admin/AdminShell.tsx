@@ -313,10 +313,12 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             )}
         >
             {/* Desktop sidebar: pinned to the viewport with its own scroll area,
-                so long tables scroll the page without dragging the nav along. */}
+                so long tables scroll the page without dragging the nav along.
+                Sticky makes it a stacking context; z-30 keeps anything that opens
+                inside it (tooltips, a non-portaled popover) above the page. */}
             <aside
                 className={cn(
-                    'sticky top-0 hidden h-dvh shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:flex',
+                    'sticky top-0 z-30 hidden h-dvh shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:flex',
                     isSidebarCollapsed ? 'w-14' : 'w-60',
                 )}
                 aria-label="Admin navigation"

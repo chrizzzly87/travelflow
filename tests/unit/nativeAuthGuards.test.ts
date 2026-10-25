@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn() }));
 vi.mock('../../services/e2eAuthSandboxService', () => ({ shouldEnableE2EAuthSandbox: () => false, getE2EAuthSandboxSnapshot: vi.fn() }));
 vi.mock('../../services/authService', () => ({ getCurrentAccessContext: mocks.access }));
-import { requireRouteAccess } from '../../features/auth/routeAccess';
+import { requireRouteAccess, resolveDevAdminBypassAccess } from '../../features/auth/routeAccess';
 
 describe('native account route guards', () => {
-    beforeEach(() => mocks.access.mockReset());
+    // A local .env.local may turn the dev admin bypass on; these cases cover the real guard.
+    beforeEach(() => { mocks.access.mockReset(); vi.stubEnv('VITE_DEV_ADMIN_BYPASS', 'false'); });
     it('redirects signed-out visitors with a URL preserving the locale, repeated search and anchor', async () => {
         mocks.access.mockResolvedValue(null);
         const result = await requireRouteAccess('/de/profile?tag=one&tag=two#settings').catch(error => error);
@@ -22,5 +23,15 @@ describe('native account route guards', () => {
         const access = { userId: 'admin', isAnonymous: false, role: 'admin', accountStatus: 'active' };
         mocks.access.mockResolvedValue(access);
         expect(await requireRouteAccess('/admin/users', true)).toEqual({ access });
+    });
+    it('lets the local dev admin bypass into admin routes only, and only in dev builds', () => {
+        const on = { isDev: true, flag: 'true', disabled: false };
+        expect(resolveDevAdminBypassAccess('/admin/users', on)).toMatchObject({ userId: 'dev-admin-id', role: 'admin', accountStatus: 'active' });
+        expect(resolveDevAdminBypassAccess('/admin', on)).not.toBeNull();
+        expect(resolveDevAdminBypassAccess('/profile', on)).toBeNull();
+        expect(resolveDevAdminBypassAccess('/administrator', on)).toBeNull();
+        expect(resolveDevAdminBypassAccess('/admin/users', { ...on, isDev: false })).toBeNull();
+        expect(resolveDevAdminBypassAccess('/admin/users', { ...on, flag: undefined })).toBeNull();
+        expect(resolveDevAdminBypassAccess('/admin/users', { ...on, disabled: true })).toBeNull();
     });
 });

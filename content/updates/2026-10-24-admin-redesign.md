@@ -1,9 +1,9 @@
 ---
 id: rel-2026-10-24-admin-redesign
-version: v0.209.0
+version: v0.211.0
 title: "A rebuilt admin workspace"
-date: 2026-10-24
-published_at: 2026-10-24T18:00:00Z
+date: 2026-10-25
+published_at: 2026-10-25T18:00:00Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
@@ -20,7 +20,7 @@ summary: "Every admin screen was rethought around the job it does, in one modern
 - [ ] [Internal] 🛡️ Failed requests show an authored sentence instead of raw database or gateway text on every screen, permission, session and network failures get their own sentences, and the AI benchmark endpoint no longer returns raw database messages.
 - [ ] [Internal] 🪜 Fixed responsive layouts that silently stayed in their mobile arrangement: two Tailwind entry sheets shipped in one bundle in the wrong order. There is now a single entry, and the entry CSS shrank from about 493 KB to 357 KB.
 - [ ] [Internal] 🧷 Fixed data-safety bugs: Destinations no longer wipes a guide's override when the first guide is saved, Recommendations' "Publish now" keeps unsaved edits, Users no longer writes audit rows for unchanged trip expiry, deleted users no longer reopen from a stale link, Trips' select-all no longer reaches rows on other pages, and Plans asks before reapplying limits to existing customers.
-- [ ] [Internal] 🔁 Ported the redesign onto TanStack Start and React 19, and fixed two regressions the move exposed: an endless URL rewrite loop on Airports when the tester opened, and links marked as the current page on their child routes.
+- [ ] [Internal] 🔁 Ported the redesign onto TanStack Start and React 19, and fixed the regressions the move exposed: an endless URL rewrite loop on Airports when the tester opened, links marked as the current page on their child routes, every admin tab titled "Admin Dashboard", and the local dev admin bypass being sent to login. The sidebar account menu can no longer open underneath the page.
 - [ ] [Internal] 🐛 Fixed a batch of smaller bugs: unreadable alerts in dark mode, see-through frozen table columns, keyboard-inaccessible filter menus, errors hidden behind open sheets, the Audit action filter hiding newer actions, a stale-response race on Recommendations, and a shell crash on cross-tab storage events.
 - [ ] [Internal] ✨ Motion follows one set of rules: no animation on keyboard actions, short ease-out entrances, press feedback on buttons, reduced motion respected.
 - [ ] [Internal] 📚 Updated the admin docs (screen guide, design contract, component catalogue, analytics events, runbooks) and added tests for the shell, the shared admin components and every reworked screen.
