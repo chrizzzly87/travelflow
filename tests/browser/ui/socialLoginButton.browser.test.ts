@@ -38,8 +38,8 @@ describe('components/auth/SocialLoginButton', () => {
     expect(button).toHaveTextContent('Last used');
   });
 
-  it('lists Kakao first for Korean only', () => {
-    expect(getOAuthButtons('ko').map((item) => item.provider)).toEqual(['kakao', 'google', 'facebook']);
+  it('offers no Kakao sign-in while it is switched off (#585)', () => {
+    expect(getOAuthButtons('ko').map((item) => item.provider)).toEqual(['google', 'facebook']);
     expect(getOAuthButtons('en').map((item) => item.provider)).toEqual(['google', 'facebook']);
   });
 
