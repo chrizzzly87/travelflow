@@ -66,7 +66,7 @@ Potential data source:
 ## Rollout checklist
 1. [x] Add role claims and secure route guard.
 2. [ ] Add backend aggregation endpoints/views (the Overview still aggregates up to 500 users and trips client-side).
-3. [x] Build charts + tables (shadcn charts on Recharts, `components/admin/AdminBarChart.tsx`).
+3. [x] Build charts + tables (shared admin charts on Recharts, `components/admin/charts/`).
 4. [ ] Add alerting for quota/cost thresholds.
 5. [ ] Validate with synthetic load and production-like traffic.
 6. [ ] Active users (DAU/WAU/MAU) and sharing usage — needs session/event aggregation first.

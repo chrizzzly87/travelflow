@@ -3,7 +3,8 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from '@/tests/helpers/routerHarness';
+import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
+import { renderWithRouter } from '@/tests/helpers/renderWithRouter';
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ access: { userId: 'admin-1', email: 'admin@example.com' }, isAdmin: true }),
@@ -44,15 +45,11 @@ const LocationProbe: React.FC = () => {
   return h('output', { 'data-testid': 'location' }, location.pathname);
 };
 
-const renderShell = (path: string, props: Partial<React.ComponentProps<typeof AdminShell>> = {}) => render(
+const renderShell = (path: string, props: Partial<React.ComponentProps<typeof AdminShell>> = {}) => renderWithRouter(
   h(MemoryRouter, { initialEntries: [path] },
-    h(Routes, null,
-      h(Route, {
-        path: '*',
-        element: h(React.Fragment, null,
-          h(AdminShell, { title: 'Page title', description: 'Page purpose.', ...props, children: h('p', null, 'Page body') }),
-          h(LocationProbe)),
-      }))),
+    h(React.Fragment, null,
+      h(AdminShell, { title: 'Page title', description: 'Page purpose.', ...props, children: h('p', null, 'Page body') }),
+      h(LocationProbe))),
 );
 
 describe('AdminShell', () => {
@@ -61,8 +58,8 @@ describe('AdminShell', () => {
     window.sessionStorage.clear();
   });
 
-  it('renders the page header and a breadcrumb for the active section', () => {
-    renderShell('/admin/ai-benchmark/telemetry');
+  it('renders the page header and a breadcrumb for the active section', async () => {
+    await renderShell('/admin/ai-benchmark/telemetry');
 
     expect(screen.getByRole('heading', { level: 1, name: 'Page title' })).toBeTruthy();
     expect(screen.getByText('Page purpose.')).toBeTruthy();
@@ -71,8 +68,8 @@ describe('AdminShell', () => {
     expect(within(breadcrumb).getByText('AI telemetry').getAttribute('aria-current')).toBe('page');
   });
 
-  it('marks only the longest matching nav item as current', () => {
-    renderShell('/admin/ai-benchmark/telemetry');
+  it('marks only the longest matching nav item as current', async () => {
+    await renderShell('/admin/ai-benchmark/telemetry');
 
     const nav = screen.getAllByRole('navigation', { name: 'Admin sections' })[0];
     const current = within(nav).getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page');
@@ -81,7 +78,7 @@ describe('AdminShell', () => {
 
   it('opens the command palette with ⌘K and navigates to the chosen screen', async () => {
     const user = userEvent.setup();
-    renderShell('/admin/dashboard');
+    await renderShell('/admin/dashboard');
 
     await user.keyboard('{Meta>}k{/Meta}');
     const palette = await screen.findByRole('dialog');
@@ -94,7 +91,7 @@ describe('AdminShell', () => {
 
   it('collapses the sidebar to an icon rail and remembers it', async () => {
     const user = userEvent.setup();
-    renderShell('/admin/dashboard');
+    await renderShell('/admin/dashboard');
 
     await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
 
@@ -105,7 +102,7 @@ describe('AdminShell', () => {
 
   it('opens the mobile navigation as a dialog and closes it on navigation', async () => {
     const user = userEvent.setup();
-    renderShell('/admin/dashboard');
+    await renderShell('/admin/dashboard');
 
     await user.click(screen.getByRole('button', { name: 'Open navigation' }));
     const sheet = await screen.findByRole('dialog', { name: 'Admin navigation' });
@@ -118,14 +115,14 @@ describe('AdminShell', () => {
   it('wires the page search and hides filters a page opts out of', async () => {
     const user = userEvent.setup();
     const onSearchValueChange = vi.fn();
-    const { unmount } = renderShell('/admin/users', { searchValue: '', onSearchValueChange });
+    const { unmount } = await renderShell('/admin/users', { searchValue: '', onSearchValueChange });
 
     await user.type(screen.getByRole('searchbox', { name: 'Search' }), 'a');
     expect(onSearchValueChange).toHaveBeenCalledWith('a');
     expect(screen.getByRole('combobox', { name: 'Date range' })).toBeTruthy();
     unmount();
 
-    renderShell('/admin/settings', { showGlobalSearch: false, showDateRange: false });
+    await renderShell('/admin/settings', { showGlobalSearch: false, showDateRange: false });
     expect(screen.queryByRole('searchbox', { name: 'Search' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Date range' })).toBeNull();
   });

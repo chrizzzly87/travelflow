@@ -83,7 +83,7 @@ describe('pages/AdminAiTelemetryPage', () => {
   it('renders four KPIs, the trend chart, leaders and failure codes', async () => {
     renderPage();
 
-    expect(screen.getByRole('heading', { name: 'AI telemetry' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'AI telemetry' })).toBeInTheDocument();
     expect(await screen.findByText('93.3%')).toBeInTheDocument();
     expect(screen.getByText('2 failed; see failure codes')).toBeInTheDocument();
     // The failure-rate tile restated the success rate and is gone.
@@ -91,10 +91,10 @@ describe('pages/AdminAiTelemetryPage', () => {
     expect(screen.getByRole('button', { name: /Fastest.*gpt-test.*1\.20 s/ })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Recent failures by error code' })).toHaveTextContent('TIMEOUT');
 
-    const callTrend = screen.getByRole('img', { name: /successful and failed calls/i });
+    const callTrend = screen.getByRole('figure', { name: /successful and failed calls/i });
     expect(callTrend.querySelectorAll('.recharts-bar-rectangle').length).toBeGreaterThan(0);
     // An empty month still renders one zero bar per elapsed day.
-    expect(screen.getByRole('img', { name: 'Bar chart of API cost per day this month' })).toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: 'Bar chart of API cost per day this month' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Worker health' })).toHaveAttribute('href', '/admin/ai-benchmark/worker-health');
   });
 

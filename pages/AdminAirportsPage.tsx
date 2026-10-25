@@ -1217,8 +1217,20 @@ export const AdminAirportsPage: React.FC = () => {
         }
     }, [page, safePage]);
 
+    // The query this page last wrote. Router navigation is asynchronous, so the
+    // URL → state effect must not mistake our own write landing (or an older URL
+    // still showing while it is in flight) for an outside navigation: doing so
+    // re-applied stale values and the two effects rewrote the URL forever.
+    const lastWrittenSearchRef = useRef<string | null>(null);
+
     // URL → state, for back/forward and pasted links.
     useEffect(() => {
+        const currentSearch = searchParams.toString();
+        if (lastWrittenSearchRef.current !== null) {
+            const isOwnWrite = currentSearch === lastWrittenSearchRef.current;
+            lastWrittenSearchRef.current = null;
+            if (isOwnWrite) return;
+        }
         const nextSearchValue = searchParams.get('q') || '';
         const nextCountryFilter = normalizeProfileCountryCode(searchParams.get('country'));
         const nextServiceTierFilter = parseAirportTableTierFilter(searchParams.get('catalogTier'));
@@ -1318,7 +1330,9 @@ export const AdminAirportsPage: React.FC = () => {
         if (editorOpen && editorMode === 'edit' && selectedAirportIdent) next.set('airport', selectedAirportIdent);
         else if (pendingAirportParamRef.current) next.set('airport', pendingAirportParamRef.current);
 
-        if (next.toString() === searchParams.toString()) return;
+        const nextSearch = next.toString();
+        if (nextSearch === searchParams.toString() || nextSearch === lastWrittenSearchRef.current) return;
+        lastWrittenSearchRef.current = nextSearch;
         setSearchParams(next, { replace: true });
     }, [
         activeTab,

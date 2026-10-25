@@ -150,8 +150,8 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
     }
     expect(screen.getByText('No trips in this range')).toBeTruthy();
     expect(screen.getByText('The trip list did not load. Reload to try again.')).toBeTruthy();
-    expect(screen.getByRole('img', { name: 'Sample stacked bar chart of daily new and returning users' })).toBeTruthy();
-    expect(screen.getByRole('img', { name: 'Sample vertical bar chart of trips per country' })).toBeTruthy();
+    expect(screen.getByRole('figure', { name: 'Sample stacked bar chart of daily new and returning users' })).toBeTruthy();
+    expect(screen.getByRole('figure', { name: 'Sample area chart of new users per day' })).toBeTruthy();
   }, 25000);
 
   it('demos the detail sheet, selection bar, pagination and bar list', async () => {

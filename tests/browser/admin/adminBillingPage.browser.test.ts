@@ -185,7 +185,7 @@ describe('pages/AdminBillingPage', () => {
 
     expect(screen.getByText('Current MRR by tier')).toBeInTheDocument();
     expect(screen.getByText('At-risk revenue')).toBeInTheDocument();
-    const mrrChart = screen.getByRole('img', { name: /monthly recurring revenue by tier/i });
+    const mrrChart = screen.getByRole('figure', { name: /monthly recurring revenue by tier/i });
     expect(mrrChart.querySelectorAll('.recharts-bar-rectangle').length).toBeGreaterThan(0);
     expect(screen.getByRole('list', { name: 'At-risk revenue by status' })).toHaveTextContent('Past due · USD');
     expect(screen.getByRole('list', { name: 'Paid subscriptions by plan tier' })).toHaveTextContent('Explorer');

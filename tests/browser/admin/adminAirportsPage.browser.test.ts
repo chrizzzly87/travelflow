@@ -372,7 +372,8 @@ describe('AdminAirportsPage', () => {
     // expiring after the default few seconds mid-sync.
     expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Syncing airports',
-      duration: Infinity,
+      // The loading tone stays up until the result toast replaces it (appToast: loading => Infinity).
+      tone: 'loading',
     }));
     expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
       id: 'toast-id',

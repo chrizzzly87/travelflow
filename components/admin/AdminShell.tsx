@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation } from '@/app/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
@@ -166,6 +166,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getStoredSidebarCollapseState());
     const [mobileNavPath, setMobileNavPath] = useState<string | null>(null);
     const [isCommandOpen, setIsCommandOpen] = useState(false);
+    const mobileNavCloseRef = useRef<HTMLButtonElement>(null);
+    const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
     const [isSimulatedDebugLoginActive, setIsSimulatedDebugLoginActive] = useState<boolean>(() => isSimulatedLoggedIn());
     const [isDevAdminBypassActive, setIsDevAdminBypassActive] = useState(false);
 
@@ -341,6 +343,18 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 <DialogPrimitive.Portal>
                     <DialogPrimitive.Overlay className="fixed inset-0 z-[1700] bg-black/45 backdrop-blur-[1.5px] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 lg:hidden" />
                     <DialogPrimitive.Content
+                        aria-modal="true"
+                        // Focus the close control, not the brand link that comes first,
+                        // so Escape/Enter has an obvious target on open.
+                        onOpenAutoFocus={(event) => {
+                            event.preventDefault();
+                            mobileNavCloseRef.current?.focus();
+                        }}
+                        // The menu button is not a Radix trigger, so return focus to it by hand.
+                        onCloseAutoFocus={(event) => {
+                            event.preventDefault();
+                            mobileNavTriggerRef.current?.focus();
+                        }}
                         className="fixed inset-y-0 start-0 z-[1701] flex w-[min(18rem,85vw)] flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left lg:hidden"
                     >
                         <DialogPrimitive.Title className="sr-only">Admin navigation</DialogPrimitive.Title>
@@ -348,7 +362,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         <div className="flex items-center justify-between gap-2 px-3 pt-3">
                             {brandLink(false)}
                             <DialogPrimitive.Close asChild>
-                                <Button variant="ghost" size="icon-sm" aria-label="Close navigation">
+                                <Button ref={mobileNavCloseRef} variant="ghost" size="icon-sm" aria-label="Close navigation">
                                     <X />
                                 </Button>
                             </DialogPrimitive.Close>
@@ -371,6 +385,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             <div className="flex min-w-0 flex-1 flex-col">
                 <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:px-6">
                     <Button
+                        ref={mobileNavTriggerRef}
                         variant="ghost"
                         size="icon-sm"
                         className="lg:hidden"
