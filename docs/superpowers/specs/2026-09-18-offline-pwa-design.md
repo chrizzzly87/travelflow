@@ -1,5 +1,9 @@
 # Offline trips and installable PWA (iOS)
 
+> **Historical design spec (2026-09).** Shipped; written against the former Preact
+> build and `scripts/prerender-routes.mjs`, which no longer exist. Current offline
+> behaviour and build steps: [`docs/PWA_OFFLINE.md`](../../PWA_OFFLINE.md).
+
 - Status: draft, awaiting review
 - Date: 2026-09-18
 - Branch: `claude/offline-trips-pwa-iphone-a80416`

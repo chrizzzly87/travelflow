@@ -1,6 +1,6 @@
 # AI Backend Target Architecture (Provider-Agnostic + Benchmark Workspace)
 
-Status: Draft for implementation planning  
+Status: Historical draft (2026-02). The `services/ai/*` layout it describes was not built as written; check the code before relying on it.  
 Owner: TravelFlow engineering  
 Last updated: 2026-02-11
 

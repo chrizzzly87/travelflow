@@ -11,7 +11,7 @@ This project includes a global debug toolbar for developer-only QA flows.
 
 ## Source of truth
 - Component: `components/OnPageDebugger.tsx`
-- App mount: `App.tsx` (rendered globally)
+- App mount: `app/shell/ApplicationShell.tsx` (rendered globally)
 - Analytics debug attrs: `services/analyticsService.ts`
 - Trip-only expired toggle hook: `components/TripView.tsx`
 

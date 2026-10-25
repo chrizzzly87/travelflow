@@ -1,5 +1,9 @@
 # First TanStack Start release
 
+> **Historical record.** This checklist gated the first native Start release, which
+> shipped to production as v0.209.0 (2026-10-24). It is kept as acceptance evidence;
+> current guidance is in [TANSTACK_START_ARCHITECTURE.md](TANSTACK_START_ARCHITECTURE.md).
+
 Status: the first native Start candidate is being finalized on
 `codex/tanstack-start-release-hardening`, [PR #579](https://github.com/chrizzzly87/travelflow/pull/579).
 Complete release review: [PR #574](https://github.com/chrizzzly87/travelflow/pull/574),

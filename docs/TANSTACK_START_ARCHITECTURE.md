@@ -1,9 +1,9 @@
 # TanStack Start architecture and contribution guide
 
-This is the architecture of the TanStack migration branch. It does not claim that the
-migration has reached production. Track acceptance, preview and benchmark evidence in
-[the migration plan](architecture/TANSTACK_START_MIGRATION.md) and GitHub issue #559.
-The earlier Preact reports describe historical releases.
+The production architecture since v0.209.0 (2026-10-24). Preact/preact-compat,
+react-router, the descriptor route table and the old prerender scripts are gone;
+`App.tsx` is only a re-export of `app/shell/ApplicationShell.tsx`. Migration history
+and evidence: [architecture/TANSTACK_START_MIGRATION.md](architecture/TANSTACK_START_MIGRATION.md).
 
 ## Runtime and compatibility
 
@@ -245,9 +245,7 @@ offline fallback, not a blanket replacement for server routes.
 A foundation is not complete because it compiles. Require production browser checks
 for first interaction, localized/deep links, auth return, create trip, trip/share/example
 lifecycle, admin access, offline recovery, and before/after performance using the same
-method. Keep results and limitations attached to the exact revision. Merge migration
-work into its integration branch until the preview and acceptance evidence support a
-separate production rollout.
+method. Keep results and limitations attached to the exact revision.
 
 ## Framework references
 
@@ -335,7 +333,7 @@ are treated as unavailable rather than throwing through initialization.
 
 - [TanStack Start authentication](https://tanstack.com/start/latest/docs/framework/react/guide/authentication): route guards improve navigation; each private data/API boundary must still authorize the request.
 - [React external-store contract](https://react.dev/reference/react/useSyncExternalStore): browser preference stores need cached snapshots and a deterministic server snapshot. The pre-paint theme/consent scripts handle browser-only presentation without changing initial React markup.
-- [Supabase server-side auth guidance](https://supabase.com/docs/guides/auth/server-side/advanced-guide): verified identity and correct cache boundaries matter. This migration retains the existing Supabase authentication provider and backend permission model; it does not introduce a parallel custom session system.
+- [Supabase server-side auth guidance](https://supabase.com/docs/guides/auth/server-side/advanced-guide): verified identity and correct cache boundaries matter. The app retains the existing Supabase authentication provider and backend permission model; it does not introduce a parallel custom session system.
 
 Public prerenders are visitor-independent. A stable Account entry is deliberate:
 member identity and capabilities appear only after verification, without pretending

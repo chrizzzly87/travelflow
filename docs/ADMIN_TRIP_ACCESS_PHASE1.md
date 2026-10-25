@@ -23,8 +23,8 @@
 - `services/dbService.ts`
   - `dbGetTrip(...)` now attempts admin fallback only when owner-scoped fetch returns no row and returns access metadata.
   - Added `dbAdminOverrideTripCommit(...)` wrapper.
-- `App.tsx`
-  - Trip loader now passes admin access context into trip view and routes admin override commits through the new RPC.
+- `features/trips/useTripPersistence.ts` (originally `App.tsx`)
+  - Passes admin access context into trip view and routes admin override commits through the new RPC.
 - `components/TripView.tsx`
   - Added admin fallback banner, explicit override switch, and owner deep-link CTA.
 - `pages/AdminUsersPage.tsx`

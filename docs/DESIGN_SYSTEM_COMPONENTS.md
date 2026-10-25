@@ -16,10 +16,11 @@ release.
 
 ## Rules that apply to everything in `components/ui/`
 
-1. **The app renders through `preact/compat`.** A plain function component never receives
-   `ref`. Anything used with Radix `asChild`, or focused/measured by a library, must be a real
-   `forwardRef`. Symptoms of getting this wrong: `getBoundingClientRect is not a function`,
-   `focus is not a function`, a popover anchored at the page origin.
+1. **Forward refs where a library needs the element.** The app runs on React 19. Anything used
+   with Radix `asChild`, or focused/measured by a library, must hand its DOM node to the ref;
+   the existing primitives do this with `forwardRef`, so keep that pattern. Symptoms of a lost
+   ref: `getBoundingClientRect is not a function`, `focus is not a function`, a popover anchored
+   at the page origin.
 2. **Icons follow the surface.** Admin and product chrome use `@phosphor-icons/react`
    (`CaretDown`, `CaretUpDown`, `Check`, `MagnifyingGlass`). Do not introduce a second icon
    family into a component that already uses one — two chevron shapes on one panel is the
@@ -36,12 +37,11 @@ release.
    for panels, 36–40px control height. Avoid `rounded-2xl` on internal tooling.
 6. **Use logical properties** (`ps-*`, `pe-*`, `ms-*`, `me-*`, and `start-*`/`end-*` for
    insets) wherever direction may change.
-7. **Tooltips are `data-tooltip`, not Radix Tooltip.** Radix `Tooltip` never opens under
-   `preact/compat`: the trigger's `data-state` stays `closed` on hover and focus even though its
-   listeners are attached. It works under the real React that Vitest runs, so a unit test cannot
-   catch it. `components/ui/tooltip.tsx` was removed for that reason; do not re-add it with
-   `shadcn add tooltip` (upstream is the same Radix wrapper). Put `data-tooltip="…"` on the
-   element instead: `components/GlobalTooltipLayer.tsx` (mounted once in `App.tsx`) shows it on
+7. **Tooltips are `data-tooltip`, not Radix Tooltip.** `components/ui/tooltip.tsx` was removed
+   (Radix Tooltip never opened under the former Preact runtime) and the app standardised on one
+   global layer; do not re-add it with `shadcn add tooltip`. Put `data-tooltip="…"` on the
+   element instead: `components/GlobalTooltipLayer.tsx` (mounted once in
+   `app/shell/ApplicationShell.tsx`) shows it on
    hover and keyboard focus, above everything. It also picks up a button's `aria-label` or
    `title`; opt out with `data-no-global-tooltip="true"`. Content is plain text and the layer
    picks its own side. `test/components/aiElementsTooltips.test.tsx` fails if Radix Tooltip is
@@ -66,8 +66,8 @@ this file exists to prevent.
 | `SettingsPanel` + `SettingsSection` | The groups read as one continuous form and dividers suit them better than separate cards. |
 
 `SettingsCard` carries the shadcn card treatment on a real `<section>` rather than nesting
-`<Card>`: `Card` is a plain function component, and under `preact/compat` it would never
-receive `ref` (rule 1). Same tokens, semantic element, working ref.
+`<Card>`: `Card` is a plain function component without ref forwarding (rule 1). Same tokens,
+semantic element, working ref.
 
 ### `SettingsGroup`
 
@@ -215,8 +215,7 @@ Flex has no positioning context to get wrong: the icon is a sibling of the input
 on any ancestor moves both together.
 
 `InputGroupInput`, `InputGroupTextarea` and `Textarea` were plain function components and were
-converted to `forwardRef` so this composes cleanly — under `preact/compat` they would otherwise
-have dropped the ref silently (rule 1).
+converted to `forwardRef` so this composes cleanly (rule 1).
 
 ---
 
@@ -287,8 +286,8 @@ The steppers write through `HTMLInputElement.prototype`'s value setter before di
 `input`. React patches the *instance* setter to track the last value it rendered; a direct
 `node.value = …` updates that tracker too, so the event that follows looks like a no-op and
 `onChange` never runs. Going via the prototype leaves the tracker stale, which is what makes
-the edit register. Do not "simplify" this back to a direct assignment — it works in the app
-(preact) and silently fails under React in tests.
+the edit register. Do not "simplify" this back to a direct assignment — under React it
+silently drops the edit.
 
 `steppers` is off by default so existing call sites are unchanged.
 

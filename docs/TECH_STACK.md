@@ -1,25 +1,24 @@
 # Tech stack
 
-Updated for the TanStack Start integration branch, 2026-10-18. This describes branch
-architecture, not a claim of production rollout or completed migration acceptance.
-See [architecture](TANSTACK_START_ARCHITECTURE.md) and
-[the migration plan](architecture/TANSTACK_START_MIGRATION.md).
+Current production stack (native TanStack Start since v0.209.0, 2026-10-24). See
+[architecture](TANSTACK_START_ARCHITECTURE.md) and
+[Netlify deployment](NETLIFY_TANSTACK_START.md). Exact versions live in `package.json`.
 
 ## Runtime and build
 
 | Area | Choice | Ownership |
 | --- | --- | --- |
-| Framework | TanStack Start + React/React DOM 18.3.1 + TypeScript | Native document rendering and hydration; no production Preact aliases |
+| Framework | TanStack Start + React/React DOM 19.3.1 + TypeScript | Native document rendering and hydration (`StartClient`) |
 | Routing | TanStack Router with virtual file routes | `src/virtualRoutes.ts`, native area/leaf modules and generated route tree |
 | Build | Vite 8, React plugin, Start plugin, Netlify Start adapter | Exact versions in `package.json` and frozen `pnpm-lock.yaml` |
 | Styling | Tailwind CSS 4, CSS variable tokens | Shared primitives in `components/ui`, product/admin design contracts |
 | Locale | i18next + react-i18next | Request-isolated SSR instances, browser instance, lazy JSON namespaces |
-| Tooling | Node 22 + pnpm 10.18.1 | `.node-version`, `netlify.toml`, `packageManager` |
+| Tooling | Node 22 + pnpm 10.18.1 | `.node-version`, `netlify.toml`, `packageManager`; newer Node majors break some tests |
+| Admin charts | recharts 3 | Shared wrappers in `components/admin/charts` |
 
-React 18 is intentional for the existing component ecosystem. React 19 ref-as-prop
-examples are not drop-in APIs here. Preserve `forwardRef` for library-focused,
-measured and Radix `asChild` components. Preact performance reports remain historical
-evidence, not current implementation instructions.
+Keep the existing `forwardRef` pattern for library-focused, measured and Radix
+`asChild` components. Preact, react-router and the old prerender scripts are gone;
+older reports that mention them are historical evidence, not instructions.
 
 ## Structure and state
 
@@ -60,7 +59,8 @@ Supabase credentials must never enter client bundles or serialized route data.
   behavior. `tests/helpers/routerHarness.tsx` supplies real native router contexts.
 - Playwright production and offline suites exercise the built application. Require
   hosted preview evidence for server/edge behavior and first-load interaction.
-- `pnpm test:core` runs coverage; `pnpm ci:local` mirrors PR Quality stages.
+- `pnpm test:core` runs coverage; `pnpm typecheck` is a CI gate (zero errors);
+  `pnpm ci:local` mirrors PR Quality stages.
 - Content, i18n, storage, API configuration and release validators supplement behavior
   tests. They do not replace them.
 - Netlify publishes `dist/client`; the Start adapter deploys server rendering from
@@ -71,11 +71,5 @@ Supabase credentials must never enter client bundles or serialized route data.
 
 ## Release and next work
 
-Keep one draft release note for the migration until acceptance and production rollout.
-A feature/integration merge is not a published release. Production metadata must
-follow `UPDATE_FORMAT.md`.
-
-Priorities are native-route correctness, stable auth/session boundaries, isolated
-planner/admin loading, reliable landing-page interaction, and measured transfer and
-startup cost. Future Query adoption, wider prerendering or cache policies need their
-own measured rationale and regression tests.
+Release notes follow `UPDATE_FORMAT.md`. Future TanStack Query adoption, wider
+prerendering or cache policies need their own measured rationale and regression tests.

@@ -2,7 +2,7 @@
 
 Trip OG images still use the existing edge renderer. Video adds a small, silent map animation; clients which do not play Open Graph videos continue to use the image. No Twitter Player Card or platform autoplay is promised.
 
-On the native TanStack Start migration branch, the root route emits image/video
+The native TanStack Start root route emits image/video
 metadata through `head`, using the shared structured `tripVideoMetadata` contract.
 Its public share-summary server function uses the current native request origin,
 so feature previews query their own isolated media store. The legacy edge HTML

@@ -1,15 +1,15 @@
 # TanStack Start on Netlify
 
-Applies to the migration branch; production promotion remains a separate acceptance
-step. See [the migration plan](architecture/TANSTACK_START_MIGRATION.md).
+How the production TanStack Start build deploys to Netlify. The completed migration
+history is in [architecture/TANSTACK_START_MIGRATION.md](architecture/TANSTACK_START_MIGRATION.md).
 
 ## Project identity
 
 Before any deploy, verify the current repository remote and its linked Netlify site.
 TravelFlow's expected repository is `chrizzzly87/travelflow`, site `travelflowapp`,
 site ID `1abc3d37-f6af-4810-9097-489b2a282ac6`. Do not reuse another repository's
-project linkage. Prefer a PR/deploy preview for migration review. Do not deploy the
-feature branch directly to production.
+project linkage. Review changes on a PR deploy preview. Do not deploy a feature
+branch directly to production.
 
 ## Build ownership
 

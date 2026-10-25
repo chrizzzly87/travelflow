@@ -1,5 +1,10 @@
 # Initial JS Bundle Size Optimization Guide
 
+> **Historical (2026-05).** Measurements and techniques from the former Preact build
+> (`index.tsx`, `DeferredAppRoutes.tsx`, Preact aliases) that no longer exists. Current
+> bundle work is tracked in `docs/performance/` and issue #561; current architecture is in
+> [`TANSTACK_START_ARCHITECTURE.md`](TANSTACK_START_ARCHITECTURE.md).
+
 This document analyzes options and strategies for reducing TravelFlow's initial JavaScript bundle size. Before the Preact migration, the main entry bundle (`dist/assets/index-*.js`) was **~772 KB raw / ~230 KB gzip**, and the total JS footprint included larger packages like `mapbox-gl` (1.69 MB).
 
 ## 2026-05-29 Preact compat migration results

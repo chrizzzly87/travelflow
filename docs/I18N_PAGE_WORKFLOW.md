@@ -51,8 +51,8 @@ render literally to the user:
 - Wrong: `{count, number}`, `{date, date, short}`, `{gender, select, ...}`.
 
 `i18next-icu` appears in `package.json` but is never wired into `i18n.ts` — it was
-dropped from the runtime deliberately for bundle cost (see
-`docs/PERFORMANCE_EXECUTION_TODO.md`). Do not infer ICU support from the dependency list.
+dropped from the runtime deliberately for bundle cost. Do not infer ICU support from
+the dependency list.
 
 ### Pluralization
 
@@ -138,11 +138,11 @@ When adding a new key:
 5. Use native `head` metadata and the shared metadata resolver. Do not add HTML edge
    middleware that rewrites Start's output after rendering.
 6. Verify sitemap generation includes the new canonical and localized URLs and excludes
-   utility/noindex routes. During migration, the sitemap consumer must be kept aligned
-   with the native graph; the retired App route array is not a source of truth.
-7. If prerendering is justified, add an explicit page to the Start configuration in
-   `vite.config.ts`. Otherwise the public route renders on demand. No Playwright
-   HTML-capture registry or manual global prefetch entry is required.
+   utility/noindex routes (`scripts/generate-sitemap.ts`). Keep it aligned with the
+   native route graph.
+7. If prerendering is justified, add the path to the allowlist in
+   `app/routing/publicPrerender.ts` (consumed by `vite.config.ts`). Otherwise the public
+   route renders on demand. There is no HTML-capture registry or global prefetch entry.
 8. Use canonical route helpers/native Links for navigation. Test direct load, client
    navigation, locale switching and RTL output. Check first interaction against a
    production build, not just development.

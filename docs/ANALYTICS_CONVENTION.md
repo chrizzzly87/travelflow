@@ -65,10 +65,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `navigation__{target}` | target = `brand`, `features`, `inspirations`, `updates`, `blog`, `pricing`, `login`, `logout`, `admin`, `create_trip`, `my_trips` | — | `SiteHeader.tsx` |
 | `mobile_nav__menu--open` | — | — | `MobileMenu.tsx` |
 | `mobile_nav__{target}` | same targets as above | — | `MobileMenu.tsx` |
-| `navigation__account_menu--public_profile` | — | — | `AccountMenu.tsx` |
-| `navigation__account_menu--public_profile_setup` | — | — | `AccountMenu.tsx` |
-| `mobile_nav__public_profile` | — | — | `MobileMenu.tsx` |
-| `mobile_nav__public_profile_setup` | — | — | `MobileMenu.tsx` |
 
 ### Home
 | Event | Detail | Payload | File |
@@ -81,9 +77,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Example Trips
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `example_trip__open` | — | `{ template, country_count }` | `App.tsx` |
-| `example_trip__banner--copy_trip` | — | `{ template, country_count }` | `App.tsx` |
-| `example_trip__banner--create_similar` | — | `{ template, country_count }` | `App.tsx` |
+| `example_trip__open` | — | `{ template, country_count }` | `routes/ExampleTripLoaderRoute.tsx` |
+| `example_trip__banner--copy_trip` | — | `{ template, country_count }` | `routes/ExampleTripLoaderRoute.tsx` |
+| `example_trip__banner--create_similar` | — | `{ template, country_count }` | `routes/ExampleTripLoaderRoute.tsx` |
 
 ### Trip Paywall
 | Event | Detail | Payload | File |
@@ -104,7 +100,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
 | `footer__{target}` | `imprint`, `privacy`, `terms`, `cookies` | — | `SiteFooter.tsx` |
-| `banner__early_access--dismiss` | — | — | `EarlyAccessBanner.tsx` |
 
 ### Features & Pricing
 | Event | Detail | Payload | File |
@@ -142,9 +137,8 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Admin
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
-| `admin__menu--brand` | — | — | `AdminMenu.tsx` |
-| `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
+| `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminShell.tsx` |
+| `admin__menu--brand` | — | — | `AdminShell.tsx` |
 | `admin__design_playground--open` | — | — | `AdminDesignSystemPlaygroundPage.tsx` |
 | `admin__design_playground_component_group--view` | — | `{ group_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
 | `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
@@ -224,9 +218,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `profile_settings__public_url--open` | — | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__country_region--select` | — | `{ country_code }` | `ProfileSettingsPage.tsx` |
 | `profile_settings__billing--{action}` | `manage`, `cancel` | — | `ProfileSettingsPage.tsx` |
-| `profile__passport_cover--select` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
-| `profile__passport_cover--unselect` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
-| `profile__passport_cover--selection_limit` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
 | `public_profile__summary--open_passport` | — | — | `PublicProfilePage.tsx` |
 | `trip_preview_card__creator_handle` | — | `{ creator_handle, trip_id }` | `ProfileTripCard.tsx` |
 | `example_trip__creator_handle` | — | `{ creator_handle }` | `ExampleTripCard.tsx` |
@@ -250,7 +241,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_connectivity__banner--dismiss` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
 | `trip_connectivity__banner--retry_sync` | — | `{ connectivity_state, pending_count, failed_count }` | `ConnectivityStatusBanner.tsx` |
 | `trip_connectivity__banner--contact` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
-| `trip_connectivity__banner--email` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
 | `trip_connectivity__trip_strip--retry_sync` | — | `{ trip_id, connectivity_state, pending_count, failed_count }` | `TripViewStatusBanners.tsx` |
 | `trip_connectivity__trip_strip--restore_backup` | — | `{ trip_id }` | `TripViewStatusBanners.tsx` |
 
@@ -308,7 +298,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### App
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `app__trip--create` | — | `{ city_count, activity_count, travel_segment_count, total_item_count }` | `App.tsx` |
+| `app__trip--create` | — | `{ city_count, activity_count, travel_segment_count, total_item_count }` | `features/trips/useTripCreation.ts` |
 | `app__trip_history--open` | — | `{ source }` | `TripView.tsx` |
 | `app__chunk_recovery--reload` | — | `{ module_key, reason }` | `services/lazyImportRecovery.ts` |
 
@@ -320,11 +310,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--prompt` | — | — | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--enable` | — | — | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--not_now` | — | — | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
 | `create_trip_wizard__branch--select` | — | `{ branch }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__date_mode--select` | — | `{ mode }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__traveler--select` | — | `{ traveler_type }` | `CreateTripV3Page.tsx` |

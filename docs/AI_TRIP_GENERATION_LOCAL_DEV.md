@@ -185,7 +185,7 @@ Inspect:
 - Netlify edge function logs
 
 ## Related docs
-- [README.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/README.md)
-- [docs/EDGE_FUNCTIONS.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/EDGE_FUNCTIONS.md)
-- [docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md)
-- [docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md)
+- [README.md](../README.md)
+- [docs/EDGE_FUNCTIONS.md](EDGE_FUNCTIONS.md)
+- [docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md](AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md)
+- [docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md](AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md)

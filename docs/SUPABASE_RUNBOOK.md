@@ -366,7 +366,7 @@ Current mitigation in app code:
 4. Logout UI actions perform hard navigation/reload to reset in-memory auth state immediately.
 
 Verification sequence:
-1. Login with Google/Facebook/Kakao.
+1. Login with Google/Facebook (Kakao is switched off; see `docs/SUPABASE_OAUTH_PROVIDER_SETUP.md`).
 2. Logout.
 3. Login again immediately (no manual refresh).
 4. Confirm user session is restored and authenticated routes work.
