@@ -1,4 +1,5 @@
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
+import { formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import type {
     AdminBillingDashboardMetricRow,
@@ -252,26 +253,11 @@ export const extractAdminBillingWebhookSubscriptionId = (
     return null;
 };
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
 /** "3 hours ago", "in 2 weeks", or a dash for a missing/invalid timestamp. */
-export const formatAdminBillingRelativeTime = (value: string | null | undefined, nowMs = Date.now()): string => {
-    if (!value) return '—';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return '—';
-    const diffMs = parsed - nowMs;
-    const absDiffMs = Math.abs(diffMs);
-    const minuteMs = 60_000;
-    const hourMs = 60 * minuteMs;
-    const dayMs = 24 * hourMs;
-    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
-    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
-    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
-    if (absDiffMs < 7 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
-    if (absDiffMs < 30 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / (7 * dayMs)), 'week');
-    if (absDiffMs < 365 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / (30 * dayMs)), 'month');
-    return relativeTimeFormatter.format(Math.round(diffMs / (365 * dayMs)), 'year');
-};
+export const formatAdminBillingRelativeTime = (value: string | null | undefined, nowMs = Date.now()): string => (
+    formatAdminRelativeTime(value, nowMs)
+);
 
 /** One client-side page of rows, with the page clamped into range. */
 export function sliceAdminBillingPage<T>(items: T[], page: number, pageSize: number): { items: T[]; page: number } {

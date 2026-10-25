@@ -1,16 +1,19 @@
 /**
- * The one relative-time format for admin screens: "just now", "4 minutes ago",
- * "yesterday", "in 3 days", then a medium date after a month. Always pair it
- * with `formatAdminAbsoluteTime` in a `data-tooltip` so the exact time is a
- * hover away. Pure, so screens test it directly.
+ * The one relative-time format for every admin screen: "just now", "4 minutes
+ * ago", "3 hours ago", "yesterday", "2 weeks ago", "5 months ago", "last year"
+ * (and the future forms, "in 2 weeks"). Always pair it with
+ * `formatAdminAbsoluteTime` in a `data-tooltip` so the exact time is a hover
+ * away. Pure, so screens test it directly.
  */
 const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const absoluteDateTimeFormatter = new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' });
-const mediumDateFormatter = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
+const WEEK_MS = 7 * DAY_MS;
+const MONTH_MS = 30 * DAY_MS;
+const YEAR_MS = 365 * DAY_MS;
 
 const parseTimestamp = (value: unknown): number | null => {
     if (typeof value !== 'string' || !value) return null;
@@ -26,8 +29,10 @@ export const formatAdminRelativeTime = (value: unknown, nowMs = Date.now(), fall
     if (absDiffMs < MINUTE_MS) return 'just now';
     if (absDiffMs < HOUR_MS) return relativeTimeFormatter.format(Math.round(diffMs / MINUTE_MS), 'minute');
     if (absDiffMs < DAY_MS) return relativeTimeFormatter.format(Math.round(diffMs / HOUR_MS), 'hour');
-    if (absDiffMs < 30 * DAY_MS) return relativeTimeFormatter.format(Math.round(diffMs / DAY_MS), 'day');
-    return mediumDateFormatter.format(new Date(timestamp));
+    if (absDiffMs < WEEK_MS) return relativeTimeFormatter.format(Math.round(diffMs / DAY_MS), 'day');
+    if (absDiffMs < MONTH_MS) return relativeTimeFormatter.format(Math.round(diffMs / WEEK_MS), 'week');
+    if (absDiffMs < YEAR_MS) return relativeTimeFormatter.format(Math.round(diffMs / MONTH_MS), 'month');
+    return relativeTimeFormatter.format(Math.round(diffMs / YEAR_MS), 'year');
 };
 
 /** The full date and time, for the `data-tooltip` beside a relative time. */

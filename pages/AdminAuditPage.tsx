@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
 import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
 import { ArrowSquareOut, CopySimple, Crosshair, DotsThreeVertical, DownloadSimple, Info, SpinnerGap, User, Warning, X } from '@phosphor-icons/react';
 import { Link, useSearchParams } from '@/app/navigation';
@@ -367,24 +368,10 @@ const normalizeActionFilters = (values: string[], allValues: string[]): string[]
     return allValues.every((value) => selected.has(value)) ? [] : values;
 };
 
-const auditRelativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
-const formatAuditRelativeTime = (isoDate: string | null | undefined, now = Date.now()): string => {
-    if (!isoDate) return '—';
-    const parsed = Date.parse(isoDate);
-    if (!Number.isFinite(parsed)) return '—';
-    const diffMs = parsed - now;
-    const absDiffMs = Math.abs(diffMs);
-    const minuteMs = 60_000;
-    const hourMs = 60 * minuteMs;
-    if (absDiffMs < minuteMs) return 'just now';
-    if (absDiffMs < hourMs) return auditRelativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
-    if (absDiffMs < DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
-    if (absDiffMs < 7 * DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / DAY_MS), 'day');
-    if (absDiffMs < 30 * DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / (7 * DAY_MS)), 'week');
-    if (absDiffMs < 365 * DAY_MS) return auditRelativeTimeFormatter.format(Math.round(diffMs / (30 * DAY_MS)), 'month');
-    return auditRelativeTimeFormatter.format(Math.round(diffMs / (365 * DAY_MS)), 'year');
-};
+const formatAuditRelativeTime = (isoDate: string | null | undefined, now = Date.now()): string => (
+    formatAdminRelativeTime(isoDate, now)
+);
 
 export const __ADMIN_AUDIT_TESTING__ = {
     getActionGroupLabel,

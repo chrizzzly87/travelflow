@@ -413,7 +413,7 @@ add their own outer padding. Nav entries, sections and command-palette keywords 
 | `AdminSelectionBar` | Bulk actions for a table. Renders **only** while `count > 0`, floating at the bottom of the viewport so the actions stay reachable on a long table. Pass the actions as children, destructive last. Never show a permanent strip of disabled buttons reading "0 selected". |
 | `AdminPagination` | "Showing 51–100 of 240 trips" with previous/next icon buttons and "Page 2 of 5"; hides the controls when there is one page. |
 | `AdminEditorListItem` | The row in a list + editor split (Destinations, Recommendations): title, secondary line, status badge, selected state with `aria-pressed`. A real `forwardRef`. |
-| `formatAdminRelativeTime` / `formatAdminAbsoluteTime` | `components/admin/adminRelativeTime.ts`. The one relative-time format ("4 minutes ago", "yesterday", then a date) — always paired with the absolute time in `data-tooltip`. |
+| `formatAdminRelativeTime` / `formatAdminAbsoluteTime` | `components/admin/adminRelativeTime.ts`. The one relative-time format ("just now", "4 minutes ago", "yesterday", "2 weeks ago", "5 months ago"), used by every admin screen — always paired with the absolute time in `data-tooltip`. |
 | `AdminAccountMenu` | The signed-in admin at the foot of the sidebar (shadcn "nav user"): avatar, name and email with an up/down caret; the menu opens **upwards**, as wide as the trigger. On the icon rail it is the avatar alone and the menu opens beside the rail. The public site keeps `components/navigation/AccountMenu`; both name people through `components/navigation/accountIdentity.ts`. |
 | `AdminReloadButton` | The outline "Reload" action with a spinning icon while loading. |
 

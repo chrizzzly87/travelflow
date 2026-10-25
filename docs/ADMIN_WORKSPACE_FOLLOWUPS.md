@@ -45,8 +45,8 @@ does today is in [`ADMIN_SCREENS.md`](./ADMIN_SCREENS.md).
 
 ## Code hygiene
 
-- [ ] Fold the remaining relative-time helpers (Users, Billing, Audit, AI benchmark) into
-  `components/admin/adminRelativeTime.ts`. They already produce the same format.
+- [x] One relative-time format: every screen's helper delegates to
+  `components/admin/adminRelativeTime.ts` (2026-10-25).
 - [ ] `AdminBarChart` decimal ticks and an area mark, so AI telemetry can drop its local
   `TelemetrySeriesChart`.
 - [ ] `AdminStatCard` as a pressable tile (work-queue tiles currently toggle through a link

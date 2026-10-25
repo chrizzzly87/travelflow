@@ -29,6 +29,10 @@ const healthySummary: AdminAsyncWorkerHealthSummary = {
 describe('components/admin/adminRelativeTime', () => {
     it('formats past and future times relative to now', () => {
         expect(formatAdminRelativeTime('2026-10-24T11:59:40.000Z', NOW)).toBe('just now');
+        // One scale for every admin screen: weeks, then months, then years.
+        expect(formatAdminRelativeTime('2026-10-10T12:00:00.000Z', NOW)).toBe('2 weeks ago');
+        expect(formatAdminRelativeTime('2026-06-01T12:00:00.000Z', NOW)).toBe('5 months ago');
+        expect(formatAdminRelativeTime('2025-09-01T12:00:00.000Z', NOW)).toBe('last year');
         expect(formatAdminRelativeTime('2026-10-24T11:56:00.000Z', NOW)).toBe('4 minutes ago');
         expect(formatAdminRelativeTime('2026-10-24T09:00:00.000Z', NOW)).toBe('3 hours ago');
         expect(formatAdminRelativeTime('2026-10-22T12:00:00.000Z', NOW)).toBe('2 days ago');

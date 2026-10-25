@@ -1,4 +1,5 @@
 import type { PlanTierKey } from '../../types';
+import { formatAdminRelativeTime } from './adminRelativeTime';
 import type { AdminUserRecord } from '../../services/adminService';
 import type { AdminStatusTone } from './AdminStatusBadge';
 import {
@@ -380,34 +381,12 @@ export const resolveAppliedUserQueue = (
 // ---------------------------------------------------------------------------
 // Dates
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
 export const formatRelativeTimestamp = (
     value: string | null | undefined,
     fallback = 'Never',
     now: number = Date.now()
-): string => {
-    if (!value) return fallback;
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return fallback;
-
-    const diffMs = parsed - now;
-    const absDiffMs = Math.abs(diffMs);
-    const minuteMs = 60_000;
-    const hourMs = 60 * minuteMs;
-    const dayMs = 24 * hourMs;
-    const weekMs = 7 * dayMs;
-    const monthMs = 30 * dayMs;
-    const yearMs = 365 * dayMs;
-
-    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
-    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
-    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
-    if (absDiffMs < weekMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
-    if (absDiffMs < monthMs) return relativeTimeFormatter.format(Math.round(diffMs / weekMs), 'week');
-    if (absDiffMs < yearMs) return relativeTimeFormatter.format(Math.round(diffMs / monthMs), 'month');
-    return relativeTimeFormatter.format(Math.round(diffMs / yearMs), 'year');
-};
+): string => formatAdminRelativeTime(value, now, fallback);
 
 export const formatAbsoluteTimestamp = (value: string | null | undefined, fallback = 'Not set'): string => {
     if (!value) return fallback;

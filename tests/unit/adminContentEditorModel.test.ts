@@ -10,11 +10,11 @@ import {
 const NOW = Date.parse('2026-10-24T12:00:00.000Z');
 
 describe('formatAdminRelativeTime', () => {
-    it('reads recent times relatively and old ones as a date', () => {
+    it('reads recent and older times on the one shared scale', () => {
         expect(formatAdminRelativeTime('2026-10-24T11:59:30.000Z', NOW)).toBe('just now');
         expect(formatAdminRelativeTime('2026-10-24T09:00:00.000Z', NOW)).toBe('3 hours ago');
         expect(formatAdminRelativeTime('2026-10-23T12:00:00.000Z', NOW)).toBe('yesterday');
-        expect(formatAdminRelativeTime('2026-03-12T12:00:00.000Z', NOW)).toBe('Mar 12, 2026');
+        expect(formatAdminRelativeTime('2026-03-12T12:00:00.000Z', NOW)).toBe('8 months ago');
     });
 
     it('uses the fallback for missing or broken values', () => {

@@ -7,6 +7,7 @@
  * only re-shaped for display; the stored run is never rewritten.
  */
 import type { AdminStatusTone } from './AdminStatusBadge';
+import { formatAdminRelativeTime } from './adminRelativeTime';
 
 export interface BenchmarkRun {
     id: string;
@@ -107,25 +108,11 @@ export const formatTimestamp = (value?: string | null): string => {
     return new Date(parsed).toLocaleString();
 };
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
 /** "3 minutes ago", "yesterday", or a dash for a missing or invalid timestamp. */
-export const formatRelativeTime = (value: string | null | undefined, nowMs = Date.now()): string => {
-    if (!value) return '—';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return '—';
-    const diffMs = parsed - nowMs;
-    const absDiffMs = Math.abs(diffMs);
-    const minuteMs = 60_000;
-    const hourMs = 60 * minuteMs;
-    const dayMs = 24 * hourMs;
-    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
-    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
-    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
-    if (absDiffMs < 30 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
-    if (absDiffMs < 365 * dayMs) return relativeTimeFormatter.format(Math.round(diffMs / (30 * dayMs)), 'month');
-    return relativeTimeFormatter.format(Math.round(diffMs / (365 * dayMs)), 'year');
-};
+export const formatRelativeTime = (value: string | null | undefined, nowMs = Date.now()): string => (
+    formatAdminRelativeTime(value, nowMs)
+);
 
 /** Total tokens from either usage spelling the providers return, or null. */
 export const getRunTotalTokens = (run: BenchmarkRun): number | null => {
