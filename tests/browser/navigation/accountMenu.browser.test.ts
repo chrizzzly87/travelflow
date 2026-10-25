@@ -77,6 +77,19 @@ describe('components/navigation/AccountMenu recent trips', () => {
     ]);
   });
 
+  // In dark mode the purple Create Trip button rendered its plane icon and label
+  // in the dark page ink (grey on light indigo). It stays white on a deeper fill.
+  it('keeps the Create Trip button white on its indigo fill in dark mode', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(AccountMenu, { email: 'traveler@example.com', userId: 'user-1', isAdmin: false }));
+
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
+    const createTrip = await screen.findByRole('menuitem', { name: /Create Trip/ });
+
+    expect(createTrip.className).toContain('dark:text-white');
+    expect(createTrip.className).not.toContain('dark:text-background');
+  });
+
   // The admin sidebar is `position: sticky`, which is its own stacking context.
   // A menu panel rendered inside it (as the account menu once was) sat under
   // the page content beside the sidebar no matter its z-index. The panel must

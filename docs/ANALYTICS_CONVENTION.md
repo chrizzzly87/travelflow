@@ -146,6 +146,7 @@ sub-surface such as a row menu or a sheet). One row per surface; the actions are
 | Event prefix | Actions | Payload | File |
 |-------|--------|---------|------|
 | `admin__menu--` | `{nav item id}` (e.g. `users`, `ai_telemetry`), `brand`, `search`, `collapse_toggle` | `{ collapsed }` on `collapse_toggle` | `components/admin/AdminShell.tsx` |
+| `admin__account--` | `open`, `profile`, `settings`, `app_home`, `create_trip`, `logout` | — | `components/admin/AdminAccountMenu.tsx` |
 | `admin__command--` | `{nav item id}`, `theme`, `app_home` | — | `components/admin/AdminCommandMenu.tsx` |
 | `admin__theme--toggle` | — | `{ to }` | `components/ui/ThemeToggle.tsx` (surface `admin`) |
 | `admin__dashboard--` | `all_users`, `recent_user`, `failed_generations`, `expiring_trips` | — | `pages/AdminDashboardPage.tsx` |

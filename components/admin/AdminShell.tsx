@@ -25,7 +25,7 @@ import {
     type AdminNavItem,
     type AdminNavSection,
 } from './adminNavConfig';
-import { AccountMenu } from '../navigation/AccountMenu';
+import { AdminAccountMenu } from './AdminAccountMenu';
 import { useAuth } from '../../hooks/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { SearchInput } from '../ui/search-input';
@@ -264,21 +264,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
     const hasToolbar = showGlobalSearch || showDateRange || Boolean(actions);
 
-    const accountMenu = (collapsed: boolean) => (isAdmin ? (
-        <AccountMenu
-            email={access?.email || null}
-            userId={access?.userId || null}
-            isAdmin
-            compact={collapsed}
-            showLabel={!collapsed}
-            fullWidth={!collapsed}
-            menuPlacement="right-end"
-            labelMode="identity"
-            showRecentTripsSection={false}
-            showCurrentPageSummary={false}
-            className={collapsed ? 'mx-auto' : 'w-full min-w-0'}
-        />
-    ) : null);
+    const accountMenu = (collapsed: boolean) => (isAdmin ? <AdminAccountMenu collapsed={collapsed} /> : null);
 
     const brandLink = (collapsed: boolean) => (
         <NavLink
@@ -331,7 +317,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 <div className={cn('min-h-0 flex-1 overflow-y-auto py-4', isSidebarCollapsed ? 'px-2' : 'px-3')}>
                     <AdminNavList collapsed={isSidebarCollapsed} onItemClick={handleMenuItemClick} />
                 </div>
-                <div className={cn('flex flex-col gap-2 border-t border-sidebar-border py-3', isSidebarCollapsed ? 'items-center px-2' : 'px-3')}>
+                <div className={cn('flex flex-col border-t border-sidebar-border p-2', isSidebarCollapsed && 'items-center')}>
                     {accountMenu(isSidebarCollapsed)}
                 </div>
             </aside>
@@ -375,7 +361,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
                             <AdminNavList collapsed={false} onItemClick={handleMenuItemClick} />
                         </div>
-                        <div className="border-t border-sidebar-border px-3 py-3">
+                        <div className="border-t border-sidebar-border p-2">
                             {accountMenu(false)}
                         </div>
                     </DialogPrimitive.Content>
