@@ -17,9 +17,15 @@ const BASE_OAUTH_BUTTONS: OAuthButtonConfig[] = [
 
 const KAKAO_OAUTH_BUTTON: OAuthButtonConfig = { provider: 'kakao', labelKey: 'actions.oauthKakao' };
 
-// Korean visitors see Kakao first; everyone else gets Google and Facebook.
+/**
+ * Kakao sign-in is switched off until the Kakao app credentials exist (#585).
+ * Accounts that already signed in with Kakao keep their provider in admin.
+ */
+export const KAKAO_SIGN_IN_ENABLED = false;
+
+// When Kakao is on, Korean visitors see it first; everyone gets Google and Facebook.
 export const getOAuthButtons = (language: string): OAuthButtonConfig[] => {
-    if (normalizeAppLanguage(language) === 'ko') {
+    if (KAKAO_SIGN_IN_ENABLED && normalizeAppLanguage(language) === 'ko') {
         return [KAKAO_OAUTH_BUTTON, ...BASE_OAUTH_BUTTONS];
     }
     return BASE_OAUTH_BUTTONS;
