@@ -88,12 +88,15 @@ export const shouldAutoClearSimulatedLoginOnRealSession = (
     && sessionUserId !== DEV_ADMIN_BYPASS_USER_ID
 );
 
+// A guest (anonymous) session is created on almost every visit, so it must not
+// block the local bypass; only a real signed-in account takes precedence.
 export const shouldUseDevAdminBypassSession = (
     bypassEnabled: boolean,
-    sessionUserId: string | null | undefined
+    sessionUserId: string | null | undefined,
+    sessionIsAnonymous = false
 ): boolean => (
     bypassEnabled
-    && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID)
+    && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID || sessionIsAnonymous)
 );
 
 interface AuthContextValue {
@@ -678,7 +681,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isDevAdminBypassDisabled,
             routeLocation.pathname
         );
-        const useDevAdminBypass = hydrated && shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
+        const useDevAdminBypass = hydrated && shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id, session?.user?.is_anonymous === true);
         // Development bypass for local admin testing.
         if (useDevAdminBypass) {
             return {

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const mergeClasses = (...classes: Array<string | undefined | null | false>) => classes.filter(Boolean).join(' ');
+import { cn } from '../../lib/utils';
 
-const copyToClipboard = async (value: string): Promise<boolean> => {
+/** Copies text, falling back to a hidden textarea where the Clipboard API is unavailable. */
+export const copyTextToClipboard = async (value: string): Promise<boolean> => {
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
         try {
             await navigator.clipboard.writeText(value);
@@ -81,7 +82,7 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
             event.stopPropagation();
         }
         selectText();
-        const didCopy = await copyToClipboard(value);
+        const didCopy = await copyTextToClipboard(value);
         if (didCopy) setCopied(true);
     };
 
@@ -95,30 +96,33 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
             onKeyDown={(event) => {
                 if (!focusable) return;
                 if (event.key === 'Enter' || event.key === ' ') {
+                    // Space would otherwise scroll the page when propagation is allowed.
+                    event.preventDefault();
                     void handleCopy(event);
                 }
             }}
-            className={mergeClasses(
-                'group inline-flex min-w-0 max-w-full cursor-copy items-center gap-1 rounded px-1 text-left outline-none',
-                'hover:bg-secondary focus-visible:ring-2 focus-visible:ring-accent-300',
+            className={cn(
+                'group/uuid inline-flex min-w-0 max-w-full cursor-copy items-center gap-1 rounded-sm px-1 text-start outline-none',
+                'hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50',
                 className
             )}
-            title={copied ? 'Copied' : 'Click to select and copy UUID'}
+            data-tooltip={copied ? 'Copied' : 'Copy'}
             aria-label={ariaLabel || `Copy UUID ${value}`}
         >
-            <span ref={textRef} className={mergeClasses('min-w-0 select-all font-mono', textClassName)}>
+            <span ref={textRef} className={cn('min-w-0 select-all font-mono', textClassName)}>
                 {value}
             </span>
             <span
                 aria-hidden="true"
-                className={mergeClasses(
-                    'text-[10px] font-semibold text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100',
-                    copied && 'opacity-100 text-emerald-700 dark:text-emerald-200',
+                className={cn(
+                    'text-[10px] font-medium text-muted-foreground opacity-0 transition-opacity group-hover/uuid:opacity-100 group-focus-visible/uuid:opacity-100',
+                    copied && 'text-emerald-700 opacity-100 dark:text-emerald-200',
                     hintClassName
                 )}
             >
                 {copied ? 'Copied' : 'Copy'}
             </span>
+            <span className="sr-only" aria-live="polite">{copied ? 'Copied' : ''}</span>
         </span>
     );
 };

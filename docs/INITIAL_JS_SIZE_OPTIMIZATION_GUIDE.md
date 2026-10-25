@@ -99,7 +99,7 @@ Icon packages (like `@phosphor-icons/react` or `lucide-react`) are common source
 
 ### Phase 3: Code-Split Heavy Pages (3 hours)
 Verify that pages loaded inside `DeferredAppRoutes.tsx` are fully code-split:
-*   Ensure that no page-specific heavy library (like the admin chart library `recharts` or `@vis.gl/react-google-maps`) is imported in `index.tsx` or components used by the header.
+*   Ensure that no page-specific heavy library (like `recharts`, which the admin charts use, or `@vis.gl/react-google-maps`) is imported in `index.tsx` or components used by the header.
 *   Google Maps components should only load the maps library dynamically via `GoogleMapsLoader` rather than importing maps globals statically.
 
 ### Phase 4: Protect Initial-Viewport Hydration (2 hours)

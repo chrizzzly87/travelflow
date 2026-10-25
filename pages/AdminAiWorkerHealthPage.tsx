@@ -1,9 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Info, MagnifyingGlass, X } from '@phosphor-icons/react';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { ArrowRight, Info, X } from '@phosphor-icons/react';
 import { Link } from '@/app/navigation';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminPagination } from '../components/admin/AdminPagination';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { Button } from '../components/ui/button';
+import { SearchInput } from '../components/ui/search-input';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import {
     AdminSortHeaderButton,
@@ -27,12 +36,21 @@ import {
     type AdminAsyncWorkerHealthCheckType,
     type AdminAsyncWorkerHealthResponse,
     type AdminAsyncWorkerHealthStatus,
+    type AdminAsyncWorkerHealthSummary,
 } from '../services/adminService';
+import { formatAdminAbsoluteTime, formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
+import {
+    WORKER_HEALTH_VERDICT,
+    buildWorkerHealthSignals,
+    formatWorkerDuration,
+    type WorkerHealthSignalKey,
+} from '../components/admin/adminWorkerHealthStatus';
 
+// The endpoint caps a read at 50 rows; that is the whole history this screen can show.
 const WORKER_CHECK_FETCH_LIMIT = 50;
 const WORKER_CHECK_PAGE_SIZE = 10;
 
-type WorkerHealthSortColumn = 'checkType' | 'status' | 'startedAt' | 'staleQueuedCount' | 'dispatch' | 'failure';
+type WorkerHealthSortColumn = 'startedAt' | 'checkType' | 'status' | 'staleQueuedCount' | 'dispatch' | 'failure';
 type WorkerHealthSortDirection = 'asc' | 'desc';
 
 const DEFAULT_SORT_COLUMN: WorkerHealthSortColumn = 'startedAt';
@@ -54,43 +72,19 @@ const STATUS_ORDER: Record<AdminAsyncWorkerHealthStatus, number> = {
     warning: 1,
     failed: 2,
 };
-const STATUS_META: Record<AdminAsyncWorkerHealthStatus, { label: string; className: string }> = {
-    ok: {
-        label: 'Healthy',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
-    },
-    warning: {
-        label: 'Warning',
-        className: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
-    },
-    failed: {
-        label: 'Failed',
-        className: 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
-    },
+// A single check passes or fails; the page-level verdict (Healthy/Degraded/Failing) is separate.
+const STATUS_META: Record<AdminAsyncWorkerHealthStatus, { label: string; tone: AdminStatusTone }> = {
+    ok: { label: 'Passed', tone: 'success' },
+    warning: { label: 'Warning', tone: 'warning' },
+    failed: { label: 'Failed', tone: 'danger' },
 };
 
-const WORKER_HEALTH_TOOLTIPS = {
-    overallStatus: 'Combines the latest heartbeat, stale-queue watchdog, and canary signal into one production-readiness badge.',
-    heartbeat: 'A heartbeat is the scheduled cron check. Healthy means the scheduler is still running and can reach the async worker dispatcher.',
-    staleQueued: 'Counts queued jobs whose run time has already passed and that have still not moved for at least five minutes.',
-    selfHeal: 'A self-heal is the watchdog’s bounded re-kick. It only appears when stale queued jobs were detected and the normal worker path was nudged once.',
-    canary: 'The canary is a safe synthetic probe. It enqueues an intentionally invalid async job that should fail in a known way, proving queueing, dispatch, worker claim, execution, and terminal writes all work end to end.',
-    canaryLatency: 'Canary latency is how long that synthetic probe took to reach a terminal worker result after it was created.',
-} as const;
-
-const formatTimestamp = (value?: string | null): string => {
-    if (!value) return '—';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return '—';
-    return new Date(parsed).toLocaleString();
-};
-
-const formatDuration = (value?: number | null): string => {
-    if (!Number.isFinite(value)) return '—';
-    const normalized = Number(value);
-    if (normalized < 1000) return `${Math.round(normalized)} ms`;
-    if (normalized < 60_000) return `${(normalized / 1000).toFixed(1)} s`;
-    return `${(normalized / 60_000).toFixed(1)} min`;
+const WORKER_HEALTH_TOOLTIPS: Record<WorkerHealthSignalKey | 'overallStatus', string> = {
+    overallStatus: 'Combines the latest heartbeat, stale-queue watchdog and canary into one verdict. A stale heartbeat or a failed canary means failing; an overdue canary or stuck jobs mean degraded.',
+    heartbeat: 'The scheduled cron check, every minute. Fresh means the scheduler is running and can reach the worker dispatcher; if heartbeats stop, the worker loop itself may be down.',
+    queue: 'Queued jobs whose run time has passed and that have not moved for at least five minutes, as of the latest heartbeat.',
+    selfHeal: 'The watchdog’s bounded re-kick. It only happens when stale queued jobs were detected, and nudges the normal worker path once.',
+    canary: 'A safe synthetic probe, about every 15 minutes. It enqueues an intentionally invalid job that should fail in a known way, proving queueing, dispatch, worker claim, execution and terminal writes all work end to end.',
 };
 
 const formatDispatchStatus = (row: AdminAsyncWorkerHealthCheckRecord): string => {
@@ -149,47 +143,98 @@ const WorkerHealthInfoButton: React.FC<{
     ariaLabel: string;
     tooltip: string;
 }> = ({ ariaLabel, tooltip }) => (
-    <button
+    // `data-tooltip` only: a native `title` as well drew a second, unstyled tooltip on hover.
+    <Button
         type="button"
+        variant="ghost"
+        size="icon-xs"
         aria-label={ariaLabel}
-        title={tooltip}
         data-tooltip={tooltip}
-        className="inline-flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+        className="size-5 rounded-full text-muted-foreground hover:text-foreground"
     >
-        <Info size={12} weight="bold" />
-    </button>
-);
-
-const WorkerHealthLabel: React.FC<{
-    text: string;
-    tooltip: string;
-    ariaLabel: string;
-}> = ({ text, tooltip, ariaLabel }) => (
-    <span className="inline-flex items-center gap-1.5">
-        <span>{text}</span>
-        <WorkerHealthInfoButton ariaLabel={ariaLabel} tooltip={tooltip} />
-    </span>
+        <Info weight="bold" />
+    </Button>
 );
 
 const StatusBadge: React.FC<{
     status: AdminAsyncWorkerHealthStatus;
 }> = ({ status }) => (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${STATUS_META[status].className}`}>
+    <AdminStatusBadge tone={STATUS_META[status].tone}>
         {STATUS_META[status].label}
-    </span>
+    </AdminStatusBadge>
 );
 
-const SummaryCard: React.FC<{
-    label: React.ReactNode;
-    value: React.ReactNode;
-    hint?: React.ReactNode;
-}> = ({ label, value, hint }) => (
-    <AdminSurfaceCard className="space-y-2">
-        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
-        <div className="text-2xl font-black tracking-tight text-foreground">{value}</div>
-        {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
-    </AdminSurfaceCard>
-);
+const SIGNAL_ARIA_LABELS: Record<WorkerHealthSignalKey, string> = {
+    heartbeat: 'What a worker heartbeat means',
+    queue: 'What stale queued jobs means',
+    canary: 'What the canary proves',
+    selfHeal: 'What worker self-heal means',
+};
+
+const SORT_COLUMNS: ReadonlyArray<{ column: WorkerHealthSortColumn; label: string }> = [
+    { column: 'startedAt', label: 'Started' },
+    { column: 'checkType', label: 'Type' },
+    { column: 'status', label: 'Result' },
+    { column: 'staleQueuedCount', label: 'Stale queued' },
+    { column: 'dispatch', label: 'Dispatch' },
+    { column: 'failure', label: 'Failure' },
+];
+
+const WorkerHealthStatusHeader: React.FC<{
+    summary: AdminAsyncWorkerHealthSummary | null;
+    loading: boolean;
+}> = ({ summary, loading }) => {
+    if (!summary) {
+        return (
+            <AdminSurfaceCard role="status" aria-busy={loading || undefined} className="text-sm text-muted-foreground">
+                {loading ? 'Loading worker status…' : 'No worker health rows yet. The first cron heartbeat creates one within a minute.'}
+            </AdminSurfaceCard>
+        );
+    }
+    const verdict = WORKER_HEALTH_VERDICT[summary.overallStatus];
+    const signals = buildWorkerHealthSignals(summary);
+    return (
+        <AdminSurfaceCard className="flex flex-col gap-4" aria-busy={loading || undefined}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <AdminStatusBadge tone={verdict.tone}>{verdict.label}</AdminStatusBadge>
+                        <h2 className="text-base font-semibold leading-6 text-foreground">{verdict.headline}</h2>
+                        <WorkerHealthInfoButton ariaLabel="What overall worker status means" tooltip={WORKER_HEALTH_TOOLTIPS.overallStatus} />
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">{summary.statusReason}</p>
+                </div>
+                {summary.lastHeartbeatAt ? (
+                    <span
+                        className="shrink-0 text-xs tabular-nums text-muted-foreground"
+                        data-tooltip={formatAdminAbsoluteTime(summary.lastHeartbeatAt)}
+                    >
+                        Last checked {formatAdminRelativeTime(summary.lastHeartbeatAt)}
+                    </span>
+                ) : null}
+            </div>
+            <dl className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
+                {signals.map((signal) => (
+                    <div key={signal.key} className="flex min-w-0 flex-col gap-1">
+                        <dt className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                            {signal.label}
+                            <WorkerHealthInfoButton ariaLabel={SIGNAL_ARIA_LABELS[signal.key]} tooltip={WORKER_HEALTH_TOOLTIPS[signal.key]} />
+                        </dt>
+                        <dd className="flex flex-col gap-1">
+                            <AdminStatusBadge tone={signal.tone}>{signal.state}</AdminStatusBadge>
+                            <span
+                                className="text-xs text-muted-foreground"
+                                data-tooltip={signal.observedAt ? formatAdminAbsoluteTime(signal.observedAt) : undefined}
+                            >
+                                {signal.detail}
+                            </span>
+                        </dd>
+                    </div>
+                ))}
+            </dl>
+        </AdminSurfaceCard>
+    );
+};
 
 export const AdminAiWorkerHealthPage: React.FC = () => {
     const [data, setData] = useState<AdminAsyncWorkerHealthResponse | null>(null);
@@ -209,7 +254,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
             const next = await adminGetAiWorkerHealth({ limit: WORKER_CHECK_FETCH_LIMIT });
             setData(next);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'Failed to load worker health.');
+            setError(toAdminErrorMessage(loadError, 'Failed to load worker health.', 'admin-worker-health'));
         } finally {
             setLoading(false);
         }
@@ -220,7 +265,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
     }, [loadWorkerHealth]);
 
     const summary = data?.summary || null;
-    const checks = data?.checks || [];
+    const checks = useMemo(() => data?.checks || [], [data]);
     const normalizedSearchQuery = normalizeSearchText(searchQuery);
 
     const typeFilterOptions = useMemo<AdminFilterMenuOption[]>(
@@ -261,17 +306,16 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
         return next;
     }, [filteredChecks, sortColumn, sortDirection]);
 
+    // Clamp at render time instead of syncing state in an effect after the list shrinks.
     const pageCount = Math.max(Math.ceil(sortedChecks.length / WORKER_CHECK_PAGE_SIZE), 1);
+    const safePage = Math.min(page, pageCount);
     const pagedChecks = useMemo(() => {
-        const startIndex = (page - 1) * WORKER_CHECK_PAGE_SIZE;
+        const startIndex = (safePage - 1) * WORKER_CHECK_PAGE_SIZE;
         return sortedChecks.slice(startIndex, startIndex + WORKER_CHECK_PAGE_SIZE);
-    }, [page, sortedChecks]);
-
-    useEffect(() => {
-        if (page > pageCount) setPage(pageCount);
-    }, [page, pageCount]);
+    }, [safePage, sortedChecks]);
 
     const resetTableState = useCallback(() => {
+        trackEvent('admin__worker_health--reset_filters');
         setSearchQuery('');
         setTypeFilters([]);
         setStatusFilters([]);
@@ -290,160 +334,61 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
         setPage(1);
     }, [sortColumn]);
 
-    const hasActiveTableControls = normalizedSearchQuery.length > 0 || typeFilters.length > 0 || statusFilters.length > 0;
-    const showingFrom = sortedChecks.length === 0 ? 0 : ((page - 1) * WORKER_CHECK_PAGE_SIZE) + 1;
-    const showingTo = sortedChecks.length === 0 ? 0 : Math.min(page * WORKER_CHECK_PAGE_SIZE, sortedChecks.length);
+    const hasActiveFilters = normalizedSearchQuery.length > 0 || typeFilters.length > 0 || statusFilters.length > 0;
+    const hasCustomTableState = hasActiveFilters
+        || sortColumn !== DEFAULT_SORT_COLUMN
+        || sortDirection !== DEFAULT_SORT_DIRECTION;
+    const nowMs = Date.now();
 
     return (
         <AdminShell
-            title="Worker Health"
-            description="Operational heartbeat for async trip generation. Use this to spot stale queued jobs, recent self-heals, and canary regressions before user trips pile up."
+            title="Worker health"
+            description="Is async trip generation draining its queue? Heartbeat, stuck jobs, self-heals and the end-to-end canary."
+            showGlobalSearch={false}
+            showDateRange={false}
             actions={(
-                <div className="flex items-center gap-2">
-                    <Link
-                        to="/admin/ai-benchmark/telemetry"
-                        className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground"
-                    >
-                        Open AI Telemetry
-                    </Link>
+                <>
+                    <Button asChild variant="ghost">
+                        <Link
+                            to="/admin/ai-benchmark/telemetry"
+                            onClick={() => trackEvent('admin__worker_health--ai_telemetry')}
+                            {...getAnalyticsDebugAttributes('admin__worker_health--ai_telemetry')}
+                        >
+                            AI telemetry
+                            <ArrowRight className="rtl:rotate-180" />
+                        </Link>
+                    </Button>
                     <AdminReloadButton onClick={() => void loadWorkerHealth()} isLoading={loading} label="Reload health" />
-                </div>
+                </>
             )}
         >
-            <div className="space-y-5">
-                {error ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                        {error}
-                    </div>
-                ) : null}
+            <div className="flex flex-col gap-4">
+                {error ? <AdminErrorAlert title="Could not load worker health" message={error} /> : null}
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <SummaryCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Overall status"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.overallStatus}
-                                ariaLabel="What overall worker status means"
-                            />
-                        )}
-                        value={summary ? <StatusBadge status={summary.overallStatus} /> : '—'}
-                        hint={summary?.statusReason || (loading ? 'Loading worker status…' : 'No worker health rows yet.')}
-                    />
-                    <SummaryCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Last heartbeat"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.heartbeat}
-                                ariaLabel="What a worker heartbeat means"
-                            />
-                        )}
-                        value={summary ? formatTimestamp(summary.lastHeartbeatAt) : '—'}
-                        hint={summary?.heartbeatFresh ? 'Cron heartbeat is fresh.' : 'Cron heartbeat is stale or missing.'}
-                    />
-                    <SummaryCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Stale queued jobs"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.staleQueued}
-                                ariaLabel="What stale queued jobs means"
-                            />
-                        )}
-                        value={summary ? summary.staleQueuedCount.toLocaleString() : '—'}
-                        hint={summary?.oldestQueuedAgeMs != null ? `Oldest queued age: ${formatDuration(summary.oldestQueuedAgeMs)}` : 'No stale queued jobs recorded in the latest heartbeat.'}
-                    />
-                    <SummaryCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Last self-heal"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.selfHeal}
-                                ariaLabel="What worker self-heal means"
-                            />
-                        )}
-                        value={summary?.lastSelfHealStatus ? <StatusBadge status={summary.lastSelfHealStatus} /> : '—'}
-                        hint={summary?.lastSelfHealAt ? formatTimestamp(summary.lastSelfHealAt) : 'No bounded re-kick recorded yet.'}
-                    />
-                    <SummaryCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Last canary"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.canary}
-                                ariaLabel="What the canary proves"
-                            />
-                        )}
-                        value={summary?.lastCanaryStatus ? <StatusBadge status={summary.lastCanaryStatus} /> : '—'}
-                        hint={summary?.lastCanaryAt ? formatTimestamp(summary.lastCanaryAt) : 'No canary run recorded yet.'}
-                    />
-                    <SummaryCard
-                        label={(
-                            <WorkerHealthLabel
-                                text="Canary latency"
-                                tooltip={WORKER_HEALTH_TOOLTIPS.canaryLatency}
-                                ariaLabel="What canary latency means"
-                            />
-                        )}
-                        value={summary ? formatDuration(summary.lastCanaryLatencyMs) : '—'}
-                        hint={summary?.canaryDue ? 'Another canary is due soon.' : 'Recent successful canary is still within the target window.'}
-                    />
-                </div>
+                <WorkerHealthStatusHeader summary={summary} loading={loading} />
 
-                <AdminSurfaceCard className="grid gap-4 md:grid-cols-3">
-                    <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <span>Heartbeat</span>
-                            <WorkerHealthInfoButton ariaLabel="Explain heartbeat checks" tooltip={WORKER_HEALTH_TOOLTIPS.heartbeat} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Scheduled cron proof. If heartbeats stop, the worker loop itself may no longer be running.
-                        </p>
-                    </div>
-                    <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <span>Watchdog</span>
-                            <WorkerHealthInfoButton ariaLabel="Explain watchdog checks" tooltip={WORKER_HEALTH_TOOLTIPS.selfHeal} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Stale-queue detector. It only records when queued work looked stuck and the normal worker path was re-kicked once.
-                        </p>
-                    </div>
-                    <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <span>Canary</span>
-                            <WorkerHealthInfoButton ariaLabel="Explain canary checks" tooltip={WORKER_HEALTH_TOOLTIPS.canary} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Safe end-to-end probe. Healthy means queueing, dispatch, claiming, execution, and terminal writes all completed on the live path.
-                        </p>
-                    </div>
-                </AdminSurfaceCard>
+                <AdminSurfaceCard className="flex flex-col gap-4 p-0">
+                    <AdminSectionHeader
+                        className="px-4 pt-4"
+                        title="Recent checks"
+                        description={`The latest ${WORKER_CHECK_FETCH_LIMIT} checks. Filter to failed rows to see what broke and when.`}
+                    />
 
-                <AdminSurfaceCard className="space-y-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h2 className="text-lg font-semibold text-foreground">Recent checks</h2>
-                            <p className="text-sm text-muted-foreground">
-                                Newest rows first. Heartbeats show cron health, watchdog rows capture stale-queue incidents, and canaries prove the drain path end to end.
-                            </p>
-                        </div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                            {checks.length.toLocaleString()} rows loaded
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        <label className="relative min-w-[260px] flex-1 sm:flex-none">
-                            <MagnifyingGlass size={14} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(event) => {
-                                    setSearchQuery(event.target.value);
-                                    setPage(1);
-                                }}
-                                placeholder="Search type, dispatch, or failure text"
-                                className="h-8 w-full rounded-md border border-border bg-card ps-9 pe-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-border focus:ring-1 focus:ring-slate-200 dark:shadow-none"
-                                aria-label="Search worker health checks"
-                            />
-                        </label>
+                    <div className="flex flex-wrap items-center gap-2 px-4">
+                        <SearchInput
+                            value={searchQuery}
+                            onChange={(event) => {
+                                setSearchQuery(event.currentTarget.value);
+                                setPage(1);
+                            }}
+                            onClear={() => {
+                                setSearchQuery('');
+                                setPage(1);
+                            }}
+                            placeholder="Search type, dispatch or failure"
+                            aria-label="Search worker health checks"
+                            containerClassName="h-8 w-full sm:w-72"
+                        />
                         <AdminFilterMenu
                             label="Type"
                             options={typeFilterOptions}
@@ -454,7 +399,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                             }}
                         />
                         <AdminFilterMenu
-                            label="Status"
+                            label="Result"
                             options={statusFilterOptions}
                             selectedValues={statusFilters}
                             onSelectedValuesChange={(next) => {
@@ -462,149 +407,122 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                 setPage(1);
                             }}
                         />
-                        <button
-                            type="button"
-                            onClick={resetTableState}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-                        >
-                            <X size={14} />
-                            Reset
-                        </button>
+                        {hasCustomTableState ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={resetTableState}
+                                {...getAnalyticsDebugAttributes('admin__worker_health--reset_filters')}
+                            >
+                                <X />
+                                Reset
+                            </Button>
+                        ) : null}
                     </div>
 
-                    <div className="rounded-xl border border-border bg-card">
-                        <Table>
-                            <TableHeader className="bg-secondary">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                {SORT_COLUMNS.map(({ column, label }) => {
+                                    const isActive = sortColumn === column;
+                                    return (
+                                        <TableHead
+                                            key={column}
+                                            className={`px-4 ${isActive ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}
+                                            aria-sort={isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                        >
+                                            <AdminSortHeaderButton
+                                                label={label}
+                                                isActive={isActive}
+                                                direction={sortDirection}
+                                                onClick={() => handleSort(column)}
+                                            />
+                                        </TableHead>
+                                    );
+                                })}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading && checks.length === 0 ? (
                                 <TableRow>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Type"
-                                            isActive={sortColumn === 'checkType'}
-                                            direction={sortDirection}
-                                            onClick={() => handleSort('checkType')}
-                                        />
-                                    </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'status' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Status"
-                                            isActive={sortColumn === 'status'}
-                                            direction={sortDirection}
-                                            onClick={() => handleSort('status')}
-                                        />
-                                    </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Started"
-                                            isActive={sortColumn === 'startedAt'}
-                                            direction={sortDirection}
-                                            onClick={() => handleSort('startedAt')}
-                                        />
-                                    </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Stale queued"
-                                            isActive={sortColumn === 'staleQueuedCount'}
-                                            direction={sortDirection}
-                                            onClick={() => handleSort('staleQueuedCount')}
-                                        />
-                                    </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Dispatch"
-                                            isActive={sortColumn === 'dispatch'}
-                                            direction={sortDirection}
-                                            onClick={() => handleSort('dispatch')}
-                                        />
-                                    </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Failure"
-                                            isActive={sortColumn === 'failure'}
-                                            direction={sortDirection}
-                                            onClick={() => handleSort('failure')}
-                                        />
-                                    </TableHead>
+                                    <TableCell colSpan={SORT_COLUMNS.length} className="px-4 py-8 text-center text-sm text-muted-foreground" role="status">
+                                        Loading worker health…
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {pagedChecks.length === 0 && !loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                            {hasActiveTableControls ? 'No checks match your filters.' : 'No worker health rows yet.'}
-                                        </TableCell>
-                                    </TableRow>
-                                ) : null}
-                                {loading && checks.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                            Loading worker health…
-                                        </TableCell>
-                                    </TableRow>
-                                ) : null}
-                                {pagedChecks.map((row) => (
-                                    <TableRow key={row.id} className={`${ADMIN_TABLE_ROW_SURFACE_CLASS} align-top`}>
-                                        <TableCell className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                            {CHECK_TYPE_LABELS[row.checkType]}
-                                        </TableCell>
-                                        <TableCell className={`px-4 py-3 ${sortColumn === 'status' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                            <StatusBadge status={row.status} />
-                                        </TableCell>
-                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                            <div>{formatTimestamp(row.startedAt)}</div>
+                            ) : null}
+                            {pagedChecks.length === 0 && !loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={SORT_COLUMNS.length} className="p-4">
+                                        <AdminEmptyState
+                                            className="py-6"
+                                            title={hasActiveFilters ? 'No checks match your filters.' : 'No worker health rows yet.'}
+                                            description={hasActiveFilters
+                                                ? 'Clear the search or filters to see every loaded check.'
+                                                : 'The cron heartbeat writes the first row within a minute of a deploy.'}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ) : null}
+                            {pagedChecks.map((row) => (
+                                <TableRow key={row.id} className={`${ADMIN_TABLE_ROW_SURFACE_CLASS} align-top`}>
+                                    <TableCell className={`px-4 py-3 tabular-nums text-foreground ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <div data-tooltip={formatAdminAbsoluteTime(row.startedAt)}>
+                                            {formatAdminRelativeTime(row.startedAt, nowMs)}
+                                        </div>
+                                        {row.finishedAt ? (
                                             <div className="text-xs text-muted-foreground">
-                                                Finished: {formatTimestamp(row.finishedAt)}
+                                                Took {formatWorkerDuration(Date.parse(row.finishedAt) - Date.parse(row.startedAt))}
                                             </div>
-                                        </TableCell>
-                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                            <div>{row.staleQueuedCount.toLocaleString()}</div>
+                                        ) : null}
+                                    </TableCell>
+                                    <TableCell className={`px-4 py-3 font-medium text-foreground ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        {CHECK_TYPE_LABELS[row.checkType]}
+                                    </TableCell>
+                                    <TableCell className={`px-4 py-3 ${sortColumn === 'status' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <StatusBadge status={row.status} />
+                                    </TableCell>
+                                    <TableCell className={`px-4 py-3 tabular-nums text-foreground ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <div>{row.staleQueuedCount.toLocaleString()}</div>
+                                        {row.staleQueuedCount > 0 ? (
                                             <div className="text-xs text-muted-foreground">
-                                                Oldest: {formatDuration(row.oldestQueuedAgeMs)}
+                                                Oldest {formatWorkerDuration(row.oldestQueuedAgeMs)}
                                             </div>
-                                        </TableCell>
-                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                            <div>{formatDispatchStatus(row)}</div>
+                                        ) : null}
+                                    </TableCell>
+                                    <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <div>{formatDispatchStatus(row)}</div>
+                                        {row.checkType === 'canary' ? (
                                             <div className="text-xs text-muted-foreground">
-                                                Canary latency: {formatDuration(row.canaryLatencyMs)}
+                                                Canary latency {formatWorkerDuration(row.canaryLatencyMs)}
                                             </div>
-                                        </TableCell>
-                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                            <div>{row.failureCode || '—'}</div>
-                                            <div className="max-w-[340px] text-xs text-muted-foreground">
-                                                {row.failureMessage || 'No failure recorded.'}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                        ) : null}
+                                    </TableCell>
+                                    <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        {row.failureCode || row.failureMessage ? (
+                                            <>
+                                                <div className="font-mono text-xs">{row.failureCode || '—'}</div>
+                                                <div className="max-w-[340px] whitespace-normal break-words text-xs text-muted-foreground">
+                                                    {row.failureMessage}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                            {sortedChecks.length === 0
-                                ? 'Showing 0 checks'
-                                : `Showing ${showingFrom}-${showingTo} of ${sortedChecks.length}`}
-                        </span>
-                        <div className="flex items-center gap-1">
-                            <button
-                                type="button"
-                                onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                                disabled={page === 1}
-                                className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                            >
-                                Prev
-                            </button>
-                            <span>Page {page} / {pageCount}</span>
-                            <button
-                                type="button"
-                                onClick={() => setPage((current) => Math.min(current + 1, pageCount))}
-                                disabled={page >= pageCount}
-                                className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
+                    <AdminPagination
+                        className="px-4 pb-4"
+                        page={safePage}
+                        pageSize={WORKER_CHECK_PAGE_SIZE}
+                        totalItems={sortedChecks.length}
+                        onPageChange={setPage}
+                        noun="checks"
+                    />
                 </AdminSurfaceCard>
             </div>
         </AdminShell>

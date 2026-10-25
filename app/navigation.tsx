@@ -103,7 +103,10 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, any>(({ to, end, clas
     const target = hrefFor(to).split(/[?#]/)[0];
     const isActive = end ? pathname === target : pathname === target || (target !== '/' && pathname.startsWith(`${target}/`));
     const status = { isActive, isPending: isActive && pending, isTransitioning: isActive && pending };
-    return <Link {...props} ref={ref} to={to} aria-current={isActive ? 'page' : undefined} className={typeof className === 'function' ? className(status) : className} style={typeof style === 'function' ? style(status) : style}>{typeof children === 'function' ? children(status) : children}</Link>;
+    // TanStack's Link applies its own (prefix) active state and aria-current;
+    // give it the same `end` rule so it agrees with `isActive` (an `end` link
+    // must not read as the current page on a child route).
+    return <Link {...props} ref={ref} to={to} activeOptions={{ exact: Boolean(end), includeSearch: false }} aria-current={isActive ? 'page' : undefined} className={typeof className === 'function' ? className(status) : className} style={typeof style === 'function' ? style(status) : style}>{typeof children === 'function' ? children(status) : children}</Link>;
 });
 NavLink.displayName = 'MigrationNavLink';
 export const Navigate = ({ to, state, replace }: any) => <StartNavigate<RegisteredRouter, string, string> href={hrefFor(to)} state={{ usr: state ?? null } as any} replace={replace} />;

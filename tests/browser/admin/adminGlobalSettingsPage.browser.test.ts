@@ -124,4 +124,45 @@ describe('AdminGlobalSettingsPage', () => {
     const claude = results.find((button) => /claude/i.test(button.textContent || ''));
     expect(claude).toBeTruthy();
   });
+
+  it('replaces the loading line with an authored error when the load fails', async () => {
+    mocks.refreshPublicAiRuntimeSettings.mockRejectedValueOnce(new Error('TypeError: Failed to fetch at https://internal.example'));
+    const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
+    render(React.createElement(AdminGlobalSettingsPage));
+
+    // A network failure gets the shared network sentence, never the raw text.
+    await screen.findByText('The request could not reach the server. Check your connection, then retry.');
+    expect(screen.queryByText('Loading the current settings…')).toBeNull();
+    expect(screen.queryByText(/internal\.example/)).toBeNull();
+  });
+
+  it('retries a failed load from the error itself', async () => {
+    mocks.refreshPublicAiRuntimeSettings.mockRejectedValueOnce(new Error('TypeError: Failed to fetch'));
+    const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
+    render(React.createElement(AdminGlobalSettingsPage));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reload' }));
+    await screen.findByRole('heading', { level: 2, name: 'Trip Agent' });
+    expect(mocks.refreshPublicAiRuntimeSettings).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
+  });
+
+  it('describes the last change relative to now', async () => {
+    const { formatSettingsChangedAt } = await import('../../../pages/AdminGlobalSettingsPage');
+    const now = Date.parse('2026-09-10T10:01:07Z');
+    expect(formatSettingsChangedAt('2026-09-08T10:01:07Z', now)).toBe('2 days ago');
+    expect(formatSettingsChangedAt('2026-09-10T09:01:07Z', now)).toBe('1 hour ago');
+    expect(formatSettingsChangedAt('2026-09-10T10:01:00Z', now)).toBe('just now');
+    expect(formatSettingsChangedAt('not a date', now)).toBe('not a date');
+  });
+
+  it('shows an authored sentence instead of the raw save error', async () => {
+    mocks.updateAppRuntimeSettings.mockRejectedValueOnce(new Error('permission denied for table app_runtime_settings'));
+    await renderPage();
+    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await screen.findByText('The settings were not saved. Your changes are still here; try saving again.');
+    expect(screen.queryByText(/permission denied/)).toBeNull();
+  });
 });

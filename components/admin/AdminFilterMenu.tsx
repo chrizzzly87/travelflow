@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CaretDown, PlusCircle } from '@phosphor-icons/react';
+import { PlusCircle } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { Checkbox } from '../ui/checkbox';
+import { cn } from '../../lib/utils';
 
 export interface AdminFilterMenuOption {
     value: string;
@@ -44,7 +45,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
         width: 280,
     });
 
-    const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+    const selectedSet = useMemo(() => new Set<string>(selectedValues), [selectedValues]);
     const selectedCount = selectedValues.length;
     const allSelected = options.length > 0 && selectedCount === options.length;
     const selectedLabels = useMemo(
@@ -96,13 +97,20 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
         const onEscape = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             setIsOpen(false);
+            // Hand focus back to the trigger so keyboard users keep their place.
+            triggerRef.current?.focus();
         };
+        // Move focus into the panel so the options are reachable by keyboard.
+        const focusFrame = window.requestAnimationFrame(() => {
+            menuRef.current?.querySelector<HTMLElement>('[role="checkbox"], button:not(:disabled)')?.focus();
+        });
         const onViewportChange = () => updateMenuPosition();
         window.addEventListener('pointerdown', onPointer);
         window.addEventListener('keydown', onEscape);
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('scroll', onViewportChange, true);
         return () => {
+            window.cancelAnimationFrame(focusFrame);
             window.removeEventListener('pointerdown', onPointer);
             window.removeEventListener('keydown', onEscape);
             window.removeEventListener('resize', onViewportChange);
@@ -118,7 +126,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     };
 
     const toggleOption = (value: string) => {
-        const next = new Set(selectedSet);
+        const next = new Set<string>(selectedSet);
         const isChecked = next.has(value);
         if (allowMultiple) {
             if (isChecked) {
@@ -149,25 +157,30 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
+                className={cn(
+                    'inline-flex h-8 w-fit max-w-full items-center justify-center whitespace-nowrap rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+                    // Dashed while it filters nothing, solid once it narrows the list.
+                    selectedCount > 0 ? 'border-solid' : 'border-dashed',
+                )}
                 aria-label={`Filter by ${label.toLowerCase()}`}
                 aria-expanded={isOpen}
+                aria-haspopup="dialog"
             >
-                {icon || <PlusCircle size={14} className="mr-2 text-muted-foreground shrink-0" weight="duotone" />}
+                {icon || <PlusCircle size={14} className="me-2 shrink-0 text-muted-foreground" weight="duotone" aria-hidden="true" />}
                 <span>{label}</span>
                 
                 {(selectedCount > 0 || (selectedCount === 0 && !allowMultiple)) && (
-                    <div className="mx-2 flex h-4 items-center">
-                        <div className="h-full w-[1px] bg-slate-200" />
+                    <div className="mx-2 flex h-4 items-center" aria-hidden="true">
+                        <div className="h-full w-px bg-border" />
                     </div>
                 )}
                 
                 {selectedCount > 0 && selectedCount <= 2 && (
-                    <div className="flex gap-1">
+                    <div className="flex min-w-0 gap-1">
                         {selectedLabels.map((selectedLabel) => (
                             <span
                                 key={`${label}-${selectedLabel}`}
-                                className="inline-flex items-center rounded-sm bg-secondary px-1 font-normal text-foreground"
+                                className="inline-flex max-w-[10rem] items-center truncate rounded-sm bg-secondary px-1 font-normal text-foreground"
                             >
                                 {selectedLabel}
                             </span>
@@ -189,7 +202,13 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
+                    role="dialog"
+                    aria-label={`${label} filter`}
+                    className={cn(
+                        'fixed z-[1700] origin-top overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md dark:shadow-none',
+                        // Quick ease-out entry; reduced motion keeps only the fade.
+                        'animate-in fade-in-0 duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:zoom-in-95',
+                    )}
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
@@ -199,12 +218,12 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                     <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                         {label}
                     </div>
-                    <div className="h-px bg-secondary" />
+                    <div className="h-px bg-border" />
                     <div className="max-h-72 overflow-y-auto p-1">
                         {groupedOptions.map((group, groupIndex) => (
                             <div key={`${label}-${group.id}`}>
                                 {group.label && (
-                                    <div className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    <div className="px-2 pb-1 pt-2 text-xs font-medium text-muted-foreground">
                                         {group.label}
                                     </div>
                                 )}
@@ -213,32 +232,31 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                     return (
                                         <label
                                             key={`${label}-${option.value}`}
-                                            className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group"
+                                            className="group relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus-within:bg-secondary hover:bg-secondary hover:text-foreground"
                                         >
-                                            <div className="mr-2 flex size-4 items-center justify-center shrink-0">
+                                            <div className="flex size-4 shrink-0 items-center justify-center">
                                                 <Checkbox
                                                     checked={checked}
                                                     onCheckedChange={() => toggleOption(option.value)}
                                                     className="size-4"
-                                                    tabIndex={-1}
                                                 />
                                             </div>
                                             <span className="truncate">{option.label}</span>
                                             {typeof option.count === 'number' && (
-                                                <span className="ml-auto text-xs text-muted-foreground">{option.count}</span>
+                                                <span className="ms-auto text-xs tabular-nums text-muted-foreground">{option.count}</span>
                                             )}
                                         </label>
                                     );
                                 })}
                                 {group.label && groupIndex < groupedOptions.length - 1 && (
-                                    <div className="my-1 h-px bg-secondary" />
+                                    <div className="my-1 h-px bg-border" />
                                 )}
                             </div>
                         ))}
                     </div>
                     {allowMultiple && showBulkActions && options.length > 0 && (
                         <>
-                            <div className="h-px bg-secondary" />
+                            <div className="h-px bg-border" />
                             <div className="grid grid-cols-2 gap-1 p-1">
                                 <button
                                     type="button"
@@ -247,7 +265,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                         onSelectedValuesChange(allValues);
                                     }}
                                     disabled={allSelected}
-                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {selectAllLabel}
                                 </button>
@@ -257,7 +275,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                         onSelectedValuesChange([]);
                                     }}
                                     disabled={selectedCount === 0}
-                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {clearLabel}
                                 </button>

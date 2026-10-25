@@ -1,6 +1,6 @@
 # Admin User Deletion Policy
 
-Last updated: 2026-02-20
+Last updated: 2026-10-24
 
 ## Purpose
 
@@ -11,15 +11,17 @@ Define the operational policy for deleting users in the admin workspace, includi
 ### Soft delete (recommended default)
 
 - Action: set user account status to `deleted`.
+- Where: **Soft delete** in the footer of the user's details sheet, **Soft-delete user** in the row's `…` menu, or **Soft delete** in the bulk-action bar that appears when rows are selected. The success toast offers **Undo**.
 - Effect:
   - Keeps auth record and profile row.
   - Keeps all owned trips and related data.
   - Allows support/admin review and restore later.
-- Restore path: set account status back to `active`.
+- Restore path: **Restore user** in the details sheet footer or the row's `…` menu (or set account status back to `active` under **Profile & access**). Soft-deleted rows cannot be selected for bulk actions.
 
 ### Hard delete (irreversible)
 
 - Action: delete user from Supabase Auth via admin identity API.
+- Where: **Hard delete** (destructive, last button) in the details sheet footer, or **Hard delete** in the bulk-action bar. It is disabled for soft-deleted users: restore first.
 - Effect:
   - Permanently removes auth account and profile.
   - Permanently removes all trips owned by that user because ownership is linked with cascade delete.
@@ -31,8 +33,8 @@ Define the operational policy for deleting users in the admin workspace, includi
 
 For users who still own trips, admins should prefer transfer-before-delete:
 
-1. Open the user in Admin Users drawer.
-2. Click `Transfer trips + hard delete`.
+1. Open the user's details sheet on **Users** (`/admin/users`, or the deep link `/admin/users?user=<id>&drawer=user`).
+2. Click `Transfer trips + hard delete` in the sheet footer (shown only while the user owns trips).
 3. Enter target user email or UUID.
 4. Target user must:
    - exist,
@@ -46,7 +48,7 @@ For users who still own trips, admins should prefer transfer-before-delete:
 
 - If any trip transfer fails, hard delete is skipped.
 - If all transfers succeed but hard delete fails, transferred trips remain with new owner and admin can retry hard delete separately.
-- Bulk hard delete now returns per-user failure reasons so support can retry only failed rows.
+- Bulk hard delete returns per-user failure reasons above the table and keeps only the failed rows selected, so support can retry just those.
 
 ## Audit Expectations
 

@@ -1,6 +1,9 @@
 import React from 'react';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 
+import { Button } from '../ui/button';
+import { cn } from '../../lib/utils';
+
 interface AdminReloadButtonProps {
     onClick: () => void;
     isLoading?: boolean;
@@ -16,17 +19,15 @@ export const AdminReloadButton: React.FC<AdminReloadButtonProps> = ({
     disabled = false,
     className,
 }) => (
-    <button
+    <Button
         type="button"
+        variant="outline"
         onClick={onClick}
         disabled={disabled || isLoading}
-        className={[
-            'inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors',
-            'hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60',
-            className ?? '',
-        ].join(' ')}
+        aria-busy={isLoading || undefined}
+        className={cn('h-9', className)}
     >
-        <ArrowsClockwise size={14} className={isLoading ? 'animate-spin' : ''} />
+        <ArrowsClockwise className={cn('size-4', isLoading && 'animate-spin')} />
         {label}
-    </button>
+    </Button>
 );

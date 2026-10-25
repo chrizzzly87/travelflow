@@ -140,14 +140,43 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `auth__{step}--{result}` | runtime auth steps (password, oauth, upgrade, logout) | `{ flow_id, attempt_id, provider, error_code }` | `authService.ts` |
 
 ### Admin
-| Event | Detail | Payload | File |
+Every admin screen uses `admin__<screen>--<action>` (or `admin__<screen>_<area>--<action>` for a
+sub-surface such as a row menu or a sheet). One row per surface; the actions are listed.
+
+| Event prefix | Actions | Payload | File |
 |-------|--------|---------|------|
-| `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
-| `admin__menu--brand` | — | — | `AdminMenu.tsx` |
-| `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
-| `admin__design_playground--open` | — | — | `AdminDesignSystemPlaygroundPage.tsx` |
-| `admin__design_playground_component_group--view` | — | `{ group_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
-| `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__menu--` | `{nav item id}` (e.g. `users`, `ai_telemetry`), `brand`, `search`, `collapse_toggle` | `{ collapsed }` on `collapse_toggle` | `components/admin/AdminShell.tsx` |
+| `admin__account--` | `open`, `profile`, `settings`, `app_home`, `create_trip`, `logout` | — | `components/admin/AdminAccountMenu.tsx` |
+| `admin__command--` | `{nav item id}`, `theme`, `app_home` | — | `components/admin/AdminCommandMenu.tsx` |
+| `admin__theme--toggle` | — | `{ to }` | `components/ui/ThemeToggle.tsx` (surface `admin`) |
+| `admin__dashboard--` | `all_users`, `recent_user`, `failed_generations`, `expiring_trips` | — | `pages/AdminDashboardPage.tsx` |
+| `admin__users--` | `create_user`, `export_csv`, `more_filters`, `reset_filters` | — | `pages/AdminUsersPage.tsx` |
+| `admin__users_queue--` | `awaiting_activation`, `subscriptions_at_risk`, `empty_accounts` | — | `pages/AdminUsersPage.tsx` |
+| `admin__users_row--` | `copy_id`, `view_trips` | — | `pages/AdminUsersPage.tsx` |
+| `admin__users_detail--tab` | — | `{ tab }` | `pages/AdminUsersPage.tsx` |
+| `admin__trips_kpi--filter` | — | `{ kpi }` | `pages/AdminTripsPage.tsx` |
+| `admin__trips_bulk--` | `archive`, `delete` | `{ count }` | `pages/AdminTripsPage.tsx` |
+| `admin__trips_selection--select_all_matching` | — | `{ count }` | `pages/AdminTripsPage.tsx` |
+| `admin__trips_owner--open_user`, `admin__trips_sheet--open_owner` | — | — | `pages/AdminTripsPage.tsx` |
+| `admin__tiers--` | `save`, `reapply` | `{ tier_key }` | `pages/AdminTiersPage.tsx` (Plans screen) |
+| `admin__billing--` | `reconcile`, `review_failed`, `review_unlinked` | — | `pages/AdminBillingPage.tsx` |
+| `admin__billing_view--switch` | — | `{ view }` | `pages/AdminBillingPage.tsx` |
+| `admin__billing_subscription--`, `admin__billing_event--` | `details`, `open_user`, `reconcile` | — | `components/admin/AdminBillingSheets.tsx` |
+| `admin__audit--` | `export_replay`, `export_selected`, `export_entry`, `reset_filters`, `open_entry`, `open_actor`, `open_target`, `show_diff`, `undo`, `copy_action_code`, `open_in_users`, `open_in_trips`, `open_trip`, `open_owner`, `restore_user` | — | `pages/AdminAuditPage.tsx` |
+| `admin__airports--` | `tab`, `new_airport`, `open_airport`, `save_airport`, `create_airport`, `delete_airport`, `sync`, `bulk_edit`, `bulk_apply`, `bulk_delete`, `select_all_matching`, `reset_filters` | `{ tab }` on `tab` | `pages/AdminAirportsPage.tsx` |
+| `admin__destinations--` | `select`, `save`, `reset_override`, `view`, `reset_filters`, `open_page` | — | `pages/AdminDestinationsPage.tsx` |
+| `admin__recommendations--` | `select`, `new`, `save`, `publish_now`, `delete`, `import_bundled`, `reset_filters`, `country` | — | `pages/AdminRecommendationsPage.tsx` |
+| `admin__legal_terms--` | `publish`, `set_current`, `use_as_basis`, `discard_draft` | `{ rollout }` on `publish`/`set_current` | `pages/AdminLegalTermsPage.tsx` |
+| `admin__settings--` | `save`, `discard` | — | `pages/AdminGlobalSettingsPage.tsx` |
+| `admin__ai_benchmark--` | `run`, `stop`, `export`, `new_session`, `delete_session`, `open_run`, `reset_filters`, `show_unrated`, `add_models`, `run_single`, `app_default_model`, `open_telemetry` | `{ source }`, `{ include_logs }` | `pages/AdminAiBenchmarkPage.tsx` |
+| `admin__ai_benchmark_run--` | `rate`, `rerun`, `download`, `abort`, `open_trip`, `save_note` | `{ rating }` on `rate` | `components/admin/AiBenchmarkRunSheet.tsx` |
+| `admin__ai_telemetry--` | `worker_health`, `reset_filters`, `trend_tab`, `breakdown_tab`, `leader`, `focus_provider` | — | `pages/AdminAiTelemetryPage.tsx` |
+| `admin__worker_health--` | `ai_telemetry`, `reset_filters` | — | `pages/AdminAiWorkerHealthPage.tsx` |
+| `admin__og_tools--` | `tab`, `inspect`, `copy_command`, `load_trip` | `{ tab }`, `{ source }`, `{ command }` | `pages/AdminOgToolsPage.tsx` |
+| `admin__design_playground--open` | — | — | `pages/AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_component_group--view` | — | `{ group_id }` | `pages/AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `pages/AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__component_playground--open` | — | — | `pages/AdminComponentPlaygroundPage.tsx` |
 
 ### Trip View
 | Event | Detail | Payload | File |

@@ -2,6 +2,7 @@ import { escapeHtml } from "./trip-og-data.ts";
 import { BLOG_OG_IMAGE_REVISION, getBlogImageMedia } from "../../data/blogImageMedia.ts";
 import { getExampleTripCardByTemplateId, getLocalizedExampleTripCard } from "../../data/exampleTripCards.ts";
 import { APP_DEFAULT_DESCRIPTION, APP_NAME, applyAppNameTemplate } from "../../config/appGlobals.ts";
+import { resolveAdminDocumentTitle } from "../../shared/adminScreenTitles.ts";
 
 export const SITE_NAME = APP_NAME;
 export const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
@@ -735,7 +736,7 @@ const getPageDefinition = (basePath: string, locale: SupportedLocale): PageDefin
 
   if (basePath.startsWith("/admin")) {
     return finalizePageDefinition({
-      title: "Admin Dashboard",
+      title: resolveAdminDocumentTitle(basePath),
       description: "Internal {{appName}} admin workspace.",
       robots: "noindex,nofollow,max-image-preview:large",
     });

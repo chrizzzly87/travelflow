@@ -372,9 +372,11 @@ const authorizeInternalRequest = async (
   );
 
   if (!response.ok) {
+    // Never echo the PostgREST message to the client: code + authored sentence.
     const payload = await safeJsonParse(response);
+    console.error("[ai-benchmark] admin role check failed", response.status, payload);
     return json(403, {
-      error: payload?.message || payload?.error || "Admin role verification failed.",
+      error: "Admin role verification failed.",
       code: "ADMIN_ROLE_CHECK_FAILED",
     });
   }
@@ -2554,6 +2556,10 @@ const persistCancelledRunTelemetry = async (run: BenchmarkRunRow) => {
   } catch {
     // Best-effort only.
   }
+};
+
+export const __benchmarkAuthInternals = {
+  authorizeInternalRequest,
 };
 
 export const __benchmarkValidationInternals = {

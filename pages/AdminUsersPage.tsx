@@ -1,23 +1,30 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from '@/app/navigation';
+import { toAdminErrorMessage } from '../services/adminErrorMessages';
+import { Link, useSearchParams } from '@/app/navigation';
 import {
     AppleLogo,
     ArrowSquareOut,
+    Broom,
+    CaretDown,
     ChatCircleDots,
-    ChartBarHorizontal,
+    Copy,
+    CreditCard,
     DiscordLogo,
     DotsThreeVertical,
+    DownloadSimple,
     EnvelopeSimple,
     FacebookLogo,
     GithubLogo,
     GoogleLogo,
+    Hourglass,
     Key,
     Question,
     SpinnerGap,
     Trash,
-    X,
     UserPlus,
+    UsersThree,
     WarningCircle,
+    X,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
@@ -51,12 +58,20 @@ import {
 } from '../services/appDialogPresets';
 import type { PlanTierKey } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
-import { Badge, type BadgeVariant } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { cn } from '../lib/utils';
+import { Textarea } from '../components/ui/textarea';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import {
     Table,
     TableBody,
@@ -67,9 +82,7 @@ import {
 } from '../components/ui/table';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
-import {
-    AdminSortHeaderButton,
-} from '../components/admin/AdminDataTable';
+import { AdminSortHeaderButton } from '../components/admin/AdminDataTable';
 import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
@@ -77,19 +90,73 @@ import {
     getAdminStickyBodyCellClass,
     getAdminStickyHeaderCellClass,
 } from '../components/admin/AdminDataTableUtils';
-import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
+import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
+import { AdminPagination } from '../components/admin/AdminPagination';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
-import { CopyableUuid } from '../components/admin/CopyableUuid';
+import { CopyableUuid, copyTextToClipboard } from '../components/admin/CopyableUuid';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
+import {
+    USER_ACTIVATION_VALUES,
+    USER_QUEUE_FILTERS,
+    USER_QUEUE_IDS,
+    USER_STATUS_VALUES,
+    USER_SUBSCRIPTION_VALUES,
+    USER_TERMS_STATE_VALUES,
+    USER_TRIP_FILTER_LABELS,
+    USER_TRIP_FILTER_VALUES,
+    SOCIAL_PROVIDER_VALUES,
+    countUserQueues,
+    formatAbsoluteTimestamp,
+    formatAccountStatusLabel,
+    formatRelativeTimestamp,
+    fromDateTimeInputValue,
+    getActivationStatusLabel,
+    getUserAccountStatus,
+    getUserActiveTrips,
+    getUserDisplayName,
+    getUserSubscriptionStatusLabel,
+    getUserTermsSortRank,
+    getUserTermsStateLabel,
+    getUserTermsStateTone,
+    getUserTotalTrips,
+    activationStatusTone,
+    hasNotableSubscription,
+    isTripExpiryInputUnchanged,
+    isUserHardDeleteEligible,
+    isUserTriplessAndNoData,
+    matchesUserTripFilter,
+    resolveActivationStatus,
+    resolveAppliedUserQueue,
+    resolveUserLifecycleStatus,
+    resolveUserLoginProfile,
+    resolveUserSubscriptionDowngradeAt,
+    resolveUserSubscriptionStatus,
+    resolveUserTermsState,
+    subscriptionStatusTone,
+    tierTone,
+    toDateTimeInputValue,
+    type SocialProviderFilter,
+    type UserAccountStatus,
+    type UserActivationStatus,
+    type UserLoginType,
+    type UserQueueId,
+    type UserSubscriptionStatus,
+    type UserTermsState,
+    type UserTripFilter,
+} from '../components/admin/adminUsersModel';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
-import {
-    humanizeAdminBillingStatus,
-    normalizeAdminBillingStatus,
-    resolveAdminBillingStatusTone,
-} from '../services/adminBillingPresentation';
-import { resolveBillingAccessUntil, resolveBillingLifecycleState } from '../lib/billing/subscriptionState';
+import { cn } from '../lib/utils';
+import { humanizeAdminBillingStatus } from '../services/adminBillingPresentation';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     buildDiffEntryRenderKey,
     buildSecondaryFacetRenderKey,
@@ -113,27 +180,21 @@ type SortKey =
     | 'account_status'
     | 'terms_accepted_version';
 type SortDirection = 'asc' | 'desc';
-type UserActivationStatus = 'activated' | 'invited' | 'pending' | 'anonymous';
-type UserAccountStatus = 'active' | 'disabled' | 'deleted';
-type UserLoginType = 'social' | 'password' | 'unknown';
-type UserTripFilter = 'no_trips_no_profile' | 'no_trips' | 'one_to_two' | 'three_to_five' | 'six_plus';
-type UserTermsState = 'latest' | 'pending' | 'never';
-type UserSubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'paused' | 'canceled_grace' | 'canceled' | 'inactive' | 'none' | 'unknown';
-type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github' | 'discord' | 'other_social';
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 type UserVisibleColumnId =
     | 'user'
+    | 'status'
     | 'login'
+    | 'tier'
+    | 'subscription'
     | 'trips'
     | 'activation'
     | 'role'
-    | 'tier'
-    | 'subscription'
-    | 'status'
     | 'toc'
     | 'last_visit'
     | 'last_log'
     | 'created';
+type UserDetailTab = 'overview' | 'profile' | 'billing' | 'trips' | 'activity';
 
 const PAGE_SIZE = 25;
 const USER_CHANGE_LOG_DRAWER_LIMIT = 20;
@@ -144,21 +205,17 @@ const USERS_CACHE_KEY = 'admin.users.cache.v1';
 const USERS_COLUMNS_CACHE_KEY_PREFIX = 'admin.users.columns.v2';
 const USERNAME_CHANGE_COOLDOWN_DAYS = 90;
 const USER_ROLE_VALUES = ['admin', 'user'] as const;
-const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
-const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
 const USER_LOGIN_TYPE_VALUES: ReadonlyArray<UserLoginType> = ['social', 'password', 'unknown'];
-const USER_TRIP_FILTER_VALUES: ReadonlyArray<UserTripFilter> = ['no_trips_no_profile', 'no_trips', 'one_to_two', 'three_to_five', 'six_plus'];
-const USER_TERMS_STATE_VALUES: ReadonlyArray<UserTermsState> = ['latest', 'pending', 'never'];
-const USER_SUBSCRIPTION_VALUES: ReadonlyArray<UserSubscriptionStatus> = ['active', 'trialing', 'past_due', 'paused', 'canceled_grace', 'canceled', 'inactive', 'none', 'unknown'];
+// Render order of the columns. The picker can only show or hide, never reorder.
 const USER_VISIBLE_COLUMN_IDS: readonly UserVisibleColumnId[] = [
     'user',
+    'status',
     'login',
+    'tier',
+    'subscription',
     'trips',
     'activation',
     'role',
-    'tier',
-    'subscription',
-    'status',
     'toc',
     'last_visit',
     'last_log',
@@ -166,19 +223,32 @@ const USER_VISIBLE_COLUMN_IDS: readonly UserVisibleColumnId[] = [
 ];
 const USER_VISIBLE_COLUMN_OPTIONS: Array<{ value: UserVisibleColumnId; label: string }> = [
     { value: 'user', label: 'User' },
-    { value: 'login', label: 'Login method' },
-    { value: 'trips', label: '# Trips' },
+    { value: 'status', label: 'Status' },
+    { value: 'login', label: 'Sign-in method' },
+    { value: 'tier', label: 'Plan' },
+    { value: 'subscription', label: 'Subscription' },
+    { value: 'trips', label: 'Trips' },
     { value: 'activation', label: 'Activation' },
     { value: 'role', label: 'Role' },
-    { value: 'tier', label: 'Tier' },
-    { value: 'subscription', label: 'Subscription' },
-    { value: 'status', label: 'Status' },
-    { value: 'toc', label: 'ToC' },
+    { value: 'toc', label: 'Terms' },
     { value: 'last_visit', label: 'Last sign-in' },
-    { value: 'last_log', label: 'Last log' },
+    { value: 'last_log', label: 'Last updated' },
     { value: 'created', label: 'Created' },
 ];
+// What fits a 1440px screen without scrolling sideways. Role is a badge on the
+// name, activation folds into Status, subscription into Plan.
 const DEFAULT_VISIBLE_USER_COLUMNS: UserVisibleColumnId[] = [
+    'user',
+    'status',
+    'login',
+    'tier',
+    'trips',
+    'last_visit',
+    'created',
+];
+// The previous default set. Admins who never touched the picker have exactly
+// this stored; they get the new default instead of a frozen 10-column table.
+const LEGACY_DEFAULT_VISIBLE_USER_COLUMNS: UserVisibleColumnId[] = [
     'user',
     'login',
     'trips',
@@ -190,17 +260,8 @@ const DEFAULT_VISIBLE_USER_COLUMNS: UserVisibleColumnId[] = [
     'last_visit',
     'created',
 ];
-const SOCIAL_PROVIDER_VALUES: ReadonlyArray<SocialProviderFilter> = [
-    'google',
-    'facebook',
-    'kakao',
-    'apple',
-    'github',
-    'discord',
-    'other_social',
-];
 const SOCIAL_PROVIDER_OPTIONS: Array<{ value: SocialProviderFilter; label: string }> = [
-    { value: 'google', label: 'Gmail' },
+    { value: 'google', label: 'Google' },
     { value: 'facebook', label: 'Facebook' },
     { value: 'kakao', label: 'Kakao' },
     { value: 'apple', label: 'Apple' },
@@ -208,16 +269,44 @@ const SOCIAL_PROVIDER_OPTIONS: Array<{ value: SocialProviderFilter; label: strin
     { value: 'discord', label: 'Discord' },
     { value: 'other_social', label: 'Other social' },
 ];
-const USER_TRIP_FILTER_LABELS: Record<UserTripFilter, string> = {
-    no_trips_no_profile: 'No trips + no profile data',
-    no_trips: 'No trips',
-    one_to_two: '1-2 trips',
-    three_to_five: '3-5 trips',
-    six_plus: '6+ trips',
-};
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
+
+const USER_QUEUE_COPY: Record<UserQueueId, { label: string; description: string; icon: React.ReactNode; attention: boolean }> = {
+    awaiting_activation: {
+        label: 'Awaiting activation',
+        description: 'Invited or created, never signed in.',
+        icon: <Hourglass />,
+        attention: true,
+    },
+    subscriptions_at_risk: {
+        label: 'Subscriptions at risk',
+        description: 'Past due, or cancelled and in grace.',
+        icon: <CreditCard />,
+        attention: true,
+    },
+    empty_accounts: {
+        label: 'Empty accounts',
+        description: 'No trips, no profile, never signed in.',
+        icon: <Broom />,
+        attention: false,
+    },
+};
+
+const USER_QUEUE_EVENTS = {
+    awaiting_activation: 'admin__users_queue--awaiting_activation',
+    subscriptions_at_risk: 'admin__users_queue--subscriptions_at_risk',
+    empty_accounts: 'admin__users_queue--empty_accounts',
+} as const;
+
+const USER_DETAIL_TAB_LABELS: Record<UserDetailTab, string> = {
+    overview: 'Overview',
+    profile: 'Profile & access',
+    billing: 'Billing',
+    trips: 'Trips',
+    activity: 'Activity',
+};
 
 const downloadBlob = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
@@ -250,22 +339,14 @@ interface LoginPillDefinition {
     icon: IconComponent;
 }
 
-interface UserLoginProfile {
-    providers: string[];
-    hasPassword: boolean;
-    socialProviders: SocialProviderFilter[];
-    isUnknown: boolean;
-    isAnonymousOnly: boolean;
-}
-
 const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     password: {
-        label: 'Username/password',
-        className: 'border-border bg-secondary text-foreground',
+        label: 'Email',
+        className: 'border-border bg-secondary text-secondary-foreground',
         icon: Key,
     },
     google: {
-        label: 'Gmail',
+        label: 'Google',
         className: 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
         icon: GoogleLogo,
     },
@@ -281,12 +362,12 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     },
     apple: {
         label: 'Apple',
-        className: 'border-slate-400 bg-secondary text-foreground',
+        className: 'border-slate-400 bg-secondary text-foreground dark:border-slate-500',
         icon: AppleLogo,
     },
     github: {
         label: 'GitHub',
-        className: 'border-zinc-400 bg-secondary text-foreground',
+        className: 'border-zinc-400 bg-secondary text-foreground dark:border-zinc-500',
         icon: GithubLogo,
     },
     discord: {
@@ -300,8 +381,8 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
         icon: ChatCircleDots,
     },
     anonymous: {
-        label: 'Anonymous',
-        className: 'border-violet-300 bg-violet-50 text-violet-700 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30',
+        label: 'Guest',
+        className: 'border-border bg-secondary text-muted-foreground',
         icon: Question,
     },
     unknown: {
@@ -360,12 +441,6 @@ const parsePositivePage = (value: string | null): number => {
     return Math.max(1, Math.floor(parsed));
 };
 
-const parseUserVisibleColumns = (value: string | null): UserVisibleColumnId[] => {
-    const parsed = parseQueryMultiValue(value, USER_VISIBLE_COLUMN_IDS);
-    if (parsed.length === 0) return [...DEFAULT_VISIBLE_USER_COLUMNS];
-    return sanitizeUserVisibleColumns(parsed);
-};
-
 const sanitizeUserVisibleColumns = (values: string[] | null | undefined): UserVisibleColumnId[] => {
     if (!Array.isArray(values) || values.length === 0) return [...DEFAULT_VISIBLE_USER_COLUMNS];
     const unique = new Set<string>();
@@ -380,67 +455,26 @@ const sanitizeUserVisibleColumns = (values: string[] | null | undefined): UserVi
     return ['user', ...ordered];
 };
 
+const isSameColumnSet = (left: readonly string[], right: readonly string[]): boolean => (
+    left.length === right.length && left.every((value) => right.includes(value))
+);
+
+const parseUserVisibleColumns = (value: string | null): UserVisibleColumnId[] => {
+    const parsed = parseQueryMultiValue(value, USER_VISIBLE_COLUMN_IDS);
+    if (parsed.length === 0) return [...DEFAULT_VISIBLE_USER_COLUMNS];
+    return sanitizeUserVisibleColumns(parsed);
+};
+
+const restoreCachedUserVisibleColumns = (cached: string[] | null | undefined): UserVisibleColumnId[] => {
+    if (Array.isArray(cached) && isSameColumnSet(cached, LEGACY_DEFAULT_VISIBLE_USER_COLUMNS)) {
+        return [...DEFAULT_VISIBLE_USER_COLUMNS];
+    }
+    return sanitizeUserVisibleColumns(cached);
+};
+
 const buildUsersColumnsCacheKey = (userId: string | null | undefined): string => {
     const normalized = typeof userId === 'string' ? userId.trim() : '';
     return `${USERS_COLUMNS_CACHE_KEY_PREFIX}.${normalized || 'anonymous'}`;
-};
-
-const toDateTimeInputValue = (value: string | null): string => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    const hour = `${date.getHours()}`.padStart(2, '0');
-    const minute = `${date.getMinutes()}`.padStart(2, '0');
-    return `${year}-${month}-${day}T${hour}:${minute}`;
-};
-
-const fromDateTimeInputValue = (value: string): string | null => {
-    if (!value.trim()) return null;
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return null;
-    return new Date(parsed).toISOString();
-};
-
-const formatTimestamp = (value: string | null | undefined): string => {
-    if (!value) return 'No visit yet';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return 'No visit yet';
-    return new Date(parsed).toLocaleString();
-};
-
-const formatOptionalTimestamp = (value: string | null | undefined): string => {
-    if (!value) return 'Not set';
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return 'Unknown';
-    return new Date(parsed).toLocaleString();
-};
-
-const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-
-const formatRelativeTimestamp = (value: string | null | undefined, fallback = 'No data'): string => {
-    if (!value) return fallback;
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return fallback;
-
-    const diffMs = parsed - Date.now();
-    const absDiffMs = Math.abs(diffMs);
-    const minuteMs = 60_000;
-    const hourMs = 60 * minuteMs;
-    const dayMs = 24 * hourMs;
-    const weekMs = 7 * dayMs;
-    const monthMs = 30 * dayMs;
-    const yearMs = 365 * dayMs;
-
-    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
-    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
-    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
-    if (absDiffMs < weekMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
-    if (absDiffMs < monthMs) return relativeTimeFormatter.format(Math.round(diffMs / weekMs), 'week');
-    if (absDiffMs < yearMs) return relativeTimeFormatter.format(Math.round(diffMs / monthMs), 'month');
-    return relativeTimeFormatter.format(Math.round(diffMs / yearMs), 'year');
 };
 
 const getUsernameCooldownMeta = (usernameChangedAt: string | null | undefined): {
@@ -461,26 +495,9 @@ const getUsernameCooldownMeta = (usernameChangedAt: string | null | undefined): 
     };
 };
 
-const formatFieldLabel = (value: string): string => (
-    value
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (char) => char.toUpperCase())
-);
-
-const formatChangeValue = (value: unknown): string => {
-    if (value === null || value === undefined) return '—';
-    if (typeof value === 'boolean') return value ? 'true' : 'false';
-    if (typeof value === 'number') return String(value);
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (!trimmed) return '—';
-        const parsedDate = Date.parse(trimmed);
-        if (Number.isFinite(parsedDate) && /^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
-            return new Date(parsedDate).toLocaleString();
-        }
-        return trimmed;
-    }
-    return JSON.stringify(value);
+const formatFieldLabel = (value: string): string => {
+    const spaced = value.replace(/_/g, ' ').trim();
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
 
 const asRecord = (value: Record<string, unknown> | null | undefined): Record<string, unknown> => {
@@ -506,122 +523,6 @@ const mergeTripSnapshotWithViewSettings = (
     return {
         ...normalizedSnapshot,
         view_settings: normalizedViewSettings,
-    };
-};
-
-const getUserDisplayName = (user: AdminUserRecord): string => {
-    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
-    if (fullName) return fullName;
-    if (user.display_name?.trim()) return user.display_name.trim();
-    if (user.username_display?.trim()) return user.username_display.trim();
-    if (user.username?.trim()) return user.username.trim();
-    return 'Unnamed user';
-};
-
-const resolveActivationStatus = (user: AdminUserRecord): UserActivationStatus => {
-    const providerCandidates = [
-        ...(Array.isArray(user.auth_providers) ? user.auth_providers : []),
-        user.auth_provider || '',
-    ]
-        .flatMap((value) => {
-            const trimmed = value.trim().toLowerCase();
-            return trimmed ? [trimmed] : [];
-        });
-    const hasAnonymousProvider = providerCandidates.some((provider) => provider === 'anonymous' || provider === 'anon');
-    if (Boolean(user.is_anonymous) || hasAnonymousProvider) return 'anonymous';
-
-    const explicit = (user.activation_status || '').trim().toLowerCase();
-    if (explicit === 'activated' || explicit === 'invited' || explicit === 'pending' || explicit === 'anonymous') {
-        return explicit;
-    }
-    if (explicit === 'pending_activation' || explicit === 'placeholder') return 'pending';
-    if (!user.email && !user.last_sign_in_at) return 'pending';
-    if (user.email && !user.last_sign_in_at) return 'invited';
-    return 'activated';
-};
-
-const getActivationStatusLabel = (status: UserActivationStatus): string => {
-    if (status === 'activated') return 'Activated';
-    if (status === 'invited') return 'Invited';
-    if (status === 'pending') return 'Pending activation';
-    return 'Anonymous';
-};
-
-// Dense table pill on the shared Badge. Violet (premium tier, anonymous users)
-// has no semantic tone, so it rides on `neutral` with its own colours.
-type UserPillTone = BadgeVariant | 'violet';
-const USER_PILL_CLASS = 'text-[11px] font-semibold';
-const VIOLET_PILL_CLASS = 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
-const userPillProps = (tone: UserPillTone): { variant: BadgeVariant; className: string } => (
-    tone === 'violet'
-        ? { variant: 'neutral', className: cn(USER_PILL_CLASS, VIOLET_PILL_CLASS) }
-        : { variant: tone, className: USER_PILL_CLASS }
-);
-
-const activationPillTone = (status: UserActivationStatus): UserPillTone => {
-    if (status === 'activated') return 'success';
-    if (status === 'invited') return 'info';
-    if (status === 'pending') return 'warning';
-    return 'violet';
-};
-
-const normalizeProviderKey = (value: string | null | undefined): string => {
-    const normalized = (value || '').trim().toLowerCase();
-    if (!normalized) return '';
-    if (normalized === 'password' || normalized === 'credentials' || normalized === 'email_password' || normalized === 'mail') {
-        return 'email';
-    }
-    if (normalized === 'google_oauth2' || normalized === 'gmail') return 'google';
-    if (normalized === 'anon') return 'anonymous';
-    return normalized;
-};
-
-const mapProviderToSocialFilter = (provider: string): SocialProviderFilter | null => {
-    if (provider === 'google') return 'google';
-    if (provider === 'facebook') return 'facebook';
-    if (provider === 'kakao') return 'kakao';
-    if (provider === 'apple') return 'apple';
-    if (provider === 'github') return 'github';
-    if (provider === 'discord') return 'discord';
-    if (provider === 'email' || provider === 'anonymous' || provider === 'placeholder' || provider === 'unknown') {
-        return null;
-    }
-    return 'other_social';
-};
-
-const resolveUserLoginProfile = (user: AdminUserRecord): UserLoginProfile => {
-    const candidates: string[] = [];
-    if (Array.isArray(user.auth_providers)) {
-        user.auth_providers.forEach((provider) => candidates.push(provider));
-    }
-    if (user.auth_provider) candidates.push(user.auth_provider);
-    if (candidates.length === 0 && user.email) candidates.push('email');
-    if (user.is_anonymous) candidates.push('anonymous');
-
-    const providerSet = new Set<string>();
-    candidates.forEach((provider) => {
-        const normalized = normalizeProviderKey(provider);
-        if (normalized) providerSet.add(normalized);
-    });
-    if (providerSet.size === 0 && user.email) providerSet.add('email');
-
-    const providers = Array.from(providerSet);
-    const hasPassword = providers.includes('email');
-    const socialSet = new Set<SocialProviderFilter>();
-    providers.forEach((provider) => {
-        const socialProvider = mapProviderToSocialFilter(provider);
-        if (socialProvider) socialSet.add(socialProvider);
-    });
-    const socialProviders = SOCIAL_PROVIDER_VALUES.filter((provider) => socialSet.has(provider));
-    const isUnknown = !hasPassword && socialProviders.length === 0;
-    const isAnonymousOnly = isUnknown && (providers.includes('anonymous') || Boolean(user.is_anonymous));
-
-    return {
-        providers,
-        hasPassword,
-        socialProviders,
-        isUnknown,
-        isAnonymousOnly,
     };
 };
 
@@ -653,66 +554,9 @@ const toProfileGenderDraft = (value: string | null | undefined): '' | 'female' |
         : '';
 };
 
-const hasNonEmptyValue = (value: string | null | undefined): boolean => Boolean(value && value.trim().length > 0);
 const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
 const isLikelyEmail = (value: string): boolean => EMAIL_PATTERN.test(value.trim());
 
-const getUserTotalTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.total_trips || 0));
-
-const getUserActiveTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.active_trips || 0));
-const isUserHardDeleteEligible = (user: AdminUserRecord): boolean => (user.account_status || 'active') !== 'deleted';
-
-const isUserTriplessAndNoData = (user: AdminUserRecord): boolean => {
-    if (getUserTotalTrips(user) !== 0) return false;
-    const hasProfileData = hasNonEmptyValue(user.email)
-        || hasNonEmptyValue(user.first_name)
-        || hasNonEmptyValue(user.last_name)
-        || hasNonEmptyValue(user.display_name)
-        || hasNonEmptyValue(user.username)
-        || hasNonEmptyValue(user.country)
-        || hasNonEmptyValue(user.city);
-    if (hasProfileData) return false;
-    if (hasNonEmptyValue(user.last_sign_in_at) || hasNonEmptyValue(user.onboarding_completed_at)) return false;
-    const loginProfile = resolveUserLoginProfile(user);
-    return !loginProfile.hasPassword && loginProfile.socialProviders.length === 0;
-};
-
-const matchesUserTripFilter = (user: AdminUserRecord, filter: UserTripFilter): boolean => {
-    const totalTrips = getUserTotalTrips(user);
-    if (filter === 'no_trips_no_profile') return isUserTriplessAndNoData(user);
-    if (filter === 'no_trips') return totalTrips === 0;
-    if (filter === 'one_to_two') return totalTrips >= 1 && totalTrips <= 2;
-    if (filter === 'three_to_five') return totalTrips >= 3 && totalTrips <= 5;
-    return totalTrips >= 6;
-};
-
-const resolveUserTermsState = (
-    user: Pick<AdminUserRecord, 'terms_accepted_version'>,
-    currentTermsVersion: string | null
-): UserTermsState => {
-    const acceptedVersion = (user.terms_accepted_version || '').trim();
-    if (!acceptedVersion) return 'never';
-    if (!currentTermsVersion) return 'latest';
-    return acceptedVersion === currentTermsVersion ? 'latest' : 'pending';
-};
-
-const getUserTermsStateLabel = (state: UserTermsState): string => {
-    if (state === 'latest') return 'Latest accepted';
-    if (state === 'pending') return 'Pending re-accept';
-    return 'Never accepted';
-};
-
-const getUserTermsStatePillTone = (state: UserTermsState): UserPillTone => {
-    if (state === 'latest') return 'success';
-    if (state === 'pending') return 'warning';
-    return 'danger';
-};
-
-const getUserTermsSortRank = (state: UserTermsState): number => {
-    if (state === 'latest') return 3;
-    if (state === 'pending') return 2;
-    return 1;
-};
 const getUserReferenceText = (user: AdminUserRecord): string => {
     const name = getUserDisplayName(user);
     const email = (user.email || '').trim();
@@ -720,11 +564,9 @@ const getUserReferenceText = (user: AdminUserRecord): string => {
     return `${name} (${user.user_id})`;
 };
 
-const getUnknownErrorMessage = (error: unknown, fallback: string): string => {
-    if (error instanceof Error && error.message.trim()) return error.message.trim();
-    if (typeof error === 'string' && error.trim()) return error.trim();
-    return fallback;
-};
+const getUnknownErrorMessage = (error: unknown, fallback: string): string => (
+    toAdminErrorMessage(error, fallback, 'admin-users')
+);
 
 const summarizeBulkDeleteFailures = (details: string[]): string => {
     if (details.length === 0) return '';
@@ -750,14 +592,11 @@ const buildSingleHardDeleteMessage = (
             <p>
                 Hard delete permanently removes the <strong>auth account</strong>, <strong>profile data</strong>, and <strong>all owned trips{tripSuffix}</strong>.
             </p>
-            <ul className="list-disc space-y-1 pl-5">
+            <ul className="list-disc space-y-1 ps-5">
                 <li>Auth account and profile data are permanently removed.</li>
                 <li>{tripLine}</li>
                 <li>Use soft delete instead if you may need to restore this user later.</li>
             </ul>
-            <p>
-                Use soft delete instead if you may need to restore this user later.
-            </p>
             {ownedTripCount > 0 ? (
                 <p>
                     To keep trips, cancel and use <strong>Transfer trips + hard delete</strong> first.
@@ -780,7 +619,7 @@ const buildSingleSoftDeleteMessage = (userName: string): React.ReactNode => {
             <p>
                 Soft delete keeps the account and related data in the database so this user can be restored later.
             </p>
-            <ul className="list-disc space-y-1 pl-5">
+            <ul className="list-disc space-y-1 ps-5">
                 <li>The user cannot sign in while the account is soft-deleted.</li>
                 <li>An admin can restore the user later.</li>
             </ul>
@@ -806,10 +645,10 @@ const buildBulkHardDeleteMessage = (
             <p>
                 It also permanently removes <strong>{selectedTrips}</strong> owned trip{selectedTrips === 1 ? '' : 's'} in total.
             </p>
-            <ul className="list-disc space-y-1 pl-5">
+            <ul className="list-disc space-y-1 ps-5">
                 <li>Use soft delete if these users might need to be restored later.</li>
                 {selectedTrips > 0 ? (
-                    <li>Cancel and transfer trips from each user drawer if you need to preserve trip data.</li>
+                    <li>Cancel and transfer trips from each user's details if you need to preserve trip data.</li>
                 ) : null}
                 {selectedTrips > 0 ? (
                     <li>Continue hard delete to permanently remove selected users and owned trips.</li>
@@ -832,7 +671,7 @@ const buildTransferAndHardDeleteMessage = (
         <p>
             Transfer <strong>{transferCount}</strong> trip{transferCount === 1 ? '' : 's'} from <strong>{sourceUser}</strong> to <strong>{targetUser}</strong>?
         </p>
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc space-y-1 ps-5">
             <li>Step 1: Transfer all owned trips to the target account.</li>
             <li>Step 2: Hard-delete the source user (auth + profile only).</li>
             <li>Result: trips remain accessible under the new owner.</li>
@@ -880,167 +719,109 @@ const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<st
     JSON.stringify(toStableComparableJson(left)) === JSON.stringify(toStableComparableJson(right))
 );
 
-const rolePillTone = (role: 'admin' | 'user'): UserPillTone => (
-    role === 'admin' ? 'accent' : 'neutral'
-);
+const getPlanName = (tier: PlanTierKey): string => PLAN_CATALOG[tier]?.publicName || tier;
 
-const statusPillTone = (status: UserAccountStatus): UserPillTone => {
-    if (status === 'active') return 'success';
-    if (status === 'disabled') return 'warning';
-    return 'danger';
-};
-
-const formatAccountStatusLabel = (status: UserAccountStatus): string => {
-    if (status === 'disabled') return 'Suspended';
-    return status.charAt(0).toUpperCase() + status.slice(1);
-};
-
-const resolveUserSubscriptionStatus = (user: AdminUserRecord): UserSubscriptionStatus => {
-    const lifecycle = resolveBillingLifecycleState({
-        providerStatus: user.provider_status,
-        status: user.subscription_status,
-        currentPeriodEnd: user.current_period_end,
-        cancelAt: user.cancel_at,
-        canceledAt: user.canceled_at,
-        graceEndsAt: user.grace_ends_at,
-        billingAccessUntil: resolveBillingAccessUntil({
-            providerStatus: user.provider_status,
-            status: user.subscription_status,
-            currentPeriodEnd: user.current_period_end,
-            cancelAt: user.cancel_at,
-            canceledAt: user.canceled_at,
-            graceEndsAt: user.grace_ends_at,
-        }),
-    });
-    if (
-        lifecycle === 'active'
-        || lifecycle === 'trialing'
-        || lifecycle === 'past_due'
-        || lifecycle === 'paused'
-        || lifecycle === 'canceled_grace'
-        || lifecycle === 'inactive'
-        || lifecycle === 'none'
-    ) {
-        return lifecycle;
-    }
-    const normalized = normalizeAdminBillingStatus(user.provider_status, user.subscription_status);
-    if (normalized === 'canceled') {
-        return 'canceled';
-    }
-    return 'unknown';
-};
-
-const getUserSubscriptionStatusLabel = (status: UserSubscriptionStatus): string => {
-    if (status === 'canceled_grace') return 'Canceled (grace period)';
-    return humanizeAdminBillingStatus(status);
-};
-
-const subscriptionStatusPillTone = (status: UserSubscriptionStatus): UserPillTone => (
-    resolveAdminBillingStatusTone(status === 'canceled_grace' ? 'grace' : status)
-);
-
-const resolveUserSubscriptionDowngradeAt = (user: AdminUserRecord): string | null => (
-    user.grace_ends_at || user.current_period_end || user.cancel_at || null
-);
-
-const tierPillTone = (tier: PlanTierKey): UserPillTone => {
-    if (tier === 'tier_premium') return 'violet';
-    if (tier === 'tier_mid') return 'info';
-    return 'neutral';
-};
-
-interface CreateInviteDraft {
+interface CreateUserDraft {
     email: string;
     firstName: string;
     lastName: string;
     tierKey: PlanTierKey;
-}
-
-interface CreateDirectDraft extends CreateInviteDraft {
     password: string;
 }
 
-const INITIAL_INVITE_DRAFT: CreateInviteDraft = {
+const INITIAL_CREATE_DRAFT: CreateUserDraft = {
     email: '',
     firstName: '',
     lastName: '',
     tierKey: 'tier_free',
+    password: '',
 };
 
-const INITIAL_DIRECT_DRAFT: CreateDirectDraft = {
-    email: '',
-    firstName: '',
-    lastName: '',
-    password: '',
-    tierKey: 'tier_free',
-};
+/** A relative date with the absolute one in the shared tooltip. */
+const RelativeTime: React.FC<{ value: string | null | undefined; fallback: string; className?: string }> = ({
+    value,
+    fallback,
+    className,
+}) => (
+    <span
+        className={cn('tabular-nums', className)}
+        data-tooltip={value ? formatAbsoluteTimestamp(value) : undefined}
+    >
+        {formatRelativeTimestamp(value, fallback)}
+    </span>
+);
+
+const DetailField: React.FC<{ label: React.ReactNode; children: React.ReactNode; className?: string }> = ({
+    label,
+    children,
+    className,
+}) => (
+    <div className={cn('flex min-w-0 flex-col gap-0.5', className)}>
+        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+        <dd className="min-w-0 text-sm text-foreground">{children}</dd>
+    </div>
+);
+
+const LoginPills: React.FC<{ user: AdminUserRecord }> = ({ user }) => (
+    <div className="flex flex-wrap items-center gap-1.5">
+        {getLoginPills(user).map((pill) => {
+            const Icon = pill.icon;
+            return (
+                <AdminStatusBadge key={pill.label} dot={false} className={pill.className}>
+                    <Icon size={12} aria-hidden="true" />
+                    {pill.label}
+                </AdminStatusBadge>
+            );
+        })}
+    </div>
+);
 
 const UserRowActionsMenu: React.FC<{
     disabled: boolean;
     isDeleted: boolean;
+    userName: string;
+    tripsLink: string;
     onOpenDetails: () => void;
+    onCopyId: () => void;
     onSoftDelete: () => void;
-}> = ({ disabled, isDeleted, onOpenDetails, onSoftDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const onPointer = (event: PointerEvent) => {
-            if (!containerRef.current) return;
-            if (containerRef.current.contains(event.target as Node)) return;
-            setIsOpen(false);
-        };
-        const onEscape = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape') return;
-            setIsOpen(false);
-        };
-        window.addEventListener('pointerdown', onPointer);
-        window.addEventListener('keydown', onEscape);
-        return () => {
-            window.removeEventListener('pointerdown', onPointer);
-            window.removeEventListener('keydown', onEscape);
-        };
-    }, [isOpen]);
-
-    return (
-        <div className="relative" ref={containerRef}>
-            <button
+}> = ({ disabled, isDeleted, userName, tripsLink, onOpenDetails, onCopyId, onSoftDelete }) => (
+    <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild disabled={disabled}>
+            <Button
                 type="button"
-                onClick={() => setIsOpen((current) => !current)}
+                variant="ghost"
+                size="icon-sm"
                 disabled={disabled}
-                className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:text-foreground"
-                aria-label="Open user actions"
+                aria-label={`Open actions for ${userName}`}
+                data-tooltip="User actions"
             >
-                <DotsThreeVertical size={16} />
-            </button>
-            {isOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[170px] rounded-lg border border-border bg-card p-1 shadow-xl dark:shadow-none">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsOpen(false);
-                            onOpenDetails();
-                        }}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-secondary"
-                    >
-                        Open details
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsOpen(false);
-                            onSoftDelete();
-                        }}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-amber-800 hover:bg-amber-50 dark:hover:bg-amber-400/12 dark:text-amber-200"
-                    >
-                        {isDeleted ? 'Restore user' : 'Soft-delete user'}
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
+                <DotsThreeVertical weight="bold" />
+            </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[180px]">
+            <DropdownMenuItem onSelect={onOpenDetails}>
+                Open details
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onCopyId}>
+                <Copy />
+                Copy user ID
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+                <Link
+                    to={tripsLink}
+                    onClick={() => trackEvent('admin__users_row--view_trips')}
+                    {...getAnalyticsDebugAttributes('admin__users_row--view_trips')}
+                >
+                    View trips
+                </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant={isDeleted ? 'default' : 'destructive'} onSelect={onSoftDelete}>
+                {isDeleted ? 'Restore user' : 'Soft-delete user'}
+            </DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenu>
+);
 
 interface LoginFilterCounts {
     password: number;
@@ -1085,13 +866,13 @@ const LoginTypeFilterMenu: React.FC<{
         && activeSocialProviderCount < SOCIAL_PROVIDER_VALUES.length;
 
     const selectedLabelSummary = useMemo(() => {
-        if (selectedLoginTypes.length === 0) return 'All';
+        if (selectedLoginTypes.length === 0) return null;
         const labels: string[] = [];
         if (selectedLoginTypeSet.has('social')) {
             if (socialIndeterminate) labels.push(`Social (${activeSocialProviderCount})`);
             else labels.push('Social');
         }
-        if (selectedLoginTypeSet.has('password')) labels.push('Username/password');
+        if (selectedLoginTypeSet.has('password')) labels.push('Email');
         if (selectedLoginTypeSet.has('unknown')) labels.push('Unknown');
         return labels.join(', ');
     }, [activeSocialProviderCount, selectedLoginTypeSet, selectedLoginTypes.length, socialIndeterminate]);
@@ -1101,7 +882,7 @@ const LoginTypeFilterMenu: React.FC<{
         if (!trigger) return;
         const rect = trigger.getBoundingClientRect();
         const viewportPadding = 10;
-        const preferredWidth = Math.max(320, rect.width + 70);
+        const preferredWidth = Math.max(300, rect.width + 70);
         const maxLeft = window.innerWidth - preferredWidth - viewportPadding;
         const nextLeft = Math.max(viewportPadding, Math.min(rect.left, maxLeft));
         setMenuPosition({
@@ -1111,6 +892,7 @@ const LoginTypeFilterMenu: React.FC<{
         });
     };
 
+    // Subscribes to window pointer/keyboard/scroll events while the popover is open.
     useEffect(() => {
         if (!isOpen) return undefined;
         updateMenuPosition();
@@ -1123,6 +905,7 @@ const LoginTypeFilterMenu: React.FC<{
         const onEscape = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             setIsOpen(false);
+            triggerRef.current?.focus();
         };
         const onViewportChange = () => updateMenuPosition();
         window.addEventListener('pointerdown', onPointer);
@@ -1182,59 +965,62 @@ const LoginTypeFilterMenu: React.FC<{
         ? (socialIndeterminate ? 'indeterminate' : true)
         : false;
 
+    const optionRowClass = 'relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-secondary hover:text-foreground';
+
     return (
         <div>
-            <button
+            <Button
                 ref={triggerRef}
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-none`}
-                aria-label="Filter by login type"
+                className="h-8 w-fit gap-0 border-dashed px-3 text-xs"
+                aria-label="Filter by sign-in method"
+                aria-haspopup="true"
                 aria-expanded={isOpen}
             >
-                <Key size={14} className="mr-2 text-muted-foreground shrink-0" weight="duotone" />
-                <span>Login type</span>
-                
-                <div className="mx-2 flex h-4 items-center">
-                    <div className="h-full w-[1px] bg-slate-200" />
-                </div>
-                
-                <span className="inline-flex items-center rounded-sm bg-secondary px-1 font-normal text-foreground max-w-[220px] truncate">
-                    {selectedLabelSummary}
-                </span>
-            </button>
+                <Key size={14} className="me-2 shrink-0 text-muted-foreground" weight="duotone" />
+                <span>Sign-in method</span>
+                {selectedLabelSummary && (
+                    <>
+                        <span className="mx-2 h-4 w-px bg-border" aria-hidden="true" />
+                        <span className="inline-flex max-w-[220px] items-center truncate rounded-sm bg-secondary px-1 font-normal text-secondary-foreground">
+                            {selectedLabelSummary}
+                        </span>
+                    </>
+                )}
+            </Button>
 
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
+                    role="group"
+                    aria-label="Sign-in method filters"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] dark:shadow-none"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
                         width: `${menuPosition.width}px`,
                     }}
                 >
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                        Login type
-                    </div>
-                    <div className="h-px bg-secondary" />
                     <div className="space-y-0.5 p-1">
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
-                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
+                        <label className={optionRowClass}>
+                            <div className="me-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
                                     className="size-4"
                                 />
                             </div>
-                            <span>Username/password</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{counts.password}</span>
+                            <span>Email and password</span>
+                            <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.password}</span>
                         </label>
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
-                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
+                        <label className={optionRowClass}>
+                            <div className="me-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
                                     onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
@@ -1242,35 +1028,34 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Social</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{counts.social}</span>
+                            <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.social}</span>
                         </label>
-                        <div className={`ms-6 space-y-0.5 border-l-2 border-border pl-2 ${socialEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
+                        <div className={cn('ms-6 space-y-0.5 border-s-2 border-border ps-2', !socialEnabled && 'pointer-events-none opacity-50')}>
                             {SOCIAL_PROVIDER_OPTIONS.map((option) => {
                                 const checked = socialEnabled
                                     && (selectedSocialProviders.length === 0 || selectedSocialProviderSet.has(option.value));
-                                const definition = LOGIN_PILL_DEFINITIONS[option.value];
-                                const Icon = definition.icon;
+                                const Icon = LOGIN_PILL_DEFINITIONS[option.value].icon;
                                 return (
                                     <label
                                         key={`social-provider-filter-${option.value}`}
-                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-secondary hover:text-foreground group"
+                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-secondary hover:text-foreground"
                                     >
-                                        <div className="mr-2 flex size-3.5 shrink-0 items-center justify-center">
+                                        <div className="me-2 flex size-3.5 shrink-0 items-center justify-center">
                                             <Checkbox
                                                 checked={checked}
                                                 onCheckedChange={() => toggleSocialProvider(option.value)}
                                                 className="size-3.5 rounded-[2px]"
                                             />
                                         </div>
-                                        <Icon size={12} className="mr-1.5 text-muted-foreground" />
+                                        <Icon size={12} className="me-1.5 text-muted-foreground" />
                                         <span>{option.label}</span>
-                                        <span className="ml-auto text-[10px] text-muted-foreground">{counts.socialProviders[option.value]}</span>
+                                        <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.socialProviders[option.value]}</span>
                                     </label>
                                 );
                             })}
                         </div>
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
-                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
+                        <label className={optionRowClass}>
+                            <div className="me-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
@@ -1278,24 +1063,26 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Unknown</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{counts.unknown}</span>
+                            <span className="ms-auto text-xs tabular-nums text-muted-foreground">{counts.unknown}</span>
                         </label>
                     </div>
                     {selectedLoginTypeSet.size > 0 && (
                         <>
-                            <div className="h-px bg-secondary" />
+                            <div className="h-px bg-border" />
                             <div className="p-1">
-                                <button
+                                <Button
                                     type="button"
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => {
                                         onSelectedLoginTypesChange([]);
                                         onSelectedSocialProvidersChange([]);
                                         setIsOpen(false);
                                     }}
-                                    className="relative flex w-full cursor-default select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground"
+                                    className="w-full"
                                 >
-                                    Clear filters
-                                </button>
+                                    Clear filter
+                                </Button>
                             </div>
                         </>
                     )}
@@ -1351,6 +1138,7 @@ export const AdminUsersPage: React.FC = () => {
     const [subscriptionFilters, setSubscriptionFilters] = useState<UserSubscriptionStatus[]>(
         () => parseQueryMultiValue(searchParams.get('subscription'), USER_SUBSCRIPTION_VALUES)
     );
+    const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<UserVisibleColumnId[]>(
         () => parseUserVisibleColumns(searchParams.get('cols'))
     );
@@ -1358,17 +1146,18 @@ export const AdminUsersPage: React.FC = () => {
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => parseSortDirection(searchParams.get('dir')));
     const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
     const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(() => new Set());
 
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [createMode, setCreateMode] = useState<'invite' | 'direct'>('invite');
-    const [inviteDraft, setInviteDraft] = useState<CreateInviteDraft>(INITIAL_INVITE_DRAFT);
-    const [directDraft, setDirectDraft] = useState<CreateDirectDraft>(INITIAL_DIRECT_DRAFT);
+    const [createDraft, setCreateDraft] = useState<CreateUserDraft>(INITIAL_CREATE_DRAFT);
+    const [createError, setCreateError] = useState<string | null>(null);
 
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [detailTab, setDetailTab] = useState<UserDetailTab>('overview');
+    const [missingLinkedUserId, setMissingLinkedUserId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [overrideDraft, setOverrideDraft] = useState('');
     const [tierDraft, setTierDraft] = useState<PlanTierKey>('tier_free');
@@ -1414,21 +1203,51 @@ export const AdminUsersPage: React.FC = () => {
     }, [searchParams]);
     const loadedColumnsCacheKeyRef = useRef<string | null>(null);
 
+    const notifySuccess = (title: string, description?: string) => {
+        showAppToast({ tone: 'success', title, description });
+    };
+
+    /** Opens the inspector for one account, always on its overview. */
+    const showUserDetail = (userId: string) => {
+        setSelectedUserId(userId);
+        setIsDetailOpen(true);
+        setDetailTab('overview');
+        setConnectedTripsPage(1);
+        setUserChangeLogsPage(1);
+    };
+
+    /**
+     * Closes the inspector and drops `?user=…&drawer=user`. Every close path
+     * goes through here: a hard delete used to close the sheet but leave the
+     * deep link behind, so a reload reopened a deleted account.
+     */
+    const closeUserDetail = () => {
+        setIsDetailOpen(false);
+        setSelectedUserId(null);
+        setSearchParams((current) => {
+            if (!current.has('user') && current.get('drawer') !== 'user') return current;
+            const next = new URLSearchParams(current);
+            next.delete('user');
+            next.delete('drawer');
+            return next;
+        }, { replace: true });
+    };
+
+    // Restores the admin's column choice from browser storage (an external store keyed by the signed-in admin).
     useEffect(() => {
         if (loadedColumnsCacheKeyRef.current === usersColumnsCacheKey) return;
         loadedColumnsCacheKeyRef.current = usersColumnsCacheKey;
         if (searchParams.get('cols')) return;
-        const cachedColumns = readAdminCache<UserVisibleColumnId[]>(
-            usersColumnsCacheKey,
-            DEFAULT_VISIBLE_USER_COLUMNS
-        );
-        setVisibleColumns(sanitizeUserVisibleColumns(cachedColumns));
+        const cachedColumns = readAdminCache<string[] | null>(usersColumnsCacheKey, null);
+        if (!cachedColumns) return;
+        setVisibleColumns(restoreCachedUserVisibleColumns(cachedColumns));
     }, [searchParams, usersColumnsCacheKey]);
 
     useEffect(() => {
         writeAdminCache(usersColumnsCacheKey, visibleColumns);
     }, [usersColumnsCacheKey, visibleColumns]);
 
+    // Tracks horizontal scroll of the table container to show the sticky-column edge.
     useEffect(() => {
         const root = usersTableScrollRef.current;
         const node = root?.querySelector<HTMLElement>('[data-slot="table-container"]');
@@ -1442,81 +1261,12 @@ export const AdminUsersPage: React.FC = () => {
     }, [visibleColumns]);
 
     useEffect(() => {
-        const next = new URLSearchParams();
-        const trimmedSearch = searchValue.trim();
-        if (trimmedSearch) next.set('q', trimmedSearch);
-        if (dateRange !== '30d') next.set('range', dateRange);
-        if (roleFilters.length > 0 && roleFilters.length < USER_ROLE_VALUES.length) next.set('role', roleFilters.join(','));
-        if (tierFilters.length > 0 && tierFilters.length < PLAN_ORDER.length) next.set('tier', tierFilters.join(','));
-        if (statusFilters.length > 0 && statusFilters.length < USER_STATUS_VALUES.length) next.set('status', statusFilters.join(','));
-        if (activationFilters.length > 0 && activationFilters.length < USER_ACTIVATION_VALUES.length) next.set('activation', activationFilters.join(','));
-        if (loginTypeFilters.length > 0 && loginTypeFilters.length < USER_LOGIN_TYPE_VALUES.length) {
-            next.set('login', loginTypeFilters.join(','));
-        }
-        if (
-            loginTypeFilters.includes('social')
-            && socialProviderFilters.length > 0
-            && socialProviderFilters.length < SOCIAL_PROVIDER_VALUES.length
-        ) {
-            next.set('social', socialProviderFilters.join(','));
-        }
-        if (tripFilters.length > 0 && tripFilters.length < USER_TRIP_FILTER_VALUES.length) {
-            next.set('trips', tripFilters.join(','));
-        }
-        if (termsFilters.length > 0 && termsFilters.length < USER_TERMS_STATE_VALUES.length) {
-            next.set('terms', termsFilters.join(','));
-        }
-        if (subscriptionFilters.length > 0 && subscriptionFilters.length < USER_SUBSCRIPTION_VALUES.length) {
-            next.set('subscription', subscriptionFilters.join(','));
-        }
-        if (sortKey !== 'created_at') next.set('sort', sortKey);
-        if (sortDirection !== 'desc') next.set('dir', sortDirection);
-        if (page > 1) next.set('page', String(page));
-        const hasCustomColumns = (
-            visibleColumns.length !== DEFAULT_VISIBLE_USER_COLUMNS.length
-            || visibleColumns.some((columnId, index) => columnId !== DEFAULT_VISIBLE_USER_COLUMNS[index])
-        );
-        if (hasCustomColumns) {
-            next.set('cols', visibleColumns.join(','));
-        }
-        const drawerUserId = selectedUserId || deepLinkedUserId;
-        if ((isDetailOpen || deepLinkedUserId) && drawerUserId) {
-            next.set('user', drawerUserId);
-            next.set('drawer', 'user');
-        }
-        if (next.toString() === searchParams.toString()) return;
-        setSearchParams(next, { replace: true });
-    }, [
-        deepLinkedUserId,
-        activationFilters,
-        dateRange,
-        isDetailOpen,
-        loginTypeFilters,
-        page,
-        roleFilters,
-        searchParams,
-        searchValue,
-        selectedUserId,
-        setSearchParams,
-        sortDirection,
-        sortKey,
-        socialProviderFilters,
-        statusFilters,
-        subscriptionFilters,
-        termsFilters,
-        tierFilters,
-        tripFilters,
-        visibleColumns,
-    ]);
-
-    useEffect(() => {
         if (!deepLinkedUserId) {
             handledDeepLinkUserIdRef.current = null;
             return;
         }
         if (handledDeepLinkUserIdRef.current !== deepLinkedUserId) {
-            setSelectedUserId(deepLinkedUserId);
-            setIsDetailOpen(true);
+            showUserDetail(deepLinkedUserId);
             handledDeepLinkUserIdRef.current = deepLinkedUserId;
         }
 
@@ -1526,7 +1276,11 @@ export const AdminUsersPage: React.FC = () => {
         let active = true;
         void adminGetUserProfile(deepLinkedUserId)
             .then((profile) => {
-                if (!active || !profile) return;
+                if (!active) return;
+                if (!profile) {
+                    setMissingLinkedUserId(deepLinkedUserId);
+                    return;
+                }
                 setUsers((current) => {
                     const exists = current.some((candidate) => candidate.user_id === profile.user_id);
                     const nextUsers = exists
@@ -1538,7 +1292,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load linked user profile.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load the linked user.', 'admin-users'));
             });
 
         return () => {
@@ -1564,7 +1318,7 @@ export const AdminUsersPage: React.FC = () => {
         const total = userTrips.length;
         const active = userTrips.filter((trip) => trip.status === 'active').length;
         return { total, active };
-    }, [isLoadingTrips, selectedUser?.active_trips, selectedUser?.total_trips, userTrips]);
+    }, [isLoadingTrips, selectedUser, userTrips]);
     const selectedUserTripsPageLink = useMemo(() => {
         if (!selectedUser) return null;
         const token = (selectedUser.email || '').trim() || selectedUser.user_id;
@@ -1590,32 +1344,17 @@ export const AdminUsersPage: React.FC = () => {
         };
     }), [userChangeLogs]);
     const connectedTripsPageCount = Math.max(Math.ceil(userTrips.length / USER_DETAIL_TRIP_PAGE_SIZE), 1);
+    const safeConnectedTripsPage = Math.min(connectedTripsPage, connectedTripsPageCount);
     const pagedConnectedTrips = useMemo(() => {
-        const start = (connectedTripsPage - 1) * USER_DETAIL_TRIP_PAGE_SIZE;
+        const start = (safeConnectedTripsPage - 1) * USER_DETAIL_TRIP_PAGE_SIZE;
         return userTrips.slice(start, start + USER_DETAIL_TRIP_PAGE_SIZE);
-    }, [connectedTripsPage, userTrips]);
+    }, [safeConnectedTripsPage, userTrips]);
     const userChangeLogsPageCount = Math.max(Math.ceil(selectedUserChangeEntries.length / USER_DETAIL_LOG_PAGE_SIZE), 1);
+    const safeUserChangeLogsPage = Math.min(userChangeLogsPage, userChangeLogsPageCount);
     const pagedUserChangeEntries = useMemo(() => {
-        const start = (userChangeLogsPage - 1) * USER_DETAIL_LOG_PAGE_SIZE;
+        const start = (safeUserChangeLogsPage - 1) * USER_DETAIL_LOG_PAGE_SIZE;
         return selectedUserChangeEntries.slice(start, start + USER_DETAIL_LOG_PAGE_SIZE);
-    }, [selectedUserChangeEntries, userChangeLogsPage]);
-
-    useEffect(() => {
-        setConnectedTripsPage(1);
-        setUserChangeLogsPage(1);
-    }, [selectedUser?.user_id]);
-
-    useEffect(() => {
-        if (connectedTripsPage > connectedTripsPageCount) {
-            setConnectedTripsPage(connectedTripsPageCount);
-        }
-    }, [connectedTripsPage, connectedTripsPageCount]);
-
-    useEffect(() => {
-        if (userChangeLogsPage > userChangeLogsPageCount) {
-            setUserChangeLogsPage(userChangeLogsPageCount);
-        }
-    }, [userChangeLogsPage, userChangeLogsPageCount]);
+    }, [selectedUserChangeEntries, safeUserChangeLogsPage]);
 
     const canOpenUserChangeFullDiffModal = (log: AdminUserChangeRecord): boolean => {
         if (hasSnapshotData(log.before_data) || hasSnapshotData(log.after_data)) return true;
@@ -1670,7 +1409,7 @@ export const AdminUsersPage: React.FC = () => {
             setDiffModalBeforeLabel(snapshots.before_label || 'Before version');
             setDiffModalAfterLabel(snapshots.after_label || 'After version');
         } catch (error) {
-            setDiffModalError(error instanceof Error ? error.message : 'Could not load trip snapshots.');
+            setDiffModalError(toAdminErrorMessage(error, 'Could not load trip snapshots.', 'admin-users'));
         } finally {
             setIsDiffModalLoading(false);
         }
@@ -1687,14 +1426,14 @@ export const AdminUsersPage: React.FC = () => {
             setUsers(rows);
             writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not load users.';
+            const reason = toAdminErrorMessage(error, 'Could not load users.', 'admin-users');
             if (!options.preserveErrorMessage) {
                 setErrorMessage(reason);
             }
             const cachedRows = readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []);
             if (cachedRows.length > 0) {
                 setUsers(cachedRows);
-                setDataSourceNotice(`Live admin users failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser. Reason: ${reason}`);
+                setDataSourceNotice(`Showing ${cachedRows.length} cached user${cachedRows.length === 1 ? '' : 's'} from this browser because the live list could not load.`);
             } else {
                 setUsers([]);
             }
@@ -1703,10 +1442,12 @@ export const AdminUsersPage: React.FC = () => {
         }
     };
 
+    // Initial fetch of the user list.
     useEffect(() => {
         void loadUsers();
     }, []);
 
+    // Loads the full profile, trips and change log for the account in the inspector.
     useEffect(() => {
         if (!selectedUser) return;
         let active = true;
@@ -1744,7 +1485,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load full user profile.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load the full user profile.', 'admin-users'));
             });
 
         setUserTrips([]);
@@ -1759,7 +1500,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load user trips.');
+                setErrorMessage(toAdminErrorMessage(error, 'Could not load user trips.', 'admin-users'));
             })
             .finally(() => {
                 if (!active) return;
@@ -1773,7 +1514,7 @@ export const AdminUsersPage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setUserChangeLogsError(error instanceof Error ? error.message : 'Could not load user change logs.');
+                setUserChangeLogsError(toAdminErrorMessage(error, 'Could not load the change log.', 'admin-users'));
             })
             .finally(() => {
                 if (!active) return;
@@ -1785,14 +1526,18 @@ export const AdminUsersPage: React.FC = () => {
         };
     }, [selectedUser]);
 
+    const usersInDateRange = useMemo<AdminUserRecord[]>(
+        () => users.filter((user) => isIsoDateInRange(user.created_at, dateRange)),
+        [dateRange, users]
+    );
+
     const filteredUsers = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
-        const filtered = users.filter((user) => {
-            const accountStatus = (user.account_status || 'active') as UserAccountStatus;
+        const filtered: AdminUserRecord[] = usersInDateRange.filter((user) => {
+            const accountStatus = getUserAccountStatus(user);
             const activationStatus = resolveActivationStatus(user);
             const subscriptionStatus = resolveUserSubscriptionStatus(user);
             const loginProfile = resolveUserLoginProfile(user);
-            if (!isIsoDateInRange(user.created_at, dateRange)) return false;
             if (roleFilters.length > 0 && !roleFilters.includes(user.system_role)) return false;
             if (tierFilters.length > 0 && !tierFilters.includes(user.tier_key)) return false;
             if (subscriptionFilters.length > 0 && !subscriptionFilters.includes(subscriptionStatus)) return false;
@@ -1842,7 +1587,7 @@ export const AdminUsersPage: React.FC = () => {
             if (sortKey === 'last_sign_in_at') return Date.parse(user.last_sign_in_at || '') || 0;
             if (sortKey === 'updated_at') return Date.parse(user.updated_at || '') || 0;
             if (sortKey === 'created_at') return Date.parse(user.created_at || '') || 0;
-            if (sortKey === 'tier_key') return String(user.tier_key || '').toLowerCase();
+            if (sortKey === 'tier_key') return PLAN_ORDER.indexOf(user.tier_key);
             if (sortKey === 'subscription_status') return resolveUserSubscriptionStatus(user);
             if (sortKey === 'system_role') return String(user.system_role || '').toLowerCase();
             if (sortKey === 'terms_accepted_version') {
@@ -1850,7 +1595,8 @@ export const AdminUsersPage: React.FC = () => {
                 const acceptedAt = Date.parse(user.terms_accepted_at || '') || 0;
                 return stateRank * 10_000_000_000_000 + acceptedAt;
             }
-            return String(user.account_status || 'active').toLowerCase();
+            // Status: accounts that need attention (deleted, suspended, not activated) sort first.
+            return resolveUserLifecycleStatus(user).rank;
         };
 
         const sorted = Array.from(filtered).sort((a, b) => {
@@ -1869,7 +1615,6 @@ export const AdminUsersPage: React.FC = () => {
         return sorted;
     }, [
         activationFilters,
-        dateRange,
         currentTermsVersion,
         loginTypeFilters,
         roleFilters,
@@ -1882,14 +1627,12 @@ export const AdminUsersPage: React.FC = () => {
         tierFilters,
         termsFilters,
         tripFilters,
-        users,
+        usersInDateRange,
     ]);
 
     const handleExportUsersCsv = () => {
-        if (filteredUsers.length === 0) {
-            setErrorMessage('There are no visible users to export.');
-            return;
-        }
+        if (filteredUsers.length === 0) return;
+        trackEvent('admin__users--export_csv', { rows: filteredUsers.length });
 
         const header = buildCsvLine([
             'email',
@@ -1906,7 +1649,7 @@ export const AdminUsersPage: React.FC = () => {
         const rows = filteredUsers.map((user) => buildCsvLine([
             user.email || '',
             user.user_id,
-            PLAN_CATALOG[user.tier_key].publicName,
+            getPlanName(user.tier_key),
             getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(user)),
             user.provider_status || user.subscription_status || '',
             user.provider_subscription_id || '',
@@ -1918,45 +1661,31 @@ export const AdminUsersPage: React.FC = () => {
         const payload = [header, ...rows].join('\n');
         const fileName = `admin-users-billing-${sanitizeFilenameSegment(new Date().toISOString().slice(0, 10))}.csv`;
         downloadBlob(new Blob([payload], { type: 'text/csv;charset=utf-8' }), fileName);
-        setMessage(`Exported ${filteredUsers.length} user row${filteredUsers.length === 1 ? '' : 's'} to CSV.`);
+        notifySuccess(`Exported ${filteredUsers.length} user${filteredUsers.length === 1 ? '' : 's'}`, 'Billing columns for the users the table shows.');
     };
 
-    const usersInDateRange = useMemo(
-        () => users.filter((user) => isIsoDateInRange(user.created_at, dateRange)),
-        [dateRange, users]
+    const queueCounts = useMemo(() => countUserQueues(usersInDateRange), [usersInDateRange]);
+    const hasNonQueueFilters = roleFilters.length > 0
+        || tierFilters.length > 0
+        || statusFilters.length > 0
+        || loginTypeFilters.length > 0
+        || termsFilters.length > 0;
+    const appliedQueue = resolveAppliedUserQueue(
+        { activation: activationFilters, subscription: subscriptionFilters, trips: tripFilters },
+        hasNonQueueFilters
     );
-
-    const usersSummary = useMemo(() => {
-        const total = filteredUsers.length;
-        const activeAccounts = filteredUsers.filter((user) => (user.account_status || 'active') === 'active').length;
-        const pendingActivation = filteredUsers.filter((user) => {
-            const activationStatus = resolveActivationStatus(user);
-            return activationStatus === 'pending' || activationStatus === 'invited';
-        }).length;
-        const activationBuckets: Record<UserActivationStatus, number> = {
-            activated: 0,
-            invited: 0,
-            pending: 0,
-            anonymous: 0,
-        };
-        filteredUsers.forEach((user) => {
-            activationBuckets[resolveActivationStatus(user)] += 1;
-        });
-        return {
-            total,
-            activeAccounts,
-            pendingActivation,
-            activeRatioPct: total > 0 ? Math.round((activeAccounts / total) * 100) : 0,
-            pendingRatioPct: total > 0 ? Math.round((pendingActivation / total) * 100) : 0,
-            activationBuckets,
-        };
-    }, [filteredUsers]);
+    const hasActiveFilters = hasNonQueueFilters
+        || activationFilters.length > 0
+        || subscriptionFilters.length > 0
+        || tripFilters.length > 0;
+    const hasActiveMoreFilters = subscriptionFilters.length > 0 || roleFilters.length > 0 || termsFilters.length > 0;
+    const showMoreFilters = isMoreFiltersOpen || hasActiveMoreFilters;
 
     const statusFilterOptions = useMemo<AdminFilterMenuOption[]>(
         () => USER_STATUS_VALUES.map((value) => ({
             value,
-            label: value === 'disabled' ? 'Suspended' : value.charAt(0).toUpperCase() + value.slice(1),
-            count: usersInDateRange.filter((user) => (user.account_status || 'active') === value).length,
+            label: formatAccountStatusLabel(value),
+            count: usersInDateRange.filter((user) => getUserAccountStatus(user) === value).length,
         })),
         [usersInDateRange]
     );
@@ -1973,7 +1702,7 @@ export const AdminUsersPage: React.FC = () => {
     const tierFilterOptions = useMemo<AdminFilterMenuOption[]>(
         () => PLAN_ORDER.map((value) => ({
             value,
-            label: PLAN_CATALOG[value].publicName,
+            label: getPlanName(value),
             count: usersInDateRange.filter((user) => user.tier_key === value).length,
         })),
         [usersInDateRange]
@@ -2053,12 +1782,15 @@ export const AdminUsersPage: React.FC = () => {
     }, [usersInDateRange]);
 
     const pageCount = Math.max(Math.ceil(filteredUsers.length / PAGE_SIZE), 1);
+    const currentPage = Math.min(page, pageCount);
     const pagedUsers = useMemo(() => {
-        const start = (page - 1) * PAGE_SIZE;
+        const start = (currentPage - 1) * PAGE_SIZE;
         return filteredUsers.slice(start, start + PAGE_SIZE);
-    }, [filteredUsers, page]);
+    }, [filteredUsers, currentPage]);
+    // Selection is kept as ids, but only rows the table shows and that can be
+    // deleted count: a filter change hides a selection instead of acting on it.
     const selectedVisibleUsers = useMemo(
-        () => filteredUsers.filter((user) => selectedUserIds.has(user.user_id)),
+        () => filteredUsers.filter((user) => selectedUserIds.has(user.user_id) && isUserHardDeleteEligible(user)),
         [filteredUsers, selectedUserIds]
     );
     const hardDeleteSelectableVisibleUsers = useMemo(
@@ -2073,45 +1805,74 @@ export const AdminUsersPage: React.FC = () => {
     const hasStickyUserColumnPair = isUserColumnVisible('user');
     const usersTableColumnCount = visibleColumns.length + 2;
 
+    // Mirrors table state into the URL so filters, sort, page and the open user survive reloads and can be shared.
     useEffect(() => {
-        if (page > pageCount) setPage(pageCount);
-    }, [page, pageCount]);
-
-    useEffect(() => {
-        setSelectedUserIds((current) => {
-            if (current.size === 0) return current;
-            const allowed = new Set(filteredUsers.map((user) => user.user_id));
-            let changed = false;
-            const next = new Set<string>();
-            current.forEach((userId) => {
-                if (allowed.has(userId)) {
-                    next.add(userId);
-                    return;
-                }
-                changed = true;
-            });
-            return changed ? next : current;
-        });
-    }, [filteredUsers]);
-
-    useEffect(() => {
-        setSelectedUserIds((current) => {
-            if (current.size === 0) return current;
-            const eligible = new Set(filteredUsers.flatMap((user) => (
-                isUserHardDeleteEligible(user) ? [user.user_id] : []
-            )));
-            let changed = false;
-            const next = new Set<string>();
-            current.forEach((userId) => {
-                if (eligible.has(userId)) {
-                    next.add(userId);
-                    return;
-                }
-                changed = true;
-            });
-            return changed ? next : current;
-        });
-    }, [filteredUsers]);
+        const next = new URLSearchParams();
+        const trimmedSearch = searchValue.trim();
+        if (trimmedSearch) next.set('q', trimmedSearch);
+        if (dateRange !== '30d') next.set('range', dateRange);
+        if (roleFilters.length > 0 && roleFilters.length < USER_ROLE_VALUES.length) next.set('role', roleFilters.join(','));
+        if (tierFilters.length > 0 && tierFilters.length < PLAN_ORDER.length) next.set('tier', tierFilters.join(','));
+        if (statusFilters.length > 0 && statusFilters.length < USER_STATUS_VALUES.length) next.set('status', statusFilters.join(','));
+        if (activationFilters.length > 0 && activationFilters.length < USER_ACTIVATION_VALUES.length) next.set('activation', activationFilters.join(','));
+        if (loginTypeFilters.length > 0 && loginTypeFilters.length < USER_LOGIN_TYPE_VALUES.length) {
+            next.set('login', loginTypeFilters.join(','));
+        }
+        if (
+            loginTypeFilters.includes('social')
+            && socialProviderFilters.length > 0
+            && socialProviderFilters.length < SOCIAL_PROVIDER_VALUES.length
+        ) {
+            next.set('social', socialProviderFilters.join(','));
+        }
+        if (tripFilters.length > 0 && tripFilters.length < USER_TRIP_FILTER_VALUES.length) {
+            next.set('trips', tripFilters.join(','));
+        }
+        if (termsFilters.length > 0 && termsFilters.length < USER_TERMS_STATE_VALUES.length) {
+            next.set('terms', termsFilters.join(','));
+        }
+        if (subscriptionFilters.length > 0 && subscriptionFilters.length < USER_SUBSCRIPTION_VALUES.length) {
+            next.set('subscription', subscriptionFilters.join(','));
+        }
+        if (sortKey !== 'created_at') next.set('sort', sortKey);
+        if (sortDirection !== 'desc') next.set('dir', sortDirection);
+        if (currentPage > 1) next.set('page', String(currentPage));
+        const hasCustomColumns = (
+            visibleColumns.length !== DEFAULT_VISIBLE_USER_COLUMNS.length
+            || visibleColumns.some((columnId, index) => columnId !== DEFAULT_VISIBLE_USER_COLUMNS[index])
+        );
+        if (hasCustomColumns) {
+            next.set('cols', visibleColumns.join(','));
+        }
+        const drawerUserId = selectedUserId || deepLinkedUserId;
+        if ((isDetailOpen || deepLinkedUserId) && drawerUserId) {
+            next.set('user', drawerUserId);
+            next.set('drawer', 'user');
+        }
+        if (next.toString() === searchParams.toString()) return;
+        setSearchParams(next, { replace: true });
+    }, [
+        deepLinkedUserId,
+        activationFilters,
+        currentPage,
+        dateRange,
+        isDetailOpen,
+        loginTypeFilters,
+        roleFilters,
+        searchParams,
+        searchValue,
+        selectedUserId,
+        setSearchParams,
+        sortDirection,
+        sortKey,
+        socialProviderFilters,
+        statusFilters,
+        subscriptionFilters,
+        termsFilters,
+        tierFilters,
+        tripFilters,
+        visibleColumns,
+    ]);
 
     const toggleSort = (key: SortKey) => {
         if (sortKey === key) {
@@ -2123,11 +1884,6 @@ export const AdminUsersPage: React.FC = () => {
     };
 
     const isUserSortedColumn = (key: SortKey): boolean => sortKey === key;
-
-    const openUserDetail = (userId: string) => {
-        setSelectedUserId(userId);
-        setIsDetailOpen(true);
-    };
 
     const toggleUserSelection = (userId: string, checked: boolean) => {
         setSelectedUserIds((current) => {
@@ -2154,11 +1910,18 @@ export const AdminUsersPage: React.FC = () => {
         });
     };
 
+    const copyUserId = async (user: AdminUserRecord) => {
+        trackEvent('admin__users_row--copy_id');
+        const copied = await copyTextToClipboard(user.user_id);
+        showAppToast(copied
+            ? { tone: 'success', title: 'User ID copied', description: user.user_id }
+            : { tone: 'warning', title: 'Could not copy', description: 'Your browser blocked clipboard access. Open the details to select the ID.' });
+    };
+
     const saveSelectedUser = async () => {
         if (!selectedUser) return;
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             const parsedOverrides = parseOverrideDraft(overrideDraft);
             const currentOverrides = normalizeOverrideRecord(selectedUser.entitlements_override);
@@ -2178,10 +1941,13 @@ export const AdminUsersPage: React.FC = () => {
             if (shouldUpdateOverrides) {
                 await adminUpdateUserOverrides(selectedUser.user_id, parsedOverrides);
             }
-            setMessage('User updated.');
+            notifySuccess('User saved', `Changes to "${getUserDisplayName(selectedUser)}" are live.`);
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not save user.');
+            const fallback = error instanceof SyntaxError
+                ? 'Entitlement overrides must be valid JSON.'
+                : 'Could not save user.';
+            setErrorMessage(toAdminErrorMessage(error, fallback, 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2192,7 +1958,6 @@ export const AdminUsersPage: React.FC = () => {
         const userName = getUserDisplayName(selectedUser);
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         const loadingToastId = showAppToast({
             tone: 'loading',
             title: 'Revoking username cooldown',
@@ -2200,7 +1965,6 @@ export const AdminUsersPage: React.FC = () => {
         });
         try {
             await adminResetUserUsernameCooldown(selectedUser.user_id, 'admin.manual_reset');
-            setMessage('Username cooldown revoked. The user can change username immediately.');
             await loadUsers();
             showAppToast({
                 id: loadingToastId,
@@ -2209,7 +1973,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `"${userName}" can now change username immediately.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not reset username cooldown.';
+            const reason = toAdminErrorMessage(error, 'Could not reset username cooldown.', 'admin-users');
             setErrorMessage(reason);
             showAppToast({
                 id: loadingToastId,
@@ -2227,24 +1991,22 @@ export const AdminUsersPage: React.FC = () => {
         const userName = getUserDisplayName(selectedUser);
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         const loadingToastId = showAppToast({
             tone: 'loading',
-            title: 'Resetting Terms acceptance',
-            description: `Clearing Terms acceptance for "${userName}".`,
+            title: 'Resetting terms acceptance',
+            description: `Clearing terms acceptance for "${userName}".`,
         });
         try {
             await adminResetUserTermsAcceptance(selectedUser.user_id, 'admin.testing.reset_terms');
-            setMessage('Terms acceptance reset for this user.');
             await loadUsers();
             showAppToast({
                 id: loadingToastId,
                 tone: 'success',
                 title: 'Terms acceptance reset',
-                description: `"${userName}" is now marked as pending Terms acceptance.`,
+                description: `"${userName}" will be asked to accept the terms again.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not reset terms acceptance.';
+            const reason = toAdminErrorMessage(error, 'Could not reset terms acceptance.', 'admin-users');
             setErrorMessage(reason);
             showAppToast({
                 id: loadingToastId,
@@ -2258,7 +2020,7 @@ export const AdminUsersPage: React.FC = () => {
     };
 
     const handleSoftDelete = async (user: AdminUserRecord) => {
-        const nextStatus = (user.account_status || 'active') === 'deleted' ? 'active' : 'deleted';
+        const nextStatus = getUserAccountStatus(user) === 'deleted' ? 'active' : 'deleted';
         const userName = getUserDisplayName(user);
         const quotedUserName = `"${userName}"`;
         if (nextStatus === 'deleted') {
@@ -2271,7 +2033,6 @@ export const AdminUsersPage: React.FC = () => {
         }
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         const loadingToastId = showAppToast({
             tone: 'loading',
             title: nextStatus === 'deleted' ? 'Soft-deleting user' : 'Restoring user',
@@ -2299,7 +2060,6 @@ export const AdminUsersPage: React.FC = () => {
                                 });
                                 setIsSaving(true);
                                 setErrorMessage(null);
-                                setMessage(null);
                                 try {
                                     await adminUpdateUserProfile(user.user_id, { accountStatus: 'active' });
                                     await loadUsers();
@@ -2310,7 +2070,7 @@ export const AdminUsersPage: React.FC = () => {
                                         description: `${quotedUserName} was restored and can sign in again.`,
                                     });
                                 } catch (undoError) {
-                                    const reason = undoError instanceof Error ? undoError.message : 'Could not restore user.';
+                                    const reason = toAdminErrorMessage(undoError, 'Could not restore user.', 'admin-users');
                                     showAppToast({
                                         id: undoLoadingToastId,
                                         tone: 'error',
@@ -2334,7 +2094,7 @@ export const AdminUsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not update user status.';
+            const reason = toAdminErrorMessage(error, 'Could not update user status.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2371,7 +2131,6 @@ export const AdminUsersPage: React.FC = () => {
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         const loadingToastId = showAppToast({
             tone: 'loading',
             title: 'Hard-deleting user',
@@ -2379,8 +2138,7 @@ export const AdminUsersPage: React.FC = () => {
         });
         try {
             await adminHardDeleteUser(user.user_id);
-            setIsDetailOpen(false);
-            setSelectedUserId(null);
+            closeUserDetail();
             await loadUsers();
             showAppToast({
                 id: loadingToastId,
@@ -2391,7 +2149,7 @@ export const AdminUsersPage: React.FC = () => {
                     : `${quotedUserName} was permanently deleted.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not hard-delete user.';
+            const reason = toAdminErrorMessage(error, 'Could not hard-delete user.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2418,7 +2176,6 @@ export const AdminUsersPage: React.FC = () => {
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         const loadingToastId = showAppToast({
             tone: 'loading',
             title: 'Soft-deleting users',
@@ -2426,7 +2183,6 @@ export const AdminUsersPage: React.FC = () => {
         });
         try {
             await Promise.all(selectedVisibleUsers.map((user) => adminUpdateUserProfile(user.user_id, { accountStatus: 'deleted' })));
-            setMessage(`${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} soft-deleted.`);
             setSelectedUserIds(new Set());
             await loadUsers();
             showAppToast({
@@ -2436,7 +2192,7 @@ export const AdminUsersPage: React.FC = () => {
                 description: `${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} were soft-deleted successfully.`,
             });
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not soft-delete selected users.';
+            const reason = toAdminErrorMessage(error, 'Could not soft-delete selected users.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2452,7 +2208,6 @@ export const AdminUsersPage: React.FC = () => {
     const handleBulkHardDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
         const hardDeleteUsers = selectedVisibleUsers.filter((user) => isUserHardDeleteEligible(user));
-        const skippedUsers = selectedVisibleUsers.length - hardDeleteUsers.length;
         if (hardDeleteUsers.length === 0) {
             const reason = 'No eligible users selected for hard delete. Soft-deleted users are skipped.';
             setErrorMessage(reason);
@@ -2476,7 +2231,6 @@ export const AdminUsersPage: React.FC = () => {
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         const loadingToastId = showAppToast({
             tone: 'loading',
             title: 'Hard-deleting users',
@@ -2502,19 +2256,9 @@ export const AdminUsersPage: React.FC = () => {
 
             const failed = failedIndexes.length;
             const deleted = results.length - failed;
-            if (deleted > 0) {
-                const deletedTripCount = hardDeleteUsers
-                    .filter((_, index) => results[index]?.status === 'fulfilled')
-                    .reduce((sum, user) => sum + getUserTotalTrips(user), 0);
-                const deleteMessage = (
-                    failed > 0
-                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed). ${failed} failed.`
-                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed).`
-                );
-                setMessage(skippedUsers > 0 ? `${deleteMessage} ${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.` : deleteMessage);
-            } else if (skippedUsers > 0) {
-                setMessage(`${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.`);
-            }
+            const deletedTripCount = hardDeleteUsers
+                .filter((_, index) => results[index]?.status === 'fulfilled')
+                .reduce((sum, user) => sum + getUserTotalTrips(user), 0);
             if (failed > 0) {
                 const detailSummary = summarizeBulkDeleteFailures(failedDetails);
                 if (deleted === 0) {
@@ -2537,8 +2281,7 @@ export const AdminUsersPage: React.FC = () => {
                 setSelectedUserIds(new Set());
             }
             if (selectedUserId && deletedIds.has(selectedUserId)) {
-                setSelectedUserId(null);
-                setIsDetailOpen(false);
+                closeUserDetail();
             }
             await loadUsers({ preserveErrorMessage: Boolean(bulkErrorMessage) });
             if (bulkErrorMessage) {
@@ -2548,7 +2291,7 @@ export const AdminUsersPage: React.FC = () => {
                     tone: deleted > 0 ? 'warning' : 'error',
                     title: deleted > 0 ? 'Some users were not deleted' : 'Hard delete failed',
                     description: deleted > 0
-                        ? `${deleted} user${deleted === 1 ? '' : 's'} were deleted, but ${failed} failed. Check the inline details for affected accounts.`
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} were deleted, but ${failed} failed. The failed accounts stay selected; details are above the table.`
                         : bulkErrorMessage,
                 });
             } else {
@@ -2556,11 +2299,11 @@ export const AdminUsersPage: React.FC = () => {
                     id: loadingToastId,
                     tone: 'remove',
                     title: 'Users hard-deleted',
-                    description: `${deleted} user${deleted === 1 ? '' : 's'} were permanently deleted.`,
+                    description: `${deleted} user${deleted === 1 ? '' : 's'} and ${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} were permanently deleted.`,
                 });
             }
         } catch (error) {
-            const reason = error instanceof Error ? error.message : 'Could not hard-delete selected users.';
+            const reason = toAdminErrorMessage(error, 'Could not hard-delete selected users.', 'admin-users');
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
@@ -2631,15 +2374,13 @@ export const AdminUsersPage: React.FC = () => {
 
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             const targetUser = await resolveTransferTargetUser(transferTargetInput);
             if (targetUser.user_id === user.user_id) {
                 throw new Error('Target user must be different from the user being deleted.');
             }
 
-            const targetStatus = (targetUser.account_status || 'active') as UserAccountStatus;
-            if (targetStatus !== 'active') {
+            if (getUserAccountStatus(targetUser) !== 'active') {
                 throw new Error('Target user must be an active account.');
             }
 
@@ -2674,24 +2415,21 @@ export const AdminUsersPage: React.FC = () => {
 
             try {
                 await adminHardDeleteUser(user.user_id);
-                setMessage(
-                    [
-                        `Transferred ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user.`,
-                        `Audit should show ${sourceTrips.length} "Transferred trip owner" entr${sourceTrips.length === 1 ? 'y' : 'ies'} and one "Hard-deleted user" entry.`,
-                    ].join(' ')
-                );
-                setIsDetailOpen(false);
-                setSelectedUserId(null);
+                closeUserDetail();
                 await loadUsers();
+                notifySuccess(
+                    'Trips transferred, user deleted',
+                    `Moved ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user. The audit log shows ${sourceTrips.length} "Transferred trip owner" entr${sourceTrips.length === 1 ? 'y' : 'ies'} and one "Hard-deleted user" entry.`
+                );
             } catch (deleteError) {
                 await loadUsers();
-                const deleteMessage = deleteError instanceof Error ? deleteError.message : 'Could not hard-delete user after transfer.';
+                const deleteMessage = toAdminErrorMessage(deleteError, 'Could not hard-delete user after transfer.', 'admin-users');
                 setErrorMessage(
                     `Trips were transferred to ${getUserReferenceText(targetUser)}, but hard delete failed: ${deleteMessage} Retry hard delete for the source user if needed.`
                 );
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not transfer trips before hard delete.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not transfer trips before hard delete.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
@@ -2703,57 +2441,55 @@ export const AdminUsersPage: React.FC = () => {
     ) => {
         setIsSaving(true);
         setErrorMessage(null);
-        setMessage(null);
         try {
             await adminUpdateTrip(trip.trip_id, patch);
-            setMessage('Trip updated.');
+            notifySuccess('Trip updated', trip.title || trip.trip_id);
             if (selectedUser) {
                 const rows = await adminListUserTrips(selectedUser.user_id);
                 setUserTrips(rows);
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not update trip.');
+            setErrorMessage(toAdminErrorMessage(error, 'Could not update trip.', 'admin-users'));
         } finally {
             setIsSaving(false);
         }
     };
 
-    const submitCreateInvite = async () => {
-        setIsSaving(true);
-        setErrorMessage(null);
-        setMessage(null);
-        try {
-            await adminCreateUserInvite({
-                ...inviteDraft,
-                redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/reset-password` : undefined,
-            });
-            setInviteDraft(INITIAL_INVITE_DRAFT);
-            setIsCreateDialogOpen(false);
-            setMessage('Invite sent successfully.');
-            await loadUsers();
-        } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not invite user.');
-        } finally {
-            setIsSaving(false);
-        }
+    const openCreateDialog = () => {
+        trackEvent('admin__users--create_user');
+        setCreateError(null);
+        setIsCreateDialogOpen(true);
     };
 
-    const submitCreateDirect = async () => {
-        if (directDraft.password.trim().length < 8) {
-            setErrorMessage('Direct creation requires a password with at least 8 characters.');
+    const submitCreateUser = async () => {
+        if (createMode === 'direct' && createDraft.password.trim().length < 8) {
+            setCreateError('The initial password needs at least 8 characters.');
             return;
         }
         setIsSaving(true);
-        setErrorMessage(null);
-        setMessage(null);
+        setCreateError(null);
         try {
-            await adminCreateUserDirect(directDraft);
-            setDirectDraft(INITIAL_DIRECT_DRAFT);
+            if (createMode === 'invite') {
+                await adminCreateUserInvite({
+                    email: createDraft.email,
+                    firstName: createDraft.firstName,
+                    lastName: createDraft.lastName,
+                    tierKey: createDraft.tierKey,
+                    redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/reset-password` : undefined,
+                });
+            } else {
+                await adminCreateUserDirect(createDraft);
+            }
+            setCreateDraft(INITIAL_CREATE_DRAFT);
             setIsCreateDialogOpen(false);
-            setMessage('User created successfully.');
+            notifySuccess(createMode === 'invite' ? 'Invite sent' : 'User created', createDraft.email.trim());
             await loadUsers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not create user.');
+            setCreateError(toAdminErrorMessage(
+                error,
+                createMode === 'invite' ? 'Could not invite user.' : 'Could not create user.',
+                'admin-users'
+            ));
         } finally {
             setIsSaving(false);
         }
@@ -2772,10 +2508,31 @@ export const AdminUsersPage: React.FC = () => {
         setPage(1);
     };
 
+    const applyUserQueue = (queueId: UserQueueId) => {
+        trackEvent(USER_QUEUE_EVENTS[queueId], { active: appliedQueue !== queueId });
+        const wasApplied = appliedQueue === queueId;
+        resetTableFilters();
+        if (wasApplied) return;
+        const filters = USER_QUEUE_FILTERS[queueId];
+        setActivationFilters(filters.activation);
+        setSubscriptionFilters(filters.subscription);
+        setTripFilters(filters.trips);
+    };
+
+    const withPageReset = <T,>(setter: (next: T) => void) => (next: T) => {
+        setter(next);
+        setPage(1);
+    };
+
+    const isSelectedUserDeleted = selectedUser ? getUserAccountStatus(selectedUser) === 'deleted' : false;
+    const selectedUserLifecycle = selectedUser ? resolveUserLifecycleStatus(selectedUser) : null;
+    const selectedUserSubscriptionStatus = selectedUser ? resolveUserSubscriptionStatus(selectedUser) : null;
+    const selectedUserTermsState = selectedUser ? resolveUserTermsState(selectedUser, currentTermsVersion) : null;
+
     return (
         <AdminShell
-            title="User Provisioning"
-            description="Manage users, identity state, tiers, access roles, and trip ownership from one workspace."
+            title="Users"
+            description="Find an account, check its state and fix its profile, plan or access."
             searchValue={searchValue}
             onSearchValueChange={(value) => {
                 setSearchValue(value);
@@ -2793,810 +2550,614 @@ export const AdminUsersPage: React.FC = () => {
                         isLoading={isLoadingUsers}
                         label="Reload"
                     />
-                    <button
+                    <Button
                         type="button"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white hover:bg-accent-700"
+                        onClick={openCreateDialog}
+                        {...getAnalyticsDebugAttributes('admin__users--create_user')}
                     >
-                        <UserPlus size={14} />
+                        <UserPlus />
                         Create user
-                    </button>
+                    </Button>
                 </>
             )}
         >
-            {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                    {errorMessage}
-                </section>
-            )}
-            {dataSourceNotice && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                    {dataSourceNotice}
-                </section>
-            )}
-            {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                    {message}
-                </section>
-            )}
-            {isSaving && (
-                <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
-                    <span className="inline-flex items-center gap-2 font-medium">
-                        <SpinnerGap size={14} className="animate-spin" />
-                        Processing admin changes. Please wait…
-                    </span>
-                </section>
-            )}
+            <div className="flex flex-col gap-4">
+                {errorMessage && <AdminErrorAlert message={errorMessage} />}
+                {dataSourceNotice && (
+                    <Alert variant="warning">
+                        <WarningCircle weight="fill" />
+                        <AlertDescription>{dataSourceNotice}</AlertDescription>
+                    </Alert>
+                )}
 
-            <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Total users</p>
-                    <p className="mt-2 text-3xl font-semibold text-foreground">
-                        <AdminCountUpNumber value={usersSummary.total} />
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">Within active table scope</p>
-                </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Active account ratio</p>
-                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700 dark:text-emerald-200">
-                        <AdminCountUpNumber value={usersSummary.activeRatioPct} />
-                        <span className="text-xl">%</span>
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                        <AdminCountUpNumber value={usersSummary.activeAccounts} /> active accounts
-                    </p>
-                </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Pending activation</p>
-                    <p className="mt-2 text-3xl font-semibold text-amber-700 dark:text-amber-200">
-                        <AdminCountUpNumber value={usersSummary.pendingActivation} />
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{usersSummary.pendingRatioPct}% of visible users</p>
-                </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Activation mix</p>
-                        <ChartBarHorizontal size={16} className="text-muted-foreground" />
-                    </div>
-                    <div className="mt-3 space-y-2">
-                        {USER_ACTIVATION_VALUES.map((activation) => {
-                            const count = usersSummary.activationBuckets[activation];
-                            const pct = usersSummary.total > 0 ? Math.round((count / usersSummary.total) * 100) : 0;
-                            return (
-                                <div key={`activation-mix-${activation}`} className="space-y-1">
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                        <span>{getActivationStatusLabel(activation)}</span>
-                                        <span>{count} ({pct}%)</span>
-                                    </div>
-                                    <div className="h-1.5 rounded-full bg-secondary">
-                                        <div className="h-1.5 rounded-full bg-slate-500 transition-[width] duration-500" style={{ width: `${pct}%` }} />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </article>
-            </section>
+                <section aria-label="Accounts that need attention" className="grid gap-4 sm:grid-cols-3">
+                    {USER_QUEUE_IDS.map((queueId) => {
+                        const copy = USER_QUEUE_COPY[queueId];
+                        const count = queueCounts[queueId];
+                        const isApplied = appliedQueue === queueId;
+                        return (
+                            <AdminStatCard
+                                key={queueId}
+                                label={copy.label}
+                                icon={copy.icon}
+                                value={count.toLocaleString()}
+                                isLoading={isLoadingUsers}
+                                className={cn(isApplied && 'border-primary')}
+                                hint={(
+                                    <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                                        <span className={cn(copy.attention && count > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground')}>
+                                            {copy.description}
+                                        </span>
+                                        {(count > 0 || isApplied) && (
+                                            <Button
+                                                type="button"
+                                                variant="link"
+                                                size="xs"
+                                                className="h-auto p-0"
+                                                aria-pressed={isApplied}
+                                                onClick={() => applyUserQueue(queueId)}
+                                                {...getAnalyticsDebugAttributes(USER_QUEUE_EVENTS[queueId])}
+                                            >
+                                                {isApplied ? 'Clear filter' : 'Show in table'}
+                                            </Button>
+                                        )}
+                                    </span>
+                                )}
+                            />
+                        );
+                    })}
+                </section>
 
-            <section
-                className={`relative rounded-2xl border border-border bg-card p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
-                aria-busy={isSaving}
-            >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-sm font-semibold text-foreground">Users</h2>
-                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                <AdminSurfaceCard
+                    className={cn('relative flex flex-col gap-3', isSaving && 'pointer-events-none')}
+                    aria-busy={isSaving}
+                >
+                    <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Filter users">
+                        <AdminFilterMenu
+                            label="Status"
+                            options={statusFilterOptions}
+                            selectedValues={statusFilters}
+                            onSelectedValuesChange={withPageReset((next: string[]) => setStatusFilters(next as UserAccountStatus[]))}
+                        />
                         <AdminFilterMenu
                             label="Activation"
                             options={activationFilterOptions}
                             selectedValues={activationFilters}
-                            onSelectedValuesChange={(next) => {
-                                setActivationFilters(next as UserActivationStatus[]);
-                                setPage(1);
-                            }}
+                            onSelectedValuesChange={withPageReset((next: string[]) => setActivationFilters(next as UserActivationStatus[]))}
+                        />
+                        <AdminFilterMenu
+                            label="Plan"
+                            options={tierFilterOptions}
+                            selectedValues={tierFilters}
+                            onSelectedValuesChange={withPageReset((next: string[]) => setTierFilters(next as PlanTierKey[]))}
                         />
                         <LoginTypeFilterMenu
                             selectedLoginTypes={loginTypeFilters}
                             selectedSocialProviders={socialProviderFilters}
                             counts={loginFilterCounts}
-                            onSelectedLoginTypesChange={(next) => {
-                                setLoginTypeFilters(next);
-                                setPage(1);
-                            }}
-                            onSelectedSocialProvidersChange={(next) => {
-                                setSocialProviderFilters(next);
-                                setPage(1);
-                            }}
+                            onSelectedLoginTypesChange={withPageReset(setLoginTypeFilters)}
+                            onSelectedSocialProvidersChange={withPageReset(setSocialProviderFilters)}
                         />
                         <AdminFilterMenu
-                            label="# Trips"
+                            label="Trips"
                             options={tripFilterOptions}
                             selectedValues={tripFilters}
-                            onSelectedValuesChange={(next) => {
-                                setTripFilters(next as UserTripFilter[]);
-                                setPage(1);
-                            }}
+                            onSelectedValuesChange={withPageReset((next: string[]) => setTripFilters(next as UserTripFilter[]))}
                         />
-                        <AdminFilterMenu
-                            label="Status"
-                            options={statusFilterOptions}
-                            selectedValues={statusFilters}
-                            onSelectedValuesChange={(next) => {
-                                setStatusFilters(next as UserAccountStatus[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Role"
-                            options={roleFilterOptions}
-                            selectedValues={roleFilters}
-                            onSelectedValuesChange={(next) => {
-                                setRoleFilters(next as Array<'admin' | 'user'>);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Tier"
-                            options={tierFilterOptions}
-                            selectedValues={tierFilters}
-                            onSelectedValuesChange={(next) => {
-                                setTierFilters(next as PlanTierKey[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Subscription"
-                            options={subscriptionFilterOptions}
-                            selectedValues={subscriptionFilters}
-                            onSelectedValuesChange={(next) => {
-                                setSubscriptionFilters(next as UserSubscriptionStatus[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="ToC"
-                            options={termsFilterOptions}
-                            selectedValues={termsFilters}
-                            onSelectedValuesChange={(next) => {
-                                setTermsFilters(next as UserTermsState[]);
-                                setPage(1);
-                            }}
-                        />
-                        <AdminFilterMenu
-                            label="Columns"
-                            options={visibleUserColumnOptions}
-                            selectedValues={visibleColumns}
-                            onSelectedValuesChange={(next) => {
-                                setVisibleColumns(sanitizeUserVisibleColumns(next));
-                            }}
-                        />
-                        <button
-                            type="button"
-                            onClick={handleExportUsersCsv}
-                            disabled={filteredUsers.length === 0}
-                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ArrowSquareOut size={14} />
-                            Export CSV
-                        </button>
-                        <button
-                            type="button"
-                            onClick={resetTableFilters}
-                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
-                        >
-                            <X size={14} />
-                            Reset
-                        </button>
+                        {showMoreFilters ? (
+                            <>
+                                <AdminFilterMenu
+                                    label="Subscription"
+                                    options={subscriptionFilterOptions}
+                                    selectedValues={subscriptionFilters}
+                                    onSelectedValuesChange={withPageReset((next: string[]) => setSubscriptionFilters(next as UserSubscriptionStatus[]))}
+                                />
+                                <AdminFilterMenu
+                                    label="Role"
+                                    options={roleFilterOptions}
+                                    selectedValues={roleFilters}
+                                    onSelectedValuesChange={withPageReset((next: string[]) => setRoleFilters(next as Array<'admin' | 'user'>))}
+                                />
+                                <AdminFilterMenu
+                                    label="Terms"
+                                    options={termsFilterOptions}
+                                    selectedValues={termsFilters}
+                                    onSelectedValuesChange={withPageReset((next: string[]) => setTermsFilters(next as UserTermsState[]))}
+                                />
+                            </>
+                        ) : (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => {
+                                    trackEvent('admin__users--more_filters');
+                                    setIsMoreFiltersOpen(true);
+                                }}
+                                {...getAnalyticsDebugAttributes('admin__users--more_filters')}
+                            >
+                                More filters
+                                <CaretDown />
+                            </Button>
+                        )}
+                        {hasActiveFilters && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => {
+                                    trackEvent('admin__users--reset_filters');
+                                    resetTableFilters();
+                                }}
+                                {...getAnalyticsDebugAttributes('admin__users--reset_filters')}
+                            >
+                                <X />
+                                Reset
+                            </Button>
+                        )}
+                        <div className="ms-auto flex items-center gap-2">
+                            <AdminFilterMenu
+                                label="Columns"
+                                options={visibleUserColumnOptions}
+                                selectedValues={visibleColumns}
+                                showBulkActions={false}
+                                onSelectedValuesChange={(next) => {
+                                    setVisibleColumns(sanitizeUserVisibleColumns(next));
+                                }}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={handleExportUsersCsv}
+                                disabled={filteredUsers.length === 0}
+                                data-tooltip="Billing columns for the users shown"
+                                {...getAnalyticsDebugAttributes('admin__users--export_csv')}
+                            >
+                                <DownloadSimple />
+                                Export CSV
+                            </Button>
+                        </div>
                     </div>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                    Cleanup shortcut: use <span className="font-semibold text-foreground"># Trips</span> and select
-                    <span className="font-semibold text-foreground"> No trips + no profile data</span>.
-                </p>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
-                    <span className="text-xs font-semibold text-foreground">
-                        {selectedVisibleUsers.length} selected
-                    </span>
-                    <button
-                        type="button"
-                        onClick={() => void handleBulkSoftDeleteUsers()}
-                        disabled={isSaving || selectedVisibleUsers.length === 0}
-                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
-                    >
-                        Soft-delete selected
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => void handleBulkHardDeleteUsers()}
-                        disabled={isSaving || selectedVisibleUsers.every((user) => !isUserHardDeleteEligible(user))}
-                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
-                    >
-                        <Trash size={12} />
-                        Hard delete selected
-                    </button>
-                    {selectedVisibleUsers.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => setSelectedUserIds(new Set())}
-                            className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary"
-                        >
-                            Clear
-                        </button>
-                    )}
-                </div>
-
-                <div ref={usersTableScrollRef} className="mt-3 rounded-xl border border-border bg-card">
-                    <Table className="w-[max(100%,1320px)]">
-                        <TableHeader className="bg-secondary">
-                            <TableRow>
-                                <TableHead
-                                    className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyHeaderCellClass({
-                                        isScrolled: isUsersTableScrolledHorizontally,
-                                        isFirst: hasStickyUserColumnPair,
-                                    })}`}
-                                    style={{ width: 56, minWidth: 56, maxWidth: 56 }}
-                                >
-                                    <Checkbox
-                                        checked={areAllVisibleUsersSelected ? true : (isVisibleUserSelectionPartial ? 'indeterminate' : false)}
-                                        onCheckedChange={(checked) => toggleSelectAllVisibleUsers(Boolean(checked))}
-                                        aria-label="Select all visible users"
-                                    />
-                                </TableHead>
-                                {isUserColumnVisible('user') && (
+                    <div ref={usersTableScrollRef} className="overflow-hidden rounded-md border border-border">
+                        <Table>
+                            <TableHeader className="bg-secondary">
+                                <TableRow>
                                     <TableHead
-                                        className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 font-semibold text-foreground ${getAdminStickyHeaderCellClass({
+                                        className={`sticky start-0 z-40 w-[44px] min-w-[44px] max-w-[44px] px-3 ${getAdminStickyHeaderCellClass({
                                             isScrolled: isUsersTableScrolledHorizontally,
-                                            isFirst: false,
-                                            isSorted: isUserSortedColumn('name'),
+                                            isFirst: hasStickyUserColumnPair,
                                         })}`}
-                                        style={{ width: 340, minWidth: 340, maxWidth: 340 }}
+                                        style={{ width: 44, minWidth: 44, maxWidth: 44 }}
                                     >
-                                        <AdminSortHeaderButton
-                                            label="User"
-                                            isActive={isUserSortedColumn('name')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('name')}
+                                        <Checkbox
+                                            checked={areAllVisibleUsersSelected ? true : (isVisibleUserSelectionPartial ? 'indeterminate' : false)}
+                                            onCheckedChange={(checked) => toggleSelectAllVisibleUsers(Boolean(checked))}
+                                            disabled={hardDeleteSelectableVisibleUsers.length === 0}
+                                            aria-label={`Select all ${hardDeleteSelectableVisibleUsers.length} matching users`}
                                         />
                                     </TableHead>
-                                )}
-                                {isUserColumnVisible('login') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Login"
-                                            isActive={isUserSortedColumn('email')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('email')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('trips') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Trips"
-                                            isActive={isUserSortedColumn('total_trips')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('total_trips')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('activation') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Activation"
-                                            isActive={isUserSortedColumn('activation_status')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('activation_status')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('role') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Role"
-                                            isActive={isUserSortedColumn('system_role')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('system_role')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('tier') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Tier"
-                                            isActive={isUserSortedColumn('tier_key')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('tier_key')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('subscription') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Subscription"
-                                            isActive={isUserSortedColumn('subscription_status')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('subscription_status')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('status') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Status"
-                                            isActive={isUserSortedColumn('account_status')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('account_status')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('toc') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="ToC"
-                                            isActive={isUserSortedColumn('terms_accepted_version')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('terms_accepted_version')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('last_visit') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Last sign-in"
-                                            isActive={isUserSortedColumn('last_sign_in_at')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('last_sign_in_at')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('last_log') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Last log"
-                                            isActive={isUserSortedColumn('updated_at')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('updated_at')}
-                                        />
-                                    </TableHead>
-                                )}
-                                {isUserColumnVisible('created') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
-                                        <AdminSortHeaderButton
-                                            label="Created"
-                                            isActive={isUserSortedColumn('created_at')}
-                                            direction={sortDirection}
-                                            onClick={() => toggleSort('created_at')}
-                                        />
-                                    </TableHead>
-                                )}
-                                <TableHead className="px-4 py-3 text-right font-semibold text-foreground">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {pagedUsers.map((user) => {
-                                const userName = getUserDisplayName(user);
-                                const accountStatus = (user.account_status || 'active') as UserAccountStatus;
-                                const activationStatus = resolveActivationStatus(user);
-                                const subscriptionStatus = resolveUserSubscriptionStatus(user);
-                                const isSelected = selectedUserIds.has(user.user_id);
-                                const isHardDeleteEligible = isUserHardDeleteEligible(user);
-                                const isTriplessNoData = isUserTriplessAndNoData(user);
-                                const termsState = resolveUserTermsState(user, currentTermsVersion);
-                                return (
-                                    <TableRow
-                                        key={user.user_id}
-                                        className={ADMIN_TABLE_ROW_SURFACE_CLASS}
-                                        data-state={isSelected ? 'selected' : undefined}
-                                    >
-                                        <TableCell
-                                            className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyBodyCellClass({
-                                                isSelected,
+                                    {isUserColumnVisible('user') && (
+                                        <TableHead
+                                            className={`sticky start-[44px] z-30 w-[280px] min-w-[240px] max-w-[280px] overflow-hidden px-3 text-start ${getAdminStickyHeaderCellClass({
                                                 isScrolled: isUsersTableScrolledHorizontally,
-                                                isFirst: hasStickyUserColumnPair,
+                                                isFirst: false,
+                                                isSorted: isUserSortedColumn('name'),
                                             })}`}
-                                            style={{ width: 56, minWidth: 56, maxWidth: 56 }}
                                         >
-                                            <Checkbox
-                                                checked={isSelected}
-                                                disabled={!isHardDeleteEligible}
-                                                onCheckedChange={(checked) => toggleUserSelection(user.user_id, Boolean(checked))}
-                                                aria-label={isHardDeleteEligible ? `Select ${userName}` : `Cannot select ${userName} (soft-deleted)`}
+                                            <AdminSortHeaderButton
+                                                label="User"
+                                                isActive={isUserSortedColumn('name')}
+                                                direction={sortDirection}
+                                                onClick={() => toggleSort('name')}
                                             />
-                                        </TableCell>
-                                        {isUserColumnVisible('user') && (
+                                        </TableHead>
+                                    )}
+                                    {([
+                                        ['status', 'Status', 'account_status'],
+                                        ['login', 'Sign-in', 'email'],
+                                        ['tier', 'Plan', 'tier_key'],
+                                        ['subscription', 'Subscription', 'subscription_status'],
+                                        ['trips', 'Trips', 'total_trips'],
+                                        ['activation', 'Activation', 'activation_status'],
+                                        ['role', 'Role', 'system_role'],
+                                        ['toc', 'Terms', 'terms_accepted_version'],
+                                        ['last_visit', 'Last sign-in', 'last_sign_in_at'],
+                                        ['last_log', 'Last updated', 'updated_at'],
+                                        ['created', 'Created', 'created_at'],
+                                    ] as Array<[UserVisibleColumnId, string, SortKey]>).map(([columnId, label, key]) => (
+                                        isUserColumnVisible(columnId) ? (
+                                            <TableHead
+                                                key={columnId}
+                                                className={cn('px-3 text-start', isUserSortedColumn(key) && ADMIN_TABLE_SORTED_HEADER_CLASS)}
+                                            >
+                                                <AdminSortHeaderButton
+                                                    label={label}
+                                                    isActive={isUserSortedColumn(key)}
+                                                    direction={sortDirection}
+                                                    onClick={() => toggleSort(key)}
+                                                />
+                                            </TableHead>
+                                        ) : null
+                                    ))}
+                                    <TableHead className="w-[52px] px-3 text-end">
+                                        <span className="sr-only">Actions</span>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {pagedUsers.map((user) => {
+                                    const userName = getUserDisplayName(user);
+                                    const accountStatus = getUserAccountStatus(user);
+                                    const activationStatus = resolveActivationStatus(user);
+                                    const lifecycle = resolveUserLifecycleStatus(user);
+                                    const subscriptionStatus = resolveUserSubscriptionStatus(user);
+                                    const isSelected = selectedUserIds.has(user.user_id);
+                                    const isHardDeleteEligible = isUserHardDeleteEligible(user);
+                                    const termsState = resolveUserTermsState(user, currentTermsVersion);
+                                    const sortedCell = (key: SortKey) => cn('px-3 py-2.5', isUserSortedColumn(key) && ADMIN_TABLE_SORTED_CELL_CLASS);
+                                    return (
+                                        <TableRow
+                                            key={user.user_id}
+                                            className={ADMIN_TABLE_ROW_SURFACE_CLASS}
+                                            data-state={isSelected ? 'selected' : undefined}
+                                        >
                                             <TableCell
-                                                className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 ${getAdminStickyBodyCellClass({
+                                                className={`sticky start-0 z-40 w-[44px] min-w-[44px] max-w-[44px] px-3 py-2.5 ${getAdminStickyBodyCellClass({
                                                     isSelected,
                                                     isScrolled: isUsersTableScrolledHorizontally,
-                                                    isFirst: false,
-                                                    isSorted: isUserSortedColumn('name'),
+                                                    isFirst: hasStickyUserColumnPair,
                                                 })}`}
-                                                style={{ width: 340, minWidth: 340, maxWidth: 340 }}
+                                                style={{ width: 44, minWidth: 44, maxWidth: 44 }}
                                             >
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openUserDetail(user.user_id)}
-                                                    title="Open details drawer"
-                                                    className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700 dark:hover:text-accent-200"
+                                                <Checkbox
+                                                    checked={isSelected && isHardDeleteEligible}
+                                                    disabled={!isHardDeleteEligible}
+                                                    onCheckedChange={(checked) => toggleUserSelection(user.user_id, Boolean(checked))}
+                                                    aria-label={isHardDeleteEligible ? `Select ${userName}` : `Cannot select ${userName} (soft-deleted)`}
+                                                />
+                                            </TableCell>
+                                            {isUserColumnVisible('user') && (
+                                                <TableCell
+                                                    className={`sticky start-[44px] z-30 w-[280px] min-w-[240px] max-w-[280px] overflow-hidden px-3 py-2.5 ${getAdminStickyBodyCellClass({
+                                                        isSelected,
+                                                        isScrolled: isUsersTableScrolledHorizontally,
+                                                        isFirst: false,
+                                                        isSorted: isUserSortedColumn('name'),
+                                                    })}`}
                                                 >
-                                                    <div className="truncate text-sm font-semibold text-foreground group-hover:underline group-hover:decoration-slate-400">{userName}</div>
-                                                    <div className="truncate text-xs text-muted-foreground">{user.email || 'No email address'}</div>
-                                                    <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
-                                                        <span className="shrink-0">UUID:</span>
-                                                        <CopyableUuid
-                                                            value={user.user_id}
-                                                            focusable={false}
-                                                            className="relative w-full min-w-0 max-w-[214px] flex-1 overflow-hidden pr-8 align-middle"
-                                                            textClassName="block max-w-full truncate text-[11px]"
-                                                            hintClassName="absolute right-1 top-1/2 -translate-y-1/2 text-[9px]"
-                                                        />
-                                                    </div>
-                                                </button>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('login') && (
-                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    {getLoginPills(user).map((pill) => {
-                                                        const Icon = pill.icon;
-                                                        return (
-                                                            <Badge key={`${user.user_id}-login-pill-${pill.label}`} variant="neutral" className={cn(USER_PILL_CLASS, pill.className)}>
-                                                                <Icon size={11} />
-                                                                {pill.label}
-                                                            </Badge>
-                                                        );
-                                                    })}
-                                                    {activationStatus === 'pending' && (
-                                                        <Badge variant="warning" className={USER_PILL_CLASS}>
-                                                            Needs activation
-                                                        </Badge>
-                                                    )}
-                                                    {activationStatus === 'invited' && (
-                                                        <Badge variant="info" className={USER_PILL_CLASS}>
-                                                            Invite sent
-                                                        </Badge>
-                                                    )}
-                                                    {activationStatus === 'anonymous' && (
-                                                        <Badge variant="warning" className={USER_PILL_CLASS}>
-                                                            Temp
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('trips') && (
-                                            <TableCell className={`px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="font-semibold text-foreground hover:text-accent-700 dark:hover:text-accent-200">
-                                                    {getUserTotalTrips(user)} total
-                                                </div>
-                                                <div className="text-[11px] text-muted-foreground">
-                                                    {getUserActiveTrips(user)} active
-                                                </div>
-                                                {isTriplessNoData && (
-                                                    <div className="text-[11px] font-semibold text-amber-700 dark:text-amber-200">
-                                                        No profile data
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('activation') && (
-                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <Badge {...userPillProps(activationPillTone(activationStatus))}>
-                                                    {getActivationStatusLabel(activationStatus)}
-                                                </Badge>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('role') && (
-                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <Badge {...userPillProps(rolePillTone(user.system_role))}>
-                                                    {user.system_role === 'admin' ? 'Admin' : 'User'}
-                                                </Badge>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('tier') && (
-                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <Badge {...userPillProps(tierPillTone(user.tier_key))}>
-                                                    {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
-                                                </Badge>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('subscription') && (
-                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="flex min-w-[132px] flex-col gap-1">
-                                                    <Badge {...userPillProps(subscriptionStatusPillTone(subscriptionStatus))}>
-                                                        {getUserSubscriptionStatusLabel(subscriptionStatus)}
-                                                    </Badge>
-                                                    {user.provider_subscription_id ? (
-                                                        <span className="truncate text-[11px] font-mono text-muted-foreground" title={user.provider_subscription_id}>
-                                                            {user.provider_subscription_id}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => showUserDetail(user.user_id)}
+                                                        className="group/user block w-full min-w-0 cursor-pointer rounded-sm text-start outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                    >
+                                                        <span className="flex min-w-0 items-center gap-1.5">
+                                                            <span className="truncate text-sm font-medium text-foreground group-hover/user:underline group-hover/user:decoration-muted-foreground">{userName}</span>
+                                                            {user.system_role === 'admin' && (
+                                                                <AdminStatusBadge tone="accent" dot={false} className="h-4 px-1.5 text-[11px]">Admin</AdminStatusBadge>
+                                                            )}
                                                         </span>
+                                                        <span className="block truncate text-xs text-muted-foreground">{user.email || 'No email address'}</span>
+                                                    </button>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('status') && (
+                                                <TableCell className={sortedCell('account_status')}>
+                                                    <AdminStatusBadge tone={lifecycle.tone}>{lifecycle.label}</AdminStatusBadge>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('login') && (
+                                                <TableCell className={sortedCell('email')}>
+                                                    <LoginPills user={user} />
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('tier') && (
+                                                <TableCell className={sortedCell('tier_key')}>
+                                                    <div className="flex flex-col items-start gap-0.5">
+                                                        <AdminStatusBadge tone={tierTone(user.tier_key)} dot={false}>
+                                                            {getPlanName(user.tier_key)}
+                                                        </AdminStatusBadge>
+                                                        {hasNotableSubscription(subscriptionStatus) && (
+                                                            <span
+                                                                className={cn(
+                                                                    'text-xs',
+                                                                    subscriptionStatus === 'past_due' || subscriptionStatus === 'canceled_grace'
+                                                                        ? 'text-amber-700 dark:text-amber-300'
+                                                                        : 'text-muted-foreground'
+                                                                )}
+                                                            >
+                                                                {getUserSubscriptionStatusLabel(subscriptionStatus)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('subscription') && (
+                                                <TableCell className={sortedCell('subscription_status')}>
+                                                    <div className="flex min-w-[132px] flex-col gap-1">
+                                                        <AdminStatusBadge tone={subscriptionStatusTone(subscriptionStatus)}>
+                                                            {getUserSubscriptionStatusLabel(subscriptionStatus)}
+                                                        </AdminStatusBadge>
+                                                        {user.provider_subscription_id ? (
+                                                            <span className="max-w-[180px] truncate font-mono text-[11px] text-muted-foreground" data-tooltip={user.provider_subscription_id}>
+                                                                {user.provider_subscription_id}
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('trips') && (
+                                                <TableCell className={sortedCell('total_trips')}>
+                                                    <div className="text-sm font-medium tabular-nums text-foreground">{getUserTotalTrips(user)}</div>
+                                                    {getUserTotalTrips(user) > 0 ? (
+                                                        <div className="text-xs tabular-nums text-muted-foreground">{getUserActiveTrips(user)} active</div>
+                                                    ) : isUserTriplessAndNoData(user) ? (
+                                                        <div className="text-xs text-muted-foreground">Empty account</div>
                                                     ) : null}
-                                                </div>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('activation') && (
+                                                <TableCell className={sortedCell('activation_status')}>
+                                                    <AdminStatusBadge tone={activationStatusTone(activationStatus)}>
+                                                        {getActivationStatusLabel(activationStatus)}
+                                                    </AdminStatusBadge>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('role') && (
+                                                <TableCell className={sortedCell('system_role')}>
+                                                    <AdminStatusBadge tone={user.system_role === 'admin' ? 'accent' : 'neutral'} dot={false}>
+                                                        {user.system_role === 'admin' ? 'Admin' : 'User'}
+                                                    </AdminStatusBadge>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('toc') && (
+                                                <TableCell className={sortedCell('terms_accepted_version')}>
+                                                    <AdminStatusBadge tone={getUserTermsStateTone(termsState)}>
+                                                        {getUserTermsStateLabel(termsState)}
+                                                    </AdminStatusBadge>
+                                                    <div className="mt-1 text-xs text-muted-foreground">
+                                                        {user.terms_accepted_version || 'No accepted version'}
+                                                    </div>
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('last_visit') && (
+                                                <TableCell className={cn(sortedCell('last_sign_in_at'), 'text-sm text-muted-foreground')}>
+                                                    <RelativeTime value={user.last_sign_in_at} fallback="Never" />
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('last_log') && (
+                                                <TableCell className={cn(sortedCell('updated_at'), 'text-sm text-muted-foreground')}>
+                                                    <RelativeTime value={user.updated_at} fallback="Never" />
+                                                </TableCell>
+                                            )}
+                                            {isUserColumnVisible('created') && (
+                                                <TableCell className={cn(sortedCell('created_at'), 'text-sm text-muted-foreground')}>
+                                                    <RelativeTime value={user.created_at} fallback="Unknown" />
+                                                </TableCell>
+                                            )}
+                                            <TableCell className="px-3 py-2.5 text-end">
+                                                <UserRowActionsMenu
+                                                    disabled={isSaving}
+                                                    isDeleted={accountStatus === 'deleted'}
+                                                    userName={userName}
+                                                    tripsLink={`/admin/trips?q=${encodeURIComponent((user.email || '').trim() || user.user_id)}`}
+                                                    onOpenDetails={() => showUserDetail(user.user_id)}
+                                                    onCopyId={() => {
+                                                        void copyUserId(user);
+                                                    }}
+                                                    onSoftDelete={() => {
+                                                        void handleSoftDelete(user);
+                                                    }}
+                                                />
                                             </TableCell>
-                                        )}
-                                        {isUserColumnVisible('status') && (
-                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <Badge {...userPillProps(statusPillTone(accountStatus))}>
-                                                    {formatAccountStatusLabel(accountStatus)}
-                                                </Badge>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('toc') && (
-                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <Badge {...userPillProps(getUserTermsStatePillTone(termsState))}>
-                                                    {getUserTermsStateLabel(termsState)}
-                                                </Badge>
-                                                <div className="mt-1 text-[11px] text-muted-foreground">
-                                                    {user.terms_accepted_version || 'No accepted version'}
-                                                </div>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('last_visit') && (
-                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="space-y-0.5">
-                                                    <span className="block font-medium text-foreground" title={formatTimestamp(user.last_sign_in_at)}>
-                                                        {formatRelativeTimestamp(user.last_sign_in_at, 'No visit yet')}
-                                                    </span>
-                                                    <span className="block text-[11px] text-muted-foreground">
-                                                        {formatOptionalTimestamp(user.last_sign_in_at)}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('last_log') && (
-                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="space-y-0.5">
-                                                    <span className="block font-medium text-foreground" title={formatOptionalTimestamp(user.updated_at)}>
-                                                        {formatRelativeTimestamp(user.updated_at, 'No logs yet')}
-                                                    </span>
-                                                    <span className="block text-[11px] text-muted-foreground">
-                                                        {formatOptionalTimestamp(user.updated_at)}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                        )}
-                                        {isUserColumnVisible('created') && (
-                                            <TableCell className={`max-w-[170px] px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                {formatOptionalTimestamp(user.created_at)}
-                                            </TableCell>
-                                        )}
-                                        <TableCell className="px-4 py-3 text-right">
-                                            <UserRowActionsMenu
-                                                disabled={isSaving}
-                                                isDeleted={accountStatus === 'deleted'}
-                                                onOpenDetails={() => openUserDetail(user.user_id)}
-                                                onSoftDelete={() => {
-                                                    void handleSoftDelete(user);
-                                                }}
+                                        </TableRow>
+                                    );
+                                })}
+                                {pagedUsers.length === 0 && !isLoadingUsers && (
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableCell className="p-4" colSpan={usersTableColumnCount}>
+                                            <AdminEmptyState
+                                                icon={<UsersThree />}
+                                                title={users.length === 0 ? 'No users yet' : 'No users match'}
+                                                description={users.length === 0
+                                                    ? 'Create or invite the first account with "Create user".'
+                                                    : 'Clear a filter, widen the date range or change the search.'}
+                                                action={hasActiveFilters ? (
+                                                    <Button type="button" variant="outline" size="sm" onClick={resetTableFilters}>
+                                                        Reset filters
+                                                    </Button>
+                                                ) : undefined}
                                             />
                                         </TableCell>
                                     </TableRow>
-                                );
-                            })}
-                            {pagedUsers.length === 0 && !isLoadingUsers && (
-                                <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={usersTableColumnCount}>
-                                        No users match your filters.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            {isLoadingUsers && (
-                                <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={usersTableColumnCount}>
-                                        <span className="inline-flex items-center gap-2 font-medium">
-                                            <SpinnerGap size={16} className="animate-spin text-muted-foreground" />
-                                            Loading users…
-                                        </span>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                        {filteredUsers.length === 0
-                            ? 'Showing 0 users'
-                            : `Showing ${(page - 1) * PAGE_SIZE + 1}-${Math.min(page * PAGE_SIZE, filteredUsers.length)} of ${filteredUsers.length}`}
-                    </span>
-                    <div className="flex items-center gap-1">
-                        <button
-                            type="button"
-                            onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                            disabled={page === 1}
-                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                        >
-                            Prev
-                        </button>
-                        <span>Page {page} / {pageCount}</span>
-                        <button
-                            type="button"
-                            onClick={() => setPage((current) => Math.min(current + 1, pageCount))}
-                            disabled={page >= pageCount}
-                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                        >
-                            Next
-                        </button>
+                                )}
+                                {pagedUsers.length === 0 && isLoadingUsers && (
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableCell className="px-4 py-10 text-center text-sm text-muted-foreground" colSpan={usersTableColumnCount}>
+                                            <span role="status" className="inline-flex items-center gap-2 font-medium">
+                                                <SpinnerGap size={16} className="animate-spin motion-reduce:animate-none" />
+                                                Loading users…
+                                            </span>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
-                </div>
-                {isSaving && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-card/45 backdrop-blur-[1px]">
-                        <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm dark:shadow-none">
-                            <SpinnerGap size={13} className="animate-spin" />
-                            Applying changes…
-                        </span>
-                    </div>
-                )}
-            </section>
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="w-[min(96vw,760px)]">
+                    <AdminPagination
+                        page={currentPage}
+                        pageSize={PAGE_SIZE}
+                        totalItems={filteredUsers.length}
+                        onPageChange={setPage}
+                        noun="users"
+                    />
+
+                    {isSaving && (
+                        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-card/50">
+                            <span role="status" className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm">
+                                <SpinnerGap size={14} className="animate-spin motion-reduce:animate-none" />
+                                Applying changes…
+                            </span>
+                        </div>
+                    )}
+                </AdminSurfaceCard>
+
+                <AdminSelectionBar
+                    count={selectedVisibleUsers.length}
+                    noun="user"
+                    onClear={() => setSelectedUserIds(new Set())}
+                >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleBulkSoftDeleteUsers()}
+                        disabled={isSaving}
+                    >
+                        Soft delete
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => void handleBulkHardDeleteUsers()}
+                        disabled={isSaving}
+                    >
+                        <Trash />
+                        Hard delete
+                    </Button>
+                </AdminSelectionBar>
+            </div>
+
+            <Dialog
+                open={isCreateDialogOpen}
+                onOpenChange={(open) => {
+                    setIsCreateDialogOpen(open);
+                    if (!open) setCreateError(null);
+                }}
+            >
+                <DialogContent className="w-[min(96vw,560px)]">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-                            <UserPlus size={16} className="text-accent-700 dark:text-accent-200" />
-                            Create user
-                        </DialogTitle>
+                        <DialogTitle className="text-base font-semibold">Create user</DialogTitle>
                         <DialogDescription>
-                            Invite sends a password setup link. Direct creates the account immediately with a temporary password.
+                            An invite emails a link to set a password. Direct creation makes the account now with a password you choose.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-5">
-                        <div className="inline-flex rounded-lg border border-border p-0.5 text-xs">
-                            <button
+                    <form
+                        className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-5"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            void submitCreateUser();
+                        }}
+                    >
+                        <div className="inline-flex w-fit gap-0.5 rounded-md border border-border p-0.5" role="group" aria-label="Creation mode">
+                            <Button
                                 type="button"
+                                variant="toggle"
+                                size="sm"
+                                aria-pressed={createMode === 'invite'}
                                 onClick={() => setCreateMode('invite')}
-                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'invite' ? 'bg-slate-900 text-white' : 'text-muted-foreground'}`}
+                                className="h-7"
                             >
-                                <span className="inline-flex items-center gap-1">
-                                    <EnvelopeSimple size={13} />
-                                    Invite
-                                </span>
-                            </button>
-                            <button
+                                <EnvelopeSimple />
+                                Invite
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="toggle"
+                                size="sm"
+                                aria-pressed={createMode === 'direct'}
                                 onClick={() => setCreateMode('direct')}
-                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'direct' ? 'bg-slate-900 text-white' : 'text-muted-foreground'}`}
+                                className="h-7"
                             >
-                                <span className="inline-flex items-center gap-1">
-                                    <UserPlus size={13} />
-                                    Direct
-                                </span>
-                            </button>
+                                <UserPlus />
+                                Direct
+                            </Button>
                         </div>
 
-                        {createMode === 'invite' ? (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-	                                    <Input
-	                                        aria-label="Email"
-	                                        value={inviteDraft.email}
-                                        onChange={(event) => setInviteDraft((current) => ({ ...current, email: event.target.value }))}
-                                        placeholder="name@example.com"
-                                        className="h-9 rounded-lg"
-                                    />
-                                </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                    <Input
-	                                        aria-label="First name"
-	                                        value={inviteDraft.firstName}
-                                        onChange={(event) => setInviteDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 rounded-lg"
-                                    />
-                                </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                    <Input
-	                                        aria-label="Last name"
-	                                        value={inviteDraft.lastName}
-                                        onChange={(event) => setInviteDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 rounded-lg"
-                                    />
-                                </label>
-                                <div className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Starting tier</span>
-                                    <Select
-                                        value={inviteDraft.tierKey}
-                                        onValueChange={(value) => setInviteDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
-                                    >
-                                        <SelectTrigger className="h-9" aria-label="Starting tier">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {PLAN_ORDER.map((tierKey) => (
-                                                <SelectItem key={`invite-tier-${tierKey}`} value={tierKey}>
-                                                    {PLAN_CATALOG[tierKey].publicName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => void submitCreateInvite()}
-                                        disabled={isSaving || !inviteDraft.email.trim()}
-                                        className="inline-flex h-9 items-center rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-50"
-                                    >
-                                        Send invite
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-	                                    <Input
-	                                        aria-label="Email"
-	                                        value={directDraft.email}
-                                        onChange={(event) => setDirectDraft((current) => ({ ...current, email: event.target.value }))}
-                                        placeholder="name@example.com"
-                                        className="h-9 rounded-lg"
-                                    />
-                                </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                    <Input
-	                                        aria-label="First name"
-	                                        value={directDraft.firstName}
-                                        onChange={(event) => setDirectDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 rounded-lg"
-                                    />
-                                </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                    <Input
-	                                        aria-label="Last name"
-	                                        value={directDraft.lastName}
-                                        onChange={(event) => setDirectDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 rounded-lg"
-                                    />
-                                </label>
-                                <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Initial password</span>
-	                                    <Input
-	                                        aria-label="Initial password"
-	                                        value={directDraft.password}
-                                        onChange={(event) => setDirectDraft((current) => ({ ...current, password: event.target.value }))}
+                        {createError && <AdminErrorAlert message={createError} />}
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <label className="flex flex-col gap-1.5 sm:col-span-2">
+                                <span className="text-xs font-medium text-muted-foreground">Email</span>
+                                <Input
+                                    aria-label="Email"
+                                    type="email"
+                                    value={createDraft.email}
+                                    onChange={(event) => setCreateDraft((current) => ({ ...current, email: event.target.value }))}
+                                    placeholder="name@example.com"
+                                    className="h-9"
+                                />
+                            </label>
+                            <label className="flex flex-col gap-1.5">
+                                <span className="text-xs font-medium text-muted-foreground">First name</span>
+                                <Input
+                                    aria-label="First name"
+                                    value={createDraft.firstName}
+                                    onChange={(event) => setCreateDraft((current) => ({ ...current, firstName: event.target.value }))}
+                                    className="h-9"
+                                />
+                            </label>
+                            <label className="flex flex-col gap-1.5">
+                                <span className="text-xs font-medium text-muted-foreground">Last name</span>
+                                <Input
+                                    aria-label="Last name"
+                                    value={createDraft.lastName}
+                                    onChange={(event) => setCreateDraft((current) => ({ ...current, lastName: event.target.value }))}
+                                    className="h-9"
+                                />
+                            </label>
+                            {createMode === 'direct' && (
+                                <label className="flex flex-col gap-1.5 sm:col-span-2">
+                                    <span className="text-xs font-medium text-muted-foreground">Initial password</span>
+                                    <Input
+                                        aria-label="Initial password"
+                                        value={createDraft.password}
+                                        onChange={(event) => setCreateDraft((current) => ({ ...current, password: event.target.value }))}
                                         type="password"
-                                        placeholder="Minimum 8 characters"
-                                        className="h-9 rounded-lg"
+                                        autoComplete="new-password"
+                                        placeholder="At least 8 characters"
+                                        className="h-9"
                                     />
                                 </label>
-                                <div className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Starting tier</span>
-                                    <Select
-                                        value={directDraft.tierKey}
-                                        onValueChange={(value) => setDirectDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
-                                    >
-                                        <SelectTrigger className="h-9" aria-label="Starting tier">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {PLAN_ORDER.map((tierKey) => (
-                                                <SelectItem key={`direct-tier-${tierKey}`} value={tierKey}>
-                                                    {PLAN_CATALOG[tierKey].publicName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => void submitCreateDirect()}
-                                        disabled={isSaving || !directDraft.email.trim() || !directDraft.password.trim()}
-                                        className="inline-flex h-9 items-center rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-                                    >
-                                        Create user
-                                    </button>
-                                </div>
+                            )}
+                            <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                <span className="text-xs font-medium text-muted-foreground">Starting plan</span>
+                                <Select
+                                    value={createDraft.tierKey}
+                                    onValueChange={(value) => setCreateDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
+                                >
+                                    <SelectTrigger className="h-9" aria-label="Starting plan">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {PLAN_ORDER.map((tierKey) => (
+                                            <SelectItem key={`create-tier-${tierKey}`} value={tierKey}>
+                                                {getPlanName(tierKey)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="ghost" onClick={() => setIsCreateDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSaving || !createDraft.email.trim() || (createMode === 'direct' && !createDraft.password.trim())}
+                            >
+                                {createMode === 'invite' ? 'Send invite' : 'Create user'}
+                            </Button>
+                        </div>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -3617,622 +3178,663 @@ export const AdminUsersPage: React.FC = () => {
                 errorMessage={diffModalError}
             />
 
-            <Drawer
+            <AdminDetailSheet
                 open={isDetailOpen}
                 onOpenChange={(open) => {
-                    setIsDetailOpen(open);
-                    if (open) return;
-                    setSelectedUserId(null);
-                    if (!searchParams.has('user') && searchParams.get('drawer') !== 'user') return;
-                    const next = new URLSearchParams(searchParams);
-                    next.delete('user');
-                    next.delete('drawer');
-                    setSearchParams(next, { replace: true });
+                    if (open) {
+                        setIsDetailOpen(true);
+                        return;
+                    }
+                    closeUserDetail();
                 }}
-                direction="right"
+                title={selectedUser ? getUserDisplayName(selectedUser) : 'User'}
+                accessibleTitle={selectedUser ? `${getUserDisplayName(selectedUser)} details` : 'User details'}
+                subtitle={selectedUser ? (selectedUser.email || 'No email address') : undefined}
+                meta={selectedUser && selectedUserLifecycle ? (
+                    <>
+                        <AdminStatusBadge tone={selectedUserLifecycle.tone}>{selectedUserLifecycle.label}</AdminStatusBadge>
+                        <AdminStatusBadge tone={tierTone(selectedUser.tier_key)} dot={false}>{getPlanName(selectedUser.tier_key)}</AdminStatusBadge>
+                        {selectedUser.system_role === 'admin' && (
+                            <AdminStatusBadge tone="accent" dot={false}>Admin</AdminStatusBadge>
+                        )}
+                    </>
+                ) : undefined}
+                headerActions={selectedUserPublicProfilePath ? (
+                    <Button asChild variant="ghost" size="icon-sm">
+                        <a
+                            href={selectedUserPublicProfilePath}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Open public profile in a new tab"
+                            data-tooltip="Open public profile"
+                        >
+                            <ArrowSquareOut className="rtl:-scale-x-100" />
+                        </a>
+                    </Button>
+                ) : undefined}
+                footer={selectedUser ? (
+                    <>
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => void saveSelectedUser()}
+                            disabled={isSaving}
+                        >
+                            Save changes
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void handleSoftDelete(selectedUser)}
+                            disabled={isSaving}
+                        >
+                            {isSelectedUserDeleted ? 'Restore user' : 'Soft delete'}
+                        </Button>
+                        <span className="ms-auto flex flex-wrap items-center gap-2">
+                            {selectedUserTripStats.total > 0 && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => void handleTransferTripsAndHardDelete(selectedUser)}
+                                    disabled={isSaving || isLoadingTrips || isSelectedUserDeleted}
+                                >
+                                    Transfer trips + hard delete
+                                </Button>
+                            )}
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => void handleHardDelete(selectedUser)}
+                                disabled={isSaving || isSelectedUserDeleted}
+                                data-tooltip={isSelectedUserDeleted ? 'Restore the user before deleting permanently' : undefined}
+                            >
+                                <Trash />
+                                Hard delete
+                            </Button>
+                        </span>
+                    </>
+                ) : undefined}
             >
-                <DrawerContent
-                    side="right"
-                    className="w-[min(96vw,680px)] p-0"
-                    accessibleTitle={selectedUser ? `${getUserDisplayName(selectedUser)} details` : 'User details'}
-                    accessibleDescription="Inspect and edit profile, entitlement overrides, account state, and connected trips."
-                >
-                    {!selectedUser ? (
-                        <div className="p-4 text-sm text-muted-foreground">No user selected.</div>
+                {!selectedUser ? (
+                    missingLinkedUserId && missingLinkedUserId === selectedUserId ? (
+                        <AdminEmptyState
+                            icon={<UsersThree />}
+                            title="User not found"
+                            description="The link points to an account that no longer exists. Close this panel to return to the list."
+                        />
                     ) : (
-                        <div className="flex h-full flex-col">
-                            <div className="border-b border-border px-5 py-4">
-                                <h2 className="text-base font-semibold text-foreground">{getUserDisplayName(selectedUser)}</h2>
-                                <p className="truncate text-sm text-muted-foreground">
-                                    {selectedUser.email || (
-                                        <CopyableUuid
-                                            value={selectedUser.user_id}
-                                            className="align-middle"
-                                            textClassName="max-w-[360px] truncate text-sm"
-                                        />
-                                    )}
-                                </p>
-                                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                                    <p className="text-xs font-semibold text-muted-foreground">
-                                        {selectedUserTripStats.active} active trips / {selectedUserTripStats.total} total trips
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {selectedUserTripsPageLink && (
-                                            <a
-                                                href={selectedUserTripsPageLink}
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                            >
-                                                Open in Trips
-                                                <ArrowSquareOut size={12} />
-                                            </a>
+                        <div role="status" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                            <SpinnerGap size={14} className="animate-spin motion-reduce:animate-none" />
+                            Loading user…
+                        </div>
+                    )
+                ) : (
+                    <>
+                        {errorMessage && <AdminErrorAlert message={errorMessage} />}
+                        <Tabs
+                            value={detailTab}
+                            onValueChange={(value) => {
+                                const nextTab = value as UserDetailTab;
+                                setDetailTab(nextTab);
+                                trackEvent('admin__users_detail--tab', { tab: nextTab });
+                            }}
+                            className="gap-4"
+                        >
+                            <TabsList variant="line" aria-label="User details" className="w-full justify-start gap-5 overflow-x-auto">
+                                {(Object.keys(USER_DETAIL_TAB_LABELS) as UserDetailTab[]).map((tab) => (
+                                    <TabsTrigger
+                                        key={tab}
+                                        value={tab}
+                                        className="group-data-[variant=line]/tabs-list:py-2.5"
+                                        {...getAnalyticsDebugAttributes('admin__users_detail--tab', { tab })}
+                                    >
+                                        {USER_DETAIL_TAB_LABELS[tab]}
+                                        {tab === 'trips' && (
+                                            <span className="tabular-nums text-muted-foreground">{selectedUserTripStats.total}</span>
                                         )}
-                                        {selectedUserPublicProfilePath ? (
-                                            <a
-                                                href={selectedUserPublicProfilePath}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                            >
-                                                Open public profile
-                                                <ArrowSquareOut size={12} />
-                                            </a>
-                                        ) : (
-                                            <span className="text-[11px] font-semibold text-muted-foreground">
-                                                Public profile unavailable (missing username)
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
 
-                            <div className="flex-1 overflow-y-auto p-4">
-                                <section className="space-y-3 rounded-xl border border-border p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Profile and access</h3>
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
-	                                        <Input
-	                                            aria-label="First name"
-	                                            value={profileDraft.firstName}
-                                            onChange={(event) => setProfileDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                            className="h-9 rounded-lg"
-                                        />
-                                    </label>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
-	                                        <Input
-	                                            aria-label="Last name"
-	                                            value={profileDraft.lastName}
-                                            onChange={(event) => setProfileDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                            className="h-9 rounded-lg"
-                                        />
-                                    </label>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Username</span>
-	                                        <Input
-	                                            aria-label="Username"
-	                                            value={profileDraft.username}
-                                            onChange={(event) => setProfileDraft((current) => ({ ...current, username: event.target.value }))}
-                                            className="h-9 rounded-lg"
-                                        />
-                                    </label>
-                                    <div className="space-y-1 rounded-lg border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground sm:col-span-2">
-                                        <div>Self-service username changes are limited to once every {USERNAME_CHANGE_COOLDOWN_DAYS} days.</div>
-                                        <div>Last recorded username change: {formatOptionalTimestamp(selectedUser.username_changed_at)}.</div>
-                                        <div>
-                                            {selectedUserUsernameCooldown.isActive
-                                                ? `Cooldown ends: ${formatOptionalTimestamp(selectedUserUsernameCooldown.endsAt)}.`
-                                                : 'Cooldown is currently not active.'}
-                                        </div>
-                                        <div>Use the admin action below to revoke cooldown immediately.</div>
-                                        <button
-                                            type="button"
-                                            onClick={() => void handleResetUsernameCooldown()}
-                                            disabled={isSaving || !selectedUserUsernameCooldown.isActive}
-                                            className="mt-1 inline-flex h-7 items-center rounded-md border border-border bg-card px-2.5 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
-                                        >
-                                            Revoke cooldown
-                                        </button>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gender</span>
-                                        <Select
-                                            value={profileDraft.gender || GENDER_UNSET_VALUE}
-                                            onValueChange={(value) => {
-                                                setProfileDraft((current) => ({
-                                                    ...current,
-                                                    gender: value === GENDER_UNSET_VALUE ? '' : value as '' | 'female' | 'male' | 'non-binary' | 'prefer-not',
-                                                }));
-                                            }}
-                                        >
-                                            <SelectTrigger className="h-9" aria-label="Gender">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {PROFILE_GENDER_OPTIONS.map((option) => (
-                                                    <SelectItem
-                                                        key={`profile-gender-${option.value || 'empty'}`}
-                                                        value={option.value || GENDER_UNSET_VALUE}
-                                                    >
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Country/Region</span>
-                                        <ProfileCountryRegionSelect
-                                            value={profileDraft.country}
-                                            placeholder="Search country or region"
-                                            emptyLabel="No countries found"
-                                            toggleLabel="Toggle country/region options"
-                                            onValueChange={(nextCode) => setProfileDraft((current) => ({ ...current, country: nextCode }))}
-                                        />
-                                    </div>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">City</span>
-	                                        <Input
-	                                            aria-label="City"
-	                                            value={profileDraft.city}
-                                            onChange={(event) => setProfileDraft((current) => ({ ...current, city: event.target.value }))}
-                                            className="h-9 rounded-lg"
-                                        />
-                                    </label>
-                                    <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preferred language</span>
-	                                        <Input
-	                                            aria-label="Preferred language"
-	                                            value={profileDraft.preferredLanguage}
-                                            onChange={(event) => setProfileDraft((current) => ({ ...current, preferredLanguage: event.target.value }))}
-                                            className="h-9 rounded-lg"
-                                        />
-                                    </label>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account status</span>
-                                        <Select
-                                            value={profileDraft.accountStatus}
-                                            onValueChange={(value) => setProfileDraft((current) => ({ ...current, accountStatus: value as 'active' | 'disabled' | 'deleted' }))}
-                                        >
-                                            <SelectTrigger className="h-9" aria-label="Account status">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {PROFILE_ACCOUNT_STATUS_OPTIONS.map((option) => (
-                                                    <SelectItem key={`profile-status-${option.value}`} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Role</span>
-                                        <Select
-                                            value={profileDraft.role}
-                                            onValueChange={(value) => setProfileDraft((current) => ({ ...current, role: value as 'admin' | 'user' }))}
-                                        >
-                                            <SelectTrigger className="h-9" aria-label="Role">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="user">User</SelectItem>
-                                                <SelectItem value="admin">Admin</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tier</span>
-                                        <Select
-                                            value={tierDraft}
-                                            onValueChange={(value) => setTierDraft(value as PlanTierKey)}
-                                        >
-                                            <SelectTrigger className="h-9" aria-label="Tier">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {PLAN_ORDER.map((tierKey) => (
-                                                    <SelectItem key={`profile-tier-${tierKey}`} value={tierKey}>
-                                                        {PLAN_CATALOG[tierKey].publicName}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
+                            <TabsContent value="overview" className="flex flex-col gap-6">
+                                <section className="flex flex-col gap-3">
+                                    <AdminSectionHeader as="h3" title="Account" />
+                                    <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                                        <DetailField label="User ID" className="sm:col-span-2">
+                                            <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
+                                        </DetailField>
+                                        <DetailField label="Status">
+                                            {selectedUserLifecycle && (
+                                                <AdminStatusBadge tone={selectedUserLifecycle.tone}>{selectedUserLifecycle.label}</AdminStatusBadge>
+                                            )}
+                                        </DetailField>
+                                        <DetailField label="Sign-in method">
+                                            <LoginPills user={selectedUser} />
+                                        </DetailField>
+                                        <DetailField label="Last sign-in">
+                                            {selectedUser.last_sign_in_at
+                                                ? <>{formatRelativeTimestamp(selectedUser.last_sign_in_at)} <span className="text-muted-foreground">· {formatAbsoluteTimestamp(selectedUser.last_sign_in_at)}</span></>
+                                                : 'Never'}
+                                        </DetailField>
+                                        <DetailField label="Created">
+                                            {formatAbsoluteTimestamp(selectedUser.created_at)}
+                                        </DetailField>
+                                        <DetailField label="Last updated">
+                                            {formatAbsoluteTimestamp(selectedUser.updated_at)}
+                                        </DetailField>
+                                        <DetailField label="Trips">
+                                            <span className="tabular-nums">
+                                                {selectedUserTripStats.active} active of {selectedUserTripStats.total}
+                                            </span>
+                                        </DetailField>
+                                        <DetailField label="Public profile" className="sm:col-span-2">
+                                            {selectedUserPublicProfilePath ? (
+                                                <a
+                                                    href={selectedUserPublicProfilePath}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-primary underline-offset-4 hover:underline"
+                                                >
+                                                    {selectedUserPublicProfilePath}
+                                                </a>
+                                            ) : (
+                                                <span className="text-muted-foreground">Not available until the user picks a username.</span>
+                                            )}
+                                        </DetailField>
+                                    </dl>
                                 </section>
 
-                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Billing subscription</h3>
-                                    <a
-                                        href={`/admin/billing?q=${encodeURIComponent(selectedUser.provider_subscription_id || selectedUser.user_id)}`}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                    >
-                                        Open billing workspace
-                                        <ArrowSquareOut size={12} />
-                                    </a>
-                                </div>
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subscription status</span>
-                                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                                            <Badge {...userPillProps(subscriptionStatusPillTone(resolveUserSubscriptionStatus(selectedUser)))}>
-                                                {getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(selectedUser))}
-                                            </Badge>
-                                            <Badge {...userPillProps(tierPillTone(selectedUser.tier_key))}>
-                                                {PLAN_CATALOG[selectedUser.tier_key].publicName}
-                                            </Badge>
+                                <section className="flex flex-col gap-3" aria-labelledby="admin-user-terms-heading">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title={<span id="admin-user-terms-heading">Terms of service</span>}
+                                        actions={(
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="xs"
+                                                onClick={() => void handleResetTermsAcceptance()}
+                                                disabled={isSaving || !selectedUser.terms_accepted_version}
+                                            >
+                                                Reset terms acceptance
+                                            </Button>
+                                        )}
+                                    />
+                                    <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                                        <DetailField label="State">
+                                            {selectedUserTermsState && (
+                                                <AdminStatusBadge tone={getUserTermsStateTone(selectedUserTermsState)}>
+                                                    {getUserTermsStateLabel(selectedUserTermsState)}
+                                                </AdminStatusBadge>
+                                            )}
+                                        </DetailField>
+                                        <DetailField label="Accepted version">
+                                            {selectedUser.terms_accepted_version || 'Not accepted yet'}
+                                        </DetailField>
+                                        <DetailField label="Accepted at">
+                                            {formatAbsoluteTimestamp(selectedUser.terms_accepted_at)}
+                                        </DetailField>
+                                    </dl>
+                                </section>
+                            </TabsContent>
+
+                            <TabsContent value="profile" className="flex flex-col gap-6">
+                                <section className="flex flex-col gap-3">
+                                    <AdminSectionHeader as="h3" title="Profile" />
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <label className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">First name</span>
+                                            <Input
+                                                aria-label="First name"
+                                                value={profileDraft.firstName}
+                                                onChange={(event) => setProfileDraft((current) => ({ ...current, firstName: event.target.value }))}
+                                                className="h-9"
+                                            />
+                                        </label>
+                                        <label className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">Last name</span>
+                                            <Input
+                                                aria-label="Last name"
+                                                value={profileDraft.lastName}
+                                                onChange={(event) => setProfileDraft((current) => ({ ...current, lastName: event.target.value }))}
+                                                className="h-9"
+                                            />
+                                        </label>
+                                        <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                            <label className="flex flex-col gap-1.5">
+                                                <span className="text-xs font-medium text-muted-foreground">Username</span>
+                                                <Input
+                                                    aria-label="Username"
+                                                    value={profileDraft.username}
+                                                    onChange={(event) => setProfileDraft((current) => ({ ...current, username: event.target.value }))}
+                                                    className="h-9"
+                                                />
+                                            </label>
+                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                                                <span>
+                                                    Users can change their username once every {USERNAME_CHANGE_COOLDOWN_DAYS} days.{' '}
+                                                    {selectedUserUsernameCooldown.isActive
+                                                        ? `Cooldown ends ${formatAbsoluteTimestamp(selectedUserUsernameCooldown.endsAt)}.`
+                                                        : 'No cooldown is active.'}
+                                                </span>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="xs"
+                                                    onClick={() => void handleResetUsernameCooldown()}
+                                                    disabled={isSaving || !selectedUserUsernameCooldown.isActive}
+                                                >
+                                                    Revoke cooldown
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <div className="mt-2 text-xs text-muted-foreground">
-                                            Provider: {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">Gender</span>
+                                            <Select
+                                                value={profileDraft.gender || GENDER_UNSET_VALUE}
+                                                onValueChange={(value) => {
+                                                    setProfileDraft((current) => ({
+                                                        ...current,
+                                                        gender: value === GENDER_UNSET_VALUE ? '' : value as '' | 'female' | 'male' | 'non-binary' | 'prefer-not',
+                                                    }));
+                                                }}
+                                            >
+                                                <SelectTrigger className="h-9" aria-label="Gender">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {PROFILE_GENDER_OPTIONS.map((option) => (
+                                                        <SelectItem
+                                                            key={`profile-gender-${option.value || 'empty'}`}
+                                                            value={option.value || GENDER_UNSET_VALUE}
+                                                        >
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <label className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">Preferred language</span>
+                                            <Input
+                                                aria-label="Preferred language"
+                                                value={profileDraft.preferredLanguage}
+                                                onChange={(event) => setProfileDraft((current) => ({ ...current, preferredLanguage: event.target.value }))}
+                                                className="h-9"
+                                            />
+                                        </label>
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">Country/Region</span>
+                                            <ProfileCountryRegionSelect
+                                                value={profileDraft.country}
+                                                placeholder="Search country or region"
+                                                emptyLabel="No countries found"
+                                                toggleLabel="Toggle country/region options"
+                                                onValueChange={(nextCode) => setProfileDraft((current) => ({ ...current, country: nextCode }))}
+                                            />
+                                        </div>
+                                        <label className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">City</span>
+                                            <Input
+                                                aria-label="City"
+                                                value={profileDraft.city}
+                                                onChange={(event) => setProfileDraft((current) => ({ ...current, city: event.target.value }))}
+                                                className="h-9"
+                                            />
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <section className="flex flex-col gap-3">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title="Access"
+                                        description="Plan, role and account state. Saved with the profile."
+                                    />
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">Plan</span>
+                                            <Select
+                                                value={tierDraft}
+                                                onValueChange={(value) => setTierDraft(value as PlanTierKey)}
+                                            >
+                                                <SelectTrigger className="h-9" aria-label="Plan">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {PLAN_ORDER.map((tierKey) => (
+                                                        <SelectItem key={`profile-tier-${tierKey}`} value={tierKey}>
+                                                            {getPlanName(tierKey)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">Role</span>
+                                            <Select
+                                                value={profileDraft.role}
+                                                onValueChange={(value) => setProfileDraft((current) => ({ ...current, role: value as 'admin' | 'user' }))}
+                                            >
+                                                <SelectTrigger className="h-9" aria-label="Role">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="user">User</SelectItem>
+                                                    <SelectItem value="admin">Admin</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-medium text-muted-foreground">Account status</span>
+                                            <Select
+                                                value={profileDraft.accountStatus}
+                                                onValueChange={(value) => setProfileDraft((current) => ({ ...current, accountStatus: value as 'active' | 'disabled' | 'deleted' }))}
+                                            >
+                                                <SelectTrigger className="h-9" aria-label="Account status">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {PROFILE_ACCOUNT_STATUS_OPTIONS.map((option) => (
+                                                        <SelectItem key={`profile-status-${option.value}`} value={option.value}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recurring amount</span>
-                                        <div className="mt-2 text-sm font-semibold text-foreground">
+                                </section>
+
+                                <section className="flex flex-col gap-2">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title="Entitlement overrides"
+                                        description="Optional JSON object that replaces individual plan limits for this user. Leave empty to use the plan's limits."
+                                    />
+                                    <Textarea
+                                        aria-label="Entitlement overrides"
+                                        value={overrideDraft}
+                                        onChange={(event) => setOverrideDraft(event.target.value)}
+                                        placeholder={`{\n  "maxActiveTrips": 15\n}`}
+                                        className="min-h-[120px] font-mono text-xs"
+                                    />
+                                </section>
+                            </TabsContent>
+
+                            <TabsContent value="billing" className="flex flex-col gap-3">
+                                <AdminSectionHeader
+                                    as="h3"
+                                    title="Subscription"
+                                    description="Read-only. Billing changes happen in Paddle."
+                                    actions={(
+                                        <Button asChild variant="outline" size="xs">
+                                            <Link to={`/admin/billing?q=${encodeURIComponent(selectedUser.provider_subscription_id || selectedUser.user_id)}`}>
+                                                Open in Billing
+                                            </Link>
+                                        </Button>
+                                    )}
+                                />
+                                <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                                    <DetailField label="Status">
+                                        {selectedUserSubscriptionStatus && (
+                                            <AdminStatusBadge tone={subscriptionStatusTone(selectedUserSubscriptionStatus)}>
+                                                {getUserSubscriptionStatusLabel(selectedUserSubscriptionStatus)}
+                                            </AdminStatusBadge>
+                                        )}
+                                    </DetailField>
+                                    <DetailField label="Provider status">
+                                        {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
+                                    </DetailField>
+                                    <DetailField label="Recurring amount">
+                                        <span className="tabular-nums">
                                             {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
                                                 ? `${selectedUser.subscription_currency || '—'} ${(selectedUser.subscription_amount / 100).toFixed(2)}`
                                                 : '—'}
-                                        </div>
-                                    </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Provider subscription ID</span>
-                                        <div className="mt-2 break-all font-mono text-[11px] text-foreground">
-                                            {selectedUser.provider_subscription_id || '—'}
-                                        </div>
-                                    </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Paddle price ID</span>
-                                        <div className="mt-2 break-all font-mono text-[11px] text-foreground">
-                                            {selectedUser.provider_price_id || '—'}
-                                        </div>
-                                    </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current period end</span>
-                                        <div className="mt-2 text-sm font-semibold text-foreground">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
-                                    </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cancellation / grace</span>
-                                        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                                            <div>Cancel at: {formatOptionalTimestamp(selectedUser.cancel_at)}</div>
-                                            <div>Canceled at: {formatOptionalTimestamp(selectedUser.canceled_at)}</div>
-                                            <div>Grace ends: {formatOptionalTimestamp(selectedUser.grace_ends_at)}</div>
-                                            <div>Downgrades at: {formatOptionalTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}</div>
-                                        </div>
-                                    </div>
-                                    <div className="rounded-lg border border-border bg-secondary p-3 sm:col-span-2">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Latest billing event</span>
-                                        <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto]">
-                                            <div className="space-y-1">
-                                                <div className="font-semibold text-foreground">{selectedUser.subscription_last_event_type || 'No event recorded'}</div>
-                                                <div>{formatOptionalTimestamp(selectedUser.subscription_last_event_at)}</div>
-                                                <div className="break-all font-mono text-[11px] text-muted-foreground">{selectedUser.subscription_last_event_id || '—'}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                </section>
+                                        </span>
+                                    </DetailField>
+                                    <DetailField label="Current period ends">
+                                        {formatAbsoluteTimestamp(selectedUser.current_period_end)}
+                                    </DetailField>
+                                    <DetailField label="Cancels at">
+                                        {formatAbsoluteTimestamp(selectedUser.cancel_at)}
+                                    </DetailField>
+                                    <DetailField label="Cancelled at">
+                                        {formatAbsoluteTimestamp(selectedUser.canceled_at)}
+                                    </DetailField>
+                                    <DetailField label="Grace ends">
+                                        {formatAbsoluteTimestamp(selectedUser.grace_ends_at)}
+                                    </DetailField>
+                                    <DetailField label="Downgrades at">
+                                        {formatAbsoluteTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}
+                                    </DetailField>
+                                    <DetailField label="Subscription ID">
+                                        <span className="break-all font-mono text-xs">{selectedUser.provider_subscription_id || '—'}</span>
+                                    </DetailField>
+                                    <DetailField label="Paddle price ID">
+                                        <span className="break-all font-mono text-xs">{selectedUser.provider_price_id || '—'}</span>
+                                    </DetailField>
+                                    <DetailField label="Latest billing event" className="sm:col-span-2">
+                                        <span className="font-medium">{selectedUser.subscription_last_event_type || 'No event recorded'}</span>
+                                        {selectedUser.subscription_last_event_at && (
+                                            <span className="text-muted-foreground"> · {formatAbsoluteTimestamp(selectedUser.subscription_last_event_at)}</span>
+                                        )}
+                                        {selectedUser.subscription_last_event_id && (
+                                            <span className="block break-all font-mono text-xs text-muted-foreground">{selectedUser.subscription_last_event_id}</span>
+                                        )}
+                                    </DetailField>
+                                </dl>
+                            </TabsContent>
 
-                                <section className="mt-4 space-y-2 rounded-xl border border-border p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Entitlement overrides (advanced)</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Optional JSON object. Leave this field empty to inherit all limits from the selected tier.
-                                </p>
-	                                <textarea
-	                                    aria-label="Entitlement overrides"
-	                                    value={overrideDraft}
-                                    onChange={(event) => setOverrideDraft(event.target.value)}
-                                    placeholder={`{\n  "maxActiveTrips": 15\n}`}
-                                    className="min-h-[140px] w-full rounded-lg border border-border px-3 py-2 font-mono text-xs"
-                                />
-                                {!overrideDraft.trim() && (
-                                    <p className="text-xs text-muted-foreground">No override configured for this user.</p>
-                                )}
-                                </section>
-
-                                <section className="mt-4 flex flex-wrap gap-2 rounded-xl border border-border p-3">
-                                <button
-                                    type="button"
-                                    onClick={() => void saveSelectedUser()}
-                                    disabled={isSaving}
-                                    className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700 disabled:opacity-50"
-                                >
-                                    Save user
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => void handleSoftDelete(selectedUser)}
-                                    disabled={isSaving}
-                                    className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
-                                >
-                                    {(selectedUser.account_status || 'active') === 'deleted' ? 'Restore user' : 'Soft-delete user'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => void handleHardDelete(selectedUser)}
-                                    disabled={isSaving || !isUserHardDeleteEligible(selectedUser)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
-                                >
-                                    <Trash size={13} />
-                                    Hard delete
-                                </button>
-                                {selectedUserTripStats.total > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => void handleTransferTripsAndHardDelete(selectedUser)}
-                                        disabled={isSaving || isLoadingTrips}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 dark:hover:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30"
-                                    >
-                                        Transfer trips + hard delete
-                                    </button>
-                                )}
-                                </section>
-
-                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Connected trips</h3>
-                                {isLoadingTrips ? (
-                                    <div className="text-sm text-muted-foreground">Loading trips…</div>
-                                ) : userTrips.length === 0 ? (
-                                    <div className="text-sm text-muted-foreground">No trips owned by this user.</div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <div className="max-h-[26rem] space-y-2 overflow-y-auto pr-1">
-                                            {pagedConnectedTrips.map((trip) => (
-                                                <article key={trip.trip_id} className="rounded-lg border border-border p-3">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="min-w-0 flex-1">
+                            <TabsContent value="trips">
+                                <section className="flex flex-col gap-3">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title="Owned trips"
+                                        description="Status and expiry save as soon as you change them."
+                                        actions={selectedUserTripsPageLink ? (
+                                            <Button asChild variant="outline" size="xs">
+                                                <Link to={selectedUserTripsPageLink}>Open in Trips</Link>
+                                            </Button>
+                                        ) : undefined}
+                                    />
+                                    {isLoadingTrips ? (
+                                        <div role="status" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                                            <SpinnerGap size={14} className="animate-spin motion-reduce:animate-none" />
+                                            Loading trips…
+                                        </div>
+                                    ) : userTrips.length === 0 ? (
+                                        <AdminEmptyState
+                                            className="py-6"
+                                            title="No trips owned by this user"
+                                            description="Trips this user creates or receives by transfer will appear here."
+                                        />
+                                    ) : (
+                                        <>
+                                            <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+                                                {pagedConnectedTrips.map((trip) => (
+                                                    <li key={trip.trip_id} className="flex flex-col gap-2 p-3">
+                                                        <div className="min-w-0">
                                                             <a
                                                                 href={`/trip/${encodeURIComponent(trip.trip_id)}`}
                                                                 target="_blank"
                                                                 rel="noreferrer"
-                                                                title="Open trip in a new tab"
-                                                                className="block text-sm font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                                data-tooltip="Open trip in a new tab"
+                                                                className="block truncate text-sm font-medium text-foreground hover:underline"
                                                             >
                                                                 {trip.title || trip.trip_id}
                                                             </a>
-                                                            <div className="text-[11px] text-muted-foreground">
-                                                                <CopyableUuid
-                                                                    value={trip.trip_id}
-                                                                    textClassName="max-w-[300px] truncate text-[11px]"
-                                                                    hintClassName="text-[9px]"
-                                                                />
-                                                            </div>
+                                                            <CopyableUuid
+                                                                value={trip.trip_id}
+                                                                className="-ms-1"
+                                                                textClassName="max-w-[300px] truncate text-[11px] text-muted-foreground"
+                                                                hintClassName="text-[9px]"
+                                                            />
                                                         </div>
-                                                    </div>
-                                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-	                                                        <Input
-	                                                            key={`${trip.trip_id}-${trip.updated_at}`}
-	                                                            type="datetime-local"
-	                                                            aria-label={`Trip expiration for ${trip.title || trip.trip_id}`}
-	                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
-                                                            onBlur={(event) => {
-                                                                void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
-                                                            }}
-                                                            className="h-8 w-auto rounded py-1 ps-2 pe-2 text-xs"
-                                                        />
-                                                        <Select
-                                                            value={trip.status}
-                                                            onValueChange={(value) => {
-                                                                void handleTripPatch(trip, { status: value as 'active' | 'archived' | 'expired' });
-                                                            }}
-                                                        >
-                                                            <SelectTrigger className="h-8 !w-[132px] min-w-[132px] text-xs">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="active">Active</SelectItem>
-                                                                <SelectItem value="expired">Expired</SelectItem>
-                                                                <SelectItem value="archived">Archived</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <span className="text-muted-foreground">
-                                                            Owner:{' '}
-                                                            {trip.owner_email || (
-                                                                <CopyableUuid
-                                                                    value={trip.owner_id}
-                                                                    className="align-middle"
-                                                                    textClassName="max-w-[280px] truncate text-xs"
-                                                                    hintClassName="text-[9px]"
+                                                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                                                            <Select
+                                                                value={trip.status}
+                                                                onValueChange={(value) => {
+                                                                    void handleTripPatch(trip, { status: value as 'active' | 'archived' | 'expired' });
+                                                                }}
+                                                            >
+                                                                <SelectTrigger className="h-8 !w-[120px] min-w-[120px] text-xs" aria-label={`Status for ${trip.title || trip.trip_id}`}>
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="active">Active</SelectItem>
+                                                                    <SelectItem value="expired">Expired</SelectItem>
+                                                                    <SelectItem value="archived">Archived</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <label className="flex items-center gap-2 text-muted-foreground">
+                                                                Expires
+                                                                <Input
+                                                                    key={`${trip.trip_id}-${trip.updated_at}`}
+                                                                    type="datetime-local"
+                                                                    aria-label={`Trip expiration for ${trip.title || trip.trip_id}`}
+                                                                    defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
+                                                                    onBlur={(event) => {
+                                                                        if (isTripExpiryInputUnchanged(event.target.value, trip.trip_expires_at)) return;
+                                                                        void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
+                                                                    }}
+                                                                    className="h-8 w-auto text-xs"
                                                                 />
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                </article>
-                                            ))}
-                                        </div>
-                                        {connectedTripsPageCount > 1 && (
-                                            <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
-                                                <span>Page {connectedTripsPage} / {connectedTripsPageCount}</span>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setConnectedTripsPage((current) => Math.max(current - 1, 1))}
-                                                        disabled={connectedTripsPage <= 1}
-                                                        className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                                                    >
-                                                        Prev
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setConnectedTripsPage((current) => Math.min(current + 1, connectedTripsPageCount))}
-                                                        disabled={connectedTripsPage >= connectedTripsPageCount}
-                                                        className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                                                    >
-                                                        Next
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                </section>
-
-                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">User change log</h3>
-                                        <a
-                                            href={`/admin/audit?q=${encodeURIComponent(selectedUser.user_id)}`}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-                                        >
-                                            Open global audit
-                                            <ArrowSquareOut size={12} />
-                                        </a>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Showing the latest {USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.</p>
-                                    {userChangeLogsError && (
-                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                                            {userChangeLogsError}
-                                        </div>
+                                                            </label>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <AdminPagination
+                                                page={safeConnectedTripsPage}
+                                                pageSize={USER_DETAIL_TRIP_PAGE_SIZE}
+                                                totalItems={userTrips.length}
+                                                onPageChange={setConnectedTripsPage}
+                                                noun="trips"
+                                            />
+                                        </>
                                     )}
+                                </section>
+                            </TabsContent>
+
+                            <TabsContent value="activity">
+                                <section className="flex flex-col gap-3">
+                                    <AdminSectionHeader
+                                        as="h3"
+                                        title="Change log"
+                                        description={`The latest ${USER_CHANGE_LOG_DRAWER_LIMIT} changes by or to this user.`}
+                                        actions={(
+                                            <Button asChild variant="outline" size="xs">
+                                                <Link to={`/admin/audit?q=${encodeURIComponent(selectedUser.user_id)}`}>
+                                                    Open in Audit log
+                                                </Link>
+                                            </Button>
+                                        )}
+                                    />
+                                    {userChangeLogsError && <AdminErrorAlert message={userChangeLogsError} />}
                                     {isLoadingUserChangeLogs ? (
-                                        <div className="text-sm text-muted-foreground">Loading user change log…</div>
+                                        <div role="status" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                                            <SpinnerGap size={14} className="animate-spin motion-reduce:animate-none" />
+                                            Loading change log…
+                                        </div>
                                     ) : selectedUserChangeEntries.length === 0 ? (
-                                        <div className="text-sm text-muted-foreground">No user-originated changes recorded for this account yet.</div>
+                                        userChangeLogsError ? null : (
+                                            <AdminEmptyState
+                                                className="py-6"
+                                                title="No changes recorded yet"
+                                                description="Profile, trip and account changes for this user will appear here."
+                                            />
+                                        )
                                     ) : (
-                                        <div className="space-y-2">
-                                            <div className="max-h-[30rem] space-y-2 overflow-y-auto pr-1">
+                                        <>
+                                            <ol className="flex flex-col gap-2">
                                                 {pagedUserChangeEntries.map(({ log, actionPresentation, secondaryFacets, visibleDiffEntries, hiddenDiffCount }) => (
-                                                    <article key={log.id} className="rounded-lg border border-border p-3">
+                                                    <li key={log.id} className="rounded-md border border-border p-3">
                                                         <div className="flex flex-wrap items-center justify-between gap-2">
-                                                            <div className="text-[11px] font-semibold text-muted-foreground">
-                                                                {formatTimestamp(log.created_at)}
-                                                            </div>
-                                                            <Badge variant="neutral" className={cn(USER_PILL_CLASS, actionPresentation.className)}>
-                                                                {actionPresentation.label}
-                                                            </Badge>
-                                                        </div>
-                                                        {secondaryFacets.length > 0 && (
-                                                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                            <span className="flex flex-wrap items-center gap-1">
+                                                                <AdminStatusBadge dot={false} className={actionPresentation.className} data-tooltip={log.action}>
+                                                                    {actionPresentation.label}
+                                                                </AdminStatusBadge>
                                                                 {secondaryFacets.map((facet, facetIndex) => (
-                                                                    <Badge
+                                                                    <AdminStatusBadge
                                                                         key={`${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
-                                                                        variant="neutral"
-                                                                        className={cn('text-[10px] font-semibold', facet.className)}
-                                                                        title={facet.code}
+                                                                        dot={false}
+                                                                        className={cn('text-[11px]', facet.className)}
+                                                                        data-tooltip={facet.code}
                                                                     >
                                                                         {facet.label}
-                                                                    </Badge>
+                                                                    </AdminStatusBadge>
                                                                 ))}
+                                                            </span>
+                                                            <RelativeTime value={log.created_at} fallback="Unknown time" className="text-xs text-muted-foreground" />
+                                                        </div>
+                                                        {(log.source || (log.target_type === 'trip' && log.target_id)) && (
+                                                            <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                                                                {log.source && <span>Source: {log.source}</span>}
+                                                                {log.target_type === 'trip' && log.target_id && (
+                                                                    <span className="inline-flex min-w-0 items-center">
+                                                                        Trip:
+                                                                        <CopyableUuid value={log.target_id} textClassName="max-w-[260px] truncate text-[11px]" hintClassName="text-[9px]" />
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         )}
-                                                        <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
-                                                            <div><span className="font-semibold text-foreground">Action:</span> <span className="font-mono">{log.action}</span></div>
-                                                            {log.source && (
-                                                                <div><span className="font-semibold text-foreground">Source:</span> {log.source}</div>
-                                                            )}
-                                                            {log.target_type === 'trip' && log.target_id && (
-                                                                <div className="break-all">
-                                                                    <span className="font-semibold text-foreground">Trip:</span>{' '}
-                                                                    <CopyableUuid value={log.target_id} textClassName="break-all text-[11px]" hintClassName="text-[9px]" />
-                                                                </div>
-                                                            )}
-                                                        </div>
                                                         {visibleDiffEntries.length > 0 ? (
-                                                            <div className="mt-2 space-y-2">
+                                                            <dl className="mt-2 flex flex-col gap-1.5">
                                                                 {visibleDiffEntries.map((entry, entryIndex) => (
-                                                                    <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-border bg-secondary px-2 py-1.5">
-                                                                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                                                            {formatFieldLabel(entry.key)}
-                                                                        </p>
-                                                                        <div className="mt-1 grid gap-1 lg:grid-cols-2">
-                                                                            <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                                                                                <span className="font-semibold">Before: </span>
-                                                                                <span className="break-all">{formatUserChangeDiffValue(entry, entry.beforeValue)}</span>
-                                                                            </div>
-                                                                            <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
-                                                                                <span className="font-semibold">After: </span>
-                                                                                <span className="break-all">{formatUserChangeDiffValue(entry, entry.afterValue)}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </article>
+                                                                    <div key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="grid gap-1 text-xs sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,1fr)]">
+                                                                        <dt className="font-medium text-muted-foreground">{formatFieldLabel(entry.key)}</dt>
+                                                                        <dd className="break-all rounded-sm bg-red-50 px-1.5 py-0.5 text-red-900 line-through decoration-red-400/60 dark:bg-red-400/12 dark:text-red-200">
+                                                                            <span className="sr-only">Before: </span>
+                                                                            {formatUserChangeDiffValue(entry, entry.beforeValue)}
+                                                                        </dd>
+                                                                        <dd className="break-all rounded-sm bg-emerald-50 px-1.5 py-0.5 text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200">
+                                                                            <span className="sr-only">After: </span>
+                                                                            {formatUserChangeDiffValue(entry, entry.afterValue)}
+                                                                        </dd>
+                                                                    </div>
                                                                 ))}
                                                                 {hiddenDiffCount > 0 && (
-                                                                    <p className="text-[11px] font-semibold text-muted-foreground">
+                                                                    <p className="text-xs text-muted-foreground">
                                                                         +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
                                                                     </p>
                                                                 )}
-                                                            </div>
+                                                            </dl>
                                                         ) : (
                                                             <p className="mt-2 text-xs text-muted-foreground">No field diff recorded.</p>
                                                         )}
                                                         {canOpenUserChangeFullDiffModal(log) && (
-                                                            <button
+                                                            <Button
                                                                 type="button"
+                                                                variant="outline"
+                                                                size="xs"
                                                                 onClick={() => void openUserChangeFullDiffModal(log)}
-                                                                className="mt-2 inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                                                                className="mt-2"
                                                             >
                                                                 Show complete diff
-                                                            </button>
+                                                            </Button>
                                                         )}
-                                                    </article>
+                                                    </li>
                                                 ))}
-                                            </div>
-                                            {userChangeLogsPageCount > 1 && (
-                                                <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
-                                                    <span>Page {userChangeLogsPage} / {userChangeLogsPageCount}</span>
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setUserChangeLogsPage((current) => Math.max(current - 1, 1))}
-                                                            disabled={userChangeLogsPage <= 1}
-                                                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                                                        >
-                                                            Prev
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setUserChangeLogsPage((current) => Math.min(current + 1, userChangeLogsPageCount))}
-                                                            disabled={userChangeLogsPage >= userChangeLogsPageCount}
-                                                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
-                                                        >
-                                                            Next
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                            </ol>
+                                            <AdminPagination
+                                                page={safeUserChangeLogsPage}
+                                                pageSize={USER_DETAIL_LOG_PAGE_SIZE}
+                                                totalItems={selectedUserChangeEntries.length}
+                                                onPageChange={setUserChangeLogsPage}
+                                                noun="changes"
+                                            />
+                                        </>
                                     )}
                                 </section>
-
-                                <section className="mt-4 rounded-xl border border-border bg-secondary p-3">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Identity</h3>
-                                    <div className="mt-2 space-y-1 text-sm text-foreground">
-                                        <div><span className="font-semibold text-foreground">Name:</span> {getUserDisplayName(selectedUser)}</div>
-                                        <div><span className="font-semibold text-foreground">Email:</span> {selectedUser.email || 'No email'}</div>
-                                        <div className="break-all">
-                                            <span className="font-semibold text-foreground">User ID:</span>{' '}
-                                            <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
-                                        </div>
-                                        <div><span className="font-semibold text-foreground">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
-                                        <div><span className="font-semibold text-foreground">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
-                                        <div><span className="font-semibold text-foreground">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span><span className="font-semibold text-foreground">Terms accepted version:</span> {selectedUser.terms_accepted_version || 'Not accepted yet'}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => void handleResetTermsAcceptance()}
-                                                disabled={isSaving || !selectedUser.terms_accepted_version}
-                                                className="inline-flex h-6 items-center rounded-md border border-amber-300 bg-amber-50 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
-                                            >
-                                                Reset ToC acceptance
-                                            </button>
-                                        </div>
-                                        <div><span className="font-semibold text-foreground">Terms accepted at:</span> {formatOptionalTimestamp(selectedUser.terms_accepted_at)}</div>
-                                        <div>
-                                            <span className="font-semibold text-foreground">Last sign-in:</span>{' '}
-                                            {selectedUser.last_sign_in_at
-                                                ? `${formatRelativeTimestamp(selectedUser.last_sign_in_at, 'No visit yet')} (${formatTimestamp(selectedUser.last_sign_in_at)})`
-                                                : 'No visit yet'}
-                                        </div>
-                                        <div><span className="font-semibold text-foreground">Last log:</span> {formatOptionalTimestamp(selectedUser.updated_at)}</div>
-                                    </div>
-                                </section>
-                            </div>
-                        </div>
-                    )}
-                </DrawerContent>
-            </Drawer>
+                            </TabsContent>
+                        </Tabs>
+                    </>
+                )}
+            </AdminDetailSheet>
         </AdminShell>
     );
 };

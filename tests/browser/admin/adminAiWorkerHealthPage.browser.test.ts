@@ -127,14 +127,41 @@ describe('pages/AdminAiWorkerHealthPage', () => {
       expect(mocks.adminGetAiWorkerHealth).toHaveBeenCalledTimes(1);
     });
 
-    expect(screen.getByRole('heading', { name: 'Worker Health' })).toBeInTheDocument();
-    expect((await screen.findAllByText('Detected stale queued jobs and re-kicked the worker.')).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'Worker health' })).toBeInTheDocument();
+    expect(screen.getAllByText('Detected stale queued jobs and re-kicked the worker.').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'What the canary proves' })).toHaveAttribute(
       'data-tooltip',
       expect.stringContaining('synthetic probe'),
     );
     expect(screen.getByText('Recent checks')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open AI Telemetry' })).toHaveAttribute('href', '/admin/ai-benchmark/telemetry');
+    expect(screen.getByRole('link', { name: 'AI telemetry' })).toHaveAttribute('href', '/admin/ai-benchmark/telemetry');
+  });
+
+  it('collapses the summary into one verdict with a reason per signal', async () => {
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Async trip generation is degraded' })).toBeInTheDocument();
+    expect(screen.getAllByText('Degraded').length).toBeGreaterThan(0);
+    expect(screen.getByText('2 stuck')).toBeInTheDocument();
+    expect(screen.getByText('Oldest job has waited 6.0 min.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'What a worker heartbeat means' })).toHaveAttribute('data-tooltip', expect.stringContaining('cron'));
+  });
+
+  it('shows Reset only while a filter is active', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(mocks.adminGetAiWorkerHealth).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole('button', { name: 'Reset' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Result:Failed' }));
+    expect(screen.getByText('Showing 1–3 of 3 checks')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(screen.getByText('Showing 1–10 of 12 checks')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reset' })).not.toBeInTheDocument();
   });
 
   it('paginates recent checks and resets to page one when filters change', async () => {
@@ -145,19 +172,19 @@ describe('pages/AdminAiWorkerHealthPage', () => {
       expect(mocks.adminGetAiWorkerHealth).toHaveBeenCalledTimes(1);
     });
 
-    expect(screen.getByText('Showing 1-10 of 12')).toBeInTheDocument();
-    expect(screen.getByText('Page 1 / 2')).toBeInTheDocument();
+    expect(screen.getByText('Showing 1–10 of 12 checks')).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next page' }));
 
-    expect(screen.getByText('Showing 11-12 of 12')).toBeInTheDocument();
-    expect(screen.getByText('Page 2 / 2')).toBeInTheDocument();
+    expect(screen.getByText('Showing 11–12 of 12 checks')).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Type:Canary' }));
 
-    expect(screen.getByText('Showing 1-4 of 4')).toBeInTheDocument();
-    expect(screen.getByText('Page 1 / 1')).toBeInTheDocument();
-    expect(screen.queryByText('Page 2 / 2')).not.toBeInTheDocument();
+    expect(screen.getByText('Showing 1–4 of 4 checks')).toBeInTheDocument();
+    // A single page needs no page controls.
+    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument();
   });
 
   it('reloads worker health on demand', async () => {

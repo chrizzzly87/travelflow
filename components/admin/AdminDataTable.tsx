@@ -1,5 +1,5 @@
 import React from 'react';
-import { CaretDown, CaretUp } from '@phosphor-icons/react';
+import { CaretDown, CaretUp, CaretUpDown } from '@phosphor-icons/react';
 import { cn } from '../../lib/utils';
 import type { AdminTableSortDirection } from './AdminDataTableUtils';
 
@@ -22,15 +22,18 @@ export const AdminSortHeaderButton: React.FC<AdminSortHeaderButtonProps> = ({
         type="button"
         onClick={onClick}
         className={cn(
-            'inline-flex w-full items-center justify-between gap-2 text-left transition-colors',
-            isActive ? 'font-semibold text-accent-800 dark:text-accent-200' : 'hover:text-foreground',
+            'inline-flex w-full items-center justify-between gap-2 rounded-sm text-start font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            isActive ? 'text-accent-800 dark:text-accent-200' : 'text-muted-foreground hover:text-foreground',
             className,
         )}
-        title={`Sort by ${label}`}
+        data-tooltip={`Sort by ${label}`}
+        data-state={isActive ? direction : undefined}
     >
-        <span>{label}</span>
+        <span className="truncate">{label}</span>
         {isActive
-            ? (direction === 'asc' ? <CaretUp size={12} className="text-accent-700 dark:text-accent-200" /> : <CaretDown size={12} className="text-accent-700 dark:text-accent-200" />)
-            : <CaretDown size={12} className="text-muted-foreground opacity-70" />}
+            ? (direction === 'asc'
+                ? <CaretUp size={12} weight="bold" className="shrink-0" aria-hidden="true" />
+                : <CaretDown size={12} weight="bold" className="shrink-0" aria-hidden="true" />)
+            : <CaretUpDown size={12} className="shrink-0 opacity-60" aria-hidden="true" />}
     </button>
 );
