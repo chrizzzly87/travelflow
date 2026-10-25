@@ -128,17 +128,16 @@ Permission functions must prove what they claim: an editable share grants access
 to the holder of the token, not to everyone while a share exists. Include
 expiry (`trip_expires_at`) in every access check.
 
-## 10. Native Start uses the repository's React 18 runtime
+## 10. The app runs native TanStack Start on React 19
 
-The migration branch builds and tests with React 18.3.1 and native TanStack Start;
-`vite.config.ts` has no Preact compatibility aliases. Follow
+Production and tests use React 19.3.1 with TanStack Start/Router. Follow
 [TanStack application ownership](TANSTACK_START_ARCHITECTURE.md), and verify library
 requirements against the installed graph.
 
-- React 19 ref-as-prop is unavailable. Keep `forwardRef` for Radix `asChild` and
-  components that a library focuses or measures. Test real keyboard/focus behavior.
-- Reuse the shared styled primitives and their compatible Radix versions. Do not
-  replace working library keyboard handling based on historical Preact workarounds.
+- Keep the existing `forwardRef` pattern for Radix `asChild` and components that a
+  library focuses or measures. Test real keyboard/focus behavior.
+- Reuse the shared styled primitives and their Radix versions. Workarounds written
+  for the former Preact runtime are historical; re-check them before copying one.
 - Keep generation execution out of ordinary trip viewing. Synchronous capability
   checks and the shared active-request registry are lightweight; optional prompt,
   queue and recovery code belongs to its feature or explicit action. Keep the same
@@ -148,8 +147,9 @@ requirements against the installed graph.
 
 `i18n.ts` does not `.use(ICU)`. ICU **placeholders** (`{name}`) work through
 plain interpolation; ICU **plural/select syntax**
-(`{count, plural, one {...} other {...}}`) renders as raw text. Use suffix-free
-plain strings, or register the plugin first. See
+(`{count, plural, one {...} other {...}}`) renders as raw text. For plurals use
+i18next suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the
+locale needs them) with a `count` option. See
 `tests/unit/festivalLocaleKeys.test.ts`.
 
 ## 12. Verification discipline

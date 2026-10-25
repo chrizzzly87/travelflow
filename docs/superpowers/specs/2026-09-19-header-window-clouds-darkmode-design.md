@@ -1,5 +1,10 @@
 # Header plane window, cloud loop, and dark mode
 
+> **Historical design spec (2026-09).** Shipped; its notes about `preact/compat`,
+> `index.html` and `scripts/prerender-routes.mjs` predate the TanStack Start runtime.
+> The current theme boot is `src/document/theme-boot.js`; see
+> [`docs/TANSTACK_START_ARCHITECTURE.md`](../../TANSTACK_START_ARCHITECTURE.md).
+
 Date: 2026-09-19
 Branch: `claude/header-clouds-darkmode-52b774`
 

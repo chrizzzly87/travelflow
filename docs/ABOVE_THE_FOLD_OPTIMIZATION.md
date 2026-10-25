@@ -7,7 +7,7 @@ This document outlines architectural patterns and developer guidelines for maint
 ## 🚀 1. The Core Performance Model
 
 Fast pages depend on three complementary techniques:
-1.  **Static Pre-rendering (SSG)**: Build-time HTML should contain the initial route shell and the content needed for the first viewport.
+1.  **Server rendering / prerendering**: The server-rendered HTML must contain the content needed for the first viewport.
 2.  **Measured CSS Delivery**: CSS delivery changes must be tested against real Lighthouse output before becoming defaults. Critical CSS inlining can help in narrow cases, but it can also inflate HTML, delay parsing, and worsen CLS.
 3.  **Progressive Hydration**: Above-the-fold interactive components hydrate immediately. Below-the-fold JavaScript loads only when the user is close to needing it.
 
@@ -21,7 +21,6 @@ To prevent LCP degradation and layout shifts, follow these guidelines for any co
 *   **Initial UI Must Not Wait for Interaction**: UI that is expected to be visible in the first viewport must render and hydrate immediately. Do not gate first-viewport notices, headers, navigation, calls to action, or alerts behind first-click, first-scroll, or first-keyboard listeners.
 *   **No Late Document-Flow Insertion Above Content**: Anything that can appear after initial paint above the page content must either reserve stable space from the start or be positioned outside normal document flow. Fixed or absolute overlays should sit below persistent navigation, use a predictable z-index, and avoid covering essential controls.
 *   **Font Optimization**: Critical font families are preloaded via `link rel="preload"` where appropriate to prevent FOIT (Flash of Invisible Text).
-*   **Zero Layout Shimmer Flickering**: If pre-rendered HTML matches the initial client layout, the bootstrap overlay loading shell (`#app-bootstrap-shell`) is bypassed immediately to prevent a layout shift.
 *   **Image Dimensions**: Any above-the-fold image must have explicit dimensions or aspect-ratio styles and should use high fetch priority (`fetchPriority="high"`) when it is likely to be the LCP element.
 
 ---
@@ -98,54 +97,24 @@ export const MyPage: React.FC = () => {
 
 ## ⚡ 4. Hydration Compatibility (Avoiding Mismatches)
 
-React 18 hydration expects the pre-rendered HTML on disk to match the initial render tree on the client. Mismatches trigger rendering corrections that slow down page load and can introduce visible jumps.
+Public pages are server-rendered by TanStack Start on React 19, and React expects the
+first client render to match that HTML. See `docs/TANSTACK_START_ARCHITECTURE.md`
+("Landing pages and first interaction") for the full contract.
 
 *   **Client-Only Code**: Never use client-only globals (like `window.innerWidth`, `localStorage`, or `navigator.language`) directly in the render path.
-*   **Stable Fallback Pattern**: If component output depends on client-only state, render an equivalent-size fallback until the component is mounted:
-    ```typescript
-    const [isMounted, setIsMounted] = useState(false);
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    return (
-        <div>
-            {isMounted ? <ClientOnlyWidget /> : <StaticPlaceholder />}
-        </div>
-    );
-    ```
-*   **Client-Only Visibility State**: If client-only state determines whether an initially visible element should appear, prefer an immediate deterministic default plus dismissal state over interaction-triggered rendering. If the element may appear after mount, reserve space or position it outside document flow.
+*   **Dates**: Never call `new Date()` during render on a server-rendered page; read "today" from `useRenderNow()` (`hooks/useRenderNow.tsx`).
+*   **Browser-dependent widgets**: Use `useHydrated` or a scoped client-only boundary and render an equivalent-size placeholder until hydrated. Do not hide whole marketing sections behind a mount effect to mask a mismatch.
+*   **Client-Only Visibility State**: If client-only state determines whether an initially visible element should appear, prefer an immediate deterministic default plus dismissal state over interaction-triggered rendering.
 
 ---
 
-## ⚙️ 5. Pre-rendering & Critical CSS Build Pipeline
+## ⚙️ 5. Prerendering
 
-### How the build pipeline works:
-1.  **Vite Build**: Compiles TypeScript assets, outputs `dist/index.html` and bundled files under `dist/assets/`.
-2.  **Optional critical CSS extraction**:
-    *   Critical CSS inlining is an evaluation tool, not a default optimization.
-    *   Only enable it behind an explicit environment flag and compare Lighthouse scores, HTML size, LCP, and CLS before shipping.
-    *   Do not ship CSS delivery changes that increase HTML weight substantially or defer layout-critical styles in a way that changes the initial client layout.
-3.  **Route crawler pre-rendering**:
-    *   Spawns a local Vite preview server on port `4173`.
-    *   Playwright opens pages with a realistic viewport height so near-viewport loading behaves like a real user session.
-    *   Avoid oversized pre-render viewports. They can force every lazy section to load at build time, generate misleading static HTML, and cause the client to replace large chunks of content with placeholders during hydration.
-    *   The crawler waits for the `data-tf-handoff-ready="true"` attribute (placed on root layouts) to ensure React has fully loaded.
-    *   The page source is extracted and written to clean route outputs. When a hosting platform may normalize trailing slashes, write both the canonical clean route file and any required directory fallback.
-
-### Adding New Pages to Pre-rendering:
-To ensure new public pages are pre-rendered, add them to the `ROUTES` array in `scripts/prerender-routes.mjs`:
-```javascript
-const ROUTES = [
-  { path: '/', dest: 'index.html' },
-  { path: '/new-page', dest: 'new-page/index.html' },
-  // ...
-];
-```
-
-### Environment Requirements:
-*   Local and CI builds need a browser runtime available for the pre-render step.
-*   If a browser is missing in a restricted environment, the build should fail clearly or use an explicitly documented fallback. Silent partial pre-rendering makes performance regressions harder to diagnose.
+Seven public entry pages in every active locale are prerendered natively by Start from the
+allowlist in `app/routing/publicPrerender.ts`; every other public route renders on demand
+through SSR. `pnpm prerender:validate` checks the emitted documents. Ownership and output
+details: `docs/NETLIFY_TANSTACK_START.md`. Critical-CSS inlining is not part of the build;
+treat it as an experiment that must beat the current Lighthouse numbers before shipping.
 
 ---
 

@@ -1,5 +1,8 @@
 # AI Trip Generation Async Migration Postmortem (Draft)
 
+> **Historical (2026-03).** Postmortem of the browser-to-worker generation move. File
+> names such as `App.tsx` refer to the app as it was then.
+
 Status: draft  
 Date: 2026-03-06  
 Branch context: `codex/failed-generation-observability-retry-core-final`
@@ -194,8 +197,7 @@ Verification command set:
   - residual request-churn cleanup,
   - documentation completion.
 - Reference:
-  - [docs/AI_TRIP_GENERATION_MERGE_READINESS.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_MERGE_READINESS.md)
-  - [docs/AI_TRIP_GENERATION_LOCAL_DEV.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_LOCAL_DEV.md)
+  - [docs/AI_TRIP_GENERATION_LOCAL_DEV.md](AI_TRIP_GENERATION_LOCAL_DEV.md)
 
 ## 8. Recommended next checks (production-like)
 1. Open a terminal-state trip for 2-3 minutes and inspect network request count trend.

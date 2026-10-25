@@ -1,6 +1,6 @@
 # Markdown Custom Components
 
-This project extends standard blog markdown with a small set of custom rendering features in [`pages/BlogPostPage.tsx`](/Users/chrizzzly/.codex/worktrees/567c/travelflow-codex/pages/BlogPostPage.tsx).
+This project extends standard blog markdown with a small set of custom rendering features in [`pages/BlogPostPage.tsx`](../pages/BlogPostPage.tsx).
 
 Use these patterns to keep formatting and behavior consistent across posts.
 

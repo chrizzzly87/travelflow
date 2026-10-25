@@ -1,6 +1,12 @@
 # TanStack Start migration
 
-Status: in progress, preview only. Decision date: 2026-10-18.
+> **Historical record.** The migration is complete: native TanStack Start shipped to
+> production in v0.209.0 (PR #574, 2026-10-24). Statements below such as "preview only",
+> "main is unchanged" or "React 18" describe the state at the time of writing. For the
+> current architecture read [TANSTACK_START_ARCHITECTURE.md](../TANSTACK_START_ARCHITECTURE.md)
+> and [NETLIFY_TANSTACK_START.md](../NETLIFY_TANSTACK_START.md).
+
+Original status: in progress, preview only. Decision date: 2026-10-18.
 Integration branch: `codex/tanstack-start-integration`.
 Baseline: `ca90ba7bb` (production Preact 11). Main is not a migration target until human preview acceptance.
 

@@ -4,7 +4,7 @@ Use this when you need a safe deployed test URL for a branch before merging.
 
 ## Standard flow
 1. Push your feature branch to GitHub.
-2. Open or update a PR against the intended integration base. For the TanStack migration, use `codex/tanstack-start-integration`; production `main` requires separate preview acceptance.
+2. Open or update a PR against `main` (or the base the issue names).
 3. Netlify auto-creates/updates the **Deploy Preview** for that PR.
 4. Wait for the `netlify/travelflowapp/deploy-preview` check to pass.
 5. Test on the preview URL (for example `https://deploy-preview-<PR_NUMBER>--travelflowapp.netlify.app`).
@@ -43,7 +43,7 @@ Optional compatibility keys:
   - Updated PR CI (`pr-quality`) to checkout `pull_request.head.sha` so it validates the same commit Netlify deploys.
 
 ## Branch and PR hygiene standard
-1. Start each issue from its intended base in a dedicated feature branch. Migration child branches start from the integration branch.
+1. Start each issue from `main` (or its stated base) in a dedicated feature branch.
 2. Keep branch scope to one issue/theme; avoid mixing unrelated work.
 3. Commit incrementally during the implementation (small, reviewable commits).
 4. Push branch updates continuously and keep one PR per feature branch.
@@ -58,7 +58,7 @@ Run these from the feature branch before pushing:
 
 ## Edge functions are NOT deployed by manual CLI alias deploys
 
-**Verified 2026-08-19.** `netlify deploy --no-build --dir=dist --alias <name>` ships the static bundle but **no Netlify edge functions**. Every `/api/*` route on such a preview returns the SPA `index.html` with `content-type: text/html` instead of JSON.
+**Verified 2026-08-19.** `netlify deploy --no-build --dir=dist --alias <name>` ships the static bundle but **no Netlify edge functions**. Every `/api/*` route on such a preview returns the HTML app shell with `content-type: text/html` instead of JSON.
 
 Confirmed failing on an alias while all three worked on production:
 

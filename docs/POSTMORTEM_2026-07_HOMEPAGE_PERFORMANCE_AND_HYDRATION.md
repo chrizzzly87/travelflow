@@ -1,12 +1,15 @@
 # Post-mortem: homepage performance work → cascading landing-page breakage (2026-07)
 
+> **Historical (2026-07).** Describes the former Vite + `preact/compat` build and its
+> crawler prerender, both removed when TanStack Start shipped (v0.209.0). Its rules are
+> not current instructions; read [`TANSTACK_START_ARCHITECTURE.md`](TANSTACK_START_ARCHITECTURE.md).
+
 **Status:** resolved (landing pages functional across Chrome + Safari); one cosmetic issue documented as a tracked follow-up (active-nav underline).
 **Scope:** public marketing/landing pages (`/`, `/blog`, `/features`, `/inspirations`, `/pricing`) — prerendered static HTML hydrated by a Vite + **preact/compat** SPA, deployed on Netlify.
 **Releases involved:** v0.141.0 – v0.151.0 (+ footer fix).
 
-> Read this before touching the boot/prerender/hydration path. Most of the pain
-> below came from treating `preact/compat` like React 18. It is not. See
-> `LIGHTHOUSE.md` → "Prerender + hydration invariants" for the enforced rules.
+> At the time: most of the pain below came from treating `preact/compat` like
+> React 18.
 
 ---
 

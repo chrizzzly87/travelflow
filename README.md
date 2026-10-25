@@ -1,21 +1,12 @@
 # TravelFlow
 
-TravelFlow generates and manages travel itineraries. This integration branch migrates the app to TanStack Start with React 19, TypeScript and native TanStack routing. Production rollout and performance acceptance are tracked separately in [the migration plan](docs/architecture/TANSTACK_START_MIGRATION.md) and [issue #559](https://github.com/chrizzzly87/travelflow/issues/559).
+TravelFlow generates and manages travel itineraries. It runs on TanStack Start and TanStack Router with React 19, TypeScript and Vite, deployed to Netlify (native Start since v0.209.0, 2026-10-24).
 
-For the remaining first-release gates, see [the release checklist](docs/TANSTACK_START_RELEASE_CHECKLIST.md).
-
-Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment.
-
-Latest measured preview: [homepage Lighthouse report](docs/performance/tanstack-start-2026-10-19/first-paint-lighthouse.md), mobile median 76 → 88 against current production, followed by a smaller mobile image payload (median 89). Exact runtime revisions, variation and limitations are recorded with the results.
-
-Trip follow-up: [ownership and benchmark report](docs/performance/tanstack-start-2026-10-19/trip-runtime.md), example-trip readiness 3.50 → 2.98 s with about 10% less fetched JavaScript (gzip estimate). Hosted preview #567 passes 72 browser checks; live account/provider acceptance remains separate.
-
-Navigation follow-up: [issue #568](https://github.com/chrizzzly87/travelflow/issues/568), on `codex/tanstack-start-navigation`. See [foreground navigation and account home](docs/TANSTACK_START_ARCHITECTURE.md#foreground-navigation-and-account-home) for completing top-bar feedback, native trip loading, page transitions, public home/member CTA and profile/login ownership. [PR #569](https://github.com/chrizzzly87/travelflow/pull/569) records current validation and deployment status; [test the navigation preview](https://deploy-preview-569--travelflowapp.netlify.app/).
+Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment. The completed migration history and its measurements are in [the migration record](docs/architecture/TANSTACK_START_MIGRATION.md) and `docs/performance/`.
 
 ## Working on the TanStack Start app
 
-Use the native route tree as the starting point for new work. This branch remains
-in preview validation; successful local tests do not mean production acceptance.
+Use the native route tree as the starting point for new work.
 
 | Question | Read / change |
 | --- | --- |
@@ -24,9 +15,8 @@ in preview validation; successful local tests do not mean production acceptance.
 | Where do data/access/loading rules belong? | Native `beforeLoad`, `loader`, `head`, pending/error boundaries; domain logic in `features/` |
 | How are public, auth, creation, trip and admin areas isolated? | Architecture ownership table; `app/shell/` is for shared cross-cutting UI |
 | How do locale, SSR resources and language navigation work? | [I18n workflow](docs/I18N_PAGE_WORKFLOW.md); native router resource hydration and document preference synchronization |
-| How do I verify changes? | `pnpm ci:local`; behavioral regression tests in `tests/`; first-load browser and offline checks in `e2e/` |
+| How do I verify changes? | `pnpm typecheck` and `pnpm ci:local`; behavioral regression tests in `tests/`; first-load browser and offline checks in `e2e/` |
 | How do previews, deployment and API parity work? | [Netlify guide](docs/NETLIFY_TANSTACK_START.md) |
-| What is complete, measured, or still open? | [Migration dashboard](docs/architecture/TANSTACK_START_MIGRATION.md), [#559](https://github.com/chrizzzly87/travelflow/issues/559), [current PR #563](https://github.com/chrizzzly87/travelflow/pull/563) |
 
 Keep route files small: delegate reusable behavior to feature modules and compose
 shared components. Do not add a second route registry, global speculative prefetch,
@@ -40,8 +30,7 @@ stable while session verification happens: use the shared Account entry, real li
 and verified session capabilities. Static public HTML must not invent an identity.
 Consent is server-rendered when undecided; its pre-paint script only resolves the
 visibility of existing stored choices. Use the shared early-click bridge for controls
-that can be pressed before hydration. The migration dashboard records verification
-of each candidate; this guidance is not a production acceptance claim.
+that can be pressed before hydration.
 
 ## Requirements
 
@@ -180,7 +169,7 @@ All available `pnpm` commands in this repo:
 
 - `pnpm dev` — Start the TanStack Start development server through Vite.
 - `pnpm build` — Run image optimization (inspirations + blog), validations, and production Vite build.
-- `pnpm preview` — Convenience preview; use the built-server browser harness and deploy preview for migration acceptance.
+- `pnpm preview` — Convenience preview; use the built-server browser harness and deploy preview for acceptance.
 - `pnpm release:prepare` — Generate missing blog source images, then run the full production build pipeline.
 - `pnpm updates:validate` — Validate `content/updates/*.md` formatting and release metadata.
 - `pnpm blog:validate` — Validate blog markdown metadata/content.

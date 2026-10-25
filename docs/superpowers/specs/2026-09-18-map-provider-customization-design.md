@@ -1,5 +1,8 @@
 # Map provider switching, city framing and customization
 
+> **Historical design spec (2026-09).** Kept because code comments reference it; verify
+> any detail against the current code before relying on it.
+
 Date: 2026-09-18
 Status: approved, in implementation
 

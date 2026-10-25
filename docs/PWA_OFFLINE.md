@@ -25,7 +25,7 @@ Almost all of the offline behaviour already existed before this feature:
 | Offline banners and badge | `components/ConnectivityStatusBanner.tsx`, `components/GlobalConnectivityBadge.tsx` |
 
 None of it could run, because with no service worker the browser could not fetch
-`index.html`, the JavaScript or the CSS. This feature supplies only the missing
+the app document, the JavaScript or the CSS. This feature supplies only the missing
 shell layer. It adds no sync, merge or conflict machinery.
 
 ## Pieces
@@ -84,7 +84,7 @@ A fresh `beforeLoad` result owns metadata and locale on ordinary loads and warm
 navigation: native route context itself is cached while the root is reused. The
 shared document selector uses the initial snapshot only when the transported
 result belongs to `/__offline-shell`. The head initially retains the transported
-neutral metadata so React 18 hydrates matching attributes. After hydration, a
+neutral metadata so React hydrates matching attributes. After hydration, a
 native root-only invalidation runs `beforeLoad` for the actual URL and reconciles
 the canonical and other head tags; no head nodes are patched imperatively. Async `beforeLoad` also handles namespace
 setup and optional public trip metadata (cleared on non-trip routes). The document

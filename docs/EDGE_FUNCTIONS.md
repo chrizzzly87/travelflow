@@ -89,7 +89,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 
 ### Document metadata ownership
 
-Do not bind `site-og-meta` or `trip-og-meta` to document paths in the migrated app.
+Do not bind `site-og-meta` or `trip-og-meta` to document paths.
 Keep native `head` output and status codes intact. Static OG-image generation remains
 useful: image generation and HTML metadata ownership are separate concerns.
 
@@ -204,11 +204,10 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 
 | Function | Cache-Control | Notes |
 |---|---|---|
-| Native Start document | `no-store` | Current conservative policy; prerendered static output is served by the platform |
+| Native Start document (public area) | `public, max-age=0, must-revalidate` + `Netlify-CDN-Cache-Control: public, durable, s-maxage=3600, stale-while-revalidate=86400` | Per-area policy in `app/routing/cachePolicy.ts` |
+| Native Start document (all other areas) | `no-store` | Root default: account, admin, trip and creation documents |
 | `site-og-image.tsx` | `s-maxage=43200, stale-while-revalidate=604800` | 12 hour CDN, 7 day stale |
 | `/images/og/site/generated/*` | `max-age=31536000, immutable` | Build-time generated static OG assets |
-
-
 | `trip-og-image.tsx` (versioned) | `s-maxage=31536000` | 1 year immutable |
 | `trip-og-image.tsx` (default) | `s-maxage=1800, stale-while-revalidate=86400` | 30 min CDN, 1 day stale |
 | `trip-map-preview.ts` | `max-age=86400` | 24 hour browser + CDN |

@@ -5,6 +5,10 @@ This repo standardizes Google Maps integration on `@vis.gl/react-google-maps`.
 ## Scope
 Use this guide whenever you add or change maps in planner, profile/admin cards, marketing/blog, or shared routes.
 
+The planner also has a Mapbox basemap runtime (`components/MapRuntimeProvider.tsx`,
+`components/maps/*`). Read the runtime through `useMapRuntime()` rather than assuming
+Google; the rules below cover the Google side and the shared preview pipeline.
+
 ## Required architecture
 1. Wrap map surfaces under `GoogleMapsLoader` and use `useGoogleMaps()` for load state.
 2. Render map canvases with `Map` from `@vis.gl/react-google-maps`.

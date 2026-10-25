@@ -1,5 +1,9 @@
 # Issue #109 Postmortem: Blog List/Detail View Transitions
 
+> **Historical postmortem.** Written against the former Preact/react-router runtime;
+> some files below (for example `shared/appHistory.ts`) no longer exist. Page transitions
+> are now owned by `configurePageTransitions` (see `docs/TANSTACK_START_ARCHITECTURE.md`).
+
 ## Summary
 - **Issue:** Shared-element transitions between `/blog` and `/blog/:slug` were inconsistent, occasionally showed wrong-card artifacts, and repeatedly regressed into "URL changes, then the old page sits there, then the new page appears".
 - **Branch:** `codex/issue-109-blog-view-transitions`
@@ -31,7 +35,7 @@
 ### 1) Illegal invocation of `document.startViewTransition`
 - **Symptom:** `TypeError: Illegal invocation`.
 - **Cause:** calling the method without a guaranteed `document` binding.
-- **Fix:** invoke via `startTransition.call(viewTransitionDocument, ...)` in `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/blogViewTransitions.ts`.
+- **Fix:** invoke via `startTransition.call(viewTransitionDocument, ...)` in `shared/blogViewTransitions.ts`.
 
 ### 2) Wrong-card / ghost-image artifacts
 - **Symptom:** other blog cards briefly appeared during the transition.
@@ -101,22 +105,22 @@ The stable pattern is:
 9. If the destination blog route kind has not been seen yet, reduce that one transition to title-only instead of forcing a broken shared image/card morph.
 
 In the current branch that means:
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPage.tsx`
+- `pages/BlogPage.tsx`
   - preloads `BlogPostPage` early
   - also preloads on card intent (`focus` / `pointerenter`)
   - warms the article hero image on click intent
   - marks the list route kind as seen after mount
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPostPage.tsx`
+- `pages/BlogPostPage.tsx`
   - preloads `BlogPage` early
   - also preloads on back-link intent
   - warms the overview-card image on mount
   - marks the post route kind as seen after mount
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/blogViewTransitions.ts`
+- `shared/blogViewTransitions.ts`
   - transition start is binding-safe
   - prepared transitions await route preload before starting, but do **not** await extra readiness inside the update callback
   - caches and warms the responsive image request that the opposite side will need
   - tracks which blog route kinds have mounted and switches first unseen-route transitions into title-only mode
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/appHistory.ts`
+- `shared/appHistory.ts`
   - POP navigation uses the same synchronous transition commit path
 
 ## Why The Latest Cold-Start Attempt Was Wrong
@@ -163,11 +167,11 @@ If another feature wants the same effect:
 - browser probes via Playwright against a local preview server
 
 ## File Map
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/blogViewTransitions.ts`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/appHistory.ts`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPage.tsx`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPostPage.tsx`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/index.css`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/data/blogImageMedia.ts`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/tests/unit/blogViewTransitions.test.ts`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/tests/unit/appHistory.test.ts`
+- `shared/blogViewTransitions.ts`
+- `shared/appHistory.ts`
+- `pages/BlogPage.tsx`
+- `pages/BlogPostPage.tsx`
+- `index.css`
+- `data/blogImageMedia.ts`
+- `tests/unit/blogViewTransitions.test.ts`
+- `tests/unit/appHistory.test.ts`
