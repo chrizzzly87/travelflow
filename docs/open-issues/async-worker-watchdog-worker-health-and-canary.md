@@ -1,7 +1,16 @@
 # Async Worker Watchdog, Worker Health, and Canary Hardening
 
 ## Status
-Open issue: [#264](https://github.com/chrizzzly87/travelflow/issues/264)
+Issue [#264](https://github.com/chrizzzly87/travelflow/issues/264), shipped in #265 and closed.
+
+**Status (2026-10-24):** done. The cron (`netlify/functions/ai-generate-worker-cron.js`, every
+minute) writes heartbeat, watchdog and canary rows to `async_worker_health_checks`
+(`docs/supabase.sql`); the summary rules live in `netlify/edge-lib/async-worker-health.ts`
+(heartbeat stale after 3 min, canary every 15 min and stale after 30 min). The admin screen is
+**Worker health** (`/admin/ai-benchmark/worker-health`, sidebar section Tools): one verdict header
+(Healthy / Degraded / Failing, with the server's reason) over four signals — heartbeat, queue,
+canary, self-heal — and a sortable, filterable, paged table of the latest 50 checks. It links to
+**AI telemetry** and back. The scope below is kept as the original plan.
 
 ## Objective
 Detect, surface, and automatically mitigate async worker stalls before queued trip-generation jobs pile up in production.
@@ -34,6 +43,7 @@ The March 10, 2026 production incident showed two separate gaps:
 ### 4) Admin surface
 - Add `/admin/ai-benchmark/worker-health`.
 - Show current status, latest heartbeat, stale queued count, latest self-heal, latest canary, and recent health rows.
+  (Shipped as one status header with four signals rather than six tiles; see Status.)
 
 ## Acceptance Criteria
 1. Stale queued jobs older than 5 minutes are visible in admin.

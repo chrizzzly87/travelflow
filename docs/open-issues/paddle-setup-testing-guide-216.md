@@ -237,6 +237,7 @@ If checkout fails with `You aren't permitted to perform this request.` during sa
    - Replay the notification from Paddle.
    - Run **Reconcile Paddle** from `/admin/billing` to fetch Paddle subscriptions and replay them through TravelFlow's billing sync.
      - If Paddle rate-limits the broad scan, enter a specific `sub_...` subscription ID in the admin dialog to repair one subscription directly.
+     - To repair one known subscription without typing its ID, use **Reconcile with Paddle** from the subscription row's `…` menu, or from a webhook event's **Inspect** sheet when the payload names a `sub_...`.
    - Use `POST /api/billing/paddle/subscription-refresh` from the signed-in app surfaces to recover one user after returning from Paddle billing management.
 
 Official docs:
@@ -316,7 +317,7 @@ pnpm dev:netlify
    - `public.subscriptions` contains `provider_status = canceled` and a future `grace_ends_at` when applicable
    - `public.billing_webhook_events` contains the cancellation event
    - `/admin/users` shows the user as canceled/grace
-   - `/admin/billing` shows the lifecycle state clearly
+   - `/admin/billing` shows the lifecycle state in the subscriptions table (badge plus the grace or cancel date under **Renews**)
    - `/admin/audit` includes the billing lifecycle entry
 
 ## Admin Export / Targeting
@@ -369,7 +370,7 @@ This validates the full external loop (hosted checkout -> Paddle -> your real we
 6. If replay is incomplete or the webhook delivery history is missing, open `/admin/billing` and run **Reconcile Paddle**.
    - This is a manual repair tool.
    - It fetches Paddle subscriptions, synthesizes deterministic subscription events, and runs them through the same webhook sync logic used for normal delivery.
-   - The admin flow now accepts an optional `sub_...` subscription ID so you can repair one known Paddle subscription without relying on the broader list endpoint.
+   - The admin flow accepts an optional `sub_...` subscription ID so you can repair one known Paddle subscription without relying on the broader list endpoint. Row and event-sheet reconciles fill that ID in for you.
 
 ## Functional Test Matrix
 ### Checkout creation
@@ -421,12 +422,12 @@ Use these tables as the source of truth for future admin billing pages/endpoints
 - `public.profiles`
   - currently effective `tier_key`
 
-Current internal admin billing view:
-- `/admin/billing`
-  - summary cards for active paid, grace-period, failed-webhook, and unlinked-event counts
-  - searchable subscription rows
-  - searchable webhook event log
-  - links back to `/admin/users`
+Current internal admin billing view (`/admin/billing`, top to bottom):
+- **Billing health** tiles: sync issues (failed plus unlinked webhook events in the selected range, with **Review failed** / **Review unlinked** shortcuts), current MRR, active paid, and cancelling (scheduled cancellations plus grace).
+- **Subscriptions** and **Webhook events** tabs (`?view=events` opens the second one directly), both searchable from the page search and paged 25 rows at a time.
+  - Subscriptions: customer and `sub_...` ID, plan, lifecycle status, amount, renewal/grace/cancel date, last event. The `…` menu opens a detail sheet (Paddle customer, price and subscription IDs, period dates), opens the user in `/admin/users`, or reconciles that one subscription.
+  - Webhook events: filter by status and by whether the event resolved to a user. **Inspect** opens the event sheet with the delivery error or sync note, delivery timestamps, linked user and the payload JSON.
+- Revenue: current MRR by tier, at-risk revenue, and the subscription mix by plan and by status.
 
 If `/admin/billing` shows a missing-function error, re-run the current subset or canonical schema file and reload the admin page.
 

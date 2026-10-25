@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   adminBillingStatusClassName,
+  buildAdminBillingMrrHeadline,
+  extractAdminBillingWebhookSubscriptionId,
+  filterAdminBillingWebhookEvents,
+  formatAdminBillingRelativeTime,
+  resolveAdminBillingWebhookStatusKey,
+  sliceAdminBillingPage,
   buildAdminBillingAtRiskChartData,
   buildAdminBillingCurrentMrrCards,
   buildAdminBillingMrrByTierChartData,
@@ -191,5 +197,67 @@ describe('services/adminBillingPresentation', () => {
     expect(buildAdminBillingAtRiskChartData(dashboard as any)).toEqual([
       { label: 'Past due · USD', amount: 9 },
     ]);
+  });
+});
+
+describe('webhook triage helpers', () => {
+  it('normalizes the delivery status used for filters and counts', () => {
+    expect(resolveAdminBillingWebhookStatusKey({ status: ' Failed ' })).toBe('failed');
+    expect(resolveAdminBillingWebhookStatusKey({ status: '' })).toBe('unknown');
+  });
+
+  it('filters events by status and by whether they resolved to a user', () => {
+    const records = [
+      event({ event_id: 'a', status: 'failed' }),
+      event({ event_id: 'b', status: 'failed', user_id: null }),
+      event({ event_id: 'c', status: 'processed', user_id: null }),
+    ];
+    expect(filterAdminBillingWebhookEvents(records, { statuses: [], links: [] }).map((r) => r.event_id)).toEqual(['a', 'b', 'c']);
+    expect(filterAdminBillingWebhookEvents(records, { statuses: ['failed'], links: [] }).map((r) => r.event_id)).toEqual(['a', 'b']);
+    expect(filterAdminBillingWebhookEvents(records, { statuses: [], links: ['unlinked'] }).map((r) => r.event_id)).toEqual(['b', 'c']);
+    expect(filterAdminBillingWebhookEvents(records, { statuses: ['failed'], links: ['unlinked'] }).map((r) => r.event_id)).toEqual(['b']);
+  });
+
+  it('finds the Paddle subscription a webhook payload is about', () => {
+    expect(extractAdminBillingWebhookSubscriptionId(event({ payload: { data: { id: 'sub_01abc' } } }))).toBe('sub_01abc');
+    expect(extractAdminBillingWebhookSubscriptionId(event({ payload: { data: { id: 'txn_1', subscription_id: 'sub_9' } } }))).toBe('sub_9');
+    expect(extractAdminBillingWebhookSubscriptionId(event({ payload: { data: { id: 'txn_1' } } }))).toBeNull();
+    expect(extractAdminBillingWebhookSubscriptionId(event({ payload: null }))).toBeNull();
+  });
+});
+
+describe('formatAdminBillingRelativeTime', () => {
+  const now = Date.parse('2026-10-24T12:00:00.000Z');
+  it('formats past and future timestamps in the nearest unit', () => {
+    expect(formatAdminBillingRelativeTime('2026-10-24T09:00:00.000Z', now)).toBe('3 hours ago');
+    expect(formatAdminBillingRelativeTime('2026-10-23T12:00:00.000Z', now)).toBe('yesterday');
+    expect(formatAdminBillingRelativeTime('2026-11-07T12:00:00.000Z', now)).toBe('in 2 weeks');
+  });
+  it('shows a dash for missing or invalid values', () => {
+    expect(formatAdminBillingRelativeTime(null, now)).toBe('—');
+    expect(formatAdminBillingRelativeTime('nope', now)).toBe('—');
+  });
+});
+
+describe('sliceAdminBillingPage', () => {
+  const items = Array.from({ length: 30 }, (_, index) => index);
+  it('returns the requested page', () => {
+    expect(sliceAdminBillingPage(items, 2, 25)).toEqual({ items: [25, 26, 27, 28, 29], page: 2 });
+  });
+  it('clamps a page that a filter change left out of range', () => {
+    expect(sliceAdminBillingPage(items, 9, 25).page).toBe(2);
+    expect(sliceAdminBillingPage([], 3, 25)).toEqual({ items: [], page: 1 });
+  });
+});
+
+describe('buildAdminBillingMrrHeadline', () => {
+  it('leads with the largest currency and names the others', () => {
+    expect(buildAdminBillingMrrHeadline([
+      { currency: 'USD', amountLabel: '$28.00', subscriptions: 3 },
+      { currency: 'EUR', amountLabel: '€9.00', subscriptions: 1 },
+    ])).toEqual({ value: '$28.00', subscriptions: 4, otherCurrencies: ['€9.00'] });
+  });
+  it('falls back to a dash without revenue', () => {
+    expect(buildAdminBillingMrrHeadline([])).toEqual({ value: '—', subscriptions: 0, otherCurrencies: [] });
   });
 });

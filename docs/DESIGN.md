@@ -12,6 +12,22 @@ The shared components that implement this contract are catalogued in `docs/DESIG
 4. **Use progressive disclosure.** Keep JSON, diagnostics, advanced controls, and destructive actions available without making them compete with the main workflow.
 5. **Make system state explicit.** Loading, queued, running, saved, disabled, and error states need plain labels; color is supporting information, not the only signal.
 
+## Workspace shell
+
+Every admin route renders inside `AdminShell` (`components/admin/AdminShell.tsx`):
+
+- **Sidebar** pinned to the viewport with its own scroll area, grouped into Workspace,
+  Operations, Content and Tools (`adminNavConfig.ts`). It collapses to an icon rail with
+  `⌘B` or the top-bar toggle and remembers the choice. On narrow screens it is a real dialog
+  sheet (focus trap, Escape, backdrop, focus restored to the menu button).
+- **Top bar**: sidebar toggle, breadcrumb (`Admin › Section › Screen`) and theme toggle.
+- **Command palette** (`⌘K`, or the sidebar search): every screen by name or keyword, plus
+  theme and "back to TravelFlow".
+- **Page header**: title, one-line description, then the page's search, date range and
+  actions in one control strip.
+
+Pages provide content only; the shell owns padding, max width and the page header.
+
 ## Page structure
 
 Use this hierarchy for configuration and data-heavy pages:
@@ -72,6 +88,21 @@ Avoid card grids when the controls form one workflow. Nested cards should be rar
 - Update human-readable elapsed timers once per second unless sub-second precision affects a decision.
 - Keep server polling separate from local elapsed-time display.
 - Preserve control state during refreshes and show when data was last synchronized.
+
+## Motion
+
+An admin dashboard is a tool used all day, so motion is crisp, short and rare.
+
+- **Don't animate what people do constantly.** No animation on keyboard-triggered UI (the
+  `⌘K` palette opens instantly), row selection, tab switches or filter toggles.
+- **Animate entrances that would otherwise jump:** sheets, popovers, the selection bar,
+  toasts. Opacity plus a small translate or `scale(0.95 → 1)`; never from `scale(0)`.
+- **Timing:** 150–250 ms for UI, ease-out (`cubic-bezier(0.23, 1, 0.32, 1)`), never `ease-in`.
+  Exits are faster than entries.
+- **Transition only what changes** (`transition-colors`, `transition-[width]`,
+  `transition-opacity`), not `transition-all`.
+- **Press feedback:** admin buttons scale to `0.97` while pressed (set once on the shell).
+- **Respect reduced motion:** movement goes, fades stay (`motion-safe:` / `motion-reduce:`).
 
 ## Responsive and direction-aware behavior
 

@@ -1,6 +1,6 @@
 # Number Flow Components
 
-Last updated: 2026-03-17
+Last updated: 2026-10-24
 
 This repo now has a small shared number-animation layer built on top of [`@number-flow/react`](https://github.com/barvian/number-flow).
 
@@ -20,6 +20,8 @@ Best fit:
 - Inputs driven by steppers, presets, or synced state
 
 Current notes:
+- `prefix` / `suffix` render inside the animated value (`suffix=" months"`).
+- `steppers` adds the shared increment/decrement buttons; use it wherever the native spinners would have been the only way to nudge the value.
 - The animated overlay is designed for controlled values.
 - Empty controlled values stay as plain input text.
 - Browser spin buttons are hidden so the field matches the rest of the local UI primitives.
@@ -73,11 +75,15 @@ Example:
 - `components/DetailsPanel.tsx`
   - Animated transport duration editor.
 - `components/admin/AdminCountUpNumber.tsx`
-  - Shared admin counter wrapper.
+  - Shared admin counter wrapper. Passed as the `value` of `AdminStatCard` KPI tiles on the Dashboard, Users, Trips and Billing screens.
+- `pages/AdminGlobalSettingsPage.tsx`
+  - `NumberInput` with `steppers` and a `" months"` suffix for the AI model age limit.
 - `components/profile/ProfileStatCountUp.tsx`
   - Shared profile stat counter wrapper.
-- `pages/AdminDesignSystemPlaygroundPage.tsx`
+- `pages/AdminDesignSystemPlaygroundPage.tsx` (`/admin/design-system-playground`, "Inputs + textareas" tab)
   - Reference demo for the shared text input, animated number input, and display-only animated number.
+- `pages/AdminComponentPlaygroundPage.tsx` (unlisted `/admin/component-playground`)
+  - `NumberInput` with steppers inside the settings-panel replica.
 
 ## Testing note
 

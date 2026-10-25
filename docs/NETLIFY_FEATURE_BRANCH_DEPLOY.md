@@ -75,6 +75,13 @@ Linking the project first (`netlify link --id ...`) and running a full `netlify 
 
 **This is a preview artifact, not an application bug.** Do not debug it as a code regression, and tell anyone verifying on an alias preview to expect it.
 
+**Re-verified 2026-10-24.** With `pnpm edge:validate` passing (so the edge bundle itself was
+fine), a `pnpm build:netlify` + `netlify deploy --no-build --dir=dist --alias admin-redesign`
+deploy still served `/api/health` and `/api/runtime/location` as `text/html`, while the PR's
+Deploy Preview answered `/api/health` with `text/plain`. A separate, earlier outage (August
+2026) came from an extensionless value import that broke the edge bundle for *every* deploy;
+`pnpm edge:validate` guards that one. Both can produce the same symptom.
+
 ### Rule
 
 - Use alias deploys only to check **static and client-side rendering**.

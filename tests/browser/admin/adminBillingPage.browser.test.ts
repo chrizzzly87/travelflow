@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
@@ -54,6 +54,17 @@ vi.mock('../../../components/admin/AdminSurfaceCard', () => ({
   AdminSurfaceCard: ({ children }: { children: React.ReactNode }) => React.createElement('section', null, children),
 }));
 
+// The charts are real (Recharts via components/ui/chart). jsdom has no layout, so the
+// ResponsiveContainer would measure 0×0 and draw nothing: give it a fixed size instead.
+vi.mock('recharts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('recharts')>();
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: React.ReactElement }) => (
+      React.createElement('div', { style: { width: 640, height: 288 } }, React.cloneElement(children as React.ReactElement<Record<string, unknown>>, { width: 640, height: 288 }))
+    ),
+  };
+});
 
 vi.mock('../../../components/admin/CopyableUuid', () => ({
   CopyableUuid: ({ value }: { value: string }) => React.createElement('span', null, value),
@@ -149,7 +160,7 @@ describe('pages/AdminBillingPage', () => {
     mocks.showAppToast.mockReturnValue('toast-id');
   });
 
-  it('renders subscription and webhook sections with fetched billing data', async () => {
+  it('leads with billing health, then the subscriptions table, then revenue', async () => {
     renderPage();
 
     await waitFor(() => {
@@ -159,26 +170,105 @@ describe('pages/AdminBillingPage', () => {
     });
 
     expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Current MRR by tier' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'At-risk revenue' })).toBeInTheDocument();
-    expect(screen.getByRole('figure', { name: 'Current MRR by tier' })).toBeInTheDocument();
-    expect(screen.getByRole('figure', { name: 'Subscription mix' })).toBeInTheDocument();
-    expect(screen.getByRole('figure', { name: 'Status mix' })).toBeInTheDocument();
-    expect(screen.getByText('Subscriptions')).toBeInTheDocument();
-    expect(screen.getByText('Webhook events')).toBeInTheDocument();
-    expect(screen.getAllByText('explorer@example.com')).toHaveLength(2);
-    expect(screen.getByText('Signature mismatch')).toBeInTheDocument();
+    const health = screen.getByRole('region', { name: 'Billing health' });
+    expect(health).toHaveTextContent('Sync issues');
+    expect(health).toHaveTextContent('1 failed · 0 without a user');
+    expect(health).toHaveTextContent('$28.00');
+    expect(health).toHaveTextContent('1 scheduled · 1 in grace');
+
+    expect(screen.getByRole('tab', { name: /Subscriptions/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Webhook events/ })).toHaveTextContent('1 failed');
+    expect(await screen.findByText('explorer@example.com')).toBeInTheDocument();
+    expect(screen.getByText('sub_123')).toBeInTheDocument();
     expect(screen.getByText('Subscription status')).toBeInTheDocument();
-    expect(screen.getByText('Webhook status')).toBeInTheDocument();
-    expect(screen.getByText('Payload JSON')).toBeInTheDocument();
+    expect(screen.getByText('Showing 1–1 of 1 subscriptions')).toBeInTheDocument();
+
+    expect(screen.getByText('Current MRR by tier')).toBeInTheDocument();
+    expect(screen.getByText('At-risk revenue')).toBeInTheDocument();
+    const mrrChart = screen.getByRole('figure', { name: /monthly recurring revenue by tier/i });
+    expect(mrrChart.querySelectorAll('.recharts-bar-rectangle').length).toBeGreaterThan(0);
+    expect(screen.getByRole('list', { name: 'At-risk revenue by status' })).toHaveTextContent('Past due · USD');
+    expect(screen.getByRole('list', { name: 'Paid subscriptions by plan tier' })).toHaveTextContent('Explorer');
+    expect(screen.getByRole('list', { name: 'Subscriptions by billing lifecycle status' })).toHaveTextContent('Active');
   });
 
-  it('labels at-risk revenue rows with their status bucket and amount', async () => {
+  it('jumps from the sync-issues tile to the failed webhook events and inspects one', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
     renderPage();
 
-    const list = await screen.findByRole('list', { name: 'At-risk revenue' });
-    expect(within(list).getByText('Past due · USD')).toBeInTheDocument();
-    expect(within(list).getByText((9).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Review failed' }));
+
+    expect(screen.getByRole('tab', { name: /Webhook events/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Webhook status')).toBeInTheDocument();
+    expect(screen.getByText('User link')).toBeInTheDocument();
+    expect(screen.getByText('Signature mismatch')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Inspect Subscription updated event evt_123/ }));
+
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText('Delivery error')).toBeInTheDocument();
+    expect(within(sheet).getByText('Payload JSON')).toBeInTheDocument();
+    expect(within(sheet).getByRole('link', { name: /Open user/ })).toHaveAttribute(
+      'href',
+      '/admin/users?user=00000000-0000-0000-0000-000000000001&drawer=user',
+    );
+  });
+
+  it('reconciles one subscription from a failed event without asking for the id', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    mocks.adminListBillingWebhookEvents.mockResolvedValue([
+      {
+        event_id: 'evt_456',
+        provider: 'paddle',
+        event_type: 'subscription.canceled',
+        occurred_at: new Date().toISOString(),
+        user_id: null,
+        user_email: null,
+        status: 'failed',
+        error_message: 'No user for customer',
+        payload: { data: { id: 'sub_01abc' } },
+        processed_at: null,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Review unlinked' }));
+    expect(screen.getByText('No linked user')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Inspect Subscription canceled event evt_456/ }));
+    const sheet = await screen.findByRole('dialog');
+    // vaul's drag handlers need pointer capture, which jsdom lacks: click without pointer events.
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Reconcile sub_01abc' }));
+
+    await waitFor(() => {
+      expect(mocks.adminReconcilePaddleSubscriptions).toHaveBeenCalledWith({ maxSubscriptions: 1, subscriptionId: 'sub_01abc' });
+    });
+    expect(mocks.promptDialog).not.toHaveBeenCalled();
+    expect(mocks.confirmDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens a subscription in the detail sheet from the row actions menu', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Open actions for explorer@example.com' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'View details' }));
+
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText('Paddle references')).toBeInTheDocument();
+    expect(within(sheet).getByText('ctm_123')).toBeInTheDocument();
+    expect(within(sheet).getByText('pri_123')).toBeInTheDocument();
+
+    // vaul's drag handlers need pointer capture, which jsdom lacks: click without pointer events.
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Reconcile with Paddle' }));
+    await waitFor(() => {
+      expect(mocks.adminReconcilePaddleSubscriptions).toHaveBeenCalledWith({ maxSubscriptions: 1, subscriptionId: 'sub_123' });
+    });
+    expect(mocks.promptDialog).not.toHaveBeenCalled();
   });
 
   it('runs Paddle reconciliation from the billing workspace', async () => {
@@ -242,8 +332,12 @@ describe('pages/AdminBillingPage', () => {
       },
     ]);
 
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
     renderPage();
 
+    await user.click(await screen.findByRole('tab', { name: /Webhook events/ }));
+    await user.click(await screen.findByRole('button', { name: /Inspect Subscription activated event/ }));
     const note = await screen.findByText('Applied subscription lifecycle update (active)');
     const messageBox = note.parentElement;
     expect(messageBox?.className).toContain('border-accent-200');

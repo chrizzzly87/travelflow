@@ -15,6 +15,8 @@ vi.mock('@/app/navigation', () => ({
     ...props,
   }, children),
   useLocation: () => ({ pathname: '/admin/dashboard', search: '', hash: '' }),
+  // The shell's ⌘K command palette navigates.
+  useNavigate: () => vi.fn(),
 }));
 
 vi.mock('../../../hooks/useAuth', () => ({

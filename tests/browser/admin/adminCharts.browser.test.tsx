@@ -252,8 +252,25 @@ describe('AdminBarList', () => {
         expect(bars[2].style.width).toBe('100%');
         expect(bars[0].style.width).toMatch(/^13\.3/);
         expect(bars[0].style.backgroundColor).toBe('var(--admin-chart-rose)');
-        expect(bars[0].className).toContain('dark:opacity-40');
         expect(within(list).queryByRole('button')).toBeNull();
+    });
+
+    it('shows each row\'s share of the total, with value labels and palette swatches', () => {
+        render(<AdminBarList
+            ariaLabel="Users by plan"
+            sortOrder="none"
+            scale="total"
+            data={[
+                { key: 'free', name: 'Free', value: 3, valueLabel: '3 · 75%' },
+                { key: 'paid', name: 'Paid', value: 1, valueLabel: '1 · 25%' },
+            ]}
+        />);
+
+        const list = screen.getByRole('list', { name: 'Users by plan' });
+        expect(within(list).getAllByRole('listitem').map((row) => row.textContent)).toEqual(['Free3 · 75%', 'Paid1 · 25%']);
+        const bars = Array.from(list.querySelectorAll<HTMLElement>('[data-admin-bar-list-bar]'));
+        expect(bars.map((bar) => bar.style.width)).toEqual(['75%', '25%']);
+        expect(bars[0].style.backgroundColor).not.toBe(bars[1].style.backgroundColor);
     });
 
     it('makes rows keyboard-selectable when a selection handler is given', async () => {

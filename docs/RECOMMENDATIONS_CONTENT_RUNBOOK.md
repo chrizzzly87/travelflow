@@ -24,9 +24,11 @@ the rows live, how to maintain them, and how to seed a new country.
    the real project become live recommendations. It now refuses to run where an
    `auth` schema exists, because that is exactly what happened once.
 2. Seed a country, either way round:
-   - In the admin: open `/admin/recommendations`, pick the country, press
-     **Import bundled**. Rows arrive with the status the dataset carries
-     (`in_review` for imported pins), so nothing is public yet.
+   - In the admin: open `/admin/recommendations`, pick the country, then
+     choose **Import bundled {country} dataset** from the **…** menu beside
+     **Refresh** (an empty country also offers **Import bundled** in the list).
+     Rows arrive with the status the dataset carries (`in_review` for imported
+     pins), so nothing is public yet.
    - From the terminal, with `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`:
 
 ```bash
@@ -46,17 +48,31 @@ update public.recommendations
 
 ## Day-to-day maintenance
 
-Everything happens at `/admin/recommendations`:
+Everything happens at `/admin/recommendations`. The screen is a list on the
+left and an editor on the right (stacked on narrow screens). Above them, three
+tiles answer what needs doing in the selected country: **Published**, **Needs
+review** (drafts and entries in review) and **Without a photo** (with how many
+of those are already published).
 
-- **New** writes a recommendation from scratch. Title and country code are the
-  only required fields; the id and slug are derived from them.
+- The list is scoped by **Country** and filtered by **Status**; each status in
+  the filter shows how many rows it holds. The search box in the page header
+  matches title, slug, city and tags. **Reset** appears while a filter is on.
+  The `Draft` and `In review` statuses are the review queue.
+- **New recommendation** writes one from scratch. Title and country code are
+  the only required fields; the id and slug are derived from them.
+- The editor is grouped into **Basics**, **Card copy**, **Classification**,
+  **Location** and **Photo**, with **Save** and **Delete** pinned at the
+  bottom. It marks unsaved changes and asks before you switch rows or start a
+  new one with edits pending.
 - The **Recommendations** box is the bulleted list on the card — one per line,
   the dishes to order, when to go, what to skip.
 - **Status** is the visibility switch. `draft` and `in_review` are admin-only,
   `published` is live, `retired` and `rejected` are kept for the record.
-- **Import bundled** re-seeds a country from the shipped dataset. It overwrites
-  rows with the same id, edits included, so it is a seeding tool rather than a
-  sync.
+  **Publish now** in the editor header publishes the saved row at once; any
+  unsaved edits stay in the form for you to save or discard.
+- **Import bundled {country} dataset** (in the **…** menu) re-seeds a country
+  from the shipped dataset. It overwrites rows with the same id, edits
+  included, so it is a seeding tool rather than a sync.
 
 Coordinates are what draw the card's map, so fill in latitude and longitude for
 anything you want placed. Leave them empty and the card falls back to the photo

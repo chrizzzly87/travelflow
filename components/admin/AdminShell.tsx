@@ -1,25 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation } from '@/app/navigation';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
-    AirplaneTakeoff,
-    CaretLeft,
     CaretRight,
-    ChartLineUp,
-    ChartPieSlice,
-    CreditCard,
     Flask,
-    GlobeHemisphereWest,
-    ImageSquare,
+    Info,
     List,
-    Palette,
-    Scales,
-    Scroll,
-    StackSimple,
-    SuitcaseRolling,
-    SlidersHorizontal,
-    UsersThree,
+    MagnifyingGlass,
+    SidebarSimple,
     X,
-    MapPin,
 } from '@phosphor-icons/react';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
@@ -28,12 +17,26 @@ import {
     isSimulatedLoggedIn,
     setSimulatedLoggedIn,
 } from '../../services/simulatedLoginService';
-import { ADMIN_NAV_ITEMS, ADMIN_NAV_SECTIONS } from './adminNavConfig';
-import { AccountMenu } from '../navigation/AccountMenu';
+import {
+    ADMIN_NAV_ITEMS,
+    ADMIN_NAV_SECTIONS,
+    findActiveAdminNavItem,
+    getAdminNavSectionLabel,
+    type AdminNavItem,
+    type AdminNavSection,
+} from './adminNavConfig';
+import { AdminAccountMenu } from './AdminAccountMenu';
 import { useAuth } from '../../hooks/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
+import { SearchInput } from '../ui/search-input';
+import { Button } from '../ui/button';
+import { Kbd } from '../ui/kbd';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { ThemeToggle } from '../ui/ThemeToggle';
 import { AppBrand } from '../navigation/AppBrand';
+import { cn } from '../../lib/utils';
+import { AdminCommandMenu } from './AdminCommandMenu';
+import { AdminNavIcon } from './AdminNavIcon';
 import {
     type AdminDateRange,
     DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY,
@@ -55,48 +58,6 @@ interface AdminShellProps {
     showDateRange?: boolean;
 }
 
-type AdminNavIconKey = (typeof ADMIN_NAV_ITEMS)[number]['icon'];
-
-const NAV_ICONS: Record<AdminNavIconKey, React.ComponentType<{ size?: number; weight?: 'duotone' }>> = {
-    overview: ChartPieSlice,
-    telemetry: ChartLineUp,
-    users: UsersThree,
-    trips: SuitcaseRolling,
-    airports: AirplaneTakeoff,
-    destinations: GlobeHemisphereWest,
-    recommendations: MapPin,
-    tiers: StackSimple,
-    billing: CreditCard,
-    audit: Scroll,
-    legal: Scales,
-    settings: SlidersHorizontal,
-    og_tools: ImageSquare,
-    design_system: Palette,
-    benchmark: Flask,
-};
-
-const itemIcon = (icon: AdminNavIconKey) => {
-    const Icon = NAV_ICONS[icon] || Flask;
-    return <Icon size={16} weight="duotone" />;
-};
-
-const buildDesktopNavClass = ({ isActive }: { isActive: boolean }, isCollapsed: boolean) => {
-    const base = isCollapsed
-        ? 'flex items-center justify-center rounded-xl border p-2 text-sm transition-colors'
-        : 'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors';
-    if (isActive) {
-        return `${base} border-accent-200 bg-accent-50 font-semibold text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30`;
-    }
-    return `${base} border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground`;
-};
-
-const buildMobileNavClass = ({ isActive }: { isActive: boolean }) => {
-    if (isActive) {
-        return 'flex items-center gap-2 rounded-xl border border-accent-300 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30';
-    }
-    return 'flex items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground';
-};
-
 const DATE_RANGE_OPTIONS: Array<{ value: AdminDateRange; label: string }> = [
     { value: '7d', label: 'Last 7 days' },
     { value: '30d', label: 'Last 30 days' },
@@ -104,50 +65,88 @@ const DATE_RANGE_OPTIONS: Array<{ value: AdminDateRange; label: string }> = [
     { value: 'all', label: 'All time' },
 ];
 
-type AdminNavSection = (typeof ADMIN_NAV_SECTIONS)[number] & { items: Array<(typeof ADMIN_NAV_ITEMS)[number]> };
+type AdminNavGroup = AdminNavSection & { items: AdminNavItem[] };
 
-interface AdminNavItemsProps {
-    mode: 'desktop' | 'mobile';
-    sections: AdminNavSection[];
-    isSidebarCollapsed: boolean;
-    onMenuItemClick: (id: string, mode: 'desktop' | 'mobile') => void;
+const NAV_GROUPS: AdminNavGroup[] = ADMIN_NAV_SECTIONS.reduce<AdminNavGroup[]>((groups, section) => {
+    const items = ADMIN_NAV_ITEMS.filter((item) => item.section === section.id);
+    if (items.length > 0) groups.push({ ...section, items });
+    return groups;
+}, []);
+
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+interface AdminNavListProps {
+    collapsed: boolean;
+    onItemClick: (id: string) => void;
 }
 
-const AdminNavItems: React.FC<AdminNavItemsProps> = ({
-    mode,
-    sections,
-    isSidebarCollapsed,
-    onMenuItemClick,
-}) => (
-    <>
-        {sections.map((section) => (
-            <section key={`section-${mode}-${section.id}`} className="space-y-1.5">
-                {(mode === 'mobile' || !isSidebarCollapsed) && (
-                    <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        {section.label}
-                    </div>
-                )}
-                <div className="space-y-1">
-                    {section.items.map((item) => (
-                        <NavLink
-                            key={`${mode}-item-${item.id}`}
-                            to={item.path}
-                            end={item.path === '/admin/ai-benchmark'}
-                            title={isSidebarCollapsed && mode === 'desktop' ? item.label : undefined}
-                            className={(nav) => mode === 'desktop'
-                                ? buildDesktopNavClass(nav, isSidebarCollapsed)
-                                : buildMobileNavClass(nav)}
-                            onClick={() => onMenuItemClick(item.id, mode)}
-                            {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
-                        >
-                            {itemIcon(item.icon)}
-                            {(mode === 'mobile' || !isSidebarCollapsed) && <span>{item.label}</span>}
-                        </NavLink>
-                    ))}
-                </div>
-            </section>
+const AdminNavList: React.FC<AdminNavListProps> = ({ collapsed, onItemClick }) => (
+    <nav aria-label="Admin sections" className="flex flex-col gap-4">
+        {NAV_GROUPS.map((group) => (
+            <div key={group.id} className="flex flex-col gap-0.5">
+                {collapsed
+                    ? <div className="mx-auto mb-1 h-px w-5 bg-sidebar-border first:hidden" aria-hidden="true" />
+                    : <div className="px-2 pb-1 text-xs font-medium text-muted-foreground">{group.label}</div>}
+                {group.items.map((item) => (
+                    <NavLink
+                        key={item.id}
+                        to={item.path}
+                        end={item.path === '/admin/ai-benchmark'}
+                        aria-label={collapsed ? item.label : undefined}
+                        data-tooltip={collapsed ? item.label : undefined}
+                        className={({ isActive }) => cn(
+                            'group flex h-8 items-center gap-2.5 rounded-md text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                            collapsed ? 'justify-center' : 'px-2',
+                            isActive
+                                ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                                : 'text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+                        )}
+                        onClick={() => onItemClick(item.id)}
+                        {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
+                    >
+                        {({ isActive }) => (
+                            <>
+                                <AdminNavIcon
+                                    icon={item.icon}
+                                    weight={isActive ? 'fill' : 'regular'}
+                                    className={cn('size-4 shrink-0', isActive && 'text-accent-600 dark:text-accent-300')}
+                                />
+                                {!collapsed && <span className="truncate">{item.label}</span>}
+                            </>
+                        )}
+                    </NavLink>
+                ))}
+            </div>
         ))}
-    </>
+    </nav>
+);
+
+interface SidebarSearchButtonProps {
+    collapsed: boolean;
+    onOpen: () => void;
+}
+
+const SidebarSearchButton: React.FC<SidebarSearchButtonProps> = ({ collapsed, onOpen }) => (
+    <button
+        type="button"
+        onClick={onOpen}
+        aria-label="Search admin"
+        aria-keyshortcuts={IS_MAC ? 'Meta+K' : 'Control+K'}
+        data-tooltip={collapsed ? 'Search (⌘K)' : undefined}
+        className={cn(
+            'flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background text-sm text-muted-foreground shadow-xs transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none dark:bg-input/30',
+            collapsed ? 'w-8 justify-center self-center' : 'w-full px-2',
+        )}
+        {...getAnalyticsDebugAttributes('admin__menu--search')}
+    >
+        <MagnifyingGlass className="size-4 shrink-0" />
+        {!collapsed && (
+            <>
+                <span className="flex-1 text-start">Search</span>
+                <Kbd>{IS_MAC ? '⌘K' : 'Ctrl K'}</Kbd>
+            </>
+        )}
+    </button>
 );
 
 export const AdminShell: React.FC<AdminShellProps> = ({
@@ -165,18 +164,20 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     const routeLocation = useLocation();
     const { access, isAdmin } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getStoredSidebarCollapseState());
-    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-    const mobileSidebarCloseRef = useRef<HTMLButtonElement | null>(null);
-    const focusMobileSidebarClose = useCallback((event: Event) => {
-        event.preventDefault();
-        mobileSidebarCloseRef.current?.focus();
-    }, []);
+    const [mobileNavPath, setMobileNavPath] = useState<string | null>(null);
+    const [isCommandOpen, setIsCommandOpen] = useState(false);
+    const mobileNavCloseRef = useRef<HTMLButtonElement>(null);
+    const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
     const [isSimulatedDebugLoginActive, setIsSimulatedDebugLoginActive] = useState<boolean>(() => isSimulatedLoggedIn());
     const [isDevAdminBypassActive, setIsDevAdminBypassActive] = useState(false);
 
+    // The mobile sheet belongs to the route it was opened on, so navigating
+    // closes it without an effect.
+    const isMobileNavOpen = mobileNavPath === routeLocation.pathname;
+    const activeItem = findActiveAdminNavItem(routeLocation.pathname);
+
     const syncAdminRuntimeFlags = useCallback(() => {
-        const simulatedDebugLogin = isSimulatedLoggedIn();
-        setIsSimulatedDebugLoginActive(simulatedDebugLogin);
+        setIsSimulatedDebugLoginActive(isSimulatedLoggedIn());
 
         if (typeof window === 'undefined') {
             setIsDevAdminBypassActive(false);
@@ -194,13 +195,13 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         syncAdminRuntimeFlags();
     }, [syncAdminRuntimeFlags]);
 
-    useEffect(() => {
-        persistSidebarCollapseState(isSidebarCollapsed);
+    // Side effects stay out of the state updater, which may run twice.
+    const toggleSidebar = useCallback(() => {
+        const next = !isSidebarCollapsed;
+        setIsSidebarCollapsed(next);
+        persistSidebarCollapseState(next);
+        trackEvent('admin__menu--collapse_toggle', { collapsed: next });
     }, [isSidebarCollapsed]);
-
-    useEffect(() => {
-        setIsMobileSidebarOpen(false);
-    }, [routeLocation.pathname]);
 
     useEffect(() => {
         syncAdminRuntimeFlags();
@@ -212,200 +213,277 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             }
             syncAdminRuntimeFlags();
         };
-        const handleSimulatedDebugEvent = () => {
-            syncAdminRuntimeFlags();
-        };
         window.addEventListener('storage', handleStorage);
-        window.addEventListener(SIMULATED_LOGIN_DEBUG_EVENT, handleSimulatedDebugEvent as EventListener);
+        window.addEventListener(SIMULATED_LOGIN_DEBUG_EVENT, syncAdminRuntimeFlags as EventListener);
         return () => {
             window.removeEventListener('storage', handleStorage);
-            window.removeEventListener(SIMULATED_LOGIN_DEBUG_EVENT, handleSimulatedDebugEvent as EventListener);
+            window.removeEventListener(SIMULATED_LOGIN_DEBUG_EVENT, syncAdminRuntimeFlags as EventListener);
         };
     }, [syncAdminRuntimeFlags]);
 
-    const emitMenuEvent = (id: string) => {
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            const key = event.key.toLowerCase();
+            if (key === 'k' && (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey) {
+                event.preventDefault();
+                setIsCommandOpen((current) => !current);
+                return;
+            }
+            // ⌘B / Ctrl+B mirrors the shadcn sidebar shortcut.
+            if (key === 'b' && (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey) {
+                event.preventDefault();
+                toggleSidebar();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [toggleSidebar]);
+
+    const handleMenuItemClick = (id: string) => {
         trackEvent(`admin__menu--${id}`);
+        setMobileNavPath(null);
     };
 
-    const navSections = useMemo(
-        () => ADMIN_NAV_SECTIONS.reduce<Array<(typeof ADMIN_NAV_SECTIONS)[number] & { items: Array<(typeof ADMIN_NAV_ITEMS)[number]> }>>((sections, section) => {
-            const items = ADMIN_NAV_ITEMS.filter((item) => item.section === section.id);
-            if (items.length > 0) {
-                sections.push({ ...section, items });
-            }
-            return sections;
-        }, []),
-        []
+    const openCommandMenu = () => {
+        trackEvent('admin__menu--search');
+        setMobileNavPath(null);
+        setIsCommandOpen(true);
+    };
+
+    const breadcrumbs = useMemo(() => {
+        const trail: string[] = [];
+        if (activeItem) {
+            const sectionLabel = getAdminNavSectionLabel(activeItem.section);
+            if (sectionLabel) trail.push(sectionLabel);
+            trail.push(activeItem.label);
+        } else {
+            trail.push(title);
+        }
+        return trail;
+    }, [activeItem, title]);
+
+    const hasToolbar = showGlobalSearch || showDateRange || Boolean(actions);
+
+    const accountMenu = (collapsed: boolean) => (isAdmin ? <AdminAccountMenu collapsed={collapsed} /> : null);
+
+    const brandLink = (collapsed: boolean) => (
+        <NavLink
+            to="/admin/dashboard"
+            className={cn(
+                'flex h-9 min-w-0 items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                collapsed ? 'justify-center' : 'gap-2 px-1',
+            )}
+            aria-label="Admin overview"
+            onClick={() => handleMenuItemClick('brand')}
+            {...getAnalyticsDebugAttributes('admin__menu--brand')}
+        >
+            <AppBrand
+                className={collapsed ? 'gap-0' : undefined}
+                wordmarkClassName={cn('text-[15px] font-bold tracking-tight text-foreground', collapsed && 'hidden')}
+            />
+            {!collapsed && (
+                <span className="rounded border border-sidebar-border px-1.5 py-px text-[11px] font-medium text-muted-foreground">
+                    Admin
+                </span>
+            )}
+        </NavLink>
     );
 
-    const handleMenuItemClick = (id: string, mode: 'desktop' | 'mobile') => {
-        emitMenuEvent(id);
-        if (mode === 'mobile') setIsMobileSidebarOpen(false);
-    };
-
     return (
-        <div className="min-h-dvh bg-secondary text-foreground [&_.rounded-full]:select-none">
-            {/* The mobile navigation drawer is a modal dialog: Radix supplies the
-                focus trap, Escape, the backdrop and focus restore to the menu button. */}
-            <Dialog open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
-                <DialogContent
-                    aria-describedby={undefined}
-                    data-testid="admin-mobile-navigation"
-                    overlayClassName="z-50 bg-slate-950/45 backdrop-blur-none lg:hidden"
-                    onOpenAutoFocus={focusMobileSidebarClose}
-                    className="inset-y-0 left-0 top-0 z-[60] h-dvh w-72 max-h-dvh translate-x-0 translate-y-0 rounded-none border-0 border-r border-border p-4 lg:hidden data-[state=open]:animate-in data-[state=open]:slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left duration-200"
-                >
-                <DialogTitle className="sr-only">Admin navigation</DialogTitle>
-                <div className="flex items-center justify-between">
-                    <NavLink
-                        to="/admin/dashboard"
-                        className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2"
-                        onClick={() => emitMenuEvent('brand')}
-                        {...getAnalyticsDebugAttributes('admin__menu--brand')}
-                    >
-                        <AppBrand wordmarkClassName="text-base font-black tracking-tight text-foreground" />
-                    </NavLink>
-                    <button
-                        ref={mobileSidebarCloseRef}
-                        type="button"
-                        onClick={() => setIsMobileSidebarOpen(false)}
-                        className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary"
-                        aria-label="Close navigation"
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-
-                <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-                    <AdminNavItems
-                        mode="mobile"
-                        sections={navSections}
-                        isSidebarCollapsed={isSidebarCollapsed}
-                        onMenuItemClick={handleMenuItemClick}
-                    />
-                </div>
-
-                {isAdmin && (
-                    <div className="mt-3 border-t border-border pt-3">
-                        <AccountMenu
-                            email={access?.email || null}
-                            userId={access?.userId || null}
-                            isAdmin
-                            fullWidth
-                            showLabel
-                            menuPlacement="right-end"
-                            labelMode="identity"
-                            showRecentTripsSection={false}
-                            showCurrentPageSummary={false}
-                            className="w-full"
-                        />
-                    </div>
+        <div
+            className={cn(
+                'flex min-h-dvh w-full bg-background text-foreground',
+                // Press feedback on every admin button: the UI confirms it heard
+                // the click. Skipped under reduced motion.
+                'motion-safe:[&_[data-slot=button]:not(:disabled):active]:scale-[0.97]',
+            )}
+        >
+            {/* Desktop sidebar: pinned to the viewport with its own scroll area,
+                so long tables scroll the page without dragging the nav along.
+                Sticky makes it a stacking context; z-30 keeps anything that opens
+                inside it (tooltips, a non-portaled popover) above the page. */}
+            <aside
+                className={cn(
+                    'sticky top-0 z-30 hidden h-dvh shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:flex',
+                    isSidebarCollapsed ? 'w-14' : 'w-60',
                 )}
-                </DialogContent>
-            </Dialog>
+                aria-label="Admin navigation"
+                data-collapsed={isSidebarCollapsed ? 'true' : 'false'}
+            >
+                <div className={cn('flex flex-col gap-3 pt-3', isSidebarCollapsed ? 'px-2' : 'px-3')}>
+                    {brandLink(isSidebarCollapsed)}
+                    <SidebarSearchButton collapsed={isSidebarCollapsed} onOpen={openCommandMenu} />
+                </div>
+                <div className={cn('min-h-0 flex-1 overflow-y-auto py-4', isSidebarCollapsed ? 'px-2' : 'px-3')}>
+                    <AdminNavList collapsed={isSidebarCollapsed} onItemClick={handleMenuItemClick} />
+                </div>
+                <div className={cn('flex flex-col border-t border-sidebar-border p-2', isSidebarCollapsed && 'items-center')}>
+                    {accountMenu(isSidebarCollapsed)}
+                </div>
+            </aside>
 
-            <div className="flex min-h-dvh w-full">
-                <div className="relative hidden lg:block z-50">
-                    <aside className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-border bg-card/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
-                        <NavLink
-                            to="/admin/dashboard"
-                            className={`flex items-center rounded-xl border border-border bg-card ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
-                            onClick={() => emitMenuEvent('brand')}
-                            {...getAnalyticsDebugAttributes('admin__menu--brand')}
-                        >
-                            <AppBrand
-                                className={isSidebarCollapsed ? 'gap-0' : undefined}
-                                wordmarkClassName={`text-base font-black tracking-tight text-foreground ${isSidebarCollapsed ? 'hidden' : ''}`}
-                            />
-                        </NavLink>
-
-                        <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-                            <AdminNavItems
-                                mode="desktop"
-                                sections={navSections}
-                                isSidebarCollapsed={isSidebarCollapsed}
-                                onMenuItemClick={handleMenuItemClick}
-                            />
+            {/* Mobile sidebar: a real dialog (focus trap, Escape, backdrop,
+                focus returned to the menu button). */}
+            <DialogPrimitive.Root
+                open={isMobileNavOpen}
+                onOpenChange={(open) => setMobileNavPath(open ? routeLocation.pathname : null)}
+            >
+                <DialogPrimitive.Portal>
+                    <DialogPrimitive.Overlay className="fixed inset-0 z-[1700] bg-black/45 backdrop-blur-[1.5px] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 lg:hidden" />
+                    <DialogPrimitive.Content
+                        aria-modal="true"
+                        // Focus the close control, not the brand link that comes first,
+                        // so Escape/Enter has an obvious target on open.
+                        onOpenAutoFocus={(event) => {
+                            event.preventDefault();
+                            mobileNavCloseRef.current?.focus();
+                        }}
+                        // The menu button is not a Radix trigger, so return focus to it by hand.
+                        onCloseAutoFocus={(event) => {
+                            event.preventDefault();
+                            mobileNavTriggerRef.current?.focus();
+                        }}
+                        className="fixed inset-y-0 start-0 z-[1701] flex w-[min(18rem,85vw)] flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left lg:hidden"
+                    >
+                        <DialogPrimitive.Title className="sr-only">Admin navigation</DialogPrimitive.Title>
+                        <DialogPrimitive.Description className="sr-only">Jump to another admin screen.</DialogPrimitive.Description>
+                        <div className="flex items-center justify-between gap-2 px-3 pt-3">
+                            {brandLink(false)}
+                            <DialogPrimitive.Close asChild>
+                                <Button ref={mobileNavCloseRef} variant="ghost" size="icon-sm" aria-label="Close navigation">
+                                    <X />
+                                </Button>
+                            </DialogPrimitive.Close>
                         </div>
+                        <div className="px-3 pt-3">
+                            <SidebarSearchButton collapsed={false} onOpen={openCommandMenu} />
+                        </div>
+                        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+                            <AdminNavList collapsed={false} onItemClick={handleMenuItemClick} />
+                        </div>
+                        <div className="border-t border-sidebar-border p-2">
+                            {accountMenu(false)}
+                        </div>
+                    </DialogPrimitive.Content>
+                </DialogPrimitive.Portal>
+            </DialogPrimitive.Root>
 
-                        {isAdmin && (
-                            <div className="mt-3 border-t border-border pt-3">
-                                {!isSidebarCollapsed && (
-                                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                        Account
-                                    </div>
-                                )}
-                                <AccountMenu
-                                    email={access?.email || null}
-                                    userId={access?.userId || null}
-                                    isAdmin
-                                    compact={isSidebarCollapsed}
-                                    showLabel={!isSidebarCollapsed}
-                                    fullWidth={!isSidebarCollapsed}
-                                    menuPlacement="right-end"
-                                    labelMode="identity"
-                                    showRecentTripsSection={false}
-                                    showCurrentPageSummary={false}
-                                    className={isSidebarCollapsed ? 'mx-auto' : 'w-full'}
-                                />
-                            </div>
-                        )}
-                    </aside>
-                    <button
-                        type="button"
-                        onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-card text-accent-700 shadow-sm hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30 dark:shadow-none"
+            <AdminCommandMenu open={isCommandOpen} onOpenChange={setIsCommandOpen} />
+
+            <div className="flex min-w-0 flex-1 flex-col">
+                <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:px-6">
+                    <Button
+                        ref={mobileNavTriggerRef}
+                        variant="ghost"
+                        size="icon-sm"
+                        className="lg:hidden"
+                        onClick={() => setMobileNavPath(routeLocation.pathname)}
+                        aria-label="Open navigation"
+                        aria-expanded={isMobileNavOpen}
+                    >
+                        <List />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="hidden text-muted-foreground lg:inline-flex"
+                        onClick={toggleSidebar}
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        aria-keyshortcuts={IS_MAC ? 'Meta+B' : 'Control+B'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
-                        {isSidebarCollapsed ? <CaretRight size={13} /> : <CaretLeft size={13} />}
-                    </button>
-                </div>
-
-                <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
-                    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
-                        <div className="grid gap-3 p-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                            <div className="min-w-0 self-start text-left">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsMobileSidebarOpen(true)}
-                                        className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary lg:hidden"
-                                        aria-label="Open navigation"
+                        <SidebarSimple />
+                    </Button>
+                    <div className="mx-1 hidden h-4 w-px bg-border lg:block" aria-hidden="true" />
+                    <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
+                        <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+                            <li className="hidden text-muted-foreground sm:block">Admin</li>
+                            {breadcrumbs.map((crumb, index) => {
+                                const isLast = index === breadcrumbs.length - 1;
+                                return (
+                                    <li
+                                        key={crumb}
+                                        className={cn('flex min-w-0 items-center gap-1.5', !isLast && 'hidden sm:flex')}
                                     >
-                                        <List size={16} />
-                                    </button>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700 dark:text-accent-200">Admin workspace</p>
-                                </div>
-                                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{title}</h1>
+                                        <CaretRight className="hidden size-3 shrink-0 text-muted-foreground/70 sm:block rtl:rotate-180" aria-hidden="true" />
+                                        <span
+                                            className={cn('truncate', isLast ? 'font-medium text-foreground' : 'text-muted-foreground')}
+                                            aria-current={isLast ? 'page' : undefined}
+                                        >
+                                            {crumb}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ol>
+                    </nav>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-muted-foreground lg:hidden"
+                        onClick={openCommandMenu}
+                        aria-label="Search admin"
+                    >
+                        <MagnifyingGlass />
+                    </Button>
+                    <ThemeToggle analyticsSurface="admin" />
+                </header>
+
+                <main className="flex-1" data-tf-handoff-ready="true">
+                    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 md:px-6 lg:px-8">
+                        {isSimulatedDebugLoginActive && (
+                            <Alert variant="warning">
+                                <Flask />
+                                <AlertTitle>Simulated login is on — this page shows mock data</AlertTitle>
+                                <AlertDescription>
+                                    <p>
+                                        The browser debug toggle <code className="font-mono text-xs">{SIMULATED_LOGIN_STORAGE_KEY}=1</code> is set. Turn it off and reload to see live records.
+                                    </p>
+                                    <Button variant="outline" size="xs" className="mt-2" onClick={handleDisableSimulatedLogin}>
+                                        Turn off simulated login
+                                    </Button>
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {!isSimulatedDebugLoginActive && isDevAdminBypassActive && (
+                            <Alert variant="info">
+                                <Info />
+                                <AlertTitle>Dev admin bypass is active in this tab</AlertTitle>
+                                <AlertDescription>
+                                    This session uses the local dev-admin identity instead of your real account, so live admin data is not available.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                            <div className="min-w-0">
+                                <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
                                 {description && (
                                     <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>
                                 )}
                             </div>
-                            <div className="mt-3 flex w-full flex-col flex-wrap items-start gap-3 sm:flex-row sm:items-center lg:mt-0 lg:w-auto lg:flex-nowrap lg:self-end">
-                                {showGlobalSearch && (
-                                    <div className="flex-1 w-full sm:w-auto lg:flex-none">
-                                        <label className="sr-only" htmlFor="admin-global-search">Search</label>
-	                                        <input
-	                                            id="admin-global-search"
-	                                            type="search"
-	                                            aria-label="Search"
-	                                            value={searchValue}
-                                            onChange={(event) => onSearchValueChange?.(event.target.value)}
+                            {hasToolbar && (
+                                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto xl:flex-nowrap xl:justify-end">
+                                    {showGlobalSearch && (
+                                        <SearchInput
+                                            id="admin-global-search"
+                                            aria-label="Search"
                                             placeholder="Search"
+                                            value={searchValue}
+                                            onChange={(event) => onSearchValueChange?.(event.currentTarget.value)}
+                                            onClear={onSearchValueChange ? () => onSearchValueChange('') : undefined}
                                             disabled={!onSearchValueChange}
-                                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-secondary lg:w-[280px]"
+                                            containerClassName="h-9 w-full sm:w-64"
                                         />
-                                    </div>
-                                )}
-                                {showDateRange && (
-                                    <div className="w-full shrink-0 sm:w-auto">
+                                    )}
+                                    {showDateRange && (
                                         <Select
                                             value={dateRange}
                                             onValueChange={(next) => onDateRangeChange?.(next as AdminDateRange)}
                                             disabled={!onDateRangeChange}
                                         >
-                                            <SelectTrigger className="h-9 w-full sm:w-[170px]">
+                                            <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Date range">
                                                 <SelectValue placeholder="Date range" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -416,47 +494,19 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </div>
-                                )}
-                                {actions && (
-                                    <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
-                                        {actions}
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                    {actions && (
+                                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                            {actions}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    </header>
 
-                    {isSimulatedDebugLoginActive && (
-                        <section className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:mx-6 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
-                            <p className="font-semibold">Debug simulated-login mode is active.</p>
-                            <p className="mt-1">
-                                Admin pages are showing mock data because the browser debug toggle is on (`{SIMULATED_LOGIN_STORAGE_KEY}=1`).
-                            </p>
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={handleDisableSimulatedLogin}
-                                    className="inline-flex h-8 items-center rounded-lg border border-amber-400 bg-card px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:hover:bg-amber-400/12 dark:text-amber-200"
-                                >
-                                    Disable simulated login
-                                </button>
-                                <span className="text-xs text-amber-800 dark:text-amber-200">Reload data after disabling to confirm live backend records.</span>
-                            </div>
-                        </section>
-                    )}
-
-                    {!isSimulatedDebugLoginActive && isDevAdminBypassActive && (
-                        <section className="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 md:mx-6 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
-                            <p className="font-semibold">Dev admin bypass is active in this tab.</p>
-                            <p className="mt-1">
-                                This session uses the local dev-admin identity instead of your real account.
-                            </p>
-                        </section>
-                    )}
-
-                    <div className="px-4 py-5 md:p-6">
-                        {children}
+                        <div className="min-w-0">
+                            {children}
+                        </div>
                     </div>
                 </main>
             </div>

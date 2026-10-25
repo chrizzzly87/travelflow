@@ -98,12 +98,12 @@ For async trip-generation worker parity and local troubleshooting, use:
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
-- `/admin/dashboard` admin operational overview
-- `/admin/users` admin user provisioning and profile management
-- `/admin/trips` admin trip lifecycle controls
-- `/admin/tiers` admin entitlement template controls
-- `/admin/audit` admin action audit timeline
-- `/admin/ai-benchmark` internal AI benchmark workspace (classic input + multi-model runs + persisted session table + persisted run ranking)
+- `/admin/*` admin workspace (admins only). One shell with a sidebar grouped into Workspace, Operations, Content and Tools, a `⌘K` command palette that jumps to any screen, and breadcrumbs. Each screen's job, layout and columns are described in `docs/ADMIN_SCREENS.md`:
+  - Workspace: `/admin/dashboard` (Overview), `/admin/settings` (app-wide settings)
+  - Operations: `/admin/users`, `/admin/trips`, `/admin/tiers`, `/admin/billing`, `/admin/audit`
+  - Content: `/admin/airports`, `/admin/destinations`, `/admin/recommendations`, `/admin/legal`
+  - Tools: `/admin/ai-benchmark`, `/admin/ai-benchmark/telemetry`, `/admin/ai-benchmark/worker-health`, `/admin/og-tools`, `/admin/design-system-playground`
+  - Unlisted: `/admin/component-playground` (noindex, reached by URL only)
 
 ## Admin security and isolation
 
@@ -160,6 +160,8 @@ pnpm build
 The build emits public assets/prerendered pages in `dist/client` and server output in `dist/server`. The Netlify adapter owns server deployment and document routing; uploading only static files is insufficient. See [the deployment guide](docs/NETLIFY_TANSTACK_START.md).
 
 `pnpm build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.
+
+Admin workspace screens are documented in `docs/ADMIN_SCREENS.md`; the visual contract is `docs/DESIGN.md` and the shared components are catalogued in `docs/DESIGN_SYSTEM_COMPONENTS.md`.
 
 ## Scripts
 
@@ -273,9 +275,8 @@ Sitemap behavior:
 - Utility/error routes that should stay out of search indexing must be listed in `NON_INDEXABLE_STATIC_PATHS` in `scripts/generate-sitemap.mjs`.
 
 `/admin/ai-benchmark` uses:
-- temporary simulated-login UI gate (debug mode)
-- `x-tf-admin-key` request header (from your entered `TF_ADMIN_API_KEY`)
-- Supabase bearer token from current session for owner-scoped RLS writes
+- the signed-in admin's Supabase bearer token: the edge function checks `system_role = 'admin'` via `get_current_user_access` and uses the same token for owner-scoped RLS writes
+- `x-tf-admin-key` (`TF_ADMIN_API_KEY`) only as an emergency fallback, and only when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled
 - prompt preview generation from current benchmark form settings
 - session export with optional log bundle (`/api/internal/ai/benchmark/export?session=<id>&includeLogs=1`)
 

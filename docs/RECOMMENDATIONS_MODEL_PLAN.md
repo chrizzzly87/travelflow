@@ -1,7 +1,7 @@
 # Recommendations model plan
 
 Status: largely implemented — see **What actually shipped** below
-Last updated: 2026-09-17
+Last updated: 2026-10-24 (admin surface notes); plan text from 2026-09-17
 Feeds: issue #505 (unassigned activity pool and swipe triage)
 Shipped in: v0.173.0 (PR #508)
 
@@ -32,6 +32,7 @@ Where reality diverged from this plan, and why:
 | `recommendation_import_runs` | Not built | The importer is a CLI with a preview mode; there is no unattended run to audit yet. Worth adding when import becomes scheduled. |
 | Phase 6 last, after the media decision | Deck built alongside | The media question was answered early (below), which unblocked it. |
 | Phase 4, AI authoring | **Not built** | The `generateActivityProposals` stub still returns `[]`. |
+| Admin: list, editor, review queue, import screen, bulk publish/retire | A list + editor split at `/admin/recommendations` | The list filters by country and status (with counts per status), and the shell search covers title, slug, city and tags; the editor edits every field and has **Publish now**. The status filter is the review queue (`Draft` / `In review`). There is no import screen — the KML importer is a CLI — and the admin's only import is **Import bundled {country} dataset** in the header's **…** menu, which seeds from the shipped dataset. Bulk publish/retire is a SQL statement (see the runbook). |
 
 The dataset in `data/recommendations/*.json` did not become dead weight: it is
 the seed for a new country and the offline fallback when the endpoint cannot
@@ -321,6 +322,10 @@ Once the library exists, trip generation can prefer real recommendations over in
 
 ## Admin
 
+> Status (2026-10-24): shipped as a list + editor split, without the review
+> queue, import screen or bulk actions described below — see the table under
+> **What actually shipped**. The runbook describes the screen as it is.
+
 A new admin section, following the existing table and settings conventions in `docs/DESIGN.md` and `docs/DESIGN_SYSTEM_COMPONENTS.md`:
 
 - list with filters on country, city, status, origin, activity type and tag;
@@ -360,8 +365,10 @@ Phases 3, 4 and 5 are independent once 1 and 2 land.
 
 **Status:** 1, 2, 3, 5 and 6 shipped in v0.173.0. Phase 4 (AI authoring) has
 not started — the `generateActivityProposals` stub still returns `[]`. The
-phase 1 migration is written and verified but, as this document warned, is
-**not applied by a deploy**; `docs/SUPABASE_RUNBOOK.md` tracks it as pending.
+phase 1 migration is **not applied by a deploy**; it was applied by hand on
+2026-09-17 and Taiwan is seeded and published (see
+`docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`). Phase 3 shipped as a list and an
+editor only (see **What actually shipped**).
 
 ---
 

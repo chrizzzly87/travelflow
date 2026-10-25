@@ -75,6 +75,7 @@ const ModelSearchList: React.FC<{
         <div className="flex min-h-0 flex-col">
             <div className={cn('shrink-0', inset)}>
                 <SearchInput
+                    aria-label={placeholder}
                     autoFocus={autoFocus}
                     value={query}
                     placeholder={placeholder}
@@ -106,7 +107,7 @@ const ModelSearchList: React.FC<{
                     <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>
                 ) : Object.entries(grouped).map(([providerLabel, providerModels]: [string, AiModelCatalogItem[]]) => (
                     <div key={providerLabel} className="mb-3 last:mb-0">
-                        <p className="sticky top-0 z-10 bg-card/95 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground backdrop-blur">
+                        <p className="sticky top-0 z-10 bg-card/95 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
                             {providerLabel}
                         </p>
                         <ul className="space-y-0.5">
@@ -117,9 +118,10 @@ const ModelSearchList: React.FC<{
                                         <button
                                             type="button"
                                             data-model-id={model.id}
+                                            aria-pressed={selected}
                                             onMouseEnter={() => setActiveIndex(flat.indexOf(model))}
                                             onClick={() => onPick(model)}
-                                            className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-start transition ${
+                                            className={`flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-start outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                                                 active?.id === model.id ? 'bg-secondary' : 'hover:bg-secondary'
                                             }`}
                                         >
@@ -179,7 +181,8 @@ export const AiModelPicker: React.FC<{
             <button
                 type="button"
                 onClick={openPicker}
-                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
+                aria-haspopup="dialog"
+                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground transition-colors hover:border-slate-400 hover:bg-secondary/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:hover:border-slate-500"
             >
                 <span className="flex min-w-0 items-center gap-2">
                     <AiProviderLogo provider={selected?.provider || provider} model={selected?.model || model} size={18} />
@@ -214,7 +217,7 @@ export const AiModelPicker: React.FC<{
                         />
                     </DialogBody>
 
-                    <DialogFooter className="justify-between gap-3">
+                    <DialogFooter className="flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
                         <span className="flex min-w-0 flex-1 items-center gap-2">
                             <AiProviderLogo
                                 provider={pending?.provider || pendingId.split(':')[0]}
@@ -230,7 +233,7 @@ export const AiModelPicker: React.FC<{
                                 </span>
                             </span>
                         </span>
-                        <span className="flex shrink-0 items-center gap-2">
+                        <span className="flex shrink-0 items-center justify-end gap-2">
                             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
                                 Cancel
                             </Button>
@@ -298,17 +301,20 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                     {extras.map((model) => (
                         <span
                             key={model}
-                            className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary py-1 ps-2.5 pe-1 font-mono text-[11px] text-foreground"
+                            className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-secondary py-0.5 ps-2.5 pe-0.5 font-mono text-xs text-foreground"
                         >
-                            {model}
-                            <button
+                            <span className="min-w-0 truncate">{model}</span>
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon-xs"
                                 aria-label={`Remove ${model}`}
+                                data-tooltip={`Remove ${model}`}
                                 onClick={() => onChange(value.filter((entry) => entry !== model))}
-                                className="rounded-full p-0.5 text-muted-foreground transition hover:bg-slate-200 hover:text-foreground"
+                                className="rounded-full text-muted-foreground hover:text-foreground"
                             >
-                                <X weight="bold" className="size-3" />
-                            </button>
+                                <X weight="bold" />
+                            </Button>
                         </span>
                     ))}
                 </div>
@@ -316,6 +322,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
 
             <div className="mt-2 flex items-center gap-2">
                 <Input
+                    aria-label="Add an OpenRouter model id"
                     value={customModel}
                     placeholder="vendor/model-id"
                     spellCheck={false}
@@ -334,7 +341,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                 />
                 <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     disabled={!customModel.trim() || value.includes(customModel.trim())}
                     onClick={() => {
                         const next = customModel.trim();
@@ -342,7 +349,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                         setCustomModel('');
                     }}
                 >
-                    <Plus weight="bold" className="size-4" /> Add
+                    <Plus weight="bold" /> Add
                 </Button>
             </div>
         </div>

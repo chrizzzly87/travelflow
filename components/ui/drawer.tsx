@@ -26,8 +26,13 @@ export const DrawerContent = React.forwardRef<
     accessibleTitle?: string;
     accessibleDescription?: string;
     side?: 'bottom' | 'right';
+    /**
+     * Skip the visually hidden title because the caller renders a visible
+     * `DrawerTitle`; otherwise screen readers hear the same heading twice.
+     */
+    hasVisibleTitle?: boolean;
   }
->(({ className, children, hideOverlay = false, accessibleTitle = 'Details panel', accessibleDescription = 'Panel content and controls.', side = 'bottom', ...props }, ref) => (
+>(({ className, children, hideOverlay = false, accessibleTitle = 'Details panel', accessibleDescription = 'Panel content and controls.', side = 'bottom', hasVisibleTitle = false, ...props }, ref) => (
   <DrawerPortal>
     {!hideOverlay && <DrawerOverlay />}
     <DrawerPrimitive.Content
@@ -46,7 +51,7 @@ export const DrawerContent = React.forwardRef<
       ].join(' ')}
       {...props}
     >
-      <DrawerPrimitive.Title className="sr-only">{accessibleTitle}</DrawerPrimitive.Title>
+      {!hasVisibleTitle && <DrawerPrimitive.Title className="sr-only">{accessibleTitle}</DrawerPrimitive.Title>}
       <DrawerPrimitive.Description className="sr-only">{accessibleDescription}</DrawerPrimitive.Description>
       {side === 'bottom' && (
         <DrawerPrimitive.Handle className="pointer-events-auto mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted-foreground/30" />

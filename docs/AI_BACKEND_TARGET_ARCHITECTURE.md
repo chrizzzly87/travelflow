@@ -2,7 +2,11 @@
 
 Status: Historical draft (2026-02). The `services/ai/*` layout it describes was not built as written; check the code before relying on it.  
 Owner: TravelFlow engineering  
-Last updated: 2026-02-11
+Last updated: 2026-02-11 (admin workspace notes refreshed 2026-10-24)
+
+Status (2026-10-24): sections 1–9 and 11–15 are the original plan and stay as history. The
+"Current implementation status" list and section 10 describe the admin benchmark as it ships
+today.
 
 Current implementation status:
 1. `/api/ai/generate` is implemented for Gemini, OpenAI, Anthropic, and OpenRouter allowlisted models.
@@ -11,14 +15,14 @@ Current implementation status:
 4. `/api/internal/ai/benchmark/export` is implemented (`run` JSON export, `session` ZIP export, optional log bundle via `includeLogs=1`).
 5. `/api/internal/ai/benchmark/cleanup` is implemented for bulk deletion of benchmark-linked trips and benchmark rows.
 6. `/api/internal/ai/benchmark/rating` is implemented for persisted per-run satisfaction ranking updates (`good`, `medium`, `bad`) and saved run comments.
-7. `/admin/ai-benchmark` now includes classic benchmark input, prompt preview generation, dynamic model matrix, rerun/test-all, persisted table, export/cleanup actions, persisted ranking controls, and model-level summary cards.
-8. Benchmark model-row selections in admin UI are persisted locally with default starter set (Gemini 3.1 Pro Preview, Gemini 3 Pro Preview, GPT-5.2 Pro, Claude Haiku 4.5).
+7. `/admin/ai-benchmark` is a three-tab workspace (Runs, Compare, Setup) with classic trip templates, prompt preview, a per-model reasoning matrix, run-all/run-one/rerun, a persisted run table with ratings and notes, a per-run inspector, session export/cleanup, and a per-model comparison. See section 10.
+8. Benchmark model selections and trip templates are saved per admin through `/api/internal/ai/benchmark/preferences` (`ai_benchmark_preferences`); the starter set is `BENCHMARK_DEFAULT_MODEL_IDS` in `services/aiBenchmarkPreferencesService.ts`.
 9. Benchmark table uses optimistic prefilled running rows with live latency feedback during test execution.
 10. Transport mode enum + normalization + prompt guidance now use a shared contract (`shared/transportModes.ts`) with update workflow documented in `docs/TRANSPORT_MODE_CONTRACT.md`.
-11. Benchmark validation now includes stricter field/format checks with blocking errors vs non-blocking warning separation and per-run validation detail modal support in `/admin/ai-benchmark`.
+11. Benchmark validation now includes stricter field/format checks with blocking errors vs non-blocking warning separation; the validation payload is shown in the run inspector in `/admin/ai-benchmark`.
 12. Benchmark execution now starts asynchronously in edge background (`waitUntil`) and `/admin/ai-benchmark` polls session status until runs settle, reducing deployed timeout failures.
 13. `/api/internal/ai/benchmark/cancel` is implemented for manual cancellation of active benchmark runs (single run or entire session).
-14. `/admin/ai-benchmark` keeps polling and live latency updates when a persisted session reloads with active runs, and exposes abort actions in the run table/session toolbar.
+14. `/admin/ai-benchmark` keeps polling and live latency updates when a persisted session reloads with active runs; a single run is aborted from its row menu or inspector, the whole session from the page header's "Stop runs".
 15. Benchmark workers now call provider APIs directly (shared edge runtime) with a dedicated provider timeout budget (default 90s), avoiding nested `/api/ai/generate` edge timeout failures.
 16. Benchmark concurrency is capped at 5 parallel workers; extra selected model runs are queued automatically.
 17. Benchmark cost column now falls back to model-catalog estimates when exact provider `cost_usd` metadata is not available.
@@ -418,35 +422,50 @@ Rationale:
 
 Route: `/admin/ai-benchmark`.
 
-## 10.1 Layout
+## 10.1 Layout (as shipped, 2026-10-24)
 
-1. Left: Classic create-trip form.
-2. Right top: dynamic provider/model rows (add/remove/search/group/sort).
-3. Right actions:
-   1. per-row `Run`
-   2. global `Test all`
-   3. `Download all (ZIP)`
-4. Bottom: results table.
+The page header carries the one primary action, **Run N models** (plus **Stop runs** while
+anything is queued or running), so a rerun never needs a trip to Setup. A sticky tab bar shows
+live progress ("2 running · 1 queued") on every tab. The workspace opens on **Runs** when a
+session is loaded and on **Setup** when there is none.
 
-## 10.2 Table columns
+1. **Runs** — four KPI tiles (completed with failures, average latency, total provider cost,
+   runs still to rate), then the filter row (provider, hide failed, only warnings, only
+   unrated, sort), then the run table. Session actions sit in the table header: **Export**
+   (ZIP, ZIP with logs) and a `…` menu with **Start a new session** and **Delete session
+   data…**.
+2. **Compare** — per-model averages for the loaded session (rating, success, time, cost,
+   tokens, repair rate, runs), best rated first; below it a compact 7-day leaderboard across
+   all AI calls that links to `/admin/ai-benchmark/telemetry` for charts and filters.
+3. **Setup** — trip template (with details, prompt preview, edit and "save as new template"
+   in a dialog), the model list (estimated cost, reasoning, active switch, run-one, remove;
+   bulk activate/deactivate/remove in a `…` menu) with the app default model picker, and
+   execution settings (new session name, run default reasoning, parallel requests, time
+   limit, compact output).
 
-1. Provider/Model
-2. Status
-3. Latency ms
-4. Structure valid
-5. Cost USD
-6. Tokens
-7. Trip link
-8. Export JSON
-9. Rerun
+Each run opens in an inspector sheet (`components/admin/AiBenchmarkRunSheet.tsx`): summary,
+provider error JSON, rating and note, validation JSON, and rerun/download/abort.
+
+## 10.2 Run table columns
+
+1. Model (identity; run number and relative start time underneath; opens the inspector)
+2. Status (badge, plus the first line of a provider error)
+3. Latency (live elapsed time while running)
+4. Checks (valid/invalid with passed checks, warning count)
+5. Cost (exact provider cost, else the catalog estimate marked "est.")
+6. Rating (good / medium / bad)
+7. Note (preview; editing happens in the inspector)
+8. `…` row menu: open details, open trip, rerun model, download JSON, abort run
+
+Tokens, finish time and the trip link live in the inspector rather than the table.
 
 ## 10.3 Execution strategy
 
-Test-all executes selected rows in parallel with bounded concurrency.
+Run-all executes the active model rows in parallel with bounded concurrency.
 
-Recommended default:
-1. `concurrency = 3`
-2. configurable server-side cap to prevent spikes
+As shipped:
+1. the admin picks 1–5 parallel requests (default 2)
+2. the server caps concurrency at 5 (`MAX_CONCURRENCY` in `netlify/edge-functions/ai-benchmark.ts`) and queues the rest
 
 Reasoning:
 1. Faster than strict sequential runs.
@@ -454,9 +473,10 @@ Reasoning:
 
 ## 10.4 Persistence and sharing
 
-1. Session data is persisted on every run.
-2. URL includes session token/id for reload and internal share.
-3. No benchmark-specific change to normal trip sharing behavior.
+1. Session data is persisted on every run; new runs join the loaded session.
+2. URL includes session token/id (`?session=`) for reload and internal share. Without one, the page loads the admin's latest session.
+3. "Start a new session" clears the loaded session so the next run creates one under the name set in Setup.
+4. No benchmark-specific change to normal trip sharing behavior.
 
 ## 11) Main create-trip provider selector
 

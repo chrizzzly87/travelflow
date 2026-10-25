@@ -1,3 +1,5 @@
+export { ADMIN_SCREEN_TITLES } from '../shared/adminScreenTitles';
+import { ADMIN_SCREEN_TITLES } from '../shared/adminScreenTitles';
 import { stripLocalePrefix } from '../config/routes';
 
 export interface PageTitleLabels {
@@ -61,6 +63,7 @@ const humanizeSegment = (segment: string): string => {
         .replace(/\b\p{L}/gu, (char) => char.toUpperCase());
 };
 
+
 export const resolvePageTitle = ({
     pathname,
     appName,
@@ -122,15 +125,11 @@ export const resolvePageTitle = ({
     if (normalizedPath.startsWith('/u/')) return titleWithAppName(labels.profile, appName);
 
     if (normalizedPath.startsWith('/admin')) {
-        if (normalizedPath === '/admin/dashboard') return titleWithAppName(`${labels.admin} · Dashboard`, appName);
-        if (normalizedPath === '/admin/users') return titleWithAppName(`${labels.admin} · Users`, appName);
-        if (normalizedPath === '/admin/trips') return titleWithAppName(`${labels.admin} · Trips`, appName);
-        if (normalizedPath === '/admin/tiers') return titleWithAppName(`${labels.admin} · Tiers`, appName);
-        if (normalizedPath === '/admin/billing') return titleWithAppName(`${labels.admin} · Billing`, appName);
-        if (normalizedPath === '/admin/audit') return titleWithAppName(`${labels.admin} · Audit`, appName);
-        if (normalizedPath === '/admin/ai-benchmark') return titleWithAppName(`${labels.admin} · AI Benchmark`, appName);
-        if (normalizedPath === '/admin/ai-benchmark/telemetry') return titleWithAppName(`${labels.admin} · AI Telemetry`, appName);
-        if (normalizedPath === '/admin/ai-benchmark/worker-health') return titleWithAppName(`${labels.admin} · Worker Health`, appName);
+        // Mirrors the nav labels in components/admin/adminNavConfig.ts (kept as a
+        // literal map so shared code does not pull admin config into its bundle;
+        // tests/unit/pageTitleService.test.ts checks the two stay in step).
+        const adminScreen = ADMIN_SCREEN_TITLES[normalizedPath];
+        if (adminScreen) return titleWithAppName(`${labels.admin} · ${adminScreen}`, appName);
         return titleWithAppName(labels.admin, appName);
     }
 

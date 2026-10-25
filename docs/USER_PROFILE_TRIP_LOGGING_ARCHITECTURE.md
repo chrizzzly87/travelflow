@@ -37,8 +37,10 @@ This document is the operational source of truth for:
   - includes per-operation `metadata.correlation_id` for event tracing across audit surfaces.
 
 ## Admin Surfaces and Limits
-- Admin Users drawer (`/admin/users`):
-  - user change log shows latest 20 entries.
+- Users (`/admin/users`), user details sheet → **Activity** tab:
+  - change log shows the latest 20 entries, 10 per page, each with field-level before/after rows and "Show complete diff" (full snapshot modal) where snapshots exist,
+  - "Open in Audit log" jumps to `/admin/audit?q=<user id>` for older history.
+  - Owned trips (status and expiry edits) live on the **Trips** tab of the same sheet; an expiry field that is focused and left unchanged no longer writes an `admin.trip.update` row.
 - Admin Audit page (`/admin/audit`):
   - mixed timeline (admin + user actions),
   - page size 50 with offset paging,
@@ -169,7 +171,7 @@ This document is the operational source of truth for:
 ## Logging Roadmap Status (as of 2026-02-28)
 - [x] Ownership hardening shipped (authenticated profile views only DB-owned trips).
 - [x] Anonymous-to-registered claim transfer shipped (including OAuth callback claim handoff).
-- [x] Failure logging shipped (`trip.archive_failed`) and visible in admin user drawer + global audit.
+- [x] Failure logging shipped (`trip.archive_failed`) and visible in the admin user sheet (Activity tab) + global audit.
 - [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
 - [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
 - [x] `timeline_diff_v1` is now the active write format for trip update event metadata.

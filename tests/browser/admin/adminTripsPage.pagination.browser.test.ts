@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from '@/tests/helpers/routerHarness';
+import { MemoryRouter, Route, Routes, useLocation } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   adminListTrips: vi.fn(),
@@ -33,7 +33,9 @@ vi.mock('../../../components/admin/AdminShell', () => ({
 
 vi.mock('../../../components/ui/drawer', () => ({
   Drawer: ({ open, children }: { open: boolean; children: React.ReactNode }) => (open ? React.createElement('div', null, children) : null),
-  DrawerContent: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
+  DrawerContent: ({ children }: { children: React.ReactNode }) => React.createElement('div', { role: 'dialog' }, children),
+  DrawerClose: ({ children }: { children: React.ReactNode }) => children,
+  DrawerTitle: ({ children }: { children: React.ReactNode }) => React.createElement('h2', null, children),
 }));
 
 vi.mock('../../../components/admin/AdminReloadButton', () => ({
@@ -123,11 +125,21 @@ const createTrip = (index: number) => ({
   updated_at: daysAgoIso((index % 10) + 1),
 });
 
-const renderPage = () => render(
+const LocationProbe = () => {
+  const location = useLocation();
+  return React.createElement('output', { 'data-testid': 'location' }, `${location.pathname}${location.search}`);
+};
+
+const renderPage = (initialEntry = '/admin/trips') => render(
   React.createElement(
     MemoryRouter,
-    { initialEntries: ['/admin/trips'] },
-    React.createElement(AdminTripsPage),
+    { initialEntries: [initialEntry] },
+    React.createElement(
+      Routes,
+      null,
+      React.createElement(Route, { path: '/admin/trips', element: React.createElement(AdminTripsPage) }),
+      React.createElement(Route, { path: '/admin/users', element: React.createElement(LocationProbe) }),
+    ),
   ),
 );
 
@@ -156,13 +168,13 @@ describe('pages/AdminTripsPage pagination', () => {
       expect(mocks.adminListTrips).toHaveBeenCalled();
     });
 
-    expect(await screen.findByText('Showing 1-25 of 30')).toBeInTheDocument();
-    expect(screen.getByText('Page 1 / 2')).toBeInTheDocument();
+    expect(await screen.findByText('Showing 1–25 of 30 trips')).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next page' }));
 
-    expect(await screen.findByText('Showing 26-30 of 30')).toBeInTheDocument();
-    expect(screen.getByText('Page 2 / 2')).toBeInTheDocument();
+    expect(await screen.findByText('Showing 26–30 of 30 trips')).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
   }, 30000);
 
   it('shows attempt metadata details and latest queue job diagnostics in the trip drawer', async () => {
@@ -222,12 +234,13 @@ describe('pages/AdminTripsPage pagination', () => {
       expect(mocks.adminListTrips).toHaveBeenCalled();
     });
 
-    const tripDrawerTrigger = screen.getByText('Trip 1').closest('[role="button"]');
-    expect(tripDrawerTrigger).not.toBeNull();
+    await user.click(await screen.findByRole('button', { name: 'Open details for Trip 1' }));
 
-    await user.click(tripDrawerTrigger!);
-
-    expect(await screen.findByText('Trip details')).toBeInTheDocument();
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByRole('heading', { name: 'Generation' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('heading', { name: 'Status and expiry' })).toBeInTheDocument();
+    // Raw diagnostics sit behind a disclosure, still in the document.
+    expect(within(sheet).getByText('Technical details')).toBeInTheDocument();
     expect(await screen.findByText('Attempt metadata details')).toBeInTheDocument();
     expect(screen.getByText('Provider request timed out after 120000ms.')).toBeInTheDocument();
     expect(screen.getByText('Job last error code')).toBeInTheDocument();
@@ -236,5 +249,108 @@ describe('pages/AdminTripsPage pagination', () => {
     expect(screen.getByText(/"requestedModel": "gpt-5.4"/)).toBeInTheDocument();
     expect(screen.getByText('Attempt metadata JSON')).toBeInTheDocument();
     expect(screen.getByText(/"details": "Provider request timed out after 120000ms."/)).toBeInTheDocument();
+  });
+  it('shows an authored sentence instead of the raw exception when trips fail to load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.adminListTrips.mockRejectedValue(new Error('pg: relation "trips" leaked detail'));
+
+    renderPage();
+
+    expect(await screen.findByText('Could not load trips.')).toBeInTheDocument();
+    expect(screen.queryByText(/leaked detail/)).toBeNull();
+    consoleError.mockRestore();
+  });
+
+  it('opens the row actions menu with the trip actions', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText('Showing 1–25 of 30 trips')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'Open trip actions' })[0]);
+
+    expect(await screen.findByRole('menuitem', { name: 'Open details' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Open trip' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Duplicate…' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Transfer owner…' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Download JSON' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Archive trip' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Delete permanently' })).toBeInTheDocument();
+  });
+
+  it('shows bulk actions only once a trip is selected, and selects the page before everything', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText('Showing 1–25 of 30 trips')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Bulk actions' })).toBeNull();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select trip Trip 1' }));
+    const bar = screen.getByRole('region', { name: 'Bulk actions' });
+    expect(within(bar).getByText('1 trip selected')).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: 'Archive' })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: 'Delete permanently' })).toBeInTheDocument();
+
+    // The header checkbox covers the 25 rows on this page, not all 30 matches.
+    await user.click(screen.getByRole('checkbox', { name: 'Select all trips on this page' }));
+    expect(within(bar).getByText('25 trips selected')).toBeInTheDocument();
+
+    await user.click(within(bar).getByRole('button', { name: 'Select all 30 matching' }));
+    expect(within(bar).getByText('30 trips selected')).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: /Select all .* matching/ })).toBeNull();
+
+    await user.click(within(bar).getByRole('button', { name: 'Archive' }));
+    await waitFor(() => expect(mocks.adminUpdateTrip).toHaveBeenCalledTimes(30));
+    expect(mocks.adminUpdateTrip).toHaveBeenCalledWith('trip-1', { status: 'archived' });
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Bulk actions' })).toBeNull());
+  });
+
+  it('narrows the table to failed generations from the KPI tile', async () => {
+    const user = userEvent.setup();
+    mocks.adminListTrips.mockResolvedValue([
+      ...Array.from({ length: 4 }, (_, index) => createTrip(index + 1)),
+      { ...createTrip(5), generation_state: 'failed' as const },
+      { ...createTrip(6), generation_state: 'failed' as const },
+    ]);
+
+    renderPage();
+
+    expect(await screen.findByText('Showing 1–6 of 6 trips')).toBeInTheDocument();
+    expect(screen.getByText('Open a trip to retry it.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Show failed' }));
+
+    expect(await screen.findByText('Showing 1–2 of 2 trips')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open details for Trip 5' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open details for Trip 1' })).toBeNull();
+
+    // Reset appears only while a filter is active.
+    await user.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(await screen.findByText('Showing 1–6 of 6 trips')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+  });
+
+  it('links the owner to the Users sheet instead of a duplicate owner drawer', async () => {
+    renderPage();
+
+    const ownerLink = await screen.findByRole('link', { name: 'owner1@example.com' });
+    expect(ownerLink).toHaveAttribute('href', '/admin/users?user=owner-1&drawer=user');
+  });
+
+  it('forwards the old owner drawer deep link to the Users sheet', async () => {
+    renderPage('/admin/trips?user=owner-7&drawer=user');
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/admin/users?user=owner-7&drawer=user');
+  });
+
+  it('opens the trip sheet from a ?trip= deep link', async () => {
+    renderPage('/admin/trips?trip=trip-3&drawer=trip');
+
+    const sheet = await screen.findByRole('dialog');
+    expect(await within(sheet).findByRole('heading', { name: 'Trip 3' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('link', { name: 'Open in Users' })).toHaveAttribute('href', '/admin/users?user=owner-3&drawer=user');
   });
 });

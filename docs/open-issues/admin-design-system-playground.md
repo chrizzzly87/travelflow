@@ -1,8 +1,12 @@
 # Admin Design System Playground and Notification Lab (Follow-up)
 
 ## Status
-Open issue (follow-up). Not in current profile/trip archive scope.
+Shipped (phases 1 and 2). The rest of this file is the original proposal, kept as history.
 GitHub issue: https://github.com/chrizzzly87/travelflow/issues/196
+
+Status (2026-10-24): `/admin/design-system-playground` is live as **Design system** in the sidebar's Tools group, inside `AdminShell`. Its tabs are Buttons; Inputs + textareas; Select + dropdown; Country select + calendar; Switches + checkboxes; Tabs + segmented controls; Dialogs + drawers + modals; Settings panels; Cards + badges + chips; **Admin workspace** (stat tiles, section headers, status badges, empty and error states, `AdminDetailSheet`, `AdminSelectionBar` on a selectable sample table, `AdminPagination`, `AdminBarChart`, `AdminBarList`); Data tables; Tooltip + popover patterns. Each tab lists its source file and real usages, the toast lab and app-dialog samples are implemented, and the three analytics events below fire. Still open: phase 3 (visual regression snapshots).
+
+The separate, unlisted `/admin/component-playground` is deliberately kept apart: it tunes replicas of public-site sections and cards (globe, CTA, trip, blog, stamp and feature cards) with sliders and copies the resulting settings into code. It is `noindex`, absent from the sidebar and command palette, and points back here for shared primitives.
 
 ## Objective
 Add a dedicated admin workspace page to inspect all shared UI components and interaction states in one place, including a toast/notification trigger lab.
@@ -70,9 +74,9 @@ Track basic playground usage:
 3. `admin__design_playground_toast--trigger`
 
 ## Rollout Plan
-1. Phase 1: Route + static grouped previews + notification lab.
-2. Phase 2: Add “where used” references per component group.
-3. Phase 3: Add visual regression snapshot harness for core groups.
+1. Phase 1: Route + static grouped previews + notification lab. (Done)
+2. Phase 2: Add “where used” references per component group. (Done)
+3. Phase 3: Add visual regression snapshot harness for core groups. (Open)
 
 ## Risks and Mitigations
 1. Component drift from real production usage:

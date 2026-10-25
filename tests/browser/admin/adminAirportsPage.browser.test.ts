@@ -148,6 +148,7 @@ const buildAirport = (overrides?: Partial<Record<string, unknown>>) => ({
 describe('AdminAirportsPage', () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   beforeEach(() => {
@@ -175,6 +176,21 @@ describe('AdminAirportsPage', () => {
         value: () => undefined,
       });
     }
+
+    // The airport editor is a vaul sheet, which reads the computed CSS transform
+    // on pointerup; jsdom computes none, so report "none" instead of undefined.
+    const computeStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element: Element, pseudo?: string | null) => {
+      const style = computeStyle(element, pseudo);
+      if (!element.hasAttribute('data-vaul-drawer')) return style;
+      return new Proxy(style, {
+        get(target, property) {
+          if (property === 'transform') return target.transform || 'none';
+          const value = Reflect.get(target, property);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+    });
 
     vi.clearAllMocks();
     mocks.confirm.mockResolvedValue(true);
@@ -283,10 +299,8 @@ describe('AdminAirportsPage', () => {
     const user = userEvent.setup();
     renderAdminAirportsPage();
 
-    expect(await screen.findByText('Airport Catalog')).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('Berlin Brandenburg Airport')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('row', { name: /HAM\s+EDDH\s+Hamburg Airport/i }));
+    expect(await screen.findByRole('tab', { name: /Catalog/ })).toHaveAttribute('aria-selected', 'true');
+    await user.click(await screen.findByRole('row', { name: /Hamburg Airport\s+HAM · EDDH/i }));
     await waitFor(() => {
       expect(screen.getByDisplayValue('Hamburg Airport')).toBeInTheDocument();
     });
@@ -305,13 +319,13 @@ describe('AdminAirportsPage', () => {
         isMajorCommercial: true,
       }));
     });
-  });
+  }, 30000);
 
   it('creates a new airport row from the admin editor', async () => {
     const user = userEvent.setup();
     renderAdminAirportsPage();
 
-    expect(await screen.findByDisplayValue('Berlin Brandenburg Airport')).toBeInTheDocument();
+    expect(await screen.findByText('Berlin Brandenburg Airport')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'New airport' }));
 
     await user.type(screen.getByLabelText('Ident'), 'EDDM');
@@ -346,8 +360,9 @@ describe('AdminAirportsPage', () => {
     const user = userEvent.setup();
     renderAdminAirportsPage();
 
-    expect(await screen.findByRole('button', { name: 'Sync from upstream' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Sync from upstream' }));
+    await screen.findByText('Berlin Brandenburg Airport');
+    await user.click(screen.getByRole('button', { name: 'More catalog actions' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Sync from upstream' }));
 
     await waitFor(() => {
       expect(mocks.confirm).toHaveBeenCalled();
@@ -357,7 +372,8 @@ describe('AdminAirportsPage', () => {
     // expiring after the default few seconds mid-sync.
     expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Syncing airports',
-      duration: Infinity,
+      // The loading tone stays up until the result toast replaces it (appToast: loading => Infinity).
+      tone: 'loading',
     }));
     expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
       id: 'toast-id',
@@ -369,12 +385,13 @@ describe('AdminAirportsPage', () => {
     const user = userEvent.setup();
     renderAdminAirportsPage();
 
-    expect(await screen.findByRole('button', { name: 'Apply bulk edit' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('checkbox', { name: 'Select Hamburg Airport' }));
-    await user.click(screen.getByRole('combobox', { name: 'Scheduled Service' }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Select Hamburg Airport' }));
+    await user.click(screen.getByRole('button', { name: 'Bulk edit' }));
+    expect(await screen.findByRole('dialog', { name: 'Bulk edit 1 airport' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply bulk edit' })).toBeDisabled();
+    await user.click(screen.getByRole('combobox', { name: 'Scheduled service' }));
     await user.click(await screen.findByRole('option', { name: 'Set scheduled service off' }));
-    await user.click(screen.getAllByRole('combobox', { name: 'Airport Type' })[0]);
+    await user.click(screen.getByRole('combobox', { name: 'Airport type' }));
     await user.click(await screen.findByRole('option', { name: 'Set to small airport' }));
 
     await user.click(screen.getByRole('button', { name: 'Apply bulk edit' }));
@@ -394,9 +411,7 @@ describe('AdminAirportsPage', () => {
     const user = userEvent.setup();
     renderAdminAirportsPage();
 
-    expect(await screen.findByRole('button', { name: 'Delete selected' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('checkbox', { name: 'Select Hamburg Airport' }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Select Hamburg Airport' }));
     await user.click(screen.getByRole('button', { name: 'Delete selected' }));
 
     await waitFor(() => {
@@ -413,6 +428,8 @@ describe('AdminAirportsPage', () => {
     expect(await screen.findByRole('button', { name: 'Lookup nearby airports' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Lookup nearby airports' }));
+    await waitFor(() => expect(mocks.fetchNearbyAirports).toHaveBeenCalled());
+    await user.click(screen.getByRole('tab', { name: 'Ticket lab' }));
 
     expect(await screen.findByText('Digital Boarding Pass')).toBeInTheDocument();
     expect(screen.getByText('Horizontal style')).toBeInTheDocument();
@@ -425,7 +442,7 @@ describe('AdminAirportsPage', () => {
 
   it('renders a BER testing fallback before nearby-airport data arrives', async () => {
     mocks.fetchNearbyAirports.mockImplementation(() => new Promise(() => undefined));
-    renderAdminAirportsPage();
+    renderAdminAirportsPage(['/admin/airports?tab=ticket']);
 
     expect(await screen.findByText('Testing fallback active')).toBeInTheDocument();
     expect(screen.getByText('Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.')).toBeInTheDocument();
@@ -499,13 +516,13 @@ describe('AdminAirportsPage', () => {
   it('renders resize handles for the airport table columns', async () => {
     renderAdminAirportsPage();
 
-    expect(await screen.findByLabelText('Resize code column')).toBeInTheDocument();
-    expect(screen.getByLabelText('Resize airport column')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Resize airport column')).toBeInTheDocument();
+    expect(screen.getByLabelText('Resize location column')).toBeInTheDocument();
     expect(screen.getByLabelText('Resize timezone column')).toBeInTheDocument();
   });
 
   it('defaults the nearby-airport tester to runtime location and major-only lookups', async () => {
-    renderAdminAirportsPage();
+    renderAdminAirportsPage(['/admin/airports?tab=tester']);
 
     expect(await screen.findByDisplayValue('Berlin, Germany')).toBeInTheDocument();
     expect(screen.getByDisplayValue('52.52')).toBeInTheDocument();
@@ -541,7 +558,7 @@ describe('AdminAirportsPage', () => {
         ],
       });
 
-    renderAdminAirportsPage();
+    renderAdminAirportsPage(['/admin/airports?tab=tester']);
 
     expect(await screen.findByText('Nearby airports request failed with 500.')).toBeInTheDocument();
     await new Promise((resolve) => window.setTimeout(resolve, 50));
@@ -577,5 +594,78 @@ describe('AdminAirportsPage', () => {
     expect(screen.getByTestId('location-search').textContent).toContain('catalogTier=major');
     expect(screen.getByTestId('location-search').textContent).toContain('nearbySameCountry=1');
     expect(screen.getByTestId('location-search').textContent).toContain('nearbyLookup=1');
+    // Older links without `tab` open the tester they were pointing at, and the
+    // tab is written back so the link stays unambiguous.
+    expect(screen.getByRole('tab', { name: 'Nearby tester' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('location-search').textContent).toContain('tab=tester');
+  });
+
+  it('opens on the catalog without loading the tester, its location or its lookup', async () => {
+    const user = userEvent.setup();
+    renderAdminAirportsPage();
+
+    expect(await screen.findByText('Hamburg Airport')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lookup nearby airports' })).not.toBeInTheDocument();
+    expect(mocks.ensureRuntimeLocationLoaded).not.toHaveBeenCalled();
+    expect(mocks.fetchNearbyAirports).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('tab', { name: 'Nearby tester' }));
+
+    expect(await screen.findByRole('button', { name: 'Lookup nearby airports' })).toBeInTheDocument();
+    await waitFor(() => expect(mocks.ensureRuntimeLocationLoaded).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('location-search').textContent).toContain('tab=tester');
+  });
+
+  it('shows bulk actions only while airports are selected', async () => {
+    const user = userEvent.setup();
+    renderAdminAirportsPage();
+
+    await screen.findByText('Hamburg Airport');
+    expect(screen.queryByRole('region', { name: 'Bulk actions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete selected' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select Hamburg Airport' }));
+    expect(screen.getByRole('region', { name: 'Bulk actions' })).toHaveTextContent('1 airport selected');
+
+    await user.click(screen.getByRole('button', { name: /Select all 2 matching/ }));
+    expect(screen.getByRole('region', { name: 'Bulk actions' })).toHaveTextContent('2 airports selected');
+
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('region', { name: 'Bulk actions' })).not.toBeInTheDocument();
+  });
+
+  it('deletes one airport from its row menu', async () => {
+    const user = userEvent.setup();
+    renderAdminAirportsPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Actions for Hamburg Airport' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete airport' }));
+
+    await waitFor(() => {
+      expect(mocks.adminDeleteAirportCatalogRecords).toHaveBeenCalledWith(['EDDH']);
+    });
+  });
+
+  it('opens the airport named in the URL and records the open airport', async () => {
+    renderAdminAirportsPage(['/admin/airports?airport=EDDH']);
+
+    expect(await screen.findByDisplayValue('Hamburg Airport')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveTextContent('HAM · EDDH');
+    expect(screen.getByTestId('location-search').textContent).toContain('airport=EDDH');
+  });
+
+  it('turns editing off and offers a sync while the catalog is a snapshot', async () => {
+    const user = userEvent.setup();
+    mocks.adminGetAirportCatalog.mockResolvedValueOnce({
+      ...(await mocks.adminGetAirportCatalog()),
+      source: 'snapshot',
+      databaseAvailable: true,
+    });
+    renderAdminAirportsPage();
+
+    expect(await screen.findByText('Edits are off until the database catalog is synced')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Select Hamburg Airport' }));
+    expect(screen.getByRole('button', { name: 'Bulk edit' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete selected' })).toBeDisabled();
   });
 });

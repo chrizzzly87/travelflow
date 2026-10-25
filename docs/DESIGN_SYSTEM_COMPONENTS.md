@@ -230,8 +230,10 @@ should reach for `SettingsRow`'s `htmlFor` instead of importing this directly.
 ## `alert.tsx`
 
 Inline page feedback. Variants: `default`, `destructive` (text-only emphasis on the card
-surface), and the tone variants `success`, `warning`, `danger`, which carry their own border
-and tint so they read as a state rather than a panel.
+surface), and the tone variants `success`, `warning`, `danger` and `info`, which carry their
+own border and tint so they read as a state rather than a panel. Each tone sets a dark-mode ink
+for the description too — without it the light-theme `-800` ink sat on the dark wash and was
+nearly unreadable (`tests/browser/ui/alert.browser.test.tsx`).
 
 ```tsx
 <Alert variant="success">
@@ -375,6 +377,68 @@ accessible name and the caption of its hidden data table). `customTooltip` recei
 `AdminMetric` / `AdminProgressBar` from `components/admin/AdminText.tsx`, and render a page-level
 empty sentence instead of a chart when there is no data. Import them only from admin route
 modules so the chart chunk stays out of public, auth and planner bundles.
+
+---
+
+## Admin workspace (`components/admin/`)
+
+Every admin route renders inside `AdminShell`, and every admin screen builds its surfaces
+from the pieces below. The visual contract is `docs/DESIGN.md`; this is the parts list.
+
+### `AdminShell`
+
+Sidebar (collapsible to an icon rail, `⌘B`), top bar with breadcrumbs, `⌘K` command
+palette, theme toggle, and the page header. Props: `title`, `description`, `actions`
+(the page's primary and secondary actions), and the optional page filters
+`searchValue`/`onSearchValueChange` and `dateRange`/`onDateRangeChange`; hide those with
+`showGlobalSearch={false}` / `showDateRange={false}` when the page has no use for them.
+The shell already provides the page padding and a `max-w-[1600px]` column — pages must not
+add their own outer padding. Nav entries, sections and command-palette keywords live in
+`adminNavConfig.ts`.
+
+### Surfaces and headings
+
+| Component | Use for |
+|---|---|
+| `AdminSurfaceCard` | The one panel: `rounded-lg`, one-pixel border, `bg-card`, `p-4`, no shadow. Override padding with `className` (`p-0` for a flush table). |
+| `AdminSectionHeader` | The heading row inside a panel or above a section: `title`, one-line `description`, `actions` at the inline end. Sentence case. |
+| `AdminStatCard` | A KPI tile: `label`, large tabular `value`, optional `icon`, one-line `hint` with a `hintTone`, and `children` for a progress bar or breakdown. Lay them out in `grid gap-4 sm:grid-cols-2 xl:grid-cols-4`. |
+| `AdminEmptyState` | "Nothing here" for a table, list or chart, with one sentence naming the next action. |
+| `AdminErrorAlert` | A failed load or save above the surface it affects (an authored sentence, never a raw exception). |
+| `AdminStatusBadge` | Status pills in tables and headers: `Badge` with its tone variants (`neutral`, `info`, `success`, `warning`, `danger`, `accent`) plus a leading dot that repeats the tone, so state never rests on colour alone. Use `Badge` directly for pills that are not a status. |
+| Charts | `AdminBarChart`, `AdminAreaChart`, `AdminDonutChart` from `components/admin/charts` (see "Admin charts" above). Pair them with `AdminSectionHeader` inside an `AdminSurfaceCard`. |
+| `AdminBarList` | `components/admin/charts/AdminBarList.tsx`. Ranked rows with label, tabular value and a thin track (`scale="max"` or `"total"`, `sortOrder`, one `color` or the palette with swatches, `href`/`onValueChange` rows). Breakdowns and leaderboards. |
+| `AdminDetailSheet` | The inspector for one record (user, trip, audit target): right-hand sheet with a fixed header (`title`, `subtitle`, `meta` badges, `headerActions`), a scrolling body and a pinned `footer` for the record's actions, destructive last. Sizes `md` (560px) and `lg` (720px). Every admin detail view uses it so they open, close and lay out the same way. |
+| `AdminSelectionBar` | Bulk actions for a table. Renders **only** while `count > 0`, floating at the bottom of the viewport so the actions stay reachable on a long table. Pass the actions as children, destructive last. Never show a permanent strip of disabled buttons reading "0 selected". |
+| `AdminPagination` | "Showing 51–100 of 240 trips" with previous/next icon buttons and "Page 2 of 5"; hides the controls when there is one page. |
+| `AdminEditorListItem` | The row in a list + editor split (Destinations, Recommendations): title, secondary line, status badge, selected state with `aria-pressed`. A real `forwardRef`. |
+| `formatAdminRelativeTime` / `formatAdminAbsoluteTime` | `components/admin/adminRelativeTime.ts`. The one relative-time format ("just now", "4 minutes ago", "yesterday", "2 weeks ago", "5 months ago"), used by every admin screen — always paired with the absolute time in `data-tooltip`. |
+| `AdminAccountMenu` | The signed-in admin at the foot of the sidebar (shadcn "nav user"): avatar, name and email with an up/down caret; the menu opens **upwards**, as wide as the trigger. On the icon rail it is the avatar alone and the menu opens beside the rail. The public site keeps `components/navigation/AccountMenu`; both name people through `components/navigation/accountIdentity.ts`. |
+| `AdminReloadButton` | The outline "Reload" action with a spinning icon while loading. |
+
+### Rules for admin screens
+
+1. **Use the shared pieces.** `Button` for every action (see above), `Badge`/`AdminStatusBadge`
+   for pills, `Table` for repeated records, `Tabs` for distinct jobs, `Dialog` for overlays,
+   `Select`/`DropdownMenu` for choices. A hand-rolled `<button className="rounded-lg border …">`
+   is a review comment.
+2. **Geometry.** Panels `rounded-lg`, controls `rounded-md`, pills `rounded-full`. No
+   `rounded-xl`/`rounded-2xl` and no `shadow-*` on panels inside admin.
+3. **Type.** Sentence case everywhere. No uppercase tracked "eyebrow" labels
+   (`text-[11px] uppercase tracking-[0.12em]`): a section label is `text-xs font-medium
+   text-muted-foreground`, a panel title is `AdminSectionHeader`. Table headers come from
+   `TableHead` as they are. Numbers that line up or update get `tabular-nums`.
+4. **Colour.** Neutral surfaces; tint only state (badges, alerts) and the one primary action.
+   Every tinted class needs its `dark:` pair, or use a component that already has one.
+5. **Spacing.** Stack sections with `flex flex-col gap-4` (or `gap-6` between unrelated
+   groups) rather than ad-hoc `mt-*` on each block.
+6. **Errors.** Never render `error.message`. Pass every caught error through
+   `toAdminErrorMessage(error, 'Authored fallback sentence.', 'admin-<screen>')` from
+   `services/adminErrorMessages.ts`: it shows an `AdminUserFacingError`'s text, maps
+   permission, session and network failures to authored sentences, keeps a short list of
+   SQL sentences written for people, and otherwise shows the fallback and logs the raw
+   error. Throw `AdminUserFacingError` from a service when its message is written for an
+   admin (validation, "re-run the migration").
 
 ---
 

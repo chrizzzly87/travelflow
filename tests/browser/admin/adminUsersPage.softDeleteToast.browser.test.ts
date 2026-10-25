@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from '@/tests/helpers/routerHarness';
+import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
 import type { ConfirmDialogOptions, PromptDialogOptions } from '../../../components/AppDialogProvider';
 import type { showAppToast } from '../../../components/ui/appToast';
 
@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   adminResetUserUsernameCooldown: vi.fn(),
   adminResetUserTermsAcceptance: vi.fn(),
   adminHardDeleteUser: vi.fn(),
+  adminUpdateTrip: vi.fn(),
   confirmDialog: vi.fn(async (_options: ConfirmDialogOptions): Promise<boolean> => true),
   promptDialog: vi.fn(async (_options: PromptDialogOptions): Promise<string | null> => null),
   showAppToast: vi.fn<typeof showAppToast>(() => 'toast-id'),
@@ -36,7 +37,9 @@ vi.mock('../../../components/admin/AdminShell', () => ({
 
 vi.mock('../../../components/ui/drawer', () => ({
   Drawer: ({ open, children }: { open: boolean; children: React.ReactNode }) => (open ? React.createElement('div', null, children) : null),
-  DrawerContent: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
+  DrawerContent: ({ children }: { children: React.ReactNode }) => React.createElement('div', { role: 'dialog' }, children),
+  DrawerTitle: ({ children }: { children: React.ReactNode }) => React.createElement('h2', null, children),
+  DrawerClose: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock('../../../components/profile/ProfileCountryRegionSelect', () => ({
@@ -91,7 +94,7 @@ vi.mock('../../../services/adminService', () => ({
   adminListUsers: mocks.adminListUsers,
   adminResetUserUsernameCooldown: mocks.adminResetUserUsernameCooldown,
   adminResetUserTermsAcceptance: mocks.adminResetUserTermsAcceptance,
-  adminUpdateTrip: vi.fn(),
+  adminUpdateTrip: mocks.adminUpdateTrip,
   adminUpdateUserOverrides: vi.fn(),
   adminUpdateUserProfile: mocks.adminUpdateUserProfile,
 }));
@@ -178,13 +181,30 @@ const createTripRow = (index: number) => ({
   updated_at: daysAgoIso(20 - index),
 });
 
+const LocationProbe = () => {
+  const location = useLocation();
+  return React.createElement('output', { 'data-testid': 'location-search' }, location.search);
+};
+
 const renderPage = (initialEntries: string[] = ['/admin/users']) => render(
   React.createElement(
     MemoryRouter,
     { initialEntries },
     React.createElement(AdminUsersPage),
+    React.createElement(LocationProbe),
   ),
 );
+
+const openUserSheet = async (user: ReturnType<typeof userEvent.setup>, name: RegExp = /Traveler One/i) => {
+  const openDetailButtons = await findButtonsByName(name);
+  await user.click(openDetailButtons[0]);
+  return screen.findByRole('dialog');
+};
+
+const openDetailTab = async (user: ReturnType<typeof userEvent.setup>, name: RegExp) => {
+  const sheet = await screen.findByRole('dialog');
+  await user.click(within(sheet).getByRole('tab', { name }));
+};
 
 const extractNodeText = (value: React.ReactNode): string => {
   if (value === null || value === undefined || typeof value === 'boolean') return '';
@@ -226,6 +246,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     mocks.adminResetUserUsernameCooldown.mockResolvedValue(undefined);
     mocks.adminResetUserTermsAcceptance.mockResolvedValue(undefined);
     mocks.adminHardDeleteUser.mockResolvedValue(undefined);
+    mocks.adminUpdateTrip.mockResolvedValue(undefined);
     mocks.confirmDialog.mockResolvedValue(true);
     mocks.promptDialog.mockResolvedValue(null);
     mocks.showAppToast.mockImplementation(() => 'toast-id');
@@ -236,9 +257,8 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    const openDetailButtons = await findButtonsByName(/Traveler One/i);
-    await user.click(openDetailButtons[0]);
-    await user.click(await screen.findByRole('button', { name: 'Soft-delete user' }));
+    const sheet = await openUserSheet(user);
+    await user.click(within(sheet).getByRole('button', { name: 'Soft delete' }));
 
     const softDeleteDialogCall = mocks.confirmDialog.mock.calls
       .map((entry) => entry[0])
@@ -270,20 +290,23 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     }));
   }, 20000);
 
-  it('shows terms acceptance snapshot fields in the user detail drawer', async () => {
+  it('shows terms acceptance snapshot fields on the overview tab of the user sheet', async () => {
     const user = userEvent.setup();
 
     renderPage();
 
-    const openDetailButtons = await findButtonsByName(/Traveler One/i);
-    await user.click(openDetailButtons[0]);
+    await openUserSheet(user);
 
-    const identitySection = (await screen.findByRole('heading', { name: 'Identity' })).closest('section');
-    expect(identitySection).not.toBeNull();
-    expect(identitySection).toHaveTextContent('Terms accepted version: 2026-03-03');
-    expect(identitySection).toHaveTextContent('Terms accepted at:');
-    expect(identitySection).not.toHaveTextContent('Terms accepted at: Not set');
-    expect(identitySection).toHaveTextContent('Last log:');
+    const termsSection = (await screen.findByRole('heading', { name: 'Terms of service' })).closest('section');
+    expect(termsSection).not.toBeNull();
+    expect(termsSection).toHaveTextContent('Accepted version2026-03-03');
+    expect(termsSection).toHaveTextContent('Accepted at');
+    expect(termsSection).not.toHaveTextContent('Accepted atNot set');
+    expect(termsSection).toHaveTextContent('Latest accepted');
+
+    const accountSection = screen.getByRole('heading', { name: 'Account' }).closest('section');
+    expect(accountSection).toHaveTextContent('Last updated');
+    expect(accountSection).toHaveTextContent('user-1');
   }, 20000);
 
   it('resets terms acceptance from the user detail identity panel', async () => {
@@ -291,10 +314,9 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    const openDetailButtons = await findButtonsByName(/Traveler One/i);
-    await user.click(openDetailButtons[0]);
+    await openUserSheet(user);
 
-    await user.click(await screen.findByRole('button', { name: 'Reset ToC acceptance' }));
+    await user.click(await screen.findByRole('button', { name: 'Reset terms acceptance' }));
 
     await waitFor(() => {
       expect(mocks.adminResetUserTermsAcceptance).toHaveBeenCalledWith('user-1', 'admin.testing.reset_terms');
@@ -305,9 +327,10 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     mocks.adminListUsers.mockResolvedValue([USER_ROW, USER_ROW_2, USER_ROW_3]);
     mocks.adminGetUserProfile.mockResolvedValue(USER_ROW);
 
-    renderPage(['/admin/users?subscription=active']);
+    renderPage(['/admin/users?subscription=active&cols=user,subscription']);
 
     expect(await screen.findByRole('columnheader', { name: 'Subscription' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Plan' })).not.toBeInTheDocument();
     expect(await screen.findByText('sub_active_1')).toBeInTheDocument();
     expect(screen.queryByText('Canceled')).not.toBeInTheDocument();
     expect(screen.queryByText('No subscription')).not.toBeInTheDocument();
@@ -323,23 +346,25 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    const openDetailButtons = await findButtonsByName(/Traveler One/i);
-    await user.click(openDetailButtons[0]);
+    await openUserSheet(user);
+    await openDetailTab(user, /^Trips/);
 
-    const connectedTripsSection = (await screen.findByRole('heading', { name: 'Connected trips' })).closest('section');
+    const connectedTripsSection = (await screen.findByRole('heading', { name: 'Owned trips' })).closest('section');
     expect(connectedTripsSection).not.toBeNull();
     const section = connectedTripsSection as HTMLElement;
 
-    expect(within(section).getByText('Trip 1')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(section).getByText('Trip 1')).toBeInTheDocument();
+    });
     expect(within(section).queryByText('Trip 11')).not.toBeInTheDocument();
-    expect(within(section).getByText('Page 1 / 2')).toBeInTheDocument();
+    expect(within(section).getByText('Page 1 of 2')).toBeInTheDocument();
 
-    await user.click(within(section).getByRole('button', { name: 'Next' }));
+    await user.click(within(section).getByRole('button', { name: 'Next page' }));
 
     await waitFor(() => {
       expect(within(section).getByText('Trip 11')).toBeInTheDocument();
     });
-    expect(within(section).getByText('Page 2 / 2')).toBeInTheDocument();
+    expect(within(section).getByText('Page 2 of 2')).toBeInTheDocument();
   }, 20000);
 
   it('uses hard-delete copy that explains permanent removal versus soft delete', async () => {
@@ -347,9 +372,8 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    const openDetailButtons = await findButtonsByName(/Traveler One/i);
-    await user.click(openDetailButtons[0]);
-    await user.click(await screen.findByRole('button', { name: 'Hard delete' }));
+    const sheet = await openUserSheet(user);
+    await user.click(within(sheet).getByRole('button', { name: 'Hard delete' }));
 
     const hardDeleteDialogCall = mocks.confirmDialog.mock.calls
       .map((entry) => entry[0])
@@ -370,7 +394,8 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     await findButtonsByName(/Traveler One/i);
     await user.click(screen.getByRole('checkbox', { name: /Select Traveler One/i }));
-    await user.click(screen.getByRole('button', { name: 'Hard delete selected' }));
+    const bulkBar = screen.getByRole('region', { name: 'Bulk actions' });
+    await user.click(within(bulkBar).getByRole('button', { name: 'Hard delete' }));
 
     await waitFor(() => {
       expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
@@ -390,7 +415,9 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     const travelerTwoCheckboxes = screen.getAllByRole('checkbox', { name: /Select Traveler Two/i });
     await user.click(travelerOneCheckboxes[0]);
     await user.click(travelerTwoCheckboxes[0]);
-    await user.click(screen.getByRole('button', { name: 'Hard delete selected' }));
+    const bulkBar = screen.getByRole('region', { name: 'Bulk actions' });
+    expect(bulkBar).toHaveTextContent('2 users selected');
+    await user.click(within(bulkBar).getByRole('button', { name: 'Hard delete' }));
 
     const bulkDialogCall = mocks.confirmDialog.mock.calls
       .map((entry) => entry[0])
@@ -400,7 +427,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     expect(typeof bulkDialogCall?.message).not.toBe('string');
     const bulkMessageText = normalizeMessageText(extractNodeText(bulkDialogCall?.message));
     expect(bulkMessageText).toContain('Selected users: 2');
-    expect(bulkMessageText).toContain('Cancel and transfer trips from each user drawer if you need to preserve trip data.');
+    expect(bulkMessageText).toContain("Cancel and transfer trips from each user's details if you need to preserve trip data.");
     expect(bulkMessageText).toContain('This action cannot be undone.');
   }, 20000);
 
@@ -419,15 +446,15 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    const openDetailButtons = await findButtonsByName(/ExAmPleUser/i);
-    await user.click(openDetailButtons[0]);
+    await openUserSheet(user, /ExAmPleUser/i);
+    await openDetailTab(user, /Profile & access/);
 
     const usernameInput = await screen.findByLabelText('Username');
     expect(usernameInput).toHaveValue('ExAmPleUser');
 
     await user.clear(usernameInput);
     await user.type(usernameInput, 'NeWMiXeDcAsE');
-    await user.click(screen.getByRole('button', { name: 'Save user' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => {
       expect(mocks.adminUpdateUserProfile).toHaveBeenCalledWith(
@@ -442,16 +469,119 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    const openDetailButtons = await findButtonsByName(/Traveler One/i);
-    await user.click(openDetailButtons[0]);
+    await openUserSheet(user);
+    await openDetailTab(user, /Profile & access/);
 
-    expect(await screen.findByText(/Self-service username changes are limited to once every 90 days\./i)).toBeInTheDocument();
-    expect(screen.getByText(/Cooldown ends:/i)).toBeInTheDocument();
+    expect(await screen.findByText(/once every 90 days\. Cooldown ends/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Revoke cooldown' }));
 
     await waitFor(() => {
       expect(mocks.adminResetUserUsernameCooldown).toHaveBeenCalledWith('user-1', 'admin.manual_reset');
     });
+  }, 20000);
+  it('shows bulk actions only while rows are selected', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await findButtonsByName(/Traveler One/i);
+    expect(screen.queryByRole('region', { name: 'Bulk actions' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /Select Traveler One/i }));
+    const bulkBar = screen.getByRole('region', { name: 'Bulk actions' });
+    expect(bulkBar).toHaveTextContent('1 user selected');
+
+    await user.click(within(bulkBar).getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('region', { name: 'Bulk actions' })).not.toBeInTheDocument();
+  }, 20000);
+
+  it('shows the lean default columns and keeps the rest behind the column picker', async () => {
+    renderPage();
+
+    await findButtonsByName(/Traveler One/i);
+    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent?.trim()).filter(Boolean);
+    expect(headers).toEqual(['User', 'Status', 'Sign-in', 'Plan', 'Trips', 'Last sign-in', 'Created', 'Actions']);
+  }, 20000);
+
+  it('applies a work-queue filter from its KPI tile and clears it again', async () => {
+    const user = userEvent.setup();
+    const invitedUser = {
+      ...USER_ROW_2,
+      last_sign_in_at: null,
+      activation_status: 'invited',
+    };
+    mocks.adminListUsers.mockResolvedValue([USER_ROW, invitedUser]);
+
+    renderPage();
+
+    await findButtonsByName(/Traveler One/i);
+    const queueRegion = screen.getByRole('region', { name: 'Accounts that need attention' });
+    const awaitingTile = within(queueRegion).getByText('Awaiting activation').closest('[class*="rounded-lg"]') as HTMLElement;
+    await user.click(within(awaitingTile).getByRole('button', { name: 'Show in table' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('traveler@example.com')).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('traveler2@example.com')).toBeInTheDocument();
+    expect(screen.getByTestId('location-search').textContent).toContain('activation=invited%2Cpending');
+
+    await user.click(within(awaitingTile).getByRole('button', { name: 'Clear filter' }));
+    await waitFor(() => {
+      expect(screen.getByText('traveler@example.com')).toBeInTheDocument();
+    });
+  }, 20000);
+
+  it('does not save a trip expiry that was focused and left unchanged', async () => {
+    const user = userEvent.setup();
+    mocks.adminListUserTrips.mockResolvedValue([createTripRow(1)]);
+
+    renderPage();
+
+    await openUserSheet(user);
+    await openDetailTab(user, /^Trips/);
+
+    const expiryInput = await screen.findByLabelText('Trip expiration for Trip 1');
+    fireEvent.blur(expiryInput);
+    expect(mocks.adminUpdateTrip).not.toHaveBeenCalled();
+
+    fireEvent.change(expiryInput, { target: { value: '2027-01-02T10:00' } });
+    fireEvent.blur(expiryInput);
+    await waitFor(() => {
+      expect(mocks.adminUpdateTrip).toHaveBeenCalledWith('trip-1', expect.objectContaining({ tripExpiresAt: expect.any(String) }));
+    });
+  }, 20000);
+
+  it('drops the deep link after a hard delete so a reload does not reopen the account', async () => {
+    const user = userEvent.setup();
+
+    renderPage(['/admin/users?user=user-1&drawer=user']);
+
+    const sheet = await screen.findByRole('dialog');
+    expect(screen.getByTestId('location-search').textContent).toContain('drawer=user');
+    await user.click(within(sheet).getByRole('button', { name: 'Hard delete' }));
+
+    await waitFor(() => {
+      expect(mocks.adminHardDeleteUser).toHaveBeenCalledWith('user-1');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('location-search').textContent).not.toContain('drawer=user');
+    });
+    expect(screen.getByTestId('location-search').textContent).not.toContain('user=user-1');
+  }, 20000);
+
+  it('keeps the save error visible inside the open sheet', async () => {
+    const user = userEvent.setup();
+    mocks.adminUpdateUserProfile.mockRejectedValueOnce(new Error('raw database failure'));
+
+    renderPage();
+
+    const sheet = await openUserSheet(user);
+    await user.click(within(sheet).getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => {
+      expect(within(sheet).getByText('Could not save user.')).toBeInTheDocument();
+    });
+    expect(within(sheet).queryByText('raw database failure')).not.toBeInTheDocument();
   }, 20000);
 });

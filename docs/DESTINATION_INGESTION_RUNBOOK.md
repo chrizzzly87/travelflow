@@ -34,6 +34,15 @@ pnpm tsx scripts/sync-destination-guides.ts --apply
 
 Guide imports must not touch `destination_content_overrides`. Editors work against stable target IDs, and the public endpoint deep-merges published patches over the latest imported base record.
 
+## Editorial overrides in the admin
+
+`/admin/destinations` is where editors change destination content without touching the import. It reads `destination_guides`, `destination_country_profiles`, `destination_content_overrides` and the latest `destination_import_runs` row through the admin endpoint.
+
+- The tiles at the top show **Unpublished drafts**, **Published overrides** and the **Latest import** (provider, status, and the referral-link count).
+- The list switches between **Guides** and **Country profiles**, filters by override status (`No override`, `Draft`, `Published`, each with a count) and, for guides, by type. The page search matches name, slug, country code and region.
+- The editor holds the status (`Draft — admin only` or `Published — public`), an editor note and the JSON patch. The patch is checked as you type; **Effective content preview** shows the imported record with the patch as typed merged over it. **Reset override** deletes the patch and returns the item to its imported content.
+- Unsaved edits are marked, and switching items asks before discarding them.
+
 ## Publishing destination changes is a two-step job
 
 **The public API reads from Supabase, not from the repo.** `netlify/edge-functions/destinations.ts` resolves:
@@ -71,7 +80,7 @@ Both sync scripts require `SUPABASE_SERVICE_ROLE_KEY` and `VITE_SUPABASE_URL` (o
 - Draft overrides are admin-only; published overrides appear in public responses.
 - Record totals are compared with the last successful run and material changes are explained.
 - Country, city, and island pages render on the feature deploy before merge.
-- The admin destination list can search/filter records, save a draft, publish it, and reset it.
+- At `/admin/destinations`, an editor can search and filter guides and country profiles, save a draft override, publish it, and reset it.
 
 ## Extending the hierarchy
 

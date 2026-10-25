@@ -1,5 +1,7 @@
 import React from 'react';
+import { AI_MODEL_CATALOG } from '../../config/aiModelCatalog';
 import { getAiProviderMetadata } from '../../config/aiProviderCatalog';
+import { cn } from '../../lib/utils';
 
 interface AiProviderLogoProps {
     provider: string;
@@ -73,10 +75,12 @@ export const AiProviderLogo: React.FC<AiProviderLogoProps> = ({
         <span
             aria-hidden="true"
             title={`${metadata.label} logo`}
-            className={[
-                'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card',
-                className || '',
-            ].join(' ').trim()}
+            className={cn(
+                // Brand marks are drawn for a light ground, so the badge stays
+                // white in dark mode too; otherwise dark logos vanish.
+                'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-white',
+                className,
+            )}
             style={{ width: size, height: size, fontSize, lineHeight: 1 }}
         >
             {asset ? (
@@ -88,8 +92,49 @@ export const AiProviderLogo: React.FC<AiProviderLogoProps> = ({
                     className="size-[72%] object-contain"
                 />
             ) : (
-                <span className="font-bold uppercase tracking-tight text-muted-foreground">AI</span>
+                <span className="font-semibold tracking-tight text-slate-500">AI</span>
             )}
+        </span>
+    );
+};
+
+/**
+ * Logo, provider short name and model label in one line, e.g. "OpenAI / GPT-5".
+ * The full provider name and id sit in the tooltip.
+ */
+export const AiProviderLabel: React.FC<{
+    provider: string;
+    model?: string | null;
+    showModel?: boolean;
+    providerClassName?: string;
+    modelClassName?: string;
+    logoSize?: number;
+}> = ({
+    provider,
+    model,
+    showModel = true,
+    providerClassName,
+    modelClassName,
+    logoSize = 14,
+}) => {
+    const metadata = getAiProviderMetadata(provider);
+    const catalogModel = model
+        ? AI_MODEL_CATALOG.find((item) => item.provider === provider && item.model === model)
+        : null;
+    const providerLabel = catalogModel?.providerLabel || metadata.label;
+    const providerShortName = catalogModel?.providerShortName || metadata.shortName;
+    const modelLabel = catalogModel?.label || model;
+    return (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+            <AiProviderLogo provider={provider} model={model} size={logoSize} />
+            <span className={providerClassName || 'font-semibold text-foreground'} data-tooltip={`${providerLabel} (${provider})`}>
+                {providerShortName}
+            </span>
+            {modelLabel && showModel ? (
+                <span className={modelClassName || 'truncate text-muted-foreground'}>
+                    / {modelLabel}
+                </span>
+            ) : null}
         </span>
     );
 };
