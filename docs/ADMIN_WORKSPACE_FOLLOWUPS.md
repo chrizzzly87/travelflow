@@ -47,8 +47,8 @@ does today is in [`ADMIN_SCREENS.md`](./ADMIN_SCREENS.md).
 
 - [x] One relative-time format: every screen's helper delegates to
   `components/admin/adminRelativeTime.ts` (2026-10-25).
-- [ ] `AdminBarChart` decimal ticks and an area mark, so AI telemetry can drop its local
-  `TelemetrySeriesChart`.
+- [x] One chart foundation: AI telemetry uses the shared `components/admin/charts` area and
+  bar charts (decimal values included); the local `TelemetrySeriesChart` is gone.
 - [ ] `AdminStatCard` as a pressable tile (work-queue tiles currently toggle through a link
   button in the hint).
 - [ ] `components/admin/AdminAirportTesterMap.tsx` type errors: wire `@types/google.maps`.
