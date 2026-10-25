@@ -1,14 +1,13 @@
 ---
 id: rel-2026-10-18-tanstack-start-migration
 version: v0.209.0
-title: "Application framework migration"
-date: 2026-10-18
-# Draft placeholder; replace with actual main deployment time before publication.
-published_at: 2026-10-18T12:00:00Z
-status: draft
+title: "A faster, steadier TravelFlow"
+date: 2026-10-24
+published_at: 2026-10-24T22:01:06Z
+status: published
 notify_in_app: false
 in_app_hours: 24
-summary: "Framework migration under development and validation on an isolated preview branch."
+summary: "Pages show up sooner, trips open straight into the planner, and buttons, forms and dialogs behave the same everywhere."
 ---
 
 ## Changes

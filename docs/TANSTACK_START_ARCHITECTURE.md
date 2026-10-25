@@ -172,6 +172,13 @@ builds can reorder responsive utilities (for example `.hidden` after breakpoint
 rules) and silently hide navigation controls. Feature-specific third-party styles
 can remain lazy.
 
+Date-dependent public content (upcoming festivals, the current month, next weekend,
+the footer year) reads "today" from `useRenderNow()`. The server stamps the render
+time into the router's dehydrated state; the hydration render reuses that stamp in UTC,
+and the visitor's local date takes over only after hydration. Prerendered and
+CDN-cached documents can be days old, so never call `new Date()` during render on a
+server-rendered page.
+
 Server output and the first client render must agree. Use `useHydrated` or a scoped
 client-only boundary for a genuinely browser-dependent widget. Do not hide complete
 marketing sections behind a mount effect to mask a mismatch. Retain the early click

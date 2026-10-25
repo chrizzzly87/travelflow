@@ -455,23 +455,7 @@ export const applyTripAgentOperations = (
     return { trip: nextTrip, appliedOperationIds, noOpOperationIds, skippedOperations };
 };
 
-export const buildTripAgentContextRefs = (
-    trip: ITrip,
-    selectedItemId: string | null,
-    selectedCityIds: string[],
-): TripAgentContextRef[] => {
-    const selectedIds = new Set(selectedCityIds);
-    if (selectedItemId) selectedIds.add(selectedItemId);
-
-    return trip.items
-        .filter((item) => selectedIds.has(item.id))
-        .map((item) => ({
-            kind: item.type === 'city' ? 'city' as const : item.type === 'activity' ? 'activity' as const : 'travel' as const,
-            id: item.id,
-            label: item.title,
-            tripUpdatedAt: trip.updatedAt,
-        }));
-};
+export { buildTripAgentContextRefs } from './tripAgentContextRefs.ts';
 
 export const buildTripAgentSelectableContextRefs = (trip: ITrip): TripAgentContextRef[] => {
     const cities = trip.items.filter((item) => item.type === 'city');

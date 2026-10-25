@@ -10,14 +10,20 @@ const run = promisify(execFile);
 const SCRIPT = path.resolve(process.cwd(), 'scripts/validate-updates.mjs');
 const workspaces: string[] = [];
 
+// The validator runs against a pinned clock: yesterday 12:00 UTC. Offsets from
+// the real time used to land in the forbidden 23:00 UTC hour every evening.
+const PINNED_NOW_MS = (() => {
+    const noon = new Date();
+    noon.setUTCHours(12, 0, 0, 0);
+    return noon.getTime() - 24 * 60 * 60_000;
+})();
+
 const iso = (offsetMs: number): string => (
-    new Date(Math.floor((Date.now() + offsetMs) / 60_000) * 60_000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+    new Date(Math.floor((PINNED_NOW_MS + offsetMs) / 60_000) * 60_000).toISOString().replace(/\.\d{3}Z$/, 'Z')
 );
 
 const safePublishedPair = (): [string, string] => {
-    const newer = new Date();
-    newer.setUTCHours(20, 0, 0, 0);
-    if (newer.getTime() > Date.now()) newer.setUTCDate(newer.getUTCDate() - 1);
+    const newer = new Date(PINNED_NOW_MS - 2 * 60 * 60_000);
     const older = new Date(newer.getTime() - 60 * 60_000);
     return [older.toISOString(), newer.toISOString()];
 };
@@ -51,7 +57,10 @@ const workspace = async (notes: Array<Record<string, string>>): Promise<string> 
     return dir;
 };
 
-const validate = (cwd: string, ...args: string[]) => run('node', [SCRIPT, ...args], { cwd });
+const validate = (cwd: string, ...args: string[]) => run('node', [SCRIPT, ...args], {
+    cwd,
+    env: { ...process.env, UPDATES_VALIDATE_NOW_MS: String(PINNED_NOW_MS) },
+});
 
 const frontmatter = async (cwd: string, id: string): Promise<Record<string, string>> => {
     const raw = await fs.readFile(path.join(cwd, 'content/updates', `${id}.md`), 'utf8');
@@ -97,6 +106,21 @@ describe('updates:validate future published_at', () => {
     });
 });
 
+describe('updates:validate 23:00 UTC rule', () => {
+    const lateEvening = new Date(PINNED_NOW_MS - 24 * 60 * 60_000 + 11.5 * 60 * 60_000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+    it('rejects a published release stamped in the hour shown as the next day', async () => {
+        const cwd = await workspace([{ id: 'rel-a', version: 'v0.1.0', published_at: lateEvening }]);
+        await expect(validate(cwd)).rejects.toMatchObject({ code: 1 });
+    });
+
+    it('lets a draft keep a placeholder in that hour', async () => {
+        const cwd = await workspace([{ id: 'rel-a', version: 'v0.1.0', published_at: lateEvening, status: 'draft' }]);
+        const result = await validate(cwd);
+        expect(result.stdout).toContain('validated 1 update file(s)');
+    });
+});
+
 describe('updates:validate --fix', () => {
     it('clamps a future published_at back to now', async () => {
         const ahead = iso(10 * 60_000);
@@ -106,7 +130,7 @@ describe('updates:validate --fix', () => {
 
         expect(result.stdout).toContain('[updates:fix] applied:');
         const meta = await frontmatter(cwd, 'rel-a');
-        expect(Date.parse(meta.published_at)).toBeLessThanOrEqual(Date.now());
+        expect(Date.parse(meta.published_at)).toBeLessThanOrEqual(PINNED_NOW_MS);
         expect(meta.published_at).not.toBe(ahead);
     });
 
