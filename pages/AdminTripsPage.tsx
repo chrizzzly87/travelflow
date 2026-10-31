@@ -464,7 +464,7 @@ const TripRowActionsMenu: React.FC<{
 
 const formatRelativeWithAbsolute = (value: string | null | undefined): string => (
     value && normalizeIsoTimestamp(value)
-        ? `${formatAdminRelativeTime(value, Date.now(), 'n/a')} (${formatTimestamp(value, 'n/a')})`
+        ? `${formatAdminRelativeTime(value, undefined, 'n/a')} (${formatTimestamp(value, 'n/a')})`
         : 'n/a'
 );
 
@@ -2513,7 +2513,7 @@ export const AdminTripsPage: React.FC = () => {
                                         </AdminDetailField>
                                         <AdminDetailField label="Latest queue job">
                                             {selectedTripLatestGenerationJob
-                                                ? `${selectedTripLatestGenerationJob.state} (${formatAdminRelativeTime(selectedTripLatestGenerationJob.createdAt, Date.now(), 'n/a')})`
+                                                ? `${selectedTripLatestGenerationJob.state} (${formatAdminRelativeTime(selectedTripLatestGenerationJob.createdAt, undefined, 'n/a')})`
                                                 : 'n/a'}
                                         </AdminDetailField>
                                         <AdminDetailField label="Dead-letter jobs">{selectedTripDeadLetterJobCount}</AdminDetailField>

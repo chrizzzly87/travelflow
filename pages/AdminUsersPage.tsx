@@ -3293,7 +3293,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </AdminDetailField>
                                         <AdminDetailField label="Last sign-in">
                                             {selectedUser.last_sign_in_at
-                                                ? <>{formatAdminRelativeTime(selectedUser.last_sign_in_at, Date.now(), 'Never')} <span className="text-muted-foreground">· {formatAbsoluteTimestamp(selectedUser.last_sign_in_at)}</span></>
+                                                ? <>{formatAdminRelativeTime(selectedUser.last_sign_in_at, undefined, 'Never')} <span className="text-muted-foreground">· {formatAbsoluteTimestamp(selectedUser.last_sign_in_at)}</span></>
                                                 : 'Never'}
                                         </AdminDetailField>
                                         <AdminDetailField label="Created">

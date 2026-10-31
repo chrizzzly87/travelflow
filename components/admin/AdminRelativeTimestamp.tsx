@@ -25,7 +25,7 @@ export const AdminRelativeTimestamp: React.FC<AdminRelativeTimestampProps> = ({
     const absolute = formatAdminAbsoluteTime(value, '');
     return (
         <span className={cn('tabular-nums', className)} data-tooltip={absolute || undefined}>
-            {formatAdminRelativeTime(value, nowMs ?? Date.now(), fallback)}
+            {formatAdminRelativeTime(value, nowMs, fallback)}
         </span>
     );
 };
