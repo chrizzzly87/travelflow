@@ -325,5 +325,32 @@
       "balanced": "Ausgewogen",
       "fast": "Schnell"
     }
+  },
+  "importTrip": {
+    "eyebrow": "Deine eigene KI",
+    "title": "Mach aus einem KI-Chat eine TravelFlow-Reise",
+    "intro": "Plane mit ChatGPT, Claude oder Gemini und füge das Ergebnis hier ein. Du siehst die Reise auf Zeitleiste und Karte und kannst sie in deinen Reisen speichern.",
+    "prompt": {
+      "title": "1. Frag deinen Assistenten",
+      "body": "Kopiere das in deinen Chat und beschreibe deine Reise. Assistenten mit Tools schicken sie direkt an TravelFlow und geben dir einen Link.",
+      "text": "Lies {url} und plane meine Reise: [wohin, wann, wie lange, wer kommt mit, was wir mögen]. Schick sie an TravelFlow oder gib mir das Reise-JSON zum Einfügen.",
+      "copy": "Prompt kopieren",
+      "copied": "Kopiert"
+    },
+    "field": {
+      "label": "2. Reise-JSON einfügen",
+      "hint": "Füge die ganze Antwort ein. Wir finden das JSON darin."
+    },
+    "submit": "Reise öffnen",
+    "errors": {
+      "invalidJsonTitle": "Das ist kein Reise-JSON",
+      "invalidJsonBody": "Wir haben kein gültiges JSON gefunden. Füge den ganzen Codeblock deines Assistenten ein und versuch es noch einmal.",
+      "validationTitle": "Die Reise braucht ein paar Korrekturen",
+      "validationBody": "Kopiere diese Fehler in deinen Chat, lass sie beheben und füge das neue JSON hier ein.",
+      "rateLimitedTitle": "Gerade zu viele Importe",
+      "rateLimitedBody": "Warte ein paar Minuten und versuch es dann noch einmal.",
+      "genericTitle": "Reise konnte nicht geöffnet werden",
+      "genericBody": "Prüfe deine Verbindung und versuche es noch einmal."
+    }
   }
 }

@@ -847,6 +847,16 @@
       "countryFocus": "Paesi: {countries}.",
       "dismiss": "Chiudi l'avviso sul viaggio di esempio"
     },
+    "draftBanner": {
+      "eyebrow": "Piano da un assistente IA",
+      "eyebrowFrom": "Piano da {client}",
+      "title": "Dai un'occhiata, poi salvalo per continuare.",
+      "body": "Questa è una bozza. Le modifiche qui non vengono salvate. Salvala nel tuo account per modificarla, condividerla ed esportarla.",
+      "save": "Salva nei miei viaggi",
+      "dismiss": "Chiudi avviso bozza",
+      "saveFailedTitle": "Impossibile salvare il viaggio",
+      "saveFailedBody": "Controlla la connessione e riprova."
+    },
     "listView": {
       "openTransfer": "Apri i dettagli del trasferimento ({mode})",
       "taskCompleted": "Attività completata",

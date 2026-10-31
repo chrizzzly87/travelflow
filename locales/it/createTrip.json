@@ -325,5 +325,32 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "importTrip": {
+    "eyebrow": "La tua IA",
+    "title": "Trasforma una chat con l'IA in un viaggio TravelFlow",
+    "intro": "Pianifica con ChatGPT, Claude o Gemini e incolla qui il risultato. Lo vedrai su una timeline e una mappa e potrai salvarlo nei tuoi viaggi.",
+    "prompt": {
+      "title": "1. Chiedi al tuo assistente",
+      "body": "Copia questo nella chat e descrivi il viaggio. Gli assistenti con strumenti lo inviano direttamente a TravelFlow e ti danno un link.",
+      "text": "Leggi {url} e pianifica il mio viaggio: [dove, quando, per quanto, chi viene, cosa ci piace]. Invialo a TravelFlow o dammi il JSON del viaggio da incollare.",
+      "copy": "Copia prompt",
+      "copied": "Copiato"
+    },
+    "field": {
+      "label": "2. Incolla il JSON del viaggio",
+      "hint": "Incolla l'intera risposta. Troveremo noi il JSON."
+    },
+    "submit": "Apri viaggio",
+    "errors": {
+      "invalidJsonTitle": "Questo non è un JSON di viaggio",
+      "invalidJsonBody": "Non abbiamo trovato JSON valido. Incolla l'intero blocco di codice del tuo assistente e riprova.",
+      "validationTitle": "Il viaggio va sistemato",
+      "validationBody": "Incolla questi errori nella chat, chiedi di correggerli e incolla qui il nuovo JSON.",
+      "rateLimitedTitle": "Troppe importazioni in questo momento",
+      "rateLimitedBody": "Attendi qualche minuto e riprova.",
+      "genericTitle": "Impossibile aprire il viaggio",
+      "genericBody": "Controlla la connessione e riprova."
+    }
   }
 }

@@ -325,5 +325,32 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "importTrip": {
+    "eyebrow": "Bring your own AI",
+    "title": "Turn an AI chat into a TravelFlow trip",
+    "intro": "Plan with ChatGPT, Claude or Gemini, then paste the result here. You'll see it on a timeline and map, and can save it to your trips.",
+    "prompt": {
+      "title": "1. Ask your assistant",
+      "body": "Copy this into your chat and describe your trip. Assistants with tools send it straight to TravelFlow and give you a link.",
+      "text": "Read {url} and plan my trip: [where, when, how long, who's coming, what we like]. Send it to TravelFlow, or give me the trip JSON to paste.",
+      "copy": "Copy prompt",
+      "copied": "Copied"
+    },
+    "field": {
+      "label": "2. Paste the trip JSON",
+      "hint": "Paste the whole answer. We'll find the JSON in it."
+    },
+    "submit": "Open trip",
+    "errors": {
+      "invalidJsonTitle": "That's not trip JSON",
+      "invalidJsonBody": "We couldn't find valid JSON. Paste the full code block from your assistant and try again.",
+      "validationTitle": "The trip needs a few fixes",
+      "validationBody": "Paste these errors back into your chat, ask it to fix them, then paste the new JSON here.",
+      "rateLimitedTitle": "Too many imports right now",
+      "rateLimitedBody": "Wait a few minutes, then try again.",
+      "genericTitle": "Couldn't open this trip",
+      "genericBody": "Check your connection and try again."
+    }
   }
 }

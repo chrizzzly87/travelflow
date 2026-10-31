@@ -847,6 +847,16 @@
       "countryFocus": "Pays : {countries}.",
       "dismiss": "Fermer l'avis sur le voyage d'exemple"
     },
+    "draftBanner": {
+      "eyebrow": "Plan d'un assistant IA",
+      "eyebrowFrom": "Plan de {client}",
+      "title": "Parcourez-le, puis enregistrez-le pour continuer.",
+      "body": "Ceci est un brouillon. Les modifications ici ne sont pas enregistrées. Enregistrez-le dans votre compte pour le modifier, le partager et l'exporter.",
+      "save": "Enregistrer dans mes voyages",
+      "dismiss": "Fermer l'avis de brouillon",
+      "saveFailedTitle": "Impossible d'enregistrer ce voyage",
+      "saveFailedBody": "Vérifiez votre connexion et réessayez."
+    },
     "listView": {
       "openTransfer": "Ouvrir les détails du trajet ({mode})",
       "taskCompleted": "Tâche terminée",

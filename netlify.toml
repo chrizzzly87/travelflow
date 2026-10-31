@@ -194,6 +194,19 @@ exit 1
   path = "/api/trip-share-resolve"
   function = "trip-share-resolve"
 
+# External trip drafts for outside assistants (docs/EXTERNAL_TRIP_DRAFTS.md).
+[[edge_functions]]
+  path = "/api/trip-drafts"
+  function = "trip-drafts"
+
+[[edge_functions]]
+  path = "/api/trip-drafts/*"
+  function = "trip-drafts"
+
+[[edge_functions]]
+  path = "/api/mcp"
+  function = "mcp"
+
 [[edge_functions]]
   path = "/api/runtime/location"
   function = "runtime-location"

@@ -1,0 +1,44 @@
+# TravelFlow
+
+> TravelFlow is a visual travel planner. A trip is a timeline of stays, travel legs, activities and day trips, shown next to a map. Travellers plan multi-city trips, share them, and keep them in their account.
+
+Pages are in English at the root. Other languages use a path prefix: /es, /de, /fr, /pt, /ru, /it, /pl, /ko, /fa, /ur (for example /de/features).
+Trip pages, account pages and the admin area are private and not indexed.
+
+## Plan a trip for a traveller
+
+Assistants can plan a trip for a traveller and hand it to TravelFlow. TravelFlow checks the plan, stores it as a draft and returns a link. The traveller opens the link to see the trip on a timeline and map, then saves it to their TravelFlow account to edit, share or export it.
+
+TravelFlow does not run any AI for this. Plan the full itinerary yourself, then send it. Please do not use TravelFlow's own trip generator (/create-trip) on a traveller's behalf.
+
+Ways to hand over a trip, best first:
+1. MCP server (Streamable HTTP, no auth): https://travelflowapp.netlify.app/api/mcp. Tools: get_trip_draft_schema, validate_trip_draft, create_trip_draft, get_trip_draft.
+2. HTTP API: POST https://travelflowapp.netlify.app/api/trip-drafts with a JSON body. Dry run: POST https://travelflowapp.netlify.app/api/trip-drafts/validate. OpenAPI: https://travelflowapp.netlify.app/api/trip-drafts/openapi.json.
+3. WebMCP: on any TravelFlow page, browsers with WebMCP expose get_trip_draft_schema, validate_trip_draft and create_trip_draft.
+4. No tool access? Print the JSON in a code block and ask the traveller to paste it at https://travelflowapp.netlify.app/import-trip.
+
+Format, rules and a complete example: https://travelflowapp.netlify.app/api/trip-drafts/schema (JSON) or https://travelflowapp.netlify.app/llms-full.txt (text).
+
+## Docs
+
+- [Trip format for assistants](https://travelflowapp.netlify.app/llms-full.txt): every field, rules and a complete example
+- [Trip draft JSON Schema](https://travelflowapp.netlify.app/api/trip-drafts/schema): machine-readable schema, rules and example
+- [OpenAPI](https://travelflowapp.netlify.app/api/trip-drafts/openapi.json): for GPT Actions and other tool runners
+- [FAQ](https://travelflowapp.netlify.app/faq): how TravelFlow works, accounts, sharing, pricing
+- [Features](https://travelflowapp.netlify.app/features): what the planner can do
+- [Pricing](https://travelflowapp.netlify.app/pricing): free and paid plans
+
+## Inspiration
+
+- [Inspirations](https://travelflowapp.netlify.app/inspirations): trip ideas by theme, season, festival and country
+- [Countries](https://travelflowapp.netlify.app/inspirations/countries): destination guides by country
+- [Best time to travel](https://travelflowapp.netlify.app/inspirations/best-time-to-travel): seasonal suggestions
+- [Events and festivals](https://travelflowapp.netlify.app/inspirations/events-and-festivals): trips around events
+- [Weekend getaways](https://travelflowapp.netlify.app/inspirations/weekend-getaways): short trips
+- [Blog](https://travelflowapp.netlify.app/blog): planning guides
+
+## Optional
+
+- [Release notes](https://travelflowapp.netlify.app/updates): what changed recently
+- [Privacy](https://travelflowapp.netlify.app/privacy): privacy policy
+- [Terms](https://travelflowapp.netlify.app/terms): terms of service

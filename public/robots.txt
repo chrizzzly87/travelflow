@@ -2,17 +2,23 @@ User-agent: *
 Allow: /
 Disallow: /trip/
 Disallow: /s/
+Disallow: /draft/
 Disallow: /admin/
 Disallow: /admin/component-playground
 Disallow: /api/
+# Assistants read these to hand trips to TravelFlow (see /llms.txt).
+Allow: /api/trip-drafts/schema
+Allow: /api/trip-drafts/openapi.json
 
 # LinkedIn needs the shared page and its OG media to build link previews.
 # Trip pages retain their noindex metadata; other crawlers keep the rules above.
 User-agent: LinkedInBot
 Allow: /
+Disallow: /draft/
 Disallow: /admin/
 Disallow: /api/
 Allow: /api/og/trip
 Allow: /api/og/site
 
 Sitemap: https://travelflowapp.netlify.app/sitemap.xml
+# LLM-readable overview: https://travelflowapp.netlify.app/llms.txt

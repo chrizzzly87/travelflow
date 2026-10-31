@@ -9,7 +9,7 @@ import { trackEvent } from '../../services/analyticsService';
 import { buildBillingCheckoutPath } from '../../services/billingService';
 
 /** Shared copy quota interaction; route presenters own source/provenance only. */
-export function useTripCopyLimit(source: 'shared_trip' | 'example_trip') {
+export function useTripCopyLimit(source: 'shared_trip' | 'example_trip' | 'trip_draft') {
     const { access } = useAuth();
     const { confirm: confirmDialog } = useAppDialog();
     const { t } = useTranslation(['common', 'pricing']);

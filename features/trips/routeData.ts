@@ -22,3 +22,9 @@ export interface ExampleTripRouteData extends TripRouteData {
 export const tripLoaderDeps = ({ search }: { search: Record<string, unknown> }) => ({
     versionId: typeof search.v === 'string' ? search.v : undefined,
 });
+export interface TripDraftRouteData extends TripRouteData {
+    draftId: string;
+    status: 'draft' | 'claimed' | 'expired';
+    clientName: string | null;
+    expiresAt: string | null;
+}
