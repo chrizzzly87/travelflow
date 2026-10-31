@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'framer-motion';
+import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowsInSimple, ArrowsOutSimple, DeviceRotate } from '@phosphor-icons/react';
 

@@ -5,7 +5,7 @@ const LOCALES_DIR = path.resolve(process.cwd(), 'locales');
 const ALLOWLIST_PATH = path.resolve(process.cwd(), 'scripts/i18n-identical-allowlist.json');
 const DEFAULT_LOCALE = 'en';
 const LEGACY_INTERPOLATION_PATTERN = /\{\{[^{}]+\}\}/;
-// i18next-icu ships but is never registered in i18n.ts, so ICU plural/select
+// i18next-icu is not installed or registered in i18n.ts, so ICU plural/select
 // blocks reach the user as raw source text. Explicit One/Many keys instead.
 const ICU_CATEGORY_PATTERN = /\{\s*[a-zA-Z0-9_]+\s*,\s*(plural|select|selectordinal)\s*,/;
 // Escalates the advisory checks (key parity, values identical to English)

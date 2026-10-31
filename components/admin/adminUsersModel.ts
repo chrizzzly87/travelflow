@@ -1,5 +1,4 @@
 import type { PlanTierKey } from '../../types';
-import { formatAdminRelativeTime } from './adminRelativeTime';
 import type { AdminUserRecord } from '../../services/adminService';
 import type { AdminStatusTone } from './AdminStatusBadge';
 import {
@@ -381,12 +380,6 @@ export const resolveAppliedUserQueue = (
 // ---------------------------------------------------------------------------
 // Dates
 
-
-export const formatRelativeTimestamp = (
-    value: string | null | undefined,
-    fallback = 'Never',
-    now: number = Date.now()
-): string => formatAdminRelativeTime(value, now, fallback);
 
 export const formatAbsoluteTimestamp = (value: string | null | undefined, fallback = 'Not set'): string => {
     if (!value) return fallback;

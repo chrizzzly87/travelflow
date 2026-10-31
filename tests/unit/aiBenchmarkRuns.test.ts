@@ -7,7 +7,6 @@ import {
     buildRunValidationJson,
     countUnratedCompletedRuns,
     filterAndSortBenchmarkRuns,
-    formatRelativeTime,
     getRunStatusMeta,
     getRunValidationVerdict,
     hasActiveBenchmarkRunFilter,
@@ -152,16 +151,5 @@ describe('buildModelComparisonRows', () => {
         expect(rows[0]).toMatchObject({ averageRatingScore: 3, ratingCount: 1, averageCostUsd: 0.5, averageTotalTokens: 300, successRate: 1 });
         expect(rows[1]).toMatchObject({ averageRatingScore: 2, totalRuns: 2, successRate: 0.5, repairRate: 0.5, averageLatencyMs: 2000, averageTotalTokens: 100 });
         expect(rows[2]).toMatchObject({ averageRatingScore: null, averageCostUsd: null });
-    });
-});
-
-describe('formatRelativeTime', () => {
-    const now = Date.parse('2026-10-24T12:00:00.000Z');
-
-    it('reads as plain English and falls back to a dash', () => {
-        expect(formatRelativeTime('2026-10-24T11:55:00.000Z', now)).toBe('5 minutes ago');
-        expect(formatRelativeTime('2026-10-23T12:00:00.000Z', now)).toBe('yesterday');
-        expect(formatRelativeTime(null, now)).toBe('—');
-        expect(formatRelativeTime('not a date', now)).toBe('—');
     });
 });

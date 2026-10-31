@@ -3,7 +3,7 @@
 The production architecture since v0.209.0 (2026-10-24). Preact/preact-compat,
 react-router, the descriptor route table and the old prerender scripts are gone;
 `App.tsx` is only a re-export of `app/shell/ApplicationShell.tsx`. Migration history
-and evidence: [architecture/TANSTACK_START_MIGRATION.md](architecture/TANSTACK_START_MIGRATION.md).
+and evidence: [archive/TANSTACK_START_MIGRATION.md](archive/TANSTACK_START_MIGRATION.md).
 
 ## Runtime and compatibility
 

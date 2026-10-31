@@ -296,3 +296,12 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
 
   return results;
 };
+
+/** Every city label currently sits above its pin; the legs are not consulted. */
+export const resolveCityLabelAnchor = (
+  _city: google.maps.LatLngLiteral,
+  _previous?: google.maps.LatLngLiteral | null,
+  _next?: google.maps.LatLngLiteral | null,
+): TripMapCityLabelAnchor => {
+  return 'above';
+};

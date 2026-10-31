@@ -97,6 +97,9 @@ import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
+import { AdminDetailField } from '../components/admin/AdminDetailField';
+import { AdminRelativeTimestamp } from '../components/admin/AdminRelativeTimestamp';
+import { formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
 import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
 import { AdminPagination } from '../components/admin/AdminPagination';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
@@ -116,7 +119,6 @@ import {
     countUserQueues,
     formatAbsoluteTimestamp,
     formatAccountStatusLabel,
-    formatRelativeTimestamp,
     fromDateTimeInputValue,
     getActivationStatusLabel,
     getUserAccountStatus,
@@ -736,31 +738,6 @@ const INITIAL_CREATE_DRAFT: CreateUserDraft = {
     tierKey: 'tier_free',
     password: '',
 };
-
-/** A relative date with the absolute one in the shared tooltip. */
-const RelativeTime: React.FC<{ value: string | null | undefined; fallback: string; className?: string }> = ({
-    value,
-    fallback,
-    className,
-}) => (
-    <span
-        className={cn('tabular-nums', className)}
-        data-tooltip={value ? formatAbsoluteTimestamp(value) : undefined}
-    >
-        {formatRelativeTimestamp(value, fallback)}
-    </span>
-);
-
-const DetailField: React.FC<{ label: React.ReactNode; children: React.ReactNode; className?: string }> = ({
-    label,
-    children,
-    className,
-}) => (
-    <div className={cn('flex min-w-0 flex-col gap-0.5', className)}>
-        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-        <dd className="min-w-0 text-sm text-foreground">{children}</dd>
-    </div>
-);
 
 const LoginPills: React.FC<{ user: AdminUserRecord }> = ({ user }) => (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -2926,17 +2903,17 @@ export const AdminUsersPage: React.FC = () => {
                                             )}
                                             {isUserColumnVisible('last_visit') && (
                                                 <TableCell className={cn(sortedCell('last_sign_in_at'), 'text-sm text-muted-foreground')}>
-                                                    <RelativeTime value={user.last_sign_in_at} fallback="Never" />
+                                                    <AdminRelativeTimestamp value={user.last_sign_in_at} fallback="Never" />
                                                 </TableCell>
                                             )}
                                             {isUserColumnVisible('last_log') && (
                                                 <TableCell className={cn(sortedCell('updated_at'), 'text-sm text-muted-foreground')}>
-                                                    <RelativeTime value={user.updated_at} fallback="Never" />
+                                                    <AdminRelativeTimestamp value={user.updated_at} fallback="Never" />
                                                 </TableCell>
                                             )}
                                             {isUserColumnVisible('created') && (
                                                 <TableCell className={cn(sortedCell('created_at'), 'text-sm text-muted-foreground')}>
-                                                    <RelativeTime value={user.created_at} fallback="Unknown" />
+                                                    <AdminRelativeTimestamp value={user.created_at} fallback="Unknown" />
                                                 </TableCell>
                                             )}
                                             <TableCell className="px-3 py-2.5 text-end">
@@ -3303,34 +3280,34 @@ export const AdminUsersPage: React.FC = () => {
                                 <section className="flex flex-col gap-3">
                                     <AdminSectionHeader as="h3" title="Account" />
                                     <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                                        <DetailField label="User ID" className="sm:col-span-2">
+                                        <AdminDetailField label="User ID" className="sm:col-span-2">
                                             <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
-                                        </DetailField>
-                                        <DetailField label="Status">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Status">
                                             {selectedUserLifecycle && (
                                                 <AdminStatusBadge tone={selectedUserLifecycle.tone}>{selectedUserLifecycle.label}</AdminStatusBadge>
                                             )}
-                                        </DetailField>
-                                        <DetailField label="Sign-in method">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Sign-in method">
                                             <LoginPills user={selectedUser} />
-                                        </DetailField>
-                                        <DetailField label="Last sign-in">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Last sign-in">
                                             {selectedUser.last_sign_in_at
-                                                ? <>{formatRelativeTimestamp(selectedUser.last_sign_in_at)} <span className="text-muted-foreground">· {formatAbsoluteTimestamp(selectedUser.last_sign_in_at)}</span></>
+                                                ? <>{formatAdminRelativeTime(selectedUser.last_sign_in_at, undefined, 'Never')} <span className="text-muted-foreground">· {formatAbsoluteTimestamp(selectedUser.last_sign_in_at)}</span></>
                                                 : 'Never'}
-                                        </DetailField>
-                                        <DetailField label="Created">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Created">
                                             {formatAbsoluteTimestamp(selectedUser.created_at)}
-                                        </DetailField>
-                                        <DetailField label="Last updated">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Last updated">
                                             {formatAbsoluteTimestamp(selectedUser.updated_at)}
-                                        </DetailField>
-                                        <DetailField label="Trips">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Trips">
                                             <span className="tabular-nums">
                                                 {selectedUserTripStats.active} active of {selectedUserTripStats.total}
                                             </span>
-                                        </DetailField>
-                                        <DetailField label="Public profile" className="sm:col-span-2">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Public profile" className="sm:col-span-2">
                                             {selectedUserPublicProfilePath ? (
                                                 <a
                                                     href={selectedUserPublicProfilePath}
@@ -3343,7 +3320,7 @@ export const AdminUsersPage: React.FC = () => {
                                             ) : (
                                                 <span className="text-muted-foreground">Not available until the user picks a username.</span>
                                             )}
-                                        </DetailField>
+                                        </AdminDetailField>
                                     </dl>
                                 </section>
 
@@ -3364,19 +3341,19 @@ export const AdminUsersPage: React.FC = () => {
                                         )}
                                     />
                                     <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                                        <DetailField label="State">
+                                        <AdminDetailField label="State">
                                             {selectedUserTermsState && (
                                                 <AdminStatusBadge tone={getUserTermsStateTone(selectedUserTermsState)}>
                                                     {getUserTermsStateLabel(selectedUserTermsState)}
                                                 </AdminStatusBadge>
                                             )}
-                                        </DetailField>
-                                        <DetailField label="Accepted version">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Accepted version">
                                             {selectedUser.terms_accepted_version || 'Not accepted yet'}
-                                        </DetailField>
-                                        <DetailField label="Accepted at">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Accepted at">
                                             {formatAbsoluteTimestamp(selectedUser.terms_accepted_at)}
-                                        </DetailField>
+                                        </AdminDetailField>
                                     </dl>
                                 </section>
                             </TabsContent>
@@ -3579,45 +3556,45 @@ export const AdminUsersPage: React.FC = () => {
                                     )}
                                 />
                                 <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                                    <DetailField label="Status">
+                                    <AdminDetailField label="Status">
                                         {selectedUserSubscriptionStatus && (
                                             <AdminStatusBadge tone={subscriptionStatusTone(selectedUserSubscriptionStatus)}>
                                                 {getUserSubscriptionStatusLabel(selectedUserSubscriptionStatus)}
                                             </AdminStatusBadge>
                                         )}
-                                    </DetailField>
-                                    <DetailField label="Provider status">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Provider status">
                                         {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
-                                    </DetailField>
-                                    <DetailField label="Recurring amount">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Recurring amount">
                                         <span className="tabular-nums">
                                             {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
                                                 ? `${selectedUser.subscription_currency || '—'} ${(selectedUser.subscription_amount / 100).toFixed(2)}`
                                                 : '—'}
                                         </span>
-                                    </DetailField>
-                                    <DetailField label="Current period ends">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Current period ends">
                                         {formatAbsoluteTimestamp(selectedUser.current_period_end)}
-                                    </DetailField>
-                                    <DetailField label="Cancels at">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Cancels at">
                                         {formatAbsoluteTimestamp(selectedUser.cancel_at)}
-                                    </DetailField>
-                                    <DetailField label="Cancelled at">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Cancelled at">
                                         {formatAbsoluteTimestamp(selectedUser.canceled_at)}
-                                    </DetailField>
-                                    <DetailField label="Grace ends">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Grace ends">
                                         {formatAbsoluteTimestamp(selectedUser.grace_ends_at)}
-                                    </DetailField>
-                                    <DetailField label="Downgrades at">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Downgrades at">
                                         {formatAbsoluteTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}
-                                    </DetailField>
-                                    <DetailField label="Subscription ID">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Subscription ID">
                                         <span className="break-all font-mono text-xs">{selectedUser.provider_subscription_id || '—'}</span>
-                                    </DetailField>
-                                    <DetailField label="Paddle price ID">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Paddle price ID">
                                         <span className="break-all font-mono text-xs">{selectedUser.provider_price_id || '—'}</span>
-                                    </DetailField>
-                                    <DetailField label="Latest billing event" className="sm:col-span-2">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Latest billing event" className="sm:col-span-2">
                                         <span className="font-medium">{selectedUser.subscription_last_event_type || 'No event recorded'}</span>
                                         {selectedUser.subscription_last_event_at && (
                                             <span className="text-muted-foreground"> · {formatAbsoluteTimestamp(selectedUser.subscription_last_event_at)}</span>
@@ -3625,7 +3602,7 @@ export const AdminUsersPage: React.FC = () => {
                                         {selectedUser.subscription_last_event_id && (
                                             <span className="block break-all font-mono text-xs text-muted-foreground">{selectedUser.subscription_last_event_id}</span>
                                         )}
-                                    </DetailField>
+                                    </AdminDetailField>
                                 </dl>
                             </TabsContent>
 
@@ -3769,7 +3746,7 @@ export const AdminUsersPage: React.FC = () => {
                                                                     </AdminStatusBadge>
                                                                 ))}
                                                             </span>
-                                                            <RelativeTime value={log.created_at} fallback="Unknown time" className="text-xs text-muted-foreground" />
+                                                            <AdminRelativeTimestamp value={log.created_at} fallback="Unknown time" className="text-xs text-muted-foreground" />
                                                         </div>
                                                         {(log.source || (log.target_type === 'trip' && log.target_id)) && (
                                                             <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">

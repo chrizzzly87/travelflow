@@ -210,8 +210,8 @@ offline card list.
 
 ## Verifying a change here
 
-A CLI alias deploy does not run edge functions, so `/api/*` returns the SPA
-shell there (`docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`). Check a real Deploy
+A CLI alias deploy does not run edge functions, so `/api/*` returns the app
+shell there ([Netlify guide](NETLIFY_TANSTACK_START.md#alias-deploys-serve-no-edge-functions)). Check a real Deploy
 Preview or production:
 
 ```bash
