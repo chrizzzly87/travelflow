@@ -9,6 +9,7 @@ export const ADMIN_SCREEN_TITLES: Readonly<Record<string, string>> = {
     '/admin/settings': 'Settings',
     '/admin/users': 'Users',
     '/admin/trips': 'Trips',
+    '/admin/trip-drafts': 'AI trip drafts',
     '/admin/tiers': 'Plans',
     '/admin/billing': 'Billing',
     '/admin/audit': 'Audit log',

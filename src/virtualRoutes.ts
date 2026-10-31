@@ -47,6 +47,7 @@ export const routes = rootRoute('__root.tsx', [
     route("/admin/dashboard", "admin/dashboard.tsx"),
     route("/admin/users", "admin/users.tsx"),
     route("/admin/trips", "admin/trips.tsx"),
+    route("/admin/trip-drafts", "admin/trip-drafts.tsx"),
     route("/admin/airports", "admin/airports.tsx"),
     route("/admin/destinations", "admin/destinations.tsx"),
     route("/admin/recommendations", "admin/recommendations.tsx"),
@@ -66,10 +67,12 @@ export const routes = rootRoute('__root.tsx', [
     route("/trip/$tripId", "trips/owned.tsx"),
     route("/s/$token", "trips/shared.tsx"),
     route("/example/$templateId", "trips/example.tsx"),
+    route("/draft/$draftId", "trips/draft.tsx"),
   ]),
   layout('_create', 'areas/create.tsx', [
     route("/{-$locale}/create-trip", "create/classic.tsx"),
     route("/{-$locale}/create-trip/wizard", "create/wizard.tsx"),
+    route("/{-$locale}/import-trip", "create/import.tsx"),
     route("/create-trip/labs/classic-card", "create/classic-lab.tsx"),
   ]),
   layout('_library', 'areas/library.tsx', [
