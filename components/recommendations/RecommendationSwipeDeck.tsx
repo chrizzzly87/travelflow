@@ -8,7 +8,7 @@ import {
     useTransform,
     type PanInfo,
     type Variants,
-} from 'framer-motion';
+} from 'motion/react';
 import { Check, RotateCcw, X } from 'lucide-react';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -62,7 +62,7 @@ const CARD_VARIANTS: Variants = {
  * One card in the stack.
  *
  * The same component covers every depth, and only its `depth` prop changes as
- * the deck advances. That is deliberate: React keeps the element, so framer
+ * the deck advances. That is deliberate: React keeps the element, so motion
  * animates the promoted card from where it stood to the front instead of it
  * popping into place. It also means every card — not only the front one —
  * renders its real content, so nothing appears for the first time mid-swipe.

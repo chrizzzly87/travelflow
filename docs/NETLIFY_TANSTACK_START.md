@@ -1,7 +1,7 @@
 # TanStack Start on Netlify
 
 How the production TanStack Start build deploys to Netlify. The completed migration
-history is in [architecture/TANSTACK_START_MIGRATION.md](architecture/TANSTACK_START_MIGRATION.md).
+history is in [archive/TANSTACK_START_MIGRATION.md](archive/TANSTACK_START_MIGRATION.md).
 
 ## Project identity
 
@@ -80,3 +80,75 @@ Record the deployed commit and exact preview URL, then verify:
 
 Check PR Quality and Netlify logs, not only a successful upload. A local passing
 component suite cannot certify the hosted server/edge boundary.
+
+## Deploy previews for a feature branch
+
+1. Start the branch from `main` (or the base the issue names). Keep one issue per branch and one PR per branch.
+2. Before pushing, run `pnpm typecheck` and `pnpm ci:local`. `ci:local` mirrors PR Quality,
+   including core tests and the production build, so do not also run `test:core` and `build`
+   separately. Use `pnpm install --frozen-lockfile` after dependency changes.
+3. Push and open or update a PR. Netlify builds a Deploy Preview for each pushed commit.
+4. Wait for the `netlify/travelflowapp/deploy-preview` check, then test on
+   `https://deploy-preview-<PR_NUMBER>--travelflowapp.netlify.app`.
+5. Check status with `gh pr checks <PR_NUMBER>` and the deploy log linked from the Netlify check.
+
+Previews are commit-based: nothing rebuilds until you push. A stale `pnpm-lock.yaml` fails
+the Netlify checks within seconds, before a normal deploy summary (2026-02-23 incident).
+PR Quality checks out `pull_request.head.sha` so it validates the commit Netlify deploys.
+
+### Environment keys for preview parity
+
+Set these for the Deploy Preview context (or all contexts). Missing keys cause partial
+behaviour, such as generation timeouts or OG/meta fallbacks:
+
+- `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+- `TF_ADMIN_API_KEY`
+- `VITE_GOOGLE_MAPS_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (AI telemetry persistence and reads)
+- Optional: `OPENROUTER_API_KEY` (curated OpenRouter models), `AI_GENERATE_PROVIDER_TIMEOUT_MS`
+
+## Alias deploys serve no edge functions
+
+`netlify deploy --no-build --dir=dist/client --alias <name>` uploads only the static client
+output. It ships **no edge functions** and no Start server, so every `/api/*` route returns the
+HTML app shell (`content-type: text/html`) instead of JSON. Verified 2026-08-19 and re-verified
+2026-10-24: with `pnpm edge:validate` passing, an alias deploy still served `/api/health` and
+`/api/runtime/location` as HTML while the PR's Deploy Preview answered correctly. Linking the
+site first or running `netlify build` beforehand does not help.
+
+In the product this looks like country guides showing "Practical destination information is
+temporarily unavailable", and geolocation, nearby airports and distance sorting doing nothing.
+This is a preview artifact, not an application bug.
+
+A broken edge bundle produces the same symptom on every deploy (the 2026-08-18 outage, an
+extensionless import); `pnpm edge:validate` guards against that. See [EDGE_FUNCTIONS.md](EDGE_FUNCTIONS.md).
+
+Rule: use alias deploys only for static and client-side rendering checks. Verify anything that
+touches `/api/*` on a real Deploy Preview or on production. Upload success is not evidence.
+Keep build-time environment files private, never source one as shell code, and do not print
+all Netlify environment values while diagnosing a build.
+
+## Diagnosing a Netlify-only build failure
+
+`pnpm build:netlify` uses your local env, so it can pass while Netlify fails. To reproduce the
+build with the linked site's real environment, run:
+
+```bash
+pnpm dlx netlify build
+```
+
+It runs the `netlify.toml` build command with Netlify's own env injection and shows the failing
+step directly.
+
+Known cause: the per-variable **secret** flag on `VITE_*` variables. Secret values resolve masked
+into the build, so the first step fails:
+
+```
+> pnpm runtime-env:validate
+Production build blocked: VITE_SUPABASE_URL must be a valid HTTP(S) URL.
+```
+
+`SECRETS_SCAN_OMIT_KEYS` only exempts a key from the secrets scanner; it does not undo the flag.
+Clear "secret" on the public `VITE_*` variables in Site config → Environment variables, and keep
+server-side keys (`SUPABASE_SERVICE_ROLE_KEY`, `TF_ADMIN_API_KEY`, provider keys) secret.
+Inspect metadata with `pnpm dlx netlify env:list --json` without printing or sharing raw values.

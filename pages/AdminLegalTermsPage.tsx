@@ -10,6 +10,7 @@ import { AdminStatusBadge } from '../components/admin/AdminStatusBadge';
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { formatAdminRelativeDay } from '../components/admin/adminRelativeTime';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -124,18 +125,6 @@ const formatDateTime = (value: string): string => {
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
     return parsed.toLocaleString();
-};
-
-const relativeDateFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-
-const formatRelativeDate = (value: string): string => {
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return value;
-    const days = Math.round((parsed - Date.now()) / 86_400_000);
-    if (Math.abs(days) < 1) return 'today';
-    if (Math.abs(days) < 31) return relativeDateFormatter.format(days, 'day');
-    if (Math.abs(days) < 365) return relativeDateFormatter.format(Math.round(days / 30), 'month');
-    return relativeDateFormatter.format(Math.round(days / 365), 'year');
 };
 
 const buildDraftFromBase = (
@@ -425,7 +414,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                             {rolloutLabel(currentVersion.requiresReaccept)}
                         </AdminStatusBadge>
                         <span className="text-xs text-muted-foreground" data-tooltip={formatDateTime(currentVersion.effectiveAt)}>
-                            Effective {formatRelativeDate(currentVersion.effectiveAt)}
+                            Effective {formatAdminRelativeDay(currentVersion.effectiveAt)}
                         </span>
                     </AdminSurfaceCard>
                 )}
@@ -666,7 +655,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                                         </TableCell>
                                         <TableCell className="text-sm text-foreground">
                                             <span data-tooltip={`Effective ${formatDateTime(version.effectiveAt)} · last updated ${normalizeDateInput(version.lastUpdated)}`}>
-                                                {formatRelativeDate(version.effectiveAt)}
+                                                {formatAdminRelativeDay(version.effectiveAt)}
                                             </span>
                                         </TableCell>
                                         <TableCell className="hidden max-w-[420px] text-xs text-muted-foreground lg:table-cell">

@@ -1,0 +1,124 @@
+# Initial JS Bundle Size Optimization Guide
+
+> **Historical (2026-05).** Measurements and techniques from the former Preact build
+> (`index.tsx`, `DeferredAppRoutes.tsx`, Preact aliases) that no longer exists. Current
+> bundle work is tracked in `docs/performance/` and issue #561; current architecture is in
+> [`TANSTACK_START_ARCHITECTURE.md`](../TANSTACK_START_ARCHITECTURE.md).
+
+This document analyzes options and strategies for reducing TravelFlow's initial JavaScript bundle size. Before the Preact migration, the main entry bundle (`dist/assets/index-*.js`) was **~772 KB raw / ~230 KB gzip**, and the total JS footprint included larger packages like `mapbox-gl` (1.69 MB).
+
+## 2026-05-29 Preact compat migration results
+
+The production Vite build now uses `@preact/preset-vite` plus explicit React compatibility aliases so shipped React imports resolve to `preact/compat`. React remains installed for Vitest and dependency peer resolution; the production build was inspected to confirm the entry bundle contains the Preact runtime rather than a separate React runtime.
+
+Measured against local Vite production preview:
+
+| Metric | React baseline (`main`) | Preact compat branch | Delta |
+| --- | ---: | ---: | ---: |
+| Entry JS raw | 771,707 B | 654,600 B | -117,107 B |
+| Entry JS gzip | 230,354 B | 194,894 B | -35,460 B |
+| Entry CSS raw | 370,138 B | 370,138 B | 0 B |
+| Entry CSS gzip | 59,017 B | 58,986 B | -31 B |
+
+Mobile Lighthouse route sweep:
+
+| Route | React score | Preact score | React transfer | Preact transfer | React TBT | Preact TBT | Preact CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` | 83 | 92 | 676.2 KiB | 423.8 KiB | 100 ms | 30 ms | 0 |
+| `/create-trip` | 74 | 87 | 668.6 KiB | 618.2 KiB | 70 ms | 210-240 ms | 0 |
+| `/example/thailand-islands` | 49 | 90 | 828.8 KiB | 373.8 KiB | 90 ms | 0 ms | 0 |
+| `/features` | 74 | 91 | 1004.9 KiB | 437.7 KiB | 30 ms | 0 ms | 0 |
+| `/pricing` | 79 | 95 | 943.9 KiB | 429.0 KiB | 220 ms | 20 ms | 0 |
+
+The migration delivers the intended entry-bundle reduction and improves the measured score/transfer envelope across the audited routes. `/create-trip` is the one remaining follow-up: its score and LCP improved, but TBT rose because the classic planner still performs a large synchronous first render under compat. Keep planner render deferral or component extraction on the performance backlog before treating TBT as fully closed.
+
+---
+
+## 🔍 1. Current Bundle Breakdown
+
+Based on Vite build outputs, the initial page load fetches:
+1.  `index-*.js` (~773 KB): Core vendor bundle containing React, React DOM, React Router v7, Framer Motion, Radix UI, i18next, and other design tokens.
+2.  `Tracker-*.js` (~807 KB): Analytics / tracking system.
+3.  `mapbox-gl-*.js` (1.69 MB): Mapbox rendering engine (successfully code-split so it only loads on pages rendering Mapbox).
+4.  `aiService-*.js` (~329 KB): AI planning utilities.
+5.  `releaseNotesService-*.js` (~348 KB): Release notes bundle.
+
+To optimize the entry bundle size, we evaluate Preact and TanStack migrations alongside other high-impact, lower-effort quick wins.
+
+---
+
+## ⚖️ 2. Comparison: Preact vs. TanStack
+
+### Option A: Migrating to Preact (`preact/compat`)
+Preact is a 3 KB alternative to React with a compatible React ES6 API.
+
+*   **Size Savings**: **~35 KB to 45 KB (Gzip)**. It replaces `react` (approx 6 KB gzip) and `react-dom` (approx 42 KB gzip) with Preact (approx 3 KB gzip).
+*   **Implementation Effort**: **Low** (1–2 developer hours).
+    *   Install `@preact/preset-vite`.
+    *   Add aliases in `vite.config.ts` mapping `react` and `react-dom` to `preact/compat`.
+*   **Risk & QA Effort**: **Very High** (20–30 QA hours).
+    *   *Compat Library Errors*: Some advanced Radix UI primitives, Framer Motion animations, or `@vis.gl/react-google-maps` might hit edge-case compatibility issues under `preact/compat` (e.g. ref assignment behaviors or React 18 concurrent features).
+    *   *Verification*: The entire application checkout flow, trip generator, and Mapbox integrations must undergo exhaustive manual and automated testing.
+
+---
+
+### Option B: Migrating to TanStack Stack (Router + Query)
+Replacing React Router v7 (`react-router-dom`) with TanStack Router, and migrating state management to TanStack Query.
+
+*   **Size Savings**: **~40 KB to 60 KB (Gzip)** directly from the core bundle, with much better granular code-splitting.
+*   **Implementation Effort**: **Extremely High** (40–80 developer hours).
+    *   *Routing Rewrite*: Require rewriting route definitions, path builders, navigation hooks (`useNavigate`, `useLocation`, `useParams`), and auth-route guards across 50+ pages.
+    *   *State Rewrite*: Transitioning context-based fetches to TanStack Query (`useQuery`, `useMutation`) requires refactoring API clients and DB synchronization logic.
+*   **Risk & QA Effort**: **Medium-High** (15–20 QA hours).
+    *   TanStack Router is fully type-safe, which prevents runtime routing errors, but the transition involves touching almost every page in the application.
+
+---
+
+## ⚡ 3. Recommended Approach: Quick-Wins First
+
+Before undertaking a framework rewrite (Preact) or a router overhaul (TanStack), harvest lower-risk wins first. Smaller entry bundles matter most when they reduce mobile LCP, TBT, or hydration delay without creating layout instability.
+
+### Phase 1: Audit with Rollup Visualizer (1 hour)
+Install `rollup-plugin-visualizer` to see a graphical chart of exactly what files and modules make up the `773 KB` bundle:
+```typescript
+// vite.config.ts
+import { visualizer } from 'rollup-plugin-visualizer';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    visualizer({ open: true, filename: 'bundle-analysis.html' })
+  ]
+});
+```
+
+### Phase 2: Tree-Shake Icon Libraries (2 hours)
+Icon packages (like `@phosphor-icons/react` or `lucide-react`) are common sources of bundle bloat if imports are not configured correctly.
+*   **Problem**: If you do `import { ArrowLeft, Clock } from '@phosphor-icons/react'`, Vite might compile in the entire icon library map (hundreds of icons).
+*   **Fix**: Update imports to point directly to the individual icon source files:
+    ```typescript
+    import ArrowLeft from '@phosphor-icons/react/dist/icons/ArrowLeft';
+    import Clock from '@phosphor-icons/react/dist/icons/Clock';
+    ```
+    Alternatively, configure Vite's resolver to optimize icon imports automatically.
+
+### Phase 3: Code-Split Heavy Pages (3 hours)
+Verify that pages loaded inside `DeferredAppRoutes.tsx` are fully code-split:
+*   Ensure that no page-specific heavy library (like `recharts`, which the admin charts use, or `@vis.gl/react-google-maps`) is imported in `index.tsx` or components used by the header.
+*   Google Maps components should only load the maps library dynamically via `GoogleMapsLoader` rather than importing maps globals statically.
+
+### Phase 4: Protect Initial-Viewport Hydration (2 hours)
+Entry bundle reductions should not make visible UI arrive late or shift the page after interaction.
+
+*   Do not delay first-viewport UI behind first-interaction listeners just to improve a synthetic metric. Headers, notices, navigation, primary CTAs, and visible alerts should hydrate as part of the initial route.
+*   If a visible overlay can appear after mount, keep it out of normal document flow or reserve its space from the first render.
+*   Prefer lazy loading for below-the-fold and non-essential interactions. Do not lazy load content that defines the first viewport's meaning or stability.
+*   Validate route changes with a click/navigation check, not only a cold-load Lighthouse run.
+
+### Phase 5: Measure Mobile Before Shipping
+Mobile Lighthouse should be the primary guardrail for JavaScript optimization work.
+
+*   Compare the same route set before and after every bundle or hydration change.
+*   Record score, LCP, TBT, CLS, and transferred bytes.
+*   Re-run at least one route twice when a result looks surprising; Lighthouse variance is real, but repeated CLS or LCP regressions are actionable.
+*   Prefer optimizations that improve mobile LCP and CLS even if they are neutral on desktop.

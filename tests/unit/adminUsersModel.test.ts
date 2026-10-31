@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { AdminUserRecord } from '../../services/adminService';
 import {
   countUserQueues,
-  formatRelativeTimestamp,
   isTripExpiryInputUnchanged,
   matchesUserQueue,
   resolveAppliedUserQueue,
@@ -98,13 +97,6 @@ describe('components/admin/adminUsersModel', () => {
   });
 
   describe('dates', () => {
-    it('formats relative times against a fixed clock', () => {
-      const now = Date.parse('2026-10-24T12:00:00Z');
-      expect(formatRelativeTimestamp('2026-10-23T12:00:00Z', 'Never', now)).toBe('yesterday');
-      expect(formatRelativeTimestamp(null, 'Never', now)).toBe('Never');
-      expect(formatRelativeTimestamp('not a date', 'Never', now)).toBe('Never');
-    });
-
     it('treats an untouched trip-expiry input as unchanged', () => {
       const stored = '2026-11-02T09:30:00.000Z';
       expect(isTripExpiryInputUnchanged(toDateTimeInputValue(stored), stored)).toBe(true);
