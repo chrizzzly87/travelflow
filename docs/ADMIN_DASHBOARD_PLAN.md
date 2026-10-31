@@ -16,7 +16,7 @@ Give admins one at-a-glance view of product health, growth, and usage risk so is
 
 ## Route
 - `/admin/dashboard` — "Overview", first item in the admin sidebar and the `⌘K` palette.
-- Protected by the admin route guard (`AdminRoute` in `app/routes/DeferredAppRoutes.tsx`).
+- Protected by the admin route guard (`beforeLoad` in `src/routes/areas/admin.tsx`).
 
 ## Core metric groups
 

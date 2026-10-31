@@ -32,7 +32,7 @@ export type MapColorMode = 'brand' | 'trip';
  *
  * `apple` is a handoff, not a basemap: Apple has no embeddable renderer here, so
  * choosing it keeps the current basemap and promotes the "open in Apple Maps"
- * action. See `docs/superpowers/specs/2026-09-18-map-provider-customization-design.md`.
+ * action. See `docs/archive/superpowers-specs/2026-09-18-map-provider-customization-design.md`.
  */
 export type MapRendererChoice = 'auto' | 'google' | 'mapbox';
 

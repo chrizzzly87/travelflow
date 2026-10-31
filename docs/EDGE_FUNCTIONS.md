@@ -11,7 +11,7 @@ Deno's edge bundler does **not** resolve extensionless specifiers. Vite and `tsc
 error: Module not found "file:///opt/build/repo/shared/aiReasoning".
 ```
 
-When that happens the whole edge bundle fails, so **no edge functions deploy at all** and every `/api/*` route falls through to the SPA shell — which looks like unrelated application breakage rather than a build error.
+When that happens the whole edge bundle fails, so **no edge functions deploy at all** and every `/api/*` route falls through to the app shell — which looks like unrelated application breakage rather than a build error.
 
 Rules for any module reachable from `netlify/edge-functions/`, including files in `shared/`, `services/`, `config/`, `lib/` and `data/`:
 
@@ -23,7 +23,7 @@ Rules for any module reachable from `netlify/edge-functions/`, including files i
 
 ### History
 
-The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.ts`, which pulled in `services/openRouterModelCatalogService.ts`, which imported `"../shared/aiReasoning"` with no extension. Every Netlify build failed from then on, and because the edge bundle never built, the destination API silently returned the SPA shell.
+The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.ts`, which pulled in `services/openRouterModelCatalogService.ts`, which imported `"../shared/aiReasoning"` with no extension. Every Netlify build failed from then on, and because the edge bundle never built, the destination API silently returned the HTML shell.
 
 2026-09-17: `shared/recommendationRows.ts` was written for the browser first and imported `"./recommendations"` for a value (`COST_BAND_VALUES`). The moment two edge functions started using it, the Netlify build failed — `pnpm test:core` and `vite build` had both been green locally. `pnpm edge:validate` caught it in one run; it is worth running by hand after wiring any existing `shared/` module into an edge function.
 

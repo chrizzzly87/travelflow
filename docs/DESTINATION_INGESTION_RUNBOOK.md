@@ -1,6 +1,6 @@
 # Destination ingestion runbook
 
-This runbook is the source of truth for refreshing destination source data and curated guides. The detailed source assessment lives in `DESTINATION_DATA_RESEARCH_2026-08-17.md`; the future hierarchy design lives in `DESTINATION_MODEL_V2_PLAN.md`.
+This runbook is the source of truth for refreshing destination source data and curated guides. The detailed source assessment lives in [`archive/DESTINATION_DATA_RESEARCH_2026-08-17.md`](archive/DESTINATION_DATA_RESEARCH_2026-08-17.md) (dated 2026-08-17); the future hierarchy design lives in `DESTINATION_MODEL_V2_PLAN.md`.
 
 ## Data layers
 
@@ -68,7 +68,7 @@ That gap is exactly what happened on 2026-08-19: China and Taiwan guides were ge
 curl -s "https://travelflowapp.netlify.app/api/destinations/<slug>?include=source-profile" | head -c 200
 ```
 
-Expect a JSON body containing `data`, and `sourceProfile` when the profile exists. An HTML body means you are looking at a deploy without edge functions — see `NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
+Expect a JSON body containing `data`, and `sourceProfile` when the profile exists. An HTML body means you are looking at a deploy without edge functions — see [the Netlify guide](NETLIFY_TANSTACK_START.md#alias-deploys-serve-no-edge-functions).
 
 Both sync scripts require `SUPABASE_SERVICE_ROLE_KEY` and `VITE_SUPABASE_URL` (or `SUPABASE_URL`). They write to the **production** database — treat them as a release step, not a local experiment.
 

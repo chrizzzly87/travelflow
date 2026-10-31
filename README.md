@@ -2,7 +2,7 @@
 
 TravelFlow generates and manages travel itineraries. It runs on TanStack Start and TanStack Router with React 19, TypeScript and Vite, deployed to Netlify (native Start since v0.209.0, 2026-10-24).
 
-Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment. The completed migration history and its measurements are in [the migration record](docs/architecture/TANSTACK_START_MIGRATION.md) and `docs/performance/`.
+Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment. The completed migration history and its measurements are in [the migration record](docs/archive/TANSTACK_START_MIGRATION.md) and `docs/performance/`.
 
 ## Working on the TanStack Start app
 
@@ -132,7 +132,7 @@ For UI styling, component behavior, and accessibility standards, use:
 
 ## Tech Stack Overview
 
-For the current architecture snapshot (frameworks, state management, data stack, analytics, testing status, and upgrade roadmap), use:
+For a one-table overview of frameworks, hosting, data, AI, maps and testing, use:
 
 - `docs/TECH_STACK.md`
 
@@ -152,41 +152,65 @@ For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, u
 ## Build
 
 ```bash
-pnpm build
+pnpm build:netlify
 ```
+
+`pnpm build:netlify` is what Netlify runs (`netlify.toml`). It syncs flag assets, optimizes inspiration and blog images, builds image placeholders, PWA icons and static OG images, runs the repository validators, regenerates the sitemap, runs the Vite build, then `pnpm prerender:validate` and `pnpm pwa:sw`. `pnpm build` is the same pipeline with `pnpm test:core` first.
 
 `pnpm prerender:validate` checks the seven public entry pages in every active locale after the native build, including canonical URLs and language/direction. The allowlist lives in `app/routing/publicPrerender.ts`; private routes must never enter it.
 
-The build emits public assets/prerendered pages in `dist/client` and server output in `dist/server`. The Netlify adapter owns server deployment and document routing; uploading only static files is insufficient. See [the deployment guide](docs/NETLIFY_TANSTACK_START.md).
+The build emits public assets and prerendered pages in `dist/client` and server output in `dist/server`. The Netlify adapter owns server deployment and document routing; uploading only static files is insufficient. See [the deployment guide](docs/NETLIFY_TANSTACK_START.md).
 
-`pnpm build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.
+A manual build rewrites two blog images and some generated data. Check `git status` before `git add -A`.
 
 Admin workspace screens are documented in `docs/ADMIN_SCREENS.md`; the visual contract is `docs/DESIGN.md` and the shared components are catalogued in `docs/DESIGN_SYSTEM_COMPONENTS.md`.
 
 ## Scripts
 
-All available `pnpm` commands in this repo:
+The full list is in `package.json`. The ones you will use most:
 
-- `pnpm dev` — Start the TanStack Start development server through Vite.
-- `pnpm build` — Run image optimization (inspirations + blog), validations, and production Vite build.
-- `pnpm preview` — Convenience preview; use the built-server browser harness and deploy preview for acceptance.
-- `pnpm release:prepare` — Generate missing blog source images, then run the full production build pipeline.
-- `pnpm updates:validate` — Validate `content/updates/*.md` formatting and release metadata.
-- `pnpm blog:validate` — Validate blog markdown metadata/content.
-- `pnpm edge:validate` — Validate Netlify edge function setup and constraints.
-- `pnpm maps:generate` — Generate static trip map PNGs from template coordinates.
-- `pnpm test` — Run the full Vitest suite once.
-- `pnpm test:watch` — Run Vitest in watch mode.
-- `pnpm test:run` — Run the full Vitest suite once.
-- `pnpm test:core` — Run core-module Vitest coverage gate (85/80 thresholds).
-- `pnpm test:e2e` — Run Playwright end-to-end smoke tests.
-- `pnpm test:e2e:offline` — Run opt-in Playwright outage/offline resilience checks (navigator.onLine emulation + forced outage banner flows).
-- `pnpm build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
-- `pnpm inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
-- `pnpm inspirations:images:jobs` — Build inspiration image batch job file only.
-- `pnpm build:blog-images` — Generate missing blog source images, then create responsive derivatives and optimize oversized assets.
-- `pnpm blog:images:optimize` — Optimize blog images only (`--skip-generation`).
-- `pnpm blog:images:jobs` — Build blog image batch job file only.
+**Develop**
+- `pnpm dev` — Start the TanStack Start dev server through Vite (syncs worktree env and flag assets first).
+- `pnpm dev:netlify` — Run the app through Netlify Dev on port 8888 for edge/API parity.
+- `pnpm preview` — Serve the built `dist/client` and `dist/server` output locally (`scripts/serve-built-site.mjs`).
+- `pnpm worktree:new`, `pnpm worktree:sync-env`, `pnpm worktree:install-hooks` — Create a worktree, copy env files into it, install git hooks.
+
+**Check and test**
+- `pnpm typecheck` — Type-check the whole project (must stay at 0 errors).
+- `pnpm ci:local` — Run the PR Quality stages locally (`--fast`, `--only=<stage>`, `--from=<stage>`, `--list`).
+- `pnpm test` / `pnpm test:run` — Run the Vitest suite once. `pnpm test:watch` runs it in watch mode.
+- `pnpm test:core` — Run Vitest with the coverage gate.
+- `pnpm test:e2e`, `pnpm test:e2e:production`, `pnpm test:e2e:offline`, `pnpm test:e2e:pwa` — Playwright suites.
+- `pnpm benchmark:runtime`, `pnpm benchmark:runtime:compare`, `pnpm benchmark:runtime:upgrade` — Local runtime benchmarks.
+- `pnpm doctor` — Run react-doctor (advisory).
+
+**Build**
+- `pnpm build:netlify` — Production build used by Netlify.
+- `pnpm build` — `test:core`, then the same pipeline.
+- `pnpm release:prepare` — Generate missing blog images, then `pnpm build`.
+- `pnpm prerender:validate` — Validate prerendered public documents after the Vite build.
+- `pnpm pwa:icons`, `pnpm pwa:sw` — Build PWA icons and the service worker.
+- `pnpm sitemap:generate` — Regenerate `public/sitemap.xml`.
+- `pnpm og:site:build`, `pnpm og:site:validate` (and `:full` variants) — Build and validate static OG images.
+
+**Validators** (all run inside the build)
+- `pnpm i18n:validate`, `pnpm updates:validate` (`pnpm updates:fix`), `pnpm blog:validate`, `pnpm edge:validate`, `pnpm storage:validate`, `pnpm toasts:validate`, `pnpm supabase:validate`, `pnpm runtime-env:validate`, `pnpm plans:validate-sync`, `pnpm routes:validate`, `pnpm climate:validate`.
+- `pnpm destinations:validate` — Validate destination guides (not part of the build).
+- `pnpm supabase:check-main-sync` — Check that `docs/supabase.sql` is not behind `origin/main`.
+- `pnpm darkmode:audit` — Audit dark-mode styling.
+
+**Content and data**
+- `pnpm updates:next-version` — Print the next release version.
+- `pnpm build:images`, `pnpm inspirations:images:optimize`, `pnpm inspirations:images:jobs` — Inspiration images.
+- `pnpm build:blog-images`, `pnpm blog:images:optimize`, `pnpm blog:images:jobs` — Blog images.
+- `pnpm build:example-previews`, `pnpm build:image-placeholders`, `pnpm flags:sync` — Generated assets.
+- `pnpm destinations:import`, `pnpm destinations:split`, `pnpm destinations:sync`, `pnpm destinations:sources:import` — Destination guide data (see `docs/DESTINATION_INGESTION_RUNBOOK.md`).
+- `pnpm maps:generate`, `pnpm maps:routes:generate`, `pnpm routes:stops:resolve`, `pnpm countries:map:generate`, `pnpm countries:search:generate`, `pnpm climate:generate`, `pnpm airports:generate`, `pnpm trips:enrich-locations` — Generators for maps and reference data.
+- `pnpm plans:generate-seed` — Generate `docs/plan-seed.generated.sql`.
+
+**AI**
+- `pnpm ai:eval`, `pnpm ai:eval:ci`, `pnpm ai:eval:security`, `pnpm ai:eval:security:ci` — Promptfoo evals (see `docs/PROMPTFOO_EVAL_WORKFLOW.md`).
+- `pnpm trip-agent:dry-run` — Dry-run the Trip Agent with `.env.local`.
 
 ## Blog Image Workflow
 
@@ -232,47 +256,35 @@ pnpm maps:generate -- --dry-run
 
 Re-run this after adding new trip templates or changing city coordinates.
 
-## Deploy To Vercel
+## Deploy to Netlify
 
-This repo includes `vercel.json` for Vite + SPA routing.
+TravelFlow deploys only to the Netlify project `travelflowapp` (site ID `1abc3d37-f6af-4810-9097-489b2a282ac6`, `https://travelflowapp.netlify.app`). Run `netlify status` before any manual deploy and stop unless it names `travelflowapp`. Previews, alias-deploy caveats and build diagnosis are in [docs/NETLIFY_TANSTACK_START.md](docs/NETLIFY_TANSTACK_START.md).
 
-1. Push this repo to GitHub.
-2. In Vercel, import the GitHub repository.
-3. In Vercel project settings, add:
-   - `GEMINI_API_KEY` (server-side generation)
-   - `VITE_GOOGLE_MAPS_API_KEY`
-   - `TF_ADMIN_API_KEY` (for internal benchmark API routes)
-4. Deploy.
+`netlify.toml` holds the configuration:
+- Build command: `pnpm build:netlify`
+- Publish directory: `dist/client`. Server output in `dist/server` is deployed by the TanStack Start Netlify adapter, which also owns document routing. There is no SPA rewrite.
+- Edge functions in `netlify/edge-functions`, mapped to `/api/*` paths with `[[edge_functions]]` entries. Node functions (scheduled and background) live in `netlify/functions`.
+- Node 22 via `NODE_VERSION`.
 
-## Deploy To Netlify
+Production deploys from `main`; every PR gets a Deploy Preview. Optional: if your Netlify plan exposes custom Functions regions, set the default to `eu-west-2` (or the closest EU region) so scheduled/background functions stay close to the EU-hosted Supabase project. Edge functions remain globally distributed.
 
-This repo includes `netlify.toml` for build settings + SPA redirects.
-For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
-
-1. Push this repo to GitHub.
-2. In Netlify, create a new site from Git.
-3. Confirm build settings:
-   - Build command: `pnpm build`
-   - Publish directory: `dist`
-4. Optional: if your Netlify plan exposes custom Functions regions, set the default Netlify Functions region to `eu-west-2` (or the closest EU region available in your account) so scheduled/background functions stay closer to your EU-hosted Supabase project. Edge Functions remain globally distributed.
-5. In Netlify environment variables, add:
-   - `SITE_URL` (canonical public base URL for sitemap and absolute SEO URLs, e.g. `https://travelflowapp.netlify.app`)
-   - `GEMINI_API_KEY` (server-side key for `/api/ai/generate`; never expose it through a `VITE_*` variable — those are inlined into the public browser bundle)
-   - `VITE_GOOGLE_MAPS_API_KEY`
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions and AI telemetry persistence/reads)
-   - `OPENAI_API_KEY` (active for OpenAI models in `/api/ai/generate`)
-   - `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
-   - `OPENROUTER_API_KEY` (active for curated OpenRouter models in `/api/ai/generate`)
-   - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
-6. Deploy.
+Netlify environment variables:
+- `SITE_URL` (canonical public base URL for sitemap and absolute SEO URLs, e.g. `https://travelflowapp.netlify.app`)
+- `GEMINI_API_KEY` (server-side key for `/api/ai/generate`; never expose it through a `VITE_*` variable — those are inlined into the public browser bundle)
+- `VITE_GOOGLE_MAPS_API_KEY`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions and AI telemetry persistence/reads)
+- `OPENAI_API_KEY` (active for OpenAI models in `/api/ai/generate`)
+- `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
+- `OPENROUTER_API_KEY` (active for curated OpenRouter models in `/api/ai/generate`)
+- `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
 
 Sitemap behavior:
-- `pnpm build` regenerates `public/sitemap.xml` on every deploy.
+- `pnpm sitemap:generate` (`scripts/generate-sitemap.ts`) regenerates `public/sitemap.xml` during every build.
 - The canonical sitemap host is read from `SITE_URL` (`VITE_SITE_URL` fallback) via `config/site-url.mjs`.
-- Static marketing URLs are derived from `MARKETING_ROUTE_CONFIGS` in `App.tsx`.
-- Utility/error routes that should stay out of search indexing must be listed in `NON_INDEXABLE_STATIC_PATHS` in `scripts/generate-sitemap.mjs`.
+- Static URLs come from the indexable areas of the native route tree in `src/virtualRoutes.ts` (`collectIndexableRoutePaths` in `scripts/lib/sitemapRoutes.ts`).
+- Utility/error routes that should stay out of search indexing go in `NON_INDEXABLE_PATHS` in `scripts/lib/sitemapRoutes.ts`.
 
 `/admin/ai-benchmark` uses:
 - the signed-in admin's Supabase bearer token: the edge function checks `system_role = 'admin'` via `get_current_user_access` and uses the same token for owner-scoped RLS writes
@@ -307,7 +319,7 @@ Sitemap behavior:
 
 1. Run the app through Netlify (Edge Functions only run through Netlify Dev):
    ```bash
-   pnpm dlx netlify dev
+   pnpm dev:netlify
    ```
 2. Open the playground:
    - `http://localhost:8888/api/og/playground`
@@ -342,8 +354,8 @@ Full static coverage override (all supported static/detail routes):
 - `pnpm og:site:build:full && pnpm og:site:validate:full`
 
 Faster local builds (skip static OG generation/validation):
-- `SITE_OG_STATIC_BUILD_MODE=skip pnpm build`
-- `SITE_OG_STATIC_BUILD_MODE=full pnpm build` (force full local parity)
+- `SITE_OG_STATIC_BUILD_MODE=skip pnpm build:netlify`
+- `SITE_OG_STATIC_BUILD_MODE=full pnpm build:netlify` (force full local parity)
 
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`

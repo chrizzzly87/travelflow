@@ -1,10 +1,10 @@
 ---
 id: rel-2026-10-24-admin-redesign
-version: v0.211.0
+version: v0.212.0
 title: "A rebuilt admin workspace"
 date: 2026-10-25
-published_at: 2026-10-25T18:00:00Z
-status: draft
+published_at: 2026-10-25T07:38:05Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Every admin screen was rethought around the job it does, in one modern shell with a command palette, shared components and themed charts."

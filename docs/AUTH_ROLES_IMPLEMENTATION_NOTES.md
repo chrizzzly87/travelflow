@@ -12,7 +12,7 @@ Last updated: 2026-10-24
 
 ## Admin routing and UI
 
-1. Every `/admin/*` route is guarded in app routing (`pages/AdminWorkspaceRouter.tsx`); only users resolved as `system_role = 'admin'` get in.
+1. Every `/admin/*` route is guarded by the admin route area (`src/routes/areas/admin.tsx`, whose `beforeLoad` calls `requireRouteAccess` from `features/auth/routeAccess.ts`); only users resolved as `system_role = 'admin'` get in.
 2. All admin screens share `AdminShell`: a sidebar grouped into Workspace, Operations, Content and Tools (`components/admin/adminNavConfig.ts`) and a `⌘K` command palette.
 3. Per-user role, tier (shown as "Plan") and entitlement overrides are edited on **Users** (`/admin/users`), in the user's details sheet → **Profile & access** tab. The old `/admin/access` route redirects there.
 4. Plan-template entitlements (`admin_update_plan_entitlements`) are edited on **Tiers** (`/admin/tiers`).
