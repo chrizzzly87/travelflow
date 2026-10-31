@@ -1,6 +1,6 @@
 ---
 id: rel-2026-10-31-ai-assistant-trip-drafts
-version: v0.212.0
+version: v0.213.0
 title: "Plan with your own AI assistant"
 date: 2026-10-31
 published_at: 2026-10-31T19:48:42Z
