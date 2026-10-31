@@ -162,7 +162,7 @@ describe('components/recommendations/RecommendationSwipeDeck', () => {
   it('exposes the card as draggable, which is what carries the swipe', () => {
     renderDeck();
 
-    // The gesture itself runs through framer-motion, which cannot be driven by
+    // The gesture itself runs through motion, which cannot be driven by
     // synthetic pointer events under jsdom; the drag threshold and the flick
     // velocity are checked in the browser instead.
     const card = screen.getByTestId('recommendation-card');
