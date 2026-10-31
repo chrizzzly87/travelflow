@@ -35,6 +35,21 @@ export const formatAdminRelativeTime = (value: unknown, nowMs = Date.now(), fall
     return relativeTimeFormatter.format(Math.round(diffMs / YEAR_MS), 'year');
 };
 
+/**
+ * Day-granular variant for dates where the hour does not matter (legal terms'
+ * effective dates): "today", "in 5 days", "3 months ago", "last year". An
+ * unparseable string falls back to itself unless a fallback is given.
+ */
+export const formatAdminRelativeDay = (value: unknown, nowMs = Date.now(), fallback?: string): string => {
+    const timestamp = parseTimestamp(value);
+    if (timestamp === null) return fallback ?? (typeof value === 'string' && value ? value : '—');
+    const days = Math.round((timestamp - nowMs) / DAY_MS);
+    if (Math.abs(days) < 1) return 'today';
+    if (Math.abs(days) < 31) return relativeTimeFormatter.format(days, 'day');
+    if (Math.abs(days) < 365) return relativeTimeFormatter.format(Math.round(days / 30), 'month');
+    return relativeTimeFormatter.format(Math.round(days / 365), 'year');
+};
+
 /** The full date and time, for the `data-tooltip` beside a relative time. */
 export const formatAdminAbsoluteTime = (value: unknown, fallback = '—'): string => {
     const timestamp = parseTimestamp(value);

@@ -70,6 +70,7 @@ import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AiModelPicker } from '../components/admin/AiModelPicker';
 import { AiProviderLabel as ProviderLabel, AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { AiBenchmarkRunSheet, RunLatency, RunRatingButtons } from '../components/admin/AiBenchmarkRunSheet';
+import { formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
 import {
     BENCHMARK_RUN_COMMENT_MAX_LENGTH,
     DEFAULT_BENCHMARK_RUN_FILTERS,
@@ -77,7 +78,6 @@ import {
     countUnratedCompletedRuns,
     filterAndSortBenchmarkRuns,
     formatDuration,
-    formatRelativeTime,
     formatTimestamp,
     formatUsd,
     getRunStatusMeta,
@@ -2193,7 +2193,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                             <div className="text-xs tabular-nums text-muted-foreground">
                                                                 Run #{run.run_index}
                                                                 <span aria-hidden="true"> · </span>
-                                                                <span data-tooltip={formatTimestamp(runTimestamp)}>{formatRelativeTime(runTimestamp)}</span>
+                                                                <span data-tooltip={formatTimestamp(runTimestamp)}>{formatAdminRelativeTime(runTimestamp)}</span>
                                                             </div>
                                                         </TableCell>
                                                         <TableCell>

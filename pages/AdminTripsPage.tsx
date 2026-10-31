@@ -50,6 +50,9 @@ import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/Admi
 import { AdminEmptyState } from '../components/admin/AdminEmptyState';
 import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminDetailSheet } from '../components/admin/AdminDetailSheet';
+import { AdminDetailField } from '../components/admin/AdminDetailField';
+import { AdminRelativeTimestamp } from '../components/admin/AdminRelativeTimestamp';
+import { formatAdminRelativeTime } from '../components/admin/adminRelativeTime';
 import { AdminSelectionBar } from '../components/admin/AdminSelectionBar';
 import { AdminPagination } from '../components/admin/AdminPagination';
 import { Alert, AlertDescription } from '../components/ui/alert';
@@ -182,7 +185,6 @@ const SELECT_COLUMN_WIDTH = 48;
 const TRIP_COLUMN_WIDTH = 320;
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
-const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const DEFAULT_RETRY_MODEL_ID = getDefaultCreateTripModel().id;
 const ACTIVE_RETRY_MODEL_OPTIONS = sortAiModels(
     AI_MODEL_CATALOG.filter((entry) => entry.availability === 'active')
@@ -272,27 +274,6 @@ const formatTimestamp = (value: string | null | undefined, fallback = 'Not set')
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return fallback;
     return new Date(parsed).toLocaleString();
-};
-
-const formatRelativeTimestamp = (value: string | null | undefined, fallback = 'No data'): string => {
-    if (!value) return fallback;
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) return fallback;
-    const diffMs = parsed - Date.now();
-    const absDiffMs = Math.abs(diffMs);
-    const minuteMs = 60_000;
-    const hourMs = 60 * minuteMs;
-    const dayMs = 24 * hourMs;
-    const weekMs = 7 * dayMs;
-    const monthMs = 30 * dayMs;
-    const yearMs = 365 * dayMs;
-    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
-    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
-    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
-    if (absDiffMs < weekMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
-    if (absDiffMs < monthMs) return relativeTimeFormatter.format(Math.round(diffMs / weekMs), 'week');
-    if (absDiffMs < yearMs) return relativeTimeFormatter.format(Math.round(diffMs / monthMs), 'month');
-    return relativeTimeFormatter.format(Math.round(diffMs / yearMs), 'year');
 };
 
 const formatDurationMs = (durationMs: number | null | undefined): string => {
@@ -481,39 +462,9 @@ const TripRowActionsMenu: React.FC<{
     );
 };
 
-/** A label/value pair in the trip sheet's description lists. */
-const DetailField: React.FC<{ label: string; children: React.ReactNode; wide?: boolean; mono?: boolean }> = ({
-    label,
-    children,
-    wide = false,
-    mono = false,
-}) => (
-    <div className={wide ? 'flex min-w-0 flex-col gap-0.5 sm:col-span-2' : 'flex min-w-0 flex-col gap-0.5'}>
-        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-        <dd className={mono ? 'break-all font-mono text-xs text-foreground' : 'break-words text-sm text-foreground'}>{children}</dd>
-    </div>
-);
-
-/** Relative time with the absolute timestamp in the tooltip. */
-const RelativeTime: React.FC<{ value: string | null | undefined; fallback: string; className?: string }> = ({
-    value,
-    fallback,
-    className,
-}) => {
-    const hasValue = Boolean(normalizeIsoTimestamp(value));
-    return (
-        <span
-            className={className ?? 'tabular-nums'}
-            data-tooltip={hasValue ? formatTimestamp(value, fallback) : undefined}
-        >
-            {formatRelativeTimestamp(value, fallback)}
-        </span>
-    );
-};
-
 const formatRelativeWithAbsolute = (value: string | null | undefined): string => (
     value && normalizeIsoTimestamp(value)
-        ? `${formatRelativeTimestamp(value, 'n/a')} (${formatTimestamp(value, 'n/a')})`
+        ? `${formatAdminRelativeTime(value, undefined, 'n/a')} (${formatTimestamp(value, 'n/a')})`
         : 'n/a'
 );
 
@@ -2060,22 +2011,22 @@ export const AdminTripsPage: React.FC = () => {
                                             )}
                                             {isTripColumnVisible('expires') && (
                                                 <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('expires')}`}>
-                                                    <RelativeTime value={trip.trip_expires_at} fallback="Never" />
+                                                    <AdminRelativeTimestamp value={trip.trip_expires_at} fallback="Never" />
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('updated') && (
                                                 <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('updated')}`}>
-                                                    <RelativeTime value={trip.updated_at} fallback="—" />
+                                                    <AdminRelativeTimestamp value={trip.updated_at} fallback="—" />
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('created') && (
                                                 <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('created')}`}>
-                                                    <RelativeTime value={trip.created_at} fallback="—" />
+                                                    <AdminRelativeTimestamp value={trip.created_at} fallback="—" />
                                                 </TableCell>
                                             )}
                                             {isTripColumnVisible('archived') && (
                                                 <TableCell className={`px-4 py-2.5 text-sm text-foreground ${sortedCellClass('archived')}`}>
-                                                    <RelativeTime value={trip.archived_at} fallback="—" />
+                                                    <AdminRelativeTimestamp value={trip.archived_at} fallback="—" />
                                                 </TableCell>
                                             )}
                                             <TableCell className="px-4 py-2.5 text-end">
@@ -2261,7 +2212,7 @@ export const AdminTripsPage: React.FC = () => {
                         <AdminSurfaceCard className="flex flex-col gap-4">
                             <AdminSectionHeader as="h3" title="Overview" />
                             <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                                <DetailField label="Owner" wide>
+                                <AdminDetailField label="Owner" wide>
                                     <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                         <span className="break-all">{selectedTrip.owner_email || 'No email on file'}</span>
                                         <Link
@@ -2276,25 +2227,25 @@ export const AdminTripsPage: React.FC = () => {
                                     <span className="mt-0.5 block text-xs text-muted-foreground">
                                         <CopyableUuid value={selectedTrip.owner_id} textClassName="break-all text-xs" />
                                     </span>
-                                </DetailField>
-                                <DetailField label="Source">
+                                </AdminDetailField>
+                                <AdminDetailField label="Source">
                                     <span data-tooltip={(selectedTrip.source_kind || '').trim() || 'unknown'}>
                                         {formatSourceKindLabel(selectedTrip.source_kind)}
                                     </span>
-                                </DetailField>
-                                <DetailField label="Expires">
-                                    <RelativeTime value={selectedTrip.trip_expires_at} fallback="Never" />
-                                </DetailField>
-                                <DetailField label="Created">
-                                    <RelativeTime value={selectedTrip.created_at} fallback="n/a" />
-                                </DetailField>
-                                <DetailField label="Updated">
-                                    <RelativeTime value={selectedTrip.updated_at} fallback="n/a" />
-                                </DetailField>
+                                </AdminDetailField>
+                                <AdminDetailField label="Expires">
+                                    <AdminRelativeTimestamp value={selectedTrip.trip_expires_at} fallback="Never" />
+                                </AdminDetailField>
+                                <AdminDetailField label="Created">
+                                    <AdminRelativeTimestamp value={selectedTrip.created_at} fallback="n/a" />
+                                </AdminDetailField>
+                                <AdminDetailField label="Updated">
+                                    <AdminRelativeTimestamp value={selectedTrip.updated_at} fallback="n/a" />
+                                </AdminDetailField>
                                 {selectedTrip.archived_at && (
-                                    <DetailField label="Archived">
-                                        <RelativeTime value={selectedTrip.archived_at} fallback="n/a" />
-                                    </DetailField>
+                                    <AdminDetailField label="Archived">
+                                        <AdminRelativeTimestamp value={selectedTrip.archived_at} fallback="n/a" />
+                                    </AdminDetailField>
                                 )}
                             </dl>
 
@@ -2379,26 +2330,26 @@ export const AdminTripsPage: React.FC = () => {
                             )}
                             {selectedTripLatestAttempt ? (
                                 <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                                    <DetailField label="Model">
+                                    <AdminDetailField label="Model">
                                         <span className="break-all">
                                             {[selectedTripLatestAttempt.provider, selectedTripLatestAttempt.model].filter(Boolean).join(' · ') || 'n/a'}
                                         </span>
-                                    </DetailField>
-                                    <DetailField label="Started">
-                                        <RelativeTime value={selectedTripLatestAttempt.startedAt} fallback="n/a" />
-                                    </DetailField>
-                                    <DetailField label="Duration">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Started">
+                                        <AdminRelativeTimestamp value={selectedTripLatestAttempt.startedAt} fallback="n/a" />
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Duration">
                                         <span className="tabular-nums">{formatDurationMs(selectedTripLatestAttempt.durationMs)}</span>
-                                    </DetailField>
-                                    <DetailField label="Retries">
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Retries">
                                         <span className="tabular-nums">
                                             {selectedTripRetryCount}
                                             {selectedTripDeadLetterJobCount > 0 && ` · ${selectedTripDeadLetterJobCount} dead-letter`}
                                         </span>
-                                    </DetailField>
-                                    <DetailField label="Failure kind">{selectedTripLatestAttempt.failureKind || 'n/a'}</DetailField>
-                                    <DetailField label="Error code">{selectedTripLatestAttempt.errorCode || 'n/a'}</DetailField>
-                                    <DetailField label="Error message" wide>{selectedTripLatestAttempt.errorMessage || 'n/a'}</DetailField>
+                                    </AdminDetailField>
+                                    <AdminDetailField label="Failure kind">{selectedTripLatestAttempt.failureKind || 'n/a'}</AdminDetailField>
+                                    <AdminDetailField label="Error code">{selectedTripLatestAttempt.errorCode || 'n/a'}</AdminDetailField>
+                                    <AdminDetailField label="Error message" wide>{selectedTripLatestAttempt.errorMessage || 'n/a'}</AdminDetailField>
                                 </dl>
                             ) : !isLoadingTripAttemptLogRows && (
                                 <p className="text-sm text-muted-foreground">No generation attempts captured yet.</p>
@@ -2476,7 +2427,7 @@ export const AdminTripsPage: React.FC = () => {
                                             <li key={attempt.id} className="grid grid-cols-[5rem_1fr_auto_auto] items-center gap-2 px-2.5 py-1.5 text-xs">
                                                 <span className="font-medium capitalize text-foreground">{attempt.state}</span>
                                                 <span className="truncate text-muted-foreground">{attempt.model || attempt.providerModel || 'n/a'}</span>
-                                                <RelativeTime value={attempt.startedAt} fallback="n/a" className="tabular-nums text-muted-foreground" />
+                                                <AdminRelativeTimestamp value={attempt.startedAt} fallback="n/a" className="tabular-nums text-muted-foreground" />
                                                 <span className="tabular-nums text-muted-foreground">{formatDurationMs(attempt.durationMs)}</span>
                                             </li>
                                         ))}
@@ -2502,7 +2453,7 @@ export const AdminTripsPage: React.FC = () => {
                                                 <span className="shrink-0 tabular-nums text-muted-foreground" data-tooltip="Retries used / allowed">
                                                     {job.retryCount}/{job.maxRetries}
                                                 </span>
-                                                <RelativeTime value={job.createdAt} fallback="n/a" className="shrink-0 tabular-nums text-muted-foreground" />
+                                                <AdminRelativeTimestamp value={job.createdAt} fallback="n/a" className="shrink-0 tabular-nums text-muted-foreground" />
                                                 {(job.state === 'dead' || job.state === 'failed') ? (
                                                     <Button
                                                         type="button"
@@ -2540,39 +2491,39 @@ export const AdminTripsPage: React.FC = () => {
                                 </summary>
                                 <div className="flex flex-col gap-4 border-t border-border p-3">
                                     <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                                        <DetailField label="Flow">{selectedTripLatestAttempt?.flow || 'n/a'}</DetailField>
-                                        <DetailField label="Attempt source">{selectedTripLatestAttempt?.source || 'n/a'}</DetailField>
-                                        <DetailField label="Provider model">
+                                        <AdminDetailField label="Flow">{selectedTripLatestAttempt?.flow || 'n/a'}</AdminDetailField>
+                                        <AdminDetailField label="Attempt source">{selectedTripLatestAttempt?.source || 'n/a'}</AdminDetailField>
+                                        <AdminDetailField label="Provider model">
                                             <span className="break-all">{selectedTripLatestAttempt?.providerModel || 'n/a'}</span>
-                                        </DetailField>
-                                        <DetailField label="HTTP status">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="HTTP status">
                                             {typeof selectedTripLatestAttempt?.statusCode === 'number' ? selectedTripLatestAttempt.statusCode : 'n/a'}
-                                        </DetailField>
-                                        <DetailField label="Request ID" mono>{selectedTripLatestAttempt?.requestId || 'n/a'}</DetailField>
-                                        <DetailField label="Execution mode">{selectedTripOrchestrationMode || 'n/a'}</DetailField>
-                                        <DetailField label="Finished at">{formatRelativeWithAbsolute(selectedTripLatestAttempt?.finishedAt)}</DetailField>
-                                        <DetailField label="Latest state transition">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Request ID" mono>{selectedTripLatestAttempt?.requestId || 'n/a'}</AdminDetailField>
+                                        <AdminDetailField label="Execution mode">{selectedTripOrchestrationMode || 'n/a'}</AdminDetailField>
+                                        <AdminDetailField label="Finished at">{formatRelativeWithAbsolute(selectedTripLatestAttempt?.finishedAt)}</AdminDetailField>
+                                        <AdminDetailField label="Latest state transition">
                                             {formatRelativeWithAbsolute(selectedTripGenerationMeta?.lastFailedAt || selectedTripGenerationMeta?.lastSucceededAt)}
-                                        </DetailField>
-                                        <DetailField label="Retry requested at">{formatRelativeWithAbsolute(selectedTripGenerationMeta?.retryRequestedAt)}</DetailField>
-                                        <DetailField label="Input snapshot">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Retry requested at">{formatRelativeWithAbsolute(selectedTripGenerationMeta?.retryRequestedAt)}</AdminDetailField>
+                                        <AdminDetailField label="Input snapshot">
                                             {selectedTripGenerationMeta?.inputSnapshot
                                                 ? `${selectedTripGenerationMeta.inputSnapshot.flow} (${formatTimestamp(selectedTripGenerationMeta.inputSnapshot.createdAt, 'n/a')})`
                                                 : 'Unavailable'}
-                                        </DetailField>
-                                        <DetailField label="Latest queue job">
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Latest queue job">
                                             {selectedTripLatestGenerationJob
-                                                ? `${selectedTripLatestGenerationJob.state} (${formatRelativeTimestamp(selectedTripLatestGenerationJob.createdAt, 'n/a')})`
+                                                ? `${selectedTripLatestGenerationJob.state} (${formatAdminRelativeTime(selectedTripLatestGenerationJob.createdAt, undefined, 'n/a')})`
                                                 : 'n/a'}
-                                        </DetailField>
-                                        <DetailField label="Dead-letter jobs">{selectedTripDeadLetterJobCount}</DetailField>
-                                        <DetailField label="Attempt metadata details" wide>{selectedTripLatestAttemptDetails || 'n/a'}</DetailField>
+                                        </AdminDetailField>
+                                        <AdminDetailField label="Dead-letter jobs">{selectedTripDeadLetterJobCount}</AdminDetailField>
+                                        <AdminDetailField label="Attempt metadata details" wide>{selectedTripLatestAttemptDetails || 'n/a'}</AdminDetailField>
                                         {selectedTripLatestGenerationJob && (
                                             <>
-                                                <DetailField label="Job started at">{formatRelativeWithAbsolute(selectedTripLatestGenerationJob.startedAt)}</DetailField>
-                                                <DetailField label="Job finished at">{formatRelativeWithAbsolute(selectedTripLatestGenerationJob.finishedAt)}</DetailField>
-                                                <DetailField label="Job last error code">{selectedTripLatestGenerationJob.lastErrorCode || 'n/a'}</DetailField>
-                                                <DetailField label="Job last error message" wide>{selectedTripLatestGenerationJob.lastErrorMessage || 'n/a'}</DetailField>
+                                                <AdminDetailField label="Job started at">{formatRelativeWithAbsolute(selectedTripLatestGenerationJob.startedAt)}</AdminDetailField>
+                                                <AdminDetailField label="Job finished at">{formatRelativeWithAbsolute(selectedTripLatestGenerationJob.finishedAt)}</AdminDetailField>
+                                                <AdminDetailField label="Job last error code">{selectedTripLatestGenerationJob.lastErrorCode || 'n/a'}</AdminDetailField>
+                                                <AdminDetailField label="Job last error message" wide>{selectedTripLatestGenerationJob.lastErrorMessage || 'n/a'}</AdminDetailField>
                                             </>
                                         )}
                                     </dl>
