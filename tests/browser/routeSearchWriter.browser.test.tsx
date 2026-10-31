@@ -15,8 +15,8 @@ afterEach(cleanup);
 /** The trip and create areas as the app declares them: layout schema, version-only loader deps, staleTime 0. */
 function buildRouter({ initial, TripPage, CreatePage, tripLoader, profileLoader }: {
     initial: string;
-    TripPage?: React.ComponentType;
-    CreatePage?: React.ComponentType;
+    TripPage?: () => React.ReactElement | null;
+    CreatePage?: () => React.ReactElement | null;
     tripLoader?: () => unknown;
     profileLoader?: () => unknown;
 }) {

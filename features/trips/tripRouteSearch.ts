@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useSearch } from '@tanstack/react-router';
-import * as z from 'zod/mini';
-import { parseSearchWith, searchNumberText, searchOption, searchText } from '../../app/routing/searchSchema';
+import { defineSearchSchema, searchNumberText, searchOption, searchText } from '../../app/routing/searchSchema';
 import { TRIP_CLAIM_CONFLICT_QUERY_KEY } from '../../services/tripClaimNavigation';
 
 /**
@@ -10,7 +9,7 @@ import { TRIP_CLAIM_CONFLICT_QUERY_KEY } from '../../services/tripClaimNavigatio
  * the rest belong to the open page. The view-setting keys are the ones
  * `applyViewSettingsToSearchParams` writes. Unknown parameters are kept.
  */
-export const tripRouteSearchSchema = z.looseObject({
+export const tripRouteSearchSchema = defineSearchSchema({
     /** Trip or share version to open. */
     v: searchText(),
     /** Queued generation request to claim after sign-in. */
@@ -30,9 +29,9 @@ export const tripRouteSearchSchema = z.looseObject({
     detailsWidth: searchNumberText(),
     timelineHeight: searchNumberText(),
 });
-export type TripRouteSearch = z.infer<typeof tripRouteSearchSchema>;
+export type TripRouteSearch = ReturnType<typeof tripRouteSearchSchema>;
 
-export const parseTripRouteSearch = (search: unknown): TripRouteSearch => parseSearchWith(tripRouteSearchSchema, search);
+export const parseTripRouteSearch = (search: unknown): TripRouteSearch => tripRouteSearchSchema(search);
 
 /**
  * The validated query of the trip page that renders the caller. It reads the

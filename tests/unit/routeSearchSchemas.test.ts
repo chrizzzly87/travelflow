@@ -5,10 +5,9 @@ import { createTripRouteSearchSchema, parseCreateTripRouteSearch } from '../../f
 import { tripLoaderDeps } from '../../features/trips/routeData';
 
 /** What the router does: parse with the flat codec, validate, stringify. */
-const roundTrip = (schema: { '~standard': { validate: (input: unknown) => unknown } }, searchStr: string) => {
+const roundTrip = (schema: (input: unknown) => Record<string, unknown>, searchStr: string) => {
     const raw = parseRouteSearch(searchStr);
-    const result = schema['~standard'].validate(raw) as { value: Record<string, unknown> };
-    return stringifyRouteSearch({ ...raw, ...result.value });
+    return stringifyRouteSearch({ ...raw, ...schema(raw) });
 };
 
 describe('trip route search schema', () => {
@@ -53,7 +52,8 @@ describe('trip route search schema', () => {
         for (const key of ['v', 'mode', 'layout', 'mapStyle', 'cityNames', 'zoom', 'discover'] as const) expect(parsed[key]).toBeUndefined();
         expect(() => parseTripRouteSearch(null)).not.toThrow();
         expect(parseTripRouteSearch('not an object')).toEqual({});
-        expect(() => tripRouteSearchSchema['~standard'].validate({ v: 3, zoom: { nested: true } })).not.toThrow();
+        expect(tripRouteSearchSchema({ v: 3, zoom: { nested: true } })).toEqual({ v: undefined, zoom: undefined });
+        expect(parseTripRouteSearch(['v'])).toEqual({});
     });
 
     it('feeds only the version to the trip loader', () => {
