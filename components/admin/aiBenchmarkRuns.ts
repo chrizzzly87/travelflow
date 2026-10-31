@@ -7,7 +7,6 @@
  * only re-shaped for display; the stored run is never rewritten.
  */
 import type { AdminStatusTone } from './AdminStatusBadge';
-import { formatAdminRelativeTime } from './adminRelativeTime';
 
 export interface BenchmarkRun {
     id: string;
@@ -107,12 +106,6 @@ export const formatTimestamp = (value?: string | null): string => {
     if (!Number.isFinite(parsed)) return '—';
     return new Date(parsed).toLocaleString();
 };
-
-
-/** "3 minutes ago", "yesterday", or a dash for a missing or invalid timestamp. */
-export const formatRelativeTime = (value: string | null | undefined, nowMs = Date.now()): string => (
-    formatAdminRelativeTime(value, nowMs)
-);
 
 /** Total tokens from either usage spelling the providers return, or null. */
 export const getRunTotalTokens = (run: BenchmarkRun): number | null => {
