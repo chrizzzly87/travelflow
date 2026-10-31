@@ -1,5 +1,7 @@
 # Username Security and Canonical Handle Governance (Follow-up)
 
+> **Archived (2026-10).** Shipped follow-up (#208, PR #211), kept as history.
+
 ## Status
 Implemented via PR #211. Track follow-up tuning only if new edge cases appear.
 GitHub issue: https://github.com/chrizzzly87/travelflow/issues/208

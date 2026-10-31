@@ -1,5 +1,7 @@
 # Payment Provider Analysis (#174)
 
+> **Archived (2026-10).** Decision memo for #174; Paddle shipped. Current setup: [`PADDLE_SETUP_RUNBOOK.md`](../../PADDLE_SETUP_RUNBOOK.md).
+
 ## Status
 - Issue: [#174](https://github.com/chrizzzly87/travelflow/issues/174)
 - Date finalized: 2026-03-02

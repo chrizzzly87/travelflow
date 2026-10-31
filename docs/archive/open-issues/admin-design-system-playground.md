@@ -1,5 +1,7 @@
 # Admin Design System Playground and Notification Lab (Follow-up)
 
+> **Archived (2026-10).** Shipped follow-up (#196), kept as history.
+
 ## Status
 Shipped (phases 1 and 2). The rest of this file is the original proposal, kept as history.
 GitHub issue: https://github.com/chrizzzly87/travelflow/issues/196

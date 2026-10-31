@@ -1,5 +1,7 @@
 # AI Backend Target Architecture (Provider-Agnostic + Benchmark Workspace)
 
+> **Archived (2026-10).** Historical target design from 2026-02; the code did not follow it as written. Current AI rules: [`AI_AGENT_FEATURE_GUARDRAILS.md`](../AI_AGENT_FEATURE_GUARDRAILS.md) and [`AI_TRIP_GENERATION_ARCHITECTURE.md`](../AI_TRIP_GENERATION_ARCHITECTURE.md).
+
 Status: Historical draft (2026-02). The `services/ai/*` layout it describes was not built as written; check the code before relying on it.  
 Owner: TravelFlow engineering  
 Last updated: 2026-02-11 (admin workspace notes refreshed 2026-10-24)

@@ -10,7 +10,7 @@ import type { IMapCustomization } from '../../types';
  * column on `user_settings`, and this repo never applies a migration from a
  * deploy — adding the column to the upsert before it exists would break saving
  * every other user setting in production. Tracked as a follow-up in
- * `docs/superpowers/specs/2026-09-18-map-provider-customization-design.md`.
+ * `docs/archive/superpowers-specs/2026-09-18-map-provider-customization-design.md`.
  */
 export const MAP_CUSTOMIZATION_DEFAULT_KEY = 'tf_map_customization_default_v1';
 

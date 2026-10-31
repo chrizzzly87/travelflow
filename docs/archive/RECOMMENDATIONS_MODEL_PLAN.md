@@ -1,5 +1,7 @@
 # Recommendations model plan
 
+> **Archived (2026-10).** Historical plan, shipped in v0.173.0. Current operations: [`RECOMMENDATIONS_CONTENT_RUNBOOK.md`](../RECOMMENDATIONS_CONTENT_RUNBOOK.md).
+
 Status: largely implemented — see **What actually shipped** below
 Last updated: 2026-10-24 (admin surface notes); plan text from 2026-09-17
 Feeds: issue #505 (unassigned activity pool and swipe triage)

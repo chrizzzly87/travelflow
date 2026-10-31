@@ -1,5 +1,7 @@
 # Mapbox Runtime Follow-up Checklist
 
+> **Archived (2026-10).** Historical checklist from the Mapbox dual-provider branch. The five open items moved to issue [#612](https://github.com/chrizzzly87/travelflow/issues/612); track them there.
+
 This checklist tracks the remaining Mapbox-only work on the
 `codex/map-runtime-dual-provider-foundation` branch.
 
