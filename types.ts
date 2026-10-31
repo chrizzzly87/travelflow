@@ -357,7 +357,7 @@ export interface ITrip {
   defaultView?: IViewSettings;
   status?: 'active' | 'archived' | 'expired';
   tripExpiresAt?: string | null;
-  sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example' | 'ai_benchmark';
+  sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example' | 'ai_benchmark' | 'external_draft';
   sourceTemplateId?: string | null;
   sourceOwnerType?: 'user' | 'system_catalog';
   sourceOwnerHandle?: string | null;

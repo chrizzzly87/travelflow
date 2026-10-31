@@ -847,6 +847,16 @@
       "countryFocus": "Países: {countries}.",
       "dismiss": "Fechar o aviso da viagem de exemplo"
     },
+    "draftBanner": {
+      "eyebrow": "Plano de um assistente de IA",
+      "eyebrowFrom": "Plano de {client}",
+      "title": "Explore e depois guarde para continuar a editar.",
+      "body": "Isto é um rascunho. As alterações aqui não são guardadas. Guarde-o na sua conta para editar, partilhar e exportar.",
+      "save": "Guardar nas minhas viagens",
+      "dismiss": "Fechar aviso de rascunho",
+      "saveFailedTitle": "Não foi possível guardar esta viagem",
+      "saveFailedBody": "Verifique a sua ligação e tente novamente."
+    },
     "listView": {
       "openTransfer": "Abrir detalhes da deslocação ({mode})",
       "taskCompleted": "Tarefa concluída",

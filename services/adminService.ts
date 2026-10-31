@@ -1912,3 +1912,142 @@ export const adminImportRecommendations = async (
     }
     return imported;
 };
+
+export type AdminTripDraftStatus = 'draft' | 'claimed' | 'expired';
+
+export interface AdminTripDraftRecord {
+    id: string;
+    title: string;
+    start_date: string | null;
+    source: string;
+    client_name: string | null;
+    client_model: string | null;
+    city_count: number;
+    activity_count: number;
+    country_codes: string[];
+    status: AdminTripDraftStatus;
+    view_count: number;
+    last_viewed_at: string | null;
+    claim_count: number;
+    first_claimed_at: string | null;
+    first_claimed_by: string | null;
+    first_claimed_by_email: string | null;
+    first_claimed_trip_id: string | null;
+    expires_at: string | null;
+    created_at: string;
+}
+
+export interface AdminTripDraftBreakdownEntry {
+    created: number;
+    claimed: number;
+}
+
+export interface AdminTripDraftStats {
+    created_count: number;
+    claimed_count: number;
+    claim_total: number;
+    view_total: number;
+    expired_count: number;
+    by_source: Record<string, AdminTripDraftBreakdownEntry>;
+    by_client: Record<string, AdminTripDraftBreakdownEntry>;
+}
+
+const toTripDraftRpcError = (rawMessage: string | null | undefined, fallbackMessage: string): Error => {
+    const message = (rawMessage || '').trim();
+    if (/admin_(list_trip_drafts|get_trip_draft_stats)/i.test(message) || /trip_drafts/i.test(message)) {
+        return new AdminUserFacingError('Trip draft admin functions are missing. Apply supabase/migrations/20261031120000_trip_drafts.sql.');
+    }
+    return new Error(message || fallbackMessage);
+};
+
+const buildMockTripDrafts = (): AdminTripDraftRecord[] => {
+    const now = Date.now();
+    const clients = ['chatgpt', 'claude', 'gemini', null];
+    const sources = ['mcp', 'webmcp', 'api', 'paste'];
+    return Array.from({ length: 18 }).map((_, i) => {
+        const claimed = i % 3 === 0;
+        const createdAt = new Date(now - i * 86400000 * 0.8).toISOString();
+        return {
+            id: `drf_mock${String(i).padStart(20, '0')}`,
+            title: ['Portugal: Lisbon to Porto', 'Japan in two weeks', 'Iceland ring road'][i % 3],
+            start_date: null,
+            source: sources[i % sources.length],
+            client_name: clients[i % clients.length],
+            client_model: null,
+            city_count: 2 + (i % 5),
+            activity_count: 6 + i,
+            country_codes: [['PT'], ['JP'], ['IS']][i % 3],
+            status: claimed ? 'claimed' : i % 7 === 6 ? 'expired' : 'draft',
+            view_count: i % 4,
+            last_viewed_at: createdAt,
+            claim_count: claimed ? 1 : 0,
+            first_claimed_at: claimed ? createdAt : null,
+            first_claimed_by: claimed ? `mock-user-${i}` : null,
+            first_claimed_by_email: claimed ? `user${i}@example.com` : null,
+            first_claimed_trip_id: claimed ? `mock-trip-${i}` : null,
+            expires_at: claimed ? null : new Date(now + 86400000 * 20).toISOString(),
+            created_at: createdAt,
+        };
+    });
+};
+
+export const summarizeAdminTripDrafts = (drafts: readonly AdminTripDraftRecord[]): AdminTripDraftStats => {
+    const bump = (bucket: Record<string, AdminTripDraftBreakdownEntry>, key: string, claimed: boolean) => {
+        const entry = bucket[key] ?? { created: 0, claimed: 0 };
+        entry.created += 1;
+        if (claimed) entry.claimed += 1;
+        bucket[key] = entry;
+    };
+    const stats: AdminTripDraftStats = {
+        created_count: drafts.length,
+        claimed_count: 0,
+        claim_total: 0,
+        view_total: 0,
+        expired_count: 0,
+        by_source: {},
+        by_client: {},
+    };
+    for (const draft of drafts) {
+        const claimed = draft.claim_count > 0;
+        if (claimed) stats.claimed_count += 1;
+        if (draft.status === 'expired') stats.expired_count += 1;
+        stats.claim_total += draft.claim_count;
+        stats.view_total += draft.view_count;
+        bump(stats.by_source, draft.source, claimed);
+        bump(stats.by_client, (draft.client_name || 'unknown').toLowerCase(), claimed);
+    }
+    return stats;
+};
+
+export const adminListTripDrafts = async (
+    options: { limit?: number; offset?: number; status?: AdminTripDraftStatus | 'all'; search?: string; since?: string | null } = {}
+): Promise<AdminTripDraftRecord[]> => {
+    if (shouldUseAdminMockData()) return buildMockTripDrafts();
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_trip_drafts', {
+        p_limit: options.limit ?? 300,
+        p_offset: options.offset ?? 0,
+        p_status: options.status && options.status !== 'all' ? options.status : null,
+        p_search: options.search?.trim() || null,
+        p_since: options.since ?? null,
+    });
+    if (error) throw toTripDraftRpcError(error.message, 'Could not load trip drafts.');
+    return (Array.isArray(data) ? data : []) as AdminTripDraftRecord[];
+};
+
+export const adminGetTripDraftStats = async (since: string | null = null): Promise<AdminTripDraftStats> => {
+    if (shouldUseAdminMockData()) return summarizeAdminTripDrafts(buildMockTripDrafts());
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_trip_draft_stats', { p_since: since });
+    if (error) throw toTripDraftRpcError(error.message, 'Could not load trip draft statistics.');
+    const row = (Array.isArray(data) ? data[0] : data) as Partial<AdminTripDraftStats> | undefined;
+    return {
+        created_count: Number(row?.created_count) || 0,
+        claimed_count: Number(row?.claimed_count) || 0,
+        claim_total: Number(row?.claim_total) || 0,
+        view_total: Number(row?.view_total) || 0,
+        expired_count: Number(row?.expired_count) || 0,
+        by_source: row?.by_source ?? {},
+        by_client: row?.by_client ?? {},
+    };
+};
