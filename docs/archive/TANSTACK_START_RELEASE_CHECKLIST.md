@@ -2,7 +2,7 @@
 
 > **Historical record.** This checklist gated the first native Start release, which
 > shipped to production as v0.209.0 (2026-10-24). It is kept as acceptance evidence;
-> current guidance is in [TANSTACK_START_ARCHITECTURE.md](TANSTACK_START_ARCHITECTURE.md).
+> current guidance is in [TANSTACK_START_ARCHITECTURE.md](../TANSTACK_START_ARCHITECTURE.md).
 
 Status: the first native Start candidate is being finalized on
 `codex/tanstack-start-release-hardening`, [PR #579](https://github.com/chrizzzly87/travelflow/pull/579).
@@ -62,9 +62,9 @@ vendor patches, dependency-age bypasses or suppressed hydration errors.
 - [x] Native flat documents: all 77 public locale/page combinations return HTTP 200
   with correct language, direction, canonical path and heading on hosted runtime
   `61bff8a7`, deploy `6ad70f862dd4fd8e39c054a0`; see
-  [all 77 hosted results](performance/tanstack-start-2026-10-20/release-documents-hosted.json).
+  [all 77 hosted results](../performance/tanstack-start-2026-10-20/release-documents-hosted.json).
 - [x] Publish the isolated native-document comparison with exact revisions and
-  [raw samples/limitations](performance/tanstack-start-2026-10-20/public-documents.md).
+  [raw samples/limitations](../performance/tanstack-start-2026-10-20/public-documents.md).
   No minimum synthetic score or promised percentage is a release gate.
 - [x] Existing authorized session restores and opens the real profile/trip library
   on hosted navigation runtime `52152903` (read-only browser check 2026-10-20).

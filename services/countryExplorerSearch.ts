@@ -2,7 +2,7 @@
  * Tiny in-repo fuzzy matcher for the countries explorer.
  *
  * Why not a dependency: the initial JS budget for marketing routes is tight
- * (see `docs/INITIAL_JS_SIZE_OPTIMIZATION_GUIDE.md`) and the corpus is ~50 entries with a handful
+ * (see `docs/archive/INITIAL_JS_SIZE_OPTIMIZATION_GUIDE.md`) and the corpus is ~50 entries with a handful
  * of tokens each. A scored prefix/substring/subsequence matcher is a few hundred bytes gzipped
  * and gives us full control over ranking.
  *

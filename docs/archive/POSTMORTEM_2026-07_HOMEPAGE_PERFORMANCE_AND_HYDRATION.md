@@ -2,7 +2,7 @@
 
 > **Historical (2026-07).** Describes the former Vite + `preact/compat` build and its
 > crawler prerender, both removed when TanStack Start shipped (v0.209.0). Its rules are
-> not current instructions; read [`TANSTACK_START_ARCHITECTURE.md`](TANSTACK_START_ARCHITECTURE.md).
+> not current instructions; read [`TANSTACK_START_ARCHITECTURE.md`](../TANSTACK_START_ARCHITECTURE.md).
 
 **Status:** resolved (landing pages functional across Chrome + Safari); one cosmetic issue documented as a tracked follow-up (active-nav underline).
 **Scope:** public marketing/landing pages (`/`, `/blog`, `/features`, `/inspirations`, `/pricing`) — prerendered static HTML hydrated by a Vite + **preact/compat** SPA, deployed on Netlify.

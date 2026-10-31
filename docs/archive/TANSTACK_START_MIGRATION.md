@@ -202,7 +202,7 @@ HTTP locale/page probes pass. Local quality gates pass 2,979 tests (one skip),
 94 browser checks and three PWA checks. Exact-head GitHub checks remain mandatory
 before integration; production promotion is a separate release decision.
 
-[First-release checklist](../TANSTACK_START_RELEASE_CHECKLIST.md) distinguishes
+[First-release checklist](TANSTACK_START_RELEASE_CHECKLIST.md) distinguishes
 required stabilization from optional performance follow-ups. Real Google SSO,
 profile landing, member homepage CTA, owned-trip details/refresh, creation prefill
 refresh and the authorized admin dashboard have now been checked on the hosted
