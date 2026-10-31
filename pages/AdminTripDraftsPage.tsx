@@ -3,6 +3,7 @@ import { ArrowSquareOut, CheckCircle, Eye, Robot, Sparkle } from '@phosphor-icon
 import { Link } from '@/app/navigation';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
+import { resolveTripDraftRangeStart } from '../components/admin/adminTripDraftsModel';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminStatCard } from '../components/admin/AdminStatCard';
@@ -30,8 +31,6 @@ const numberFormatter = new Intl.NumberFormat();
 const percentFormatter = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 0 });
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-const RANGE_DAYS: Record<AdminDateRange, number | null> = { '7d': 7, '30d': 30, '90d': 90, all: null };
-
 const SOURCE_LABELS: Record<string, string> = {
     mcp: 'MCP server',
     webmcp: 'WebMCP (in page)',
@@ -56,12 +55,6 @@ const STATUS_FILTER_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
 
 const EMPTY_STATS: AdminTripDraftStats = {
     created_count: 0, claimed_count: 0, claim_total: 0, view_total: 0, expired_count: 0, by_source: {}, by_client: {},
-};
-
-/** Start of the selected range as an ISO timestamp, or null for all time. */
-export const resolveTripDraftRangeStart = (range: AdminDateRange, now: number = Date.now()): string | null => {
-    const days = RANGE_DAYS[range];
-    return days === null ? null : new Date(now - days * 86_400_000).toISOString();
 };
 
 const toBarListRows = (bucket: Record<string, AdminTripDraftBreakdownEntry>, labels: Record<string, string> = {}) => (

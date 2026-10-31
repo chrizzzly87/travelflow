@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { summarizeAdminTripDrafts, type AdminTripDraftRecord } from '../../services/adminService';
-import { resolveTripDraftRangeStart } from '../../pages/AdminTripDraftsPage';
+import { resolveTripDraftRangeStart } from '../../components/admin/adminTripDraftsModel';
 import { ADMIN_NAV_ITEMS } from '../../components/admin/adminNavConfig';
 import { resolveAdminDocumentTitle } from '../../shared/adminScreenTitles';
 
