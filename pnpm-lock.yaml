@@ -44,9 +44,6 @@ importers:
       '@radix-ui/react-switch':
         specifier: ^1.2.6
         version: 1.2.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@radix-ui/react-use-controllable-state':
-        specifier: ^1.2.6
-        version: 1.2.6(@types/react@19.3.0)(react@19.3.1)
       '@streamdown/cjk':
         specifier: ^1.0.3
         version: 1.0.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.3.1)(unified@11.0.5)
@@ -59,9 +56,6 @@ importers:
       '@tanstack/react-start':
         specifier: 1.169.2
         version: 1.169.2(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.13)(rollup@4.58.0)(vite@8.3.4(@types/node@22.19.11)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0))
-      '@types/google.maps':
-        specifier: ^3.58.1
-        version: 3.58.1
       '@vis.gl/react-google-maps':
         specifier: 1.7.1
         version: 1.7.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -89,21 +83,12 @@ importers:
       fontkit:
         specifier: 2.0.4
         version: 2.0.4
-      framer-motion:
-        specifier: ^12.34.3
-        version: 12.34.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       gradient-shimmer:
         specifier: 0.1.1
         version: 0.1.1(react@19.3.1)
       i18next:
         specifier: ^25.8.13
         version: 25.8.13(typescript@5.8.3)
-      i18next-browser-languagedetector:
-        specifier: ^8.2.1
-        version: 8.2.1
-      i18next-icu:
-        specifier: ^2.4.3
-        version: 2.4.3(intl-messageformat@11.1.2)
       i18next-resources-to-backend:
         specifier: ^1.2.1
         version: 1.2.1
@@ -198,6 +183,9 @@ importers:
       '@testing-library/user-event':
         specifier: ^14.6.1
         version: 14.6.1(@testing-library/dom@10.4.1)
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.58.1
       '@types/mdast':
         specifier: 4.0.4
         version: 4.0.4
@@ -237,9 +225,6 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
-      terser:
-        specifier: ^5.46.0
-        version: 5.46.0
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -1356,21 +1341,6 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
-
-  '@formatjs/ecma402-abstract@3.1.1':
-    resolution: {integrity: sha512-jhZbTwda+2tcNrs4kKvxrPLPjx8QsBCLCUgrrJ/S+G9YrGHWLhAyFMMBHJBnBoOwuLHd7L14FgYudviKaxkO2Q==}
-
-  '@formatjs/fast-memoize@3.1.0':
-    resolution: {integrity: sha512-b5mvSWCI+XVKiz5WhnBCY3RJ4ZwfjAidU0yVlKa3d3MSgKmH1hC3tBGEAtYyN5mqL7N0G5x0BOUYyO8CEupWgg==}
-
-  '@formatjs/icu-messageformat-parser@3.5.1':
-    resolution: {integrity: sha512-sSDmSvmmoVQ92XqWb499KrIhv/vLisJU8ITFrx7T7NZHUmMY7EL9xgRowAosaljhqnj/5iufG24QrdzB6X3ItA==}
-
-  '@formatjs/icu-skeleton-parser@2.1.1':
-    resolution: {integrity: sha512-PSFABlcNefjI6yyk8f7nyX1DC7NHmq6WaCHZLySEXBrXuLOB2f935YsnzuPjlz+ibhb9yWTdPeVX1OVcj24w2Q==}
-
-  '@formatjs/intl-localematcher@0.8.1':
-    resolution: {integrity: sha512-xwEuwQFdtSq1UKtQnyTZWC+eHdv7Uygoa+H2k/9uzBVQjDyp9r20LNDNKedWXll7FssT3GRHvqsdJGYSUWqYFA==}
 
   '@googleapis/sheets@13.0.1':
     resolution: {integrity: sha512-XTYObncN5Rqexc0uITZIN9OWTEyE/ZR2S6c7wAniqHe2oGXW9gcHR9f9hQwPMHFUTHjH7Jkj8SLdt0O0u37y2A==}
@@ -2826,9 +2796,6 @@ packages:
   '@radix-ui/primitive@1.1.3':
     resolution: {integrity: sha512-JTF99U/6XIjCBo0wqkU5sK10glYe27MRRsfwoiq5zzOEZLHU3A3KCMa5X/azekYRCJ0HlwI0crAXS/5dEHTzDg==}
 
-  '@radix-ui/primitive@1.1.7':
-    resolution: {integrity: sha512-rqWnm76nYT8HoNNqEjpgJ7Pw/DrBj5iBTrmEPo6HTX5+VJyBNOqTdv4g89G63HuR5g0AaENoAcH7Is5fF2kZ8Q==}
-
   '@radix-ui/react-accessible-icon@1.1.7':
     resolution: {integrity: sha512-XM+E4WXl0OqUJFovy6GjmxxFyx9opfCAIUku4dlKRd5YEPqt4kALOkQOp0Of6reHuUkJuiPBEc5k0o4z4lTC8A==}
     peerDependencies:
@@ -3434,26 +3401,8 @@ packages:
       '@types/react':
         optional: true
 
-  '@radix-ui/react-use-controllable-state@1.2.6':
-    resolution: {integrity: sha512-uEQJGT97ZA/TgP/Hydw47lHu+/vQj6z/0jA+WeTbK1o9Rx45GImjpD0tc3W5ad3D6XTSR6e1yEO0FvGq6WQfVQ==}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-
   '@radix-ui/react-use-effect-event@0.0.2':
     resolution: {integrity: sha512-Qp8WbZOBe+blgpuUT+lw2xheLP8q0oatc9UpmiemEICxGvFLYmHm9QowVZGHtJlGbS6A6yJ3iViad/2cVjnOiA==}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-
-  '@radix-ui/react-use-effect-event@0.0.5':
-    resolution: {integrity: sha512-7cshFL8HGS/7HEiHH+9kL9HBwp2sa9yX18Knwek6KYWmXwM7pegMgta2AXMQKI+rq3JnfSj9x8wYqFMTdG1Jgg==}
     peerDependencies:
       '@types/react': '*'
       react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
@@ -3481,15 +3430,6 @@ packages:
 
   '@radix-ui/react-use-layout-effect@1.1.1':
     resolution: {integrity: sha512-RbJRS4UWQFkzHTTwVymMTUv8EqYhOp8dOOviLj2ugtTiXRaRQS7GLGxZTLL1jWhMeoSCf5zmcZkqTl9IiYfXcQ==}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-
-  '@radix-ui/react-use-layout-effect@1.1.4':
-    resolution: {integrity: sha512-K20DkRkUwDnxEYMBPcg3Y6voLkEy5p5QQmszZgLngKKiC7dzBR/aEuK3w1qlx2JWDUNH6FluahYdgR3BP+QbYw==}
     peerDependencies:
       '@types/react': '*'
       react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
@@ -6652,20 +6592,6 @@ packages:
   fraction.js@5.3.4:
     resolution: {integrity: sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==}
 
-  framer-motion@12.34.3:
-    resolution: {integrity: sha512-v81ecyZKYO/DfpTwHivqkxSUBzvceOpoI+wLfgCgoUIKxlFKEXdg0oR9imxwXumT4SFy8vRk9xzJ5l3/Du/55Q==}
-    peerDependencies:
-      '@emotion/is-prop-valid': '*'
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@emotion/is-prop-valid':
-        optional: true
-      react:
-        optional: true
-      react-dom:
-        optional: true
-
   framer-motion@13.1.1:
     resolution: {integrity: sha512-B/xn2TPS4f61cEBLFjiYlQFnBZUW1YVj/LM+C+N4OP8Rs95VLEI2ot/RlfBg111la/EiyECFaJJi/A3FWA8MUA==}
     peerDependencies:
@@ -7073,14 +6999,6 @@ packages:
     resolution: {integrity: sha512-eKCa6bwnJhvxj14kZk5NCPc6Hb6BdsU9DZcOnmQKSnO1VKrfV0zCvtttPZUsBvjmNDn8rpcJfpwSYnHBjc95MQ==}
     engines: {node: '>=18.18.0'}
 
-  i18next-browser-languagedetector@8.2.1:
-    resolution: {integrity: sha512-bZg8+4bdmaOiApD7N7BPT9W8MLZG+nPTOFlLiJiT8uzKXFjhxw4v2ierCXOwB5sFDMtuA5G4kgYZ0AznZxQ/cw==}
-
-  i18next-icu@2.4.3:
-    resolution: {integrity: sha512-Clb5XCp416Z+BkJUTATCjmDcw2AFzSUDVLxLVK/KhtXP6TJQHrht+6MqoJU1hCpyoCBKe59wMO9pvCvYroNcKg==}
-    peerDependencies:
-      intl-messageformat: '>=10.3.3 <12.0.0'
-
   i18next-resources-to-backend@1.2.1:
     resolution: {integrity: sha512-okHbVA+HZ7n1/76MsfhPqDou0fptl2dAlhRDu2ideXloRRduzHsqDOznJBef+R3DFZnbvWoBW+KxJ7fnFjd6Yw==}
 
@@ -7196,9 +7114,6 @@ packages:
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
-
-  intl-messageformat@11.1.2:
-    resolution: {integrity: sha512-ucSrQmZGAxfiBHfBRXW/k7UC8MaGFlEj4Ry1tKiDcmgwQm1y3EDl40u+4VNHYomxJQMJi9NEI3riDRlth96jKg==}
 
   ip-address@10.0.1:
     resolution: {integrity: sha512-NWv9YLW4PoW2B7xtzaS3NCot75m6nK7Icdv0o3lfMceJVRfSoQwqD4wEH5rLwoKJwUiZ/rfpiVBhnaF0FK4HoA==}
@@ -8408,14 +8323,8 @@ packages:
     resolution: {integrity: sha512-Tv2p3DLBkftoGFp+VM/19k0t0RYPAAYjGIbCVGlV6Tf5Dnq6TICfYyeKeYvwQ06nK9sRDvymP3B+tjGHnUlaxw==}
     engines: {node: '>=20.19.0'}
 
-  motion-dom@12.34.3:
-    resolution: {integrity: sha512-sYgFe+pR9aIM7o4fhs2aXtOI+oqlUd33N9Yoxcgo1Fv7M20sRkHtCmzE/VRNIcq7uNJ+qio+Xubt1FXH3pQ+eQ==}
-
   motion-dom@13.1.1:
     resolution: {integrity: sha512-XSf8VYWSB6G/0IY3rWVbyLcxWXtAVHkN1PQE2agTaCv3u8RGvbwu56TyyR/MNzBqqNavEBTZzErcxI1TxBrjcA==}
-
-  motion-utils@12.29.2:
-    resolution: {integrity: sha512-G3kc34H2cX2gI63RqU+cZq+zWRRPSsNIOjpdl9TN4AQwC4sgwYPl/Q/Obf/d53nOm569T0fYK+tcoSV50BWx8A==}
 
   motion-utils@13.0.0:
     resolution: {integrity: sha512-7DnN7TmbLcYXcG4RVadXIihWlyuM9afoUww8Y5Agg431kGKiuL2/OMyP4mJ5wLz+pvN3t5ySClLOaVXJ+wekRQ==}
@@ -12924,33 +12833,6 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@formatjs/ecma402-abstract@3.1.1':
-    dependencies:
-      '@formatjs/fast-memoize': 3.1.0
-      '@formatjs/intl-localematcher': 0.8.1
-      decimal.js: 10.6.0
-      tslib: 2.8.1
-
-  '@formatjs/fast-memoize@3.1.0':
-    dependencies:
-      tslib: 2.8.1
-
-  '@formatjs/icu-messageformat-parser@3.5.1':
-    dependencies:
-      '@formatjs/ecma402-abstract': 3.1.1
-      '@formatjs/icu-skeleton-parser': 2.1.1
-      tslib: 2.8.1
-
-  '@formatjs/icu-skeleton-parser@2.1.1':
-    dependencies:
-      '@formatjs/ecma402-abstract': 3.1.1
-      tslib: 2.8.1
-
-  '@formatjs/intl-localematcher@0.8.1':
-    dependencies:
-      '@formatjs/fast-memoize': 3.1.0
-      tslib: 2.8.1
-
   '@googleapis/sheets@13.0.1':
     dependencies:
       googleapis-common: 8.0.1
@@ -13256,6 +13138,7 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
+    optional: true
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
@@ -14433,8 +14316,6 @@ snapshots:
 
   '@radix-ui/primitive@1.1.3': {}
 
-  '@radix-ui/primitive@1.1.7': {}
-
   '@radix-ui/react-accessible-icon@1.1.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@radix-ui/react-visually-hidden': 1.2.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -15120,25 +15001,9 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@radix-ui/react-use-controllable-state@1.2.6(@types/react@19.3.0)(react@19.3.1)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.7
-      '@radix-ui/react-use-effect-event': 0.0.5(@types/react@19.3.0)(react@19.3.1)
-      '@radix-ui/react-use-layout-effect': 1.1.4(@types/react@19.3.0)(react@19.3.1)
-      react: 19.3.1
-    optionalDependencies:
-      '@types/react': 19.3.0
-
   '@radix-ui/react-use-effect-event@0.0.2(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
       '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.3.0)(react@19.3.1)
-      react: 19.3.1
-    optionalDependencies:
-      '@types/react': 19.3.0
-
-  '@radix-ui/react-use-effect-event@0.0.5(@types/react@19.3.0)(react@19.3.1)':
-    dependencies:
-      '@radix-ui/react-use-layout-effect': 1.1.4(@types/react@19.3.0)(react@19.3.1)
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
@@ -15158,12 +15023,6 @@ snapshots:
       '@types/react': 19.3.0
 
   '@radix-ui/react-use-layout-effect@1.1.1(@types/react@19.3.0)(react@19.3.1)':
-    dependencies:
-      react: 19.3.1
-    optionalDependencies:
-      '@types/react': 19.3.0
-
-  '@radix-ui/react-use-layout-effect@1.1.4(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
       react: 19.3.1
     optionalDependencies:
@@ -18605,15 +18464,6 @@ snapshots:
 
   fraction.js@5.3.4: {}
 
-  framer-motion@12.34.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
-    dependencies:
-      motion-dom: 12.34.3
-      motion-utils: 12.29.2
-      tslib: 2.8.1
-    optionalDependencies:
-      react: 19.3.1
-      react-dom: 19.3.1(react@19.3.1)
-
   framer-motion@13.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
       motion-dom: 13.1.1
@@ -19145,14 +18995,6 @@ snapshots:
 
   human-signals@8.0.1: {}
 
-  i18next-browser-languagedetector@8.2.1:
-    dependencies:
-      '@babel/runtime': 7.28.6
-
-  i18next-icu@2.4.3(intl-messageformat@11.1.2):
-    dependencies:
-      intl-messageformat: 11.1.2
-
   i18next-resources-to-backend@1.2.1:
     dependencies:
       '@babel/runtime': 7.28.6
@@ -19307,13 +19149,6 @@ snapshots:
       side-channel: 1.1.0
 
   internmap@2.0.3: {}
-
-  intl-messageformat@11.1.2:
-    dependencies:
-      '@formatjs/ecma402-abstract': 3.1.1
-      '@formatjs/fast-memoize': 3.1.0
-      '@formatjs/icu-messageformat-parser': 3.5.1
-      tslib: 2.8.1
 
   ip-address@10.0.1: {}
 
@@ -20702,15 +20537,9 @@ snapshots:
       - socks
     optional: true
 
-  motion-dom@12.34.3:
-    dependencies:
-      motion-utils: 12.29.2
-
   motion-dom@13.1.1:
     dependencies:
       motion-utils: 13.0.0
-
-  motion-utils@12.29.2: {}
 
   motion-utils@13.0.0: {}
 
@@ -23291,6 +23120,7 @@ snapshots:
       acorn: 8.16.0
       commander: 2.20.3
       source-map-support: 0.5.21
+    optional: true
 
   text-decoder@1.2.7:
     dependencies:
