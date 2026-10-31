@@ -164,16 +164,16 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { CreateTripClassicLabPage } from '../../pages/CreateTripClassicLabPage';
+import { CreateTripClassicPage } from '../../pages/CreateTripClassicPage';
 
 const renderPage = async () =>
   await render(
     <MemoryRouter initialEntries={['/create-trip']}>
-      <CreateTripClassicLabPage onOpenManager={vi.fn()} onTripGenerated={vi.fn()} />
+      <CreateTripClassicPage onOpenManager={vi.fn()} onTripGenerated={vi.fn()} />
     </MemoryRouter>
   );
 
-describe('pages/CreateTripClassicLabPage', () => {
+describe('pages/CreateTripClassicPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.authState.isAdmin = false;

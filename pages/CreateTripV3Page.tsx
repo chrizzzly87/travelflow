@@ -33,6 +33,7 @@ import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { NumberStepper } from '../components/create-trip/NumberStepper';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -580,37 +581,6 @@ const buildPreviewTrip = (params: {
         isFavorite: false,
     };
 };
-
-const NumberStepper: React.FC<{
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    onChange: (next: number) => void;
-}> = ({ label, value, min, max, onChange }) => (
-    <div className="rounded-2xl border border-border bg-card p-3 dark:border-border dark:bg-card">
-        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-muted-foreground dark:text-muted-foreground">{label}</div>
-        <div className="mt-3 flex items-center justify-between gap-3">
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value - 1, min, max))}
-                disabled={value <= min}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                -
-            </button>
-            <span className="min-w-[2ch] text-center text-lg font-semibold text-foreground dark:text-foreground">{value}</span>
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value + 1, min, max))}
-                disabled={value >= max}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                +
-            </button>
-        </div>
-    </div>
-);
 
 const StepDots: React.FC<{
     currentStep: number;
@@ -1645,6 +1615,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="grid gap-3 md:grid-cols-2">
                     <NumberStepper
+                        variant="comfortable"
                         label={t('traveler.settings.groupSize')}
                         value={friendsCount}
                         min={2}
@@ -1671,6 +1642,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         return (
             <div className="grid gap-3 md:grid-cols-3">
                 <NumberStepper
+                    variant="comfortable"
                     label={t('traveler.settings.adults')}
                     value={familyAdults}
                     min={1}
@@ -1678,6 +1650,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     onChange={setFamilyAdults}
                 />
                 <NumberStepper
+                    variant="comfortable"
                     label={t('traveler.settings.children')}
                     value={familyChildren}
                     min={0}
@@ -1685,6 +1658,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     onChange={setFamilyChildren}
                 />
                 <NumberStepper
+                    variant="comfortable"
                     label={t('traveler.settings.babies')}
                     value={familyBabies}
                     min={0}
@@ -1891,6 +1865,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     ) : (
                         <div className="grid gap-4 md:grid-cols-[1fr,1fr]">
                             <NumberStepper
+                                variant="comfortable"
                                 label={t('dates.flexWindow.weeksLabel')}
                                 value={flexWeeks}
                                 min={1}

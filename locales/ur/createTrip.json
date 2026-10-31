@@ -308,5 +308,9 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "stepper": {
+    "decrease": "{label} کم کریں",
+    "increase": "{label} بڑھائیں"
   }
 }
