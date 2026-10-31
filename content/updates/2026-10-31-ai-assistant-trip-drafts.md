@@ -3,8 +3,8 @@ id: rel-2026-10-31-ai-assistant-trip-drafts
 version: v0.212.0
 title: "Plan with your own AI assistant"
 date: 2026-10-31
-published_at: 2026-10-31T18:00:00Z
-status: draft
+published_at: 2026-10-31T19:48:42Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Ask ChatGPT, Claude or Gemini to plan a trip, then open it in TravelFlow and save it to your trips."
