@@ -101,9 +101,11 @@ describe('pages/AdminAiTelemetryPage', () => {
   it('ranks models in one sortable table, re-sorted by a leader', async () => {
     renderPage();
 
-    const modelHeader = await screen.findByRole('columnheader', { name: 'Calls' });
+    // Wait on the loaded table's text, not a role query: role lookups over this
+    // page's chart-heavy DOM routinely outlast findBy's 1s default on CI runners.
+    expect(await screen.findByText('Showing 1–2 of 2 models', {}, { timeout: 10_000 })).toBeInTheDocument();
+    const modelHeader = screen.getByRole('columnheader', { name: 'Calls' });
     expect(modelHeader).toHaveAttribute('aria-sort', 'descending');
-    expect(screen.getByText('Showing 1–2 of 2 models')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Cheapest/ }));
     expect(screen.getByRole('columnheader', { name: 'Cost / success' })).toHaveAttribute('aria-sort', 'ascending');
