@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from '@/app/navigation';
+import { Link, useLocation, useNavigate } from '@/app/navigation';
+import { useCreateTripRouteSearch } from '@/features/trips/createTripRouteSearch';
+import { useRouteSearchWriter } from '@/app/routing/useRouteSearchWriter';
 import { useTranslation } from 'react-i18next';
 import {
     AirplaneTilt,
@@ -353,7 +355,7 @@ type CreateTripV3InitialState = {
 };
 
 const buildCreateTripV3InitialState = (
-    searchParams: URLSearchParams,
+    rawPrefill: string | undefined,
     defaultDates: ReturnType<typeof getDefaultTripDates>
 ): CreateTripV3InitialState => {
     const initialState: CreateTripV3InitialState = {
@@ -390,7 +392,7 @@ const buildCreateTripV3InitialState = (
         prefillMeta: null,
     };
 
-    const raw = searchParams.get('prefill');
+    const raw = rawPrefill;
     if (!raw) return initialState;
 
     const data = decodeTripPrefill(raw);
@@ -624,9 +626,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const location = useLocation();
     const { confirm } = useAppDialog();
     const { isAuthenticated, isAnonymous } = useAuth();
-    const [searchParams] = useSearchParams();
+    const { prefill: rawPrefill } = useCreateTripRouteSearch();
+    const writeRouteSearch = useRouteSearchWriter();
     const defaultDates = getDefaultTripDates();
-    const [initialPrefillState] = useState(() => buildCreateTripV3InitialState(searchParams, defaultDates));
+    const [initialPrefillState] = useState(() => buildCreateTripV3InitialState(rawPrefill, defaultDates));
 
     const [wizardBranch, setWizardBranch] = useState<CreateTripWizardBranch | null>(initialPrefillState.wizardBranch);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -1069,12 +1072,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         if (typeof window === 'undefined') return;
         if (!prefillHydrated) return;
 
-        const params = new URLSearchParams(window.location.search);
         if (!hasPersistableState) {
-            if (!params.has('prefill')) return;
-            params.delete('prefill');
-            const nextSearch = params.toString();
-            window.history.replaceState(window.history.state, '', `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`);
+            writeRouteSearch(previous => ({ ...previous, prefill: undefined }));
             return;
         }
 
@@ -1099,10 +1098,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         };
 
         const encoded = encodeTripPrefill(payload);
-        if (params.get('prefill') === encoded) return;
-        params.set('prefill', encoded);
-        const nextSearch = params.toString();
-        window.history.replaceState(window.history.state, '', `${window.location.pathname}?${nextSearch}${window.location.hash}`);
+        // The router sees the draft, so sign-in return paths built from the
+        // current location keep it; a page being left writes nothing (#586).
+        writeRouteSearch(previous => ({ ...previous, prefill: encoded }));
     }, [
         budget,
         draftMeta,
@@ -1120,6 +1118,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         selectedVibes,
         specificCities,
         startDate,
+        writeRouteSearch,
     ]);
 
     const buildVariantUrl = useCallback((path: string) => {

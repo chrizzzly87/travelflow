@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from '@/app/navigation';
+import { useLocation, useNavigate } from '@/app/navigation';
+import { useCreateTripRouteSearch } from '@/features/trips/createTripRouteSearch';
+import { useRouteSearchWriter } from '@/app/routing/useRouteSearchWriter';
 import {
     AirplaneTilt,
     Bicycle,
@@ -382,7 +384,7 @@ type CreateTripClassicInitialState = {
 };
 
 const buildCreateTripClassicInitialState = (
-    searchParams: URLSearchParams,
+    rawPrefill: string | undefined,
     initialRange: ReturnType<typeof getInitialDateRange>
 ): CreateTripClassicInitialState => {
     const initialState: CreateTripClassicInitialState = {
@@ -416,7 +418,7 @@ const buildCreateTripClassicInitialState = (
         prefillMeta: null,
     };
 
-    const raw = searchParams.get('prefill');
+    const raw = rawPrefill;
     if (!raw) return initialState;
 
     const data = decodeTripPrefill(raw);
@@ -582,7 +584,8 @@ export const CreateTripClassicPage: React.FC<CreateTripClassicPageProps> = ({
     const navigate = useNavigate();
     const location = useLocation();
     const { confirm } = useAppDialog();
-    const [searchParams] = useSearchParams();
+    const { prefill: rawPrefill } = useCreateTripRouteSearch();
+    const writeRouteSearch = useRouteSearchWriter();
     const { isAdmin, isAuthenticated, isAnonymous } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
@@ -591,7 +594,7 @@ export const CreateTripClassicPage: React.FC<CreateTripClassicPageProps> = ({
     useDbSync(onLanguageLoaded);
 
     const initialRange = useMemo(() => getInitialDateRange(), []);
-    const [initialPrefillState] = useState(() => buildCreateTripClassicInitialState(searchParams, initialRange));
+    const [initialPrefillState] = useState(() => buildCreateTripClassicInitialState(rawPrefill, initialRange));
 
     const [query, setQuery] = useState('');
     const [destinations, setDestinations] = useState<string[]>(initialPrefillState.destinations);
@@ -1126,14 +1129,8 @@ export const CreateTripClassicPage: React.FC<CreateTripClassicPageProps> = ({
         if (typeof window === 'undefined') return;
         if (!prefillHydrated) return;
 
-        const currentParams = new URLSearchParams(window.location.search);
-
         if (!hasPersistableState) {
-            if (!currentParams.has('prefill')) return;
-            currentParams.delete('prefill');
-            const nextSearch = currentParams.toString();
-            const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
-            window.history.replaceState(window.history.state, '', nextUrl);
+            writeRouteSearch(previous => ({ ...previous, prefill: undefined }));
             return;
         }
 
@@ -1157,12 +1154,9 @@ export const CreateTripClassicPage: React.FC<CreateTripClassicPageProps> = ({
         };
 
         const encoded = encodeTripPrefill(prefillPayload);
-        if (currentParams.get('prefill') === encoded) return;
-
-        currentParams.set('prefill', encoded);
-        const nextSearch = currentParams.toString();
-        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
-        window.history.replaceState(window.history.state, '', nextUrl);
+        // The router sees the draft, so sign-in return paths built from the
+        // current location keep it; a page being left writes nothing (#586).
+        writeRouteSearch(previous => ({ ...previous, prefill: encoded }));
     }, [
         budget,
         destinations,
@@ -1178,6 +1172,7 @@ export const CreateTripClassicPage: React.FC<CreateTripClassicPageProps> = ({
         roundTrip,
         selectedStyles,
         startDate,
+        writeRouteSearch,
     ]);
 
     useEffect(() => {

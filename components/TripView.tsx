@@ -33,11 +33,12 @@ import {
 import {
     buildTripClaimConflictPath,
     buildTripClaimLoginReturnPath,
-    readTripClaimConflictQuery,
     TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED,
 } from '../services/tripClaimNavigation';
 import { useAuth } from '../hooks/useAuth';
 import { useTripActionLifetime } from '../features/trips/useTripActionLifetime';
+import { useTripRouteSearch } from '../features/trips/tripRouteSearch';
+import { useRouteSearchWriter } from '../app/routing/useRouteSearchWriter';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { getLatestConflictBackupForTrip, resolveConflictBackupsForTrip } from '../services/offlineChangeQueue';
@@ -1014,6 +1015,8 @@ const useTripViewRender = ({
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
+    const tripSearch = useTripRouteSearch();
+    const writeRouteSearch = useRouteSearchWriter();
     const { t } = useTranslation('common');
     const { openLoginModal } = useLoginModal();
     const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
@@ -1068,7 +1071,7 @@ const useTripViewRender = ({
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
     const canUseAdminGenerationOverride = isAdminFallbackView && adminOverrideEnabled && Boolean(adminAccess?.canAdminWrite);
     const captureTripAction = useTripActionLifetime(JSON.stringify([
-        trip.id, location.pathname, new URLSearchParams(location.search).get('v'),
+        trip.id, location.pathname, tripSearch.v ?? null,
         access?.userId ?? null, isAuthenticated, isAnonymous, canEdit,
         isAdminFallbackView, adminOverrideEnabled, adminAccess?.canAdminWrite ?? false,
     ]));
@@ -1096,33 +1099,11 @@ const useTripViewRender = ({
         return pendingAuthValue === true ? queueRequestId : null;
     }, [latestGenerationAttempt?.metadata]);
     const isPendingAuthGeneration = generationState === 'failed' && Boolean(pendingAuthQueueRequestId);
-    const pendingAuthClaimQueryId = useMemo(() => {
-        const claimValue = new URLSearchParams(location.search).get('claim');
-        return typeof claimValue === 'string' && claimValue.trim().length > 0
-            ? claimValue.trim()
-            : null;
-    }, [location.search]);
-    const pendingAuthClaimConflict = useMemo(
-        () => readTripClaimConflictQuery(location.search),
-        [location.search],
-    );
-    const pendingAuthLoginReturnPath = useMemo(() => {
-        const query = new URLSearchParams(location.search);
-        if (pendingAuthQueueRequestId) {
-            query.set('claim', pendingAuthQueueRequestId);
-        } else {
-            query.delete('claim');
-        }
-        query.delete('claim_conflict');
-
-        const nextSearch = query.toString();
-        return buildPathFromLocationParts({
-            pathname: location.pathname,
-            search: nextSearch ? `?${nextSearch}` : '',
-            hash: location.hash,
-        });
-    }, [location.hash, location.pathname, location.search, pendingAuthQueueRequestId]);
-    const pendingAuthClaimConflictLoginReturnPath = useMemo(
+    const pendingAuthClaimQueryId = tripSearch.claim?.trim() || null;
+    const pendingAuthClaimConflict = tripSearch.claim_conflict?.trim() || null;
+    // Both sign-in prompts return to this page with the pending claim set and
+    // any earlier conflict marker cleared.
+    const pendingAuthLoginReturnPath = useMemo(
         () => buildTripClaimLoginReturnPath(buildPathFromLocationParts({
             pathname: location.pathname,
             search: location.search,
@@ -1571,14 +1552,7 @@ const useTripViewRender = ({
                     }
 
                     if (pendingAuthClaimQueryId === pendingAuthQueueRequestId) {
-                        const query = new URLSearchParams(location.search);
-                        query.delete('claim');
-                        const nextSearch = query.toString();
-                        navigate(buildPathFromLocationParts({
-                            pathname: location.pathname,
-                            search: nextSearch ? `?${nextSearch}` : '',
-                            hash: location.hash,
-                        }), { replace: true });
+                        writeRouteSearch(previous => ({ ...previous, claim: undefined }));
                     }
                     return;
                 }
@@ -1643,10 +1617,10 @@ const useTripViewRender = ({
     const handlePendingAuthClaimConflictLogin = useCallback(() => {
         openLoginModal({
             source: 'trip_generation_claim_conflict_modal',
-            nextPath: pendingAuthClaimConflictLoginReturnPath,
+            nextPath: pendingAuthLoginReturnPath,
             reloadOnSuccess: true,
         });
-    }, [openLoginModal, pendingAuthClaimConflictLoginReturnPath]);
+    }, [openLoginModal, pendingAuthLoginReturnPath]);
 
     const {
         canUseAuthenticatedSession,
@@ -1699,7 +1673,7 @@ const useTripViewRender = ({
         () => canEdit && isInternalMapColorModeControlEnabled(),
         [canEdit, location.search]
     );
-    const { viewMode, setViewMode } = useTripViewModeState();
+    const { viewMode, setViewMode } = useTripViewModeState(tripSearch.mode === 'print' ? 'print' : 'planner');
     const currentUrl = location.pathname + location.search;
     const {
         isHistoryOpen,
@@ -3258,16 +3232,7 @@ const useTripViewRender = ({
     }, [handleUpdateItem, trip.items]);
 
     // Read once for the deep link, then owned by React.
-    //
-    // The URL cannot hold this: `useTripViewSettingsSync` rewrites the query
-    // with `history.replaceState`, which React Router never sees, so the
-    // router's `location.search` goes stale and the next write drops whichever
-    // parameter the other owner had just added. Reopening the deck read a
-    // stale query and closed itself again.
-    const [isDiscoverOpen, setDiscoverOpen] = useState(() => (
-        typeof window !== 'undefined'
-        && new URLSearchParams(window.location.search).get('discover') === '1'
-    ));
+    const [isDiscoverOpen, setDiscoverOpen] = useState(() => tripSearch.discover === '1');
     const [discoverInitialTab, setDiscoverInitialTab] = useState<'discover' | 'saved'>('discover');
     // Keyed by trip, so switching trips in the same view reads the new trip's choice.
     const [ideaLayer, setIdeaLayer] = useState(() => ({ tripId: trip.id, visible: readTripIdeaLayerVisible(trip.id) }));

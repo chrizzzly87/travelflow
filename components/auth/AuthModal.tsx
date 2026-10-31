@@ -206,6 +206,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 : '/create-trip');
 
             if (reloadOnSuccess && !options?.skipReload) {
+                // Full reload on purpose: callers ask for it so every loader and cache restarts with the new session.
                 window.location.assign(target);
                 return;
             }

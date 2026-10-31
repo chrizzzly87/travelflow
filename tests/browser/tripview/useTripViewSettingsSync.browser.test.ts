@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
+import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, Outlet, RouterProvider, type AnyRouter } from '@tanstack/react-router';
+import { parseRouteSearch, stringifyRouteSearch } from '../../../app/routing/search';
+import { tripRouteSearchSchema } from '../../../features/trips/tripRouteSearch';
+import { tripLoaderDeps } from '../../../features/trips/routeData';
 
 import type { IViewSettings } from '../../../types';
 import { useTripViewSettingsSync } from '../../../components/tripview/useTripViewSettingsSync';
@@ -56,15 +61,42 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   prevViewRef: { current: null },
 });
 
+
+type HookProps = Parameters<typeof useTripViewSettingsSync>[0];
+
+/** Mount the hook inside a real trip route so URL writes go through the router. */
+const renderSyncHook = async (initialProps: HookProps, initialEntry = '/trip/trip-1') => {
+  const HookHost = React.createContext<React.ReactNode>(null);
+  const Host = () => React.createElement(React.Fragment, null, React.useContext(HookHost));
+  const root = createRootRoute({ component: Outlet });
+  const trips = createRoute({ getParentRoute: () => root, id: '_trips', validateSearch: tripRouteSearchSchema, component: Outlet });
+  const trip = createRoute({ getParentRoute: () => trips, path: '/trip/$tripId', loaderDeps: tripLoaderDeps, loader: () => null, staleTime: 0, component: Host });
+  const router: AnyRouter = createRouter({
+    routeTree: root.addChildren([trips.addChildren([trip])]),
+    history: createMemoryHistory({ initialEntries: [initialEntry] }),
+    parseSearch: parseRouteSearch,
+    stringifySearch: stringifyRouteSearch,
+  });
+  let mounted = false;
+  const rendered = renderHook((hookProps: HookProps) => { mounted = true; useTripViewSettingsSync(hookProps); }, {
+    initialProps,
+    wrapper: ({ children }) => React.createElement(HookHost.Provider, { value: children }, React.createElement(RouterProvider, { router })),
+  });
+  await waitFor(() => expect(mounted).toBe(true));
+  return { ...rendered, router };
+};
+
 describe('components/tripview/useTripViewSettingsSync', () => {
-  it('persists settings and syncs URL params when callback is absent', () => {
-    vi.useFakeTimers();
-    window.history.replaceState({}, '', '/trip/trip-1?existing=1');
+  it('persists settings and writes URL params through the router when callback is absent', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     const props = makeHookProps();
     props.viewMode = 'print';
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
 
-    renderHook(() => useTripViewSettingsSync(props));
+    const { router } = await renderSyncHook(props, '/trip/trip-1?existing=1#notes');
+    const navigateSpy = vi.spyOn(router, 'navigate');
+    const historyLength = router.history.length;
 
     expect(window.localStorage.getItem('tf_map_style')).toBe('standard');
     expect(window.localStorage.getItem('tf_route_mode')).toBe('simple');
@@ -74,11 +106,18 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(window.localStorage.getItem('tf_city_names')).toBe('true');
     expect(window.localStorage.getItem('tf_zoom_level')).toBe('1.25');
 
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(500);
     });
 
-    const params = new URLSearchParams(window.location.search);
+    await waitFor(() => expect(router.state.location.searchStr).toContain('mode=print'));
+    expect(navigateSpy).toHaveBeenCalledWith(expect.objectContaining({ replace: true, resetScroll: false }));
+    expect(replaceStateSpy).not.toHaveBeenCalled();
+    expect(router.history.length).toBe(historyLength);
+    expect(router.state.location.pathname).toBe('/trip/trip-1');
+    expect(router.state.location.hash).toBe('notes');
+    const params = new URLSearchParams(router.state.location.searchStr);
+    expect(params.get('existing')).toBe('1');
     expect(params.get('layout')).toBe('horizontal');
     expect(params.get('timelineMode')).toBe('calendar');
     expect(params.get('timelineView')).toBe('horizontal');
@@ -91,12 +130,12 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(params.get('timelineHeight')).toBe('320');
     expect(params.get('mode')).toBe('print');
 
+    replaceStateSpy.mockRestore();
     vi.useRealTimers();
   });
 
-  it('uses callback path without mutating URL directly', () => {
-    vi.useFakeTimers();
-    window.history.replaceState({}, '', '/trip/trip-2');
+  it('uses callback path without mutating URL directly', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     const props = makeHookProps();
     const onViewSettingsChange = vi.fn();
@@ -105,9 +144,10 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
 
-    renderHook(() => useTripViewSettingsSync(props));
+    const { router } = await renderSyncHook(props, '/trip/trip-2');
+    const navigateSpy = vi.spyOn(router, 'navigate');
 
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(500);
     });
 
@@ -126,23 +166,23 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       timelineHeight: 320,
     });
     expect(replaceStateSpy).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(router.state.location.href).toBe('/trip/trip-2');
 
     replaceStateSpy.mockRestore();
     vi.useRealTimers();
   });
 
-  it('does not emit callback updates until a manual view change is marked', () => {
-    vi.useFakeTimers();
+  it('does not emit callback updates until a manual view change is marked', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     const props = makeHookProps();
     const onViewSettingsChange = vi.fn();
     props.onViewSettingsChange = onViewSettingsChange;
 
-    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
-      useTripViewSettingsSync(hookProps);
-    }, { initialProps: props });
+    const { rerender } = await renderSyncHook(props);
 
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(500);
     });
     expect(onViewSettingsChange).not.toHaveBeenCalled();
@@ -159,7 +199,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     rerender(manualProps);
 
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(500);
     });
 
@@ -173,7 +213,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     vi.useRealTimers();
   });
 
-  it('applies initial view settings once and marks refs to suppress diff commits', () => {
+  it('applies initial view settings once and marks refs to suppress diff commits', async () => {
     const props = makeHookProps();
     props.initialViewSettings = {
       layoutMode: 'vertical',
@@ -190,9 +230,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     };
     props.currentViewSettings = BASE_VIEW_SETTINGS;
 
-    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
-      useTripViewSettingsSync(hookProps);
-    }, { initialProps: props });
+    const { rerender } = await renderSyncHook(props);
 
     expect(props.suppressCommitRef.current).toBe(true);
     expect(props.skipViewDiffRef.current).toBe(true);
@@ -221,8 +259,8 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(vi.mocked(props.setRouteMode).mock.calls.length).toBe(routeModeCalls);
   });
 
-  it('does not re-emit unchanged settings when callback identity changes', () => {
-    vi.useFakeTimers();
+  it('does not re-emit unchanged settings when callback identity changes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     const firstCallback = vi.fn();
     const secondCallback = vi.fn();
@@ -230,11 +268,9 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     props.onViewSettingsChange = firstCallback;
     props.pendingManualViewSettingsPersistRef.current = true;
 
-    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
-      useTripViewSettingsSync(hookProps);
-    }, { initialProps: props });
+    const { rerender } = await renderSyncHook(props);
 
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(500);
     });
     expect(firstCallback).toHaveBeenCalledTimes(1);
@@ -245,7 +281,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       onViewSettingsChange: secondCallback,
     });
 
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(500);
     });
 
