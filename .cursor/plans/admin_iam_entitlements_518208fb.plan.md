@@ -134,7 +134,7 @@ flowchart LR
 - Add post-login onboarding gate/page for required profile completion before core app use:
   - new onboarding route/page (wired in [App.tsx](App.tsx)).
   - persist profile fields in `profiles` + language sync in `user_settings`.
-  - reuse gender options semantics already used in [pages/CreateTripClassicLabPage.tsx](pages/CreateTripClassicLabPage.tsx) via a shared constant module.
+  - reuse gender options semantics already used in [pages/CreateTripClassicPage.tsx](pages/CreateTripClassicPage.tsx) via a shared constant module.
 - Add optional high-value preference fields for future personalization (timezone, currency, unit preferences) to reduce create-trip friction later.
 
 ## Phase 7: User profile, account settings, and avatar account menu

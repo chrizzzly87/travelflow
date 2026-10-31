@@ -46,6 +46,7 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
+import { NumberStepper } from '../components/create-trip/NumberStepper';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
@@ -132,7 +133,7 @@ import {
     isCreateTripTravelerType,
 } from '../shared/createTripPreferences';
 
-interface CreateTripClassicLabPageProps {
+interface CreateTripClassicPageProps {
     onOpenManager: () => void;
     onTripGenerated: (trip: ITrip) => void;
     onLanguageLoaded?: (lang: AppLanguage) => void;
@@ -572,38 +573,7 @@ const buildCreateTripClassicInitialState = (
     return initialState;
 };
 
-const NumberStepper: React.FC<{
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    onChange: (next: number) => void;
-}> = ({ label, value, min, max, onChange }) => (
-    <div className="rounded-xl border border-border bg-secondary p-3 dark:border-border dark:bg-secondary">
-        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground dark:text-muted-foreground">{label}</div>
-        <div className="mt-2 flex items-center justify-between gap-2">
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value - 1, min, max))}
-                disabled={value <= min}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                <Minus size={14} />
-            </button>
-            <span className="min-w-[2ch] text-center text-sm font-semibold text-foreground dark:text-foreground">{value}</span>
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value + 1, min, max))}
-                disabled={value >= max}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                <Plus size={14} />
-            </button>
-        </div>
-    </div>
-);
-
-export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> = ({
+export const CreateTripClassicPage: React.FC<CreateTripClassicPageProps> = ({
     onOpenManager,
     onTripGenerated,
     onLanguageLoaded,

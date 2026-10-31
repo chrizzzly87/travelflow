@@ -335,11 +335,11 @@ sub-surface such as a row menu or a sheet). One row per surface; the actions are
 ### Create Trip
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip, provider, model }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__model--select` | — | `{ provider, model, model_id, is_default }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip, provider, model }` | `CreateTripClassicPage.tsx` |
+| `create_trip__model--select` | — | `{ provider, model, model_id, is_default }` | `CreateTripClassicPage.tsx` |
+| `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicPage.tsx` |
+| `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicPage.tsx` |
+| `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicPage.tsx` |
 | `create_trip_wizard__branch--select` | — | `{ branch }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__date_mode--select` | — | `{ mode }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__traveler--select` | — | `{ traveler_type }` | `CreateTripV3Page.tsx` |

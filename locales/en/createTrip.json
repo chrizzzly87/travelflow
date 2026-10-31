@@ -325,5 +325,9 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "stepper": {
+    "decrease": "Decrease {label}",
+    "increase": "Increase {label}"
   }
 }
