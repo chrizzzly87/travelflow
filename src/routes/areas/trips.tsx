@@ -5,9 +5,9 @@ import { TripAreaLoadingShell } from '../../../components/tripview/TripAreaLoadi
 import { tripRouteSearchSchema } from '../../../features/trips/tripRouteSearch';
 
 export const Route = createFileRoute('/_trips')({
-    ssr: false,
     // Lenient: never throws, adds no defaults and keeps unknown parameters.
     validateSearch: tripRouteSearchSchema,
+    ssr: false,
     beforeLoad: ({ location, abortController }) => prepareTripClaimRecovery(location.searchStr, abortController.signal),
     pendingComponent: TripAreaLoadingShell,
     // Only the workspace is split: the fallback must already be loaded when a
