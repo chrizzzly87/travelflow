@@ -32,6 +32,9 @@ todos:
 isProject: false
 ---
 
+> **Archived (2026-10).** Historical Cursor plan for the admin IAM work, which has shipped. Current behaviour: [`AUTH_ROLES_IMPLEMENTATION_NOTES.md`](../../AUTH_ROLES_IMPLEMENTATION_NOTES.md).
+
+
 # IAM/RBAC + Entitlement Management Plan
 
 ## Locked decisions

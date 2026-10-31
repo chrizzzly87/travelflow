@@ -1,4 +1,4 @@
-> Historical audit and runtime guidance, superseded by ../../LIGHTHOUSE.md for the TanStack migration. Do not reapply the retired browser-capture workarounds.
+> **Archived (2026-07).** Historical audit and runtime guidance from the former Preact build, superseded by [`performance/LIGHTHOUSE.md`](../../performance/LIGHTHOUSE.md). Do not reapply the retired browser-capture workarounds.
 
 # Lighthouse Shared Plan
 

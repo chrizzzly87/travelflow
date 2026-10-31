@@ -2,7 +2,7 @@
 
 TravelFlow generates and manages travel itineraries. It runs on TanStack Start and TanStack Router with React 19, TypeScript and Vite, deployed to Netlify (native Start since v0.209.0, 2026-10-24).
 
-Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment. The completed migration history and its measurements are in [the migration record](docs/architecture/TANSTACK_START_MIGRATION.md) and `docs/performance/`.
+Start with [the architecture guide](docs/TANSTACK_START_ARCHITECTURE.md) for route ownership and [Netlify operations](docs/NETLIFY_TANSTACK_START.md) for previews and deployment. The completed migration history and its measurements are in [the migration record](docs/archive/TANSTACK_START_MIGRATION.md) and `docs/performance/`.
 
 ## Working on the TanStack Start app
 

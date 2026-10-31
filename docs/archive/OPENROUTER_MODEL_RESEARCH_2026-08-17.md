@@ -1,5 +1,7 @@
 # OpenRouter model research — 2026-08-17
 
+> **Archived (2026-10).** Dated catalog snapshot from 2026-08-17; prices and models have changed since. Check the live catalog before relying on it.
+
 ## Scope and method
 
 This is a live-catalog snapshot for TravelFlow's benchmark and itinerary-generation paths. The authoritative inventory was fetched from OpenRouter's public `GET /api/v1/models` endpoint on 2026-08-17 and checked against the individual OpenRouter model pages. OpenRouter documents that this endpoint returns model properties and can sort by catalog creation date; `created` below therefore means the OpenRouter catalog timestamp, not necessarily the vendor's release announcement. The response has no `updated` field. Prices are the catalog's base USD price converted from per-token to per-million-token units. [OpenRouter models API reference](https://openrouter.ai/docs/api/api-reference/models/get-models) · [live model catalog JSON](https://openrouter.ai/api/v1/models)

@@ -1,5 +1,7 @@
 # Async Worker Watchdog, Worker Health, and Canary Hardening
 
+> **Archived (2026-10).** Shipped follow-up (#264, #265), kept as history.
+
 ## Status
 Issue [#264](https://github.com/chrizzzly87/travelflow/issues/264), shipped in #265 and closed.
 

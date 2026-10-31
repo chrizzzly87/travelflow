@@ -1,6 +1,6 @@
 # Above-the-Fold & Progressive Hydration Guidelines
 
-This document outlines architectural patterns and developer guidelines for maintaining optimal web performance (First Contentful Paint, Largest Contentful Paint, Cumulative Layout Shift) across public and product pages.
+This document outlines architectural patterns and developer guidelines for maintaining optimal web performance (First Contentful Paint, Largest Contentful Paint, Cumulative Layout Shift) across public and product pages. Targets, measurement rules and reproducible checks are in [`performance/LIGHTHOUSE.md`](performance/LIGHTHOUSE.md).
 
 ---
 

@@ -6,7 +6,7 @@ Target mobile Lighthouse Performance >= 90 on key entry routes. A target is not
 proof of a passing audit. Keep the measurement revision, browser, throttle, image
 handling and raw results with each report. Historical July 2026 Lighthouse results
 and the retired runtime guidance are archived in
-[the dated report](docs/performance/lighthouse-2026-07-03.md).
+[the dated report](../archive/performance/lighthouse-2026-07-03.md).
 
 ## Current TanStack Start principles
 
@@ -43,6 +43,9 @@ native dynamic routes and emulates same-origin image transforms. Validate the
 actual Netlify preview separately because this harness does not execute every
 hosted Edge Function.
 
-See [architecture](docs/TANSTACK_START_ARCHITECTURE.md),
-[deployment](docs/NETLIFY_TANSTACK_START.md) and
-[acceptance plan](docs/architecture/TANSTACK_START_MIGRATION.md).
+Page-level loading and hydration patterns are in
+[`ABOVE_THE_FOLD_OPTIMIZATION.md`](../ABOVE_THE_FOLD_OPTIMIZATION.md).
+
+See [architecture](../TANSTACK_START_ARCHITECTURE.md),
+[deployment](../NETLIFY_TANSTACK_START.md) and
+[migration record](../archive/TANSTACK_START_MIGRATION.md).

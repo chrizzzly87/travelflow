@@ -2,7 +2,7 @@
 
 How the planner chat runs, what the agents may call, and which changes they can
 propose. Companion to `docs/trip-agent/TODO.md` (delivery state) and
-`docs/AI_BACKEND_TARGET_ARCHITECTURE.md` (wider AI backend).
+`docs/archive/AI_BACKEND_TARGET_ARCHITECTURE.md` (historical wider AI backend design).
 
 ## Request path
 

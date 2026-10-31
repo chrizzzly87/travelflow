@@ -6,9 +6,8 @@
 - Closes #
 
 ## Validation
-- [ ] `pnpm test:core`
-- [ ] `pnpm build`
-- [ ] `pnpm storage:validate`
+- [ ] `pnpm typecheck`
+- [ ] `pnpm ci:local` (runs the validators, `test:core`, the production build and browser suites)
 
 ## New Module Guard
 - [ ] New module guard completed

@@ -1,3 +1,5 @@
+> **Archived (2026-10).** Completed Trip Agent slice; every item is ticked. Current state: [`trip-agent/TODO.md`](../../trip-agent/TODO.md).
+
 Parent epic: #480
 
 ## Scope

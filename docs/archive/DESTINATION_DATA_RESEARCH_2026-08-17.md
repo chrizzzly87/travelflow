@@ -1,5 +1,7 @@
 # Destination data and inspiration research
 
+> **Archived (2026-10).** Dated research snapshot from 2026-08-17. Current process: [`DESTINATION_INGESTION_RUNBOOK.md`](../DESTINATION_INGESTION_RUNBOOK.md).
+
 Research date: 2026-08-17 (Europe/Berlin)
 
 ## Executive summary
