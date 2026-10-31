@@ -16,7 +16,7 @@ concurrency:
 jobs:
   new-module-guard:
     name: New module guard (services/config => tests checklist entry)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: read
