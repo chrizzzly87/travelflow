@@ -9,7 +9,7 @@ export interface AdminNavItem {
 }
 
 export type AdminNavSectionId = 'workspace' | 'operations' | 'content' | 'tools';
-export type AdminNavItemIconKey = 'settings' | 'overview' | 'users' | 'trips' | 'tiers' | 'billing' | 'audit' | 'legal' | 'benchmark' | 'telemetry' | 'worker_health' | 'og_tools' | 'design_system' | 'airports' | 'destinations' | 'recommendations';
+export type AdminNavItemIconKey = 'settings' | 'overview' | 'users' | 'trips' | 'tiers' | 'billing' | 'audit' | 'legal' | 'benchmark' | 'telemetry' | 'worker_health' | 'og_tools' | 'design_system' | 'airports' | 'destinations' | 'recommendations' | 'trip_drafts';
 
 export interface AdminNavSection {
     id: AdminNavSectionId;
@@ -48,6 +48,14 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         section: 'operations',
         icon: 'trips',
         keywords: ['itineraries', 'lifecycle'],
+    },
+    {
+        id: 'trip_drafts',
+        label: 'AI trip drafts',
+        path: '/admin/trip-drafts',
+        section: 'operations',
+        icon: 'trip_drafts',
+        keywords: ['mcp', 'webmcp', 'chatgpt', 'llm', 'import', 'external'],
     },
     {
         id: 'tiers',

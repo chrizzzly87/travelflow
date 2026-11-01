@@ -854,6 +854,16 @@
       "countryFocus": "Kraje: {countries}.",
       "dismiss": "Zamknij informację o przykładowej podróży"
     },
+    "draftBanner": {
+      "eyebrow": "Plan od asystenta AI",
+      "eyebrowFrom": "Plan od {client}",
+      "title": "Rozejrzyj się, a potem zapisz, by edytować dalej.",
+      "body": "To jest szkic. Zmiany tutaj nie są zapisywane. Zapisz go na koncie, aby edytować, udostępniać i eksportować.",
+      "save": "Zapisz w moich podróżach",
+      "dismiss": "Zamknij informację o szkicu",
+      "saveFailedTitle": "Nie udało się zapisać podróży",
+      "saveFailedBody": "Sprawdź połączenie i spróbuj ponownie."
+    },
     "listView": {
       "openTransfer": "Otwórz szczegóły przejazdu ({mode})",
       "taskCompleted": "Zadanie wykonane",

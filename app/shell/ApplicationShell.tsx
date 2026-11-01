@@ -6,6 +6,7 @@ import { useAuthNavigationBootstrap } from '../bootstrap/useAuthNavigationBootst
 import { useNavigationContextBootstrap } from '../bootstrap/useNavigationContextBootstrap';
 import { useTripsPrunedNoticeBootstrap } from '../bootstrap/useTripsPrunedNoticeBootstrap';
 import { useDebuggerBootstrap } from '../bootstrap/useDebuggerBootstrap';
+import { useWebMcpBootstrap } from '../bootstrap/useWebMcpBootstrap';
 import { APP_NAME } from '../../config/appGlobals';
 import { useAuth } from '../../hooks/useAuth';
 import { InstallAppBanner } from '../../components/InstallAppBanner';
@@ -22,6 +23,7 @@ function ApplicationRuntime() {
     useAuthNavigationBootstrap();
     useNavigationContextBootstrap();
     useTripsPrunedNoticeBootstrap();
+    useWebMcpBootstrap();
     const { isAuthenticated, isLoading, access } = useAuth();
     const showDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: import.meta.env.DEV });
     return <TripLibraryProvider>

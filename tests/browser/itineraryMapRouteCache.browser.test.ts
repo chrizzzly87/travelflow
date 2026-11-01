@@ -1,49 +1,61 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
-  ACTIVITY_MARKERS_MIN_ZOOM,
-  MAP_VIEWPORT_READY_MIN_DIMENSION_PX,
+  ROUTE_FAILURE_TTL_MS,
+  ROUTE_PERSIST_TTL_MS,
+  buildPersistedRouteCachePayload,
+  filterHydratedRouteCacheEntries,
+  shouldLogRouteFailureWarning,
+} from '../../components/maps/routeCache';
+import {
   MAX_BICYCLE_ROUTE_CHECK_KM,
   MAX_DRIVING_ROUTE_CHECK_KM,
   MAX_TRANSIT_ROUTE_CHECK_KM,
   MAX_WALK_ROUTE_CHECK_KM,
   ROUTES_COMPUTE_FIELDS,
   TRANSIT_SECOND_PASS_MAX_KM,
-  buildOverlappingMarkerPosition,
   buildRouteAttemptPolicy,
   classifyRouteComputationError,
   mapRouteAttemptPolicyReasonToFailureReason,
+} from '../../components/maps/routeAttemptPolicy';
+import {
   computeMaxPathDeviationMeters,
-  ROUTE_FAILURE_TTL_MS,
-  ROUTE_PERSIST_TTL_MS,
-  shouldLogRouteFailureWarning,
-  buildRoutePolylinePairOptions,
-  buildPersistedRouteCachePayload,
   estimateGreatCircleDistanceKm,
-  filterHydratedRouteCacheEntries,
+  isRoutePathLikelyStraight,
+} from '../../components/maps/routePathGeometry';
+import {
+  buildRoutePolylinePairOptions,
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
-  getMapLabelCityName,
-  resolveTripMapCityLabelName,
-  isCoordinateWithinSafeBounds,
-  estimateRoutePixelSpan,
+} from '../../components/maps/mapboxLayerConfig';
+import {
   estimateNearestMarkerGapPx,
-  resolveCityLabelPlacement,
+  estimateRoutePixelSpan,
+  resolveCrowdedCityMarkerProfile,
   resolveMarkerRenderProfile,
   resolveMarkerRenderTier,
-  resolveMapViewportPadding,
   resolveZoomEnhancedCityMarkerProfile,
-  resolveCrowdedCityMarkerProfile,
-  resolveActivityMarkerPositions,
-  resolveSelectedMapFocusPosition,
-  resolveCityLabelAnchor,
-  isRoutePathLikelyStraight,
+} from '../../components/maps/markerRenderProfiles';
+import { resolveActivityMarkerPositions } from '../../components/maps/tripMapActivityMarkerPositions';
+import {
+  ACTIVITY_MARKERS_MIN_ZOOM,
+  MAP_VIEWPORT_READY_MIN_DIMENSION_PX,
+  isCoordinateWithinSafeBounds,
   isMapViewportReady,
-  offsetLatLngByMeters,
+  resolveMapViewportPadding,
+  resolveSelectedMapFocusPosition,
   resolveSelectionViewportActions,
-  shouldSkipRouteFitForSelection,
   shouldDisplayActivityMarkers,
-} from '../../components/itineraryMapUtils';
+  shouldSkipRouteFitForSelection,
+} from '../../components/maps/tripMapSelectionViewport';
+import {
+  buildOverlappingMarkerPosition,
+  getMapLabelCityName,
+  offsetLatLngByMeters,
+  resolveTripMapCityLabelName,
+} from '../../components/maps/tripMapCityOverlayModel';
+import { resolveTripMapCityLabelPlacement as resolveCityLabelPlacement } from '../../components/maps/tripMapCityLabelHtml';
+import { resolveCityLabelAnchor } from '../../components/maps/tripMapCityLabelLayout';
 import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
 import { getTripMapProviderTuning } from '../../components/maps/tripMapProviderTuning';
 
