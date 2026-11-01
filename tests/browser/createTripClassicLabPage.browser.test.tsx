@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -226,7 +226,16 @@ describe('pages/CreateTripClassicLabPage', () => {
     expect(screen.getAllByText('modelPicker.label')).toHaveLength(2);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('shows seasonal destination recommendations when the field is focused without a query', async () => {
+    // The default trip starts three weeks out, so the seasonal picks follow the
+    // calendar. Pin a spring date when Italy is in season; only Date is faked so
+    // userEvent's timers keep running.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-04-15T12:00:00Z'));
     const user = userEvent.setup();
 
     await renderPage();
