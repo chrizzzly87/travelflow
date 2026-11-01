@@ -39,6 +39,7 @@ describe('shared/mapboxCityLookup', () => {
     expect(url.searchParams.get('q')).toBe('Kapstadt');
     expect(url.searchParams.get('types')).toBe('place');
     expect(url.searchParams.get('limit')).toBe('5');
+    expect(url.searchParams.get('permanent')).toBe('true');
     expect(url.searchParams.get('language')).toBe('de');
     expect(url.searchParams.get('access_token')).toBe('pk.test');
   });

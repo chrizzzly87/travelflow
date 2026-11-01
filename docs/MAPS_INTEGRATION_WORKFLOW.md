@@ -67,10 +67,10 @@ Google; the rules below cover the Google side and the shared preview pipeline.
 ## Standalone Mapbox preset (`mapbox_all`)
 1. `mapbox_all` runs maps with no Google script and no Google request: renderer, location search and static maps use Mapbox, and `routes` is `'none'`.
 2. `usesGoogle(selection)` in `shared/mapRuntime.ts` is true when any subsystem selects Google. `MapRuntimeProvider` mounts the Google loader only when it is true, so never read `window.google` or call `maps.googleapis.com` on a path that can run under this preset.
-3. With routes `'none'`, the itinerary map draws straight legs and the activity and hotel place search shows a paused notice rather than a spinner. City lookup (add-city) goes through `shared/mapboxCityLookup.ts`.
-4. `presetSettled` from the runtime context turns true once the stored preset has been read. Gate any Google-dependent start-up on it, so the first render never starts Google before the preset is known.
-5. `isRendererLockedByPreset` pins the renderer to Mapbox under this preset; a traveller's stored renderer choice cannot pull Google back in, and the customize sheet says the renderer is locked.
-6. To switch back, configure a Google key, then pick "Google for everything" or "Mapbox visuals, Google services" in the admin map settings. The change applies without a reload. The preset still needs a Mapbox token; without one the runtime falls back to Google with a warning.
+3. With routes `'none'`, the itinerary map draws straight legs. The activity and hotel place search shows a paused notice rather than a spinner whenever `locationSearch` is not `'google'` (it follows that setting, not the routes value). City lookup (add-city) goes through `shared/mapboxCityLookup.ts`.
+4. `presetSettled` from the runtime context turns true when the stored preset has been read, the load fails, or the 3 s timeout (`MAP_PRESET_SETTLE_TIMEOUT_MS`) passes. Gate any Google-dependent start-up on it, so the first render never starts Google before the preset is known.
+5. `isRendererLockedByPreset` pins the renderer to Mapbox under this preset; a traveller's stored renderer choice cannot pull Google back in, and the customize sheet says the renderer is locked. The lock applies only while Mapbox is the effective renderer; without a token the runtime falls back to Google and the choice stays open.
+6. To switch back, configure a Google key, then pick "Google for everything" or "Mapbox visuals, Google services" in the admin map settings. An admin's preset change applies without a reload in the admin's own tab; travellers get it on their next page load. The preset still needs a Mapbox token; without one the runtime falls back to Google with a warning.
 
 ## Blog and marketing usage
 1. For static visual previews, prefer `/api/trip-map-preview` over direct external Static Maps URLs.

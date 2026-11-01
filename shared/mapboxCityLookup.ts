@@ -60,6 +60,8 @@ export const searchMapboxCitySuggestions = async (
     q: trimmedQuery,
     types: 'place',
     limit: String(Math.min(10, Math.max(1, options.maxResults ?? 5))),
+    // Results are stored in trips (name and coordinates), which the temporary endpoint does not allow.
+    permanent: 'true',
   });
   if (options.language) params.set('language', options.language);
   params.set('access_token', accessToken);

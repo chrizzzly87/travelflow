@@ -91,6 +91,29 @@ describe('components/DetailsPanel with place search off (mapbox_all)', () => {
     expect(screen.queryByRole('button', { name: 'Find' })).not.toBeInTheDocument();
   });
 
+  it('does not offer "Search with Google Places" when search is not Google', async () => {
+    renderPanel(activity);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit location' }));
+    expect(screen.queryByText('Search with Google Places')).not.toBeInTheDocument();
+
+    cleanup();
+    renderPanel(city);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(screen.getByTitle('Edit city'));
+    expect(screen.queryByText('Search with Google Places')).not.toBeInTheDocument();
+  });
+
+  it('shows "Search with Google Places" when Google is the search provider', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', `AIza${'x'.repeat(35)}`);
+    vi.stubEnv('VITE_MAP_RUNTIME_PRESET', 'google_all');
+    setRuntimeMapPreset('google_all');
+    renderPanel(activity);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit location' }));
+    expect(screen.getByText('Search with Google Places')).toBeInTheDocument();
+  });
+
   it('the city search uses the Mapbox city lookup instead of waiting on Google', async () => {
     renderPanel(city);
     await act(async () => { await Promise.resolve(); });

@@ -2739,7 +2739,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             )}
             {loadError && (
                 <div
-                    className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-red-500"
+                    className="absolute inset-0 z-20 flex items-center justify-center p-4 text-center text-sm text-red-500"
                     style={{ backgroundColor: mapSurfaceBackgroundColor }}
                 >
                     Error loading map: {loadError.message}

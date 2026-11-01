@@ -189,7 +189,9 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
     // The preset store is read inside the resolution, so its snapshot is a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rendererChoice, presetSnapshot]);
-  const rendererLocked = isRendererLockedByPreset(runtime.requestedPreset);
+  // Locked only while Mapbox is really in use: with no token the runtime falls back to Google.
+  const rendererLocked = isRendererLockedByPreset(runtime.requestedPreset)
+    && runtime.effectiveSelection.renderer === 'mapbox';
   const disabled = !usesGoogle(runtime.effectiveSelection);
   const mapboxAccessToken = useMemo(() => getMapboxAccessToken().trim(), []);
   const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());

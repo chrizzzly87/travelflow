@@ -1895,7 +1895,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Location</h3>
-                        <div className="text-xs text-muted-foreground">Search with Google Places</div>
+                        {locationSearch === 'google' && <div className="text-xs text-muted-foreground">Search with Google Places</div>}
                     </div>
                     <div className="relative">
                         <input
@@ -2051,7 +2051,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">City</h3>
-                        <div className="text-xs text-muted-foreground">Search with Google Places</div>
+                        {locationSearch === 'google' && <div className="text-xs text-muted-foreground">Search with Google Places</div>}
                     </div>
                     {citySearchError && (
                         <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-start gap-2 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/25">

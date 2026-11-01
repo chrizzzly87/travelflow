@@ -80,6 +80,17 @@ describe('MapRuntimeProvider without Google', () => {
     expect(googleScripts()).toHaveLength(0);
   });
 
+  it('does not lock the renderer when mapbox_all falls back to Google for lack of a token', async () => {
+    vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', '');
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', `AIza${'A'.repeat(35)}`);
+    mocks.loadSettings.mockReturnValue(new Promise(() => {}));
+    renderLoader();
+    await act(async () => { await Promise.resolve(); });
+
+    expect(latest?.runtime.runtime.effectiveSelection.renderer).toBe('google');
+    expect(latest?.runtime.rendererLocked).toBe(false);
+  });
+
   it('switching the admin preset re-resolves without a reload', async () => {
     vi.stubEnv('VITE_MAP_RUNTIME_PRESET', 'google_all');
     // Pending, so the shared Google script loader is never started by this test.
