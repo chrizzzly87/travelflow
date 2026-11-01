@@ -42,6 +42,8 @@ import {
   type TripMapDockMode,
 } from './tripMapProviderTuning';
 import { buildTripMapCameraIntroPlan } from './tripMapProviderCameraIntro';
+import { resolveMapboxTripBounds, type TripMapPoint } from './tripMapCamera';
+import { resolveMapViewportPadding } from './tripMapSelectionViewport';
 import {
   areMapboxCameraTargetsNearlyEqual,
   getMapboxBasemapErrorStatus,
@@ -58,7 +60,15 @@ import {
 
 interface MapboxBasemapSyncProps {
   accessToken: string;
+  /** The Google map to follow. Ignored, and may be null, in standalone mode. */
   googleMap: google.maps.Map | null;
+  /**
+   * The map stands on its own: no Google map, no camera sync. The caller moves
+   * the camera directly on the Mapbox map.
+   */
+  standalone?: boolean;
+  /** Standalone only: what the globe intro flies to, instead of the Google camera. */
+  introBounds?: TripMapPoint[];
   mapStyle: MapStyle;
   mapDockMode: TripMapDockMode;
   mapViewportSize: { width: number; height: number } | null;
@@ -158,6 +168,36 @@ const readGoogleCameraTarget = (
   };
 };
 
+/**
+ * The trip framing for the standalone intro: the same padding the trip map
+ * fits with, and a single city at its focus zoom, as the Mapbox camera does.
+ */
+const readStandaloneIntroTarget = (
+  mapboxMap: mapboxgl.Map,
+  introBounds: TripMapPoint[] | undefined,
+  mapDockMode: TripMapDockMode,
+  mapViewportSize: { width: number; height: number } | null,
+): { center: [number, number]; zoom: number } | null => {
+  if (!introBounds || introBounds.length === 0) return null;
+  if (introBounds.length === 1) {
+    return {
+      center: [introBounds[0].lng, introBounds[0].lat],
+      zoom: MAPBOX_TRIP_TUNING.selection.cityFocusZoom,
+    };
+  }
+  if (typeof mapboxMap.cameraForBounds !== 'function') return null;
+  const camera = mapboxMap.cameraForBounds(resolveMapboxTripBounds(introBounds), {
+    padding: resolveMapViewportPadding({ provider: 'mapbox', mapDockMode, mapViewportSize }),
+  });
+  const center = camera?.center;
+  const zoom = camera?.zoom;
+  if (!center || !Number.isFinite(zoom)) return null;
+  const [lng, lat] = Array.isArray(center)
+    ? center
+    : 'lng' in center ? [center.lng, center.lat] : [center.lon, center.lat];
+  return { center: [lng, lat], zoom: Number(zoom) };
+};
+
 const applyMapboxProjectionState = (
   mapboxMap: mapboxgl.Map,
   projection: 'globe' | 'mercator',
@@ -215,6 +255,8 @@ const applyMapboxTerrainState = (mapboxMap: mapboxgl.Map, showTerrain: boolean):
 export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   accessToken,
   googleMap,
+  standalone = false,
+  introBounds,
   mapStyle,
   mapDockMode,
   mapViewportSize,
@@ -251,16 +293,20 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   const mapViewportSizeRef = useRef<{ width: number; height: number } | null>(mapViewportSize);
   const cancelIntroRef = useRef<((options?: { syncToGoogle?: boolean }) => void) | null>(null);
   const reportSurfaceReadyRef = useRef<(isReady: boolean) => void>(() => {});
+  const introBoundsRef = useRef<TripMapPoint[] | undefined>(introBounds);
 
   mapStyleRef.current = mapStyle;
   detailOverridesRef.current = detailOverrides;
   lookAxesRef.current = lookAxes;
   mapDockModeRef.current = mapDockMode;
   mapViewportSizeRef.current = mapViewportSize;
+  introBoundsRef.current = introBounds;
 
   useEffect(() => {
     const noopCleanup = () => {};
-    if (!containerRef.current || !googleMap || !accessToken.trim()) return noopCleanup;
+    // Standalone never follows a Google map, even when one is passed.
+    const syncedGoogleMap = standalone ? null : googleMap;
+    if (!containerRef.current || (!standalone && !syncedGoogleMap) || !accessToken.trim()) return noopCleanup;
     if (mapboxMapRef.current) return noopCleanup;
 
     let cancelled = false;
@@ -445,15 +491,22 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (syncSourceRef.current === 'google') {
         syncSourceRef.current = null;
       }
-      if (shouldSyncToGoogle && mapboxMap && googleMap) {
-        syncMapboxToGoogleCamera(mapboxMap, googleMap);
+      if (shouldSyncToGoogle && mapboxMap && syncedGoogleMap) {
+        syncMapboxToGoogleCamera(mapboxMap, syncedGoogleMap);
       }
     };
     cancelIntroRef.current = cancelGlobeIntro;
 
     const runGlobeIntro = () => {
       const mapboxMap = mapboxMapRef.current;
-      const target = readGoogleCameraTarget(googleMap);
+      const target = standalone
+        ? (mapboxMap ? readStandaloneIntroTarget(
+          mapboxMap,
+          introBoundsRef.current,
+          mapDockModeRef.current,
+          getEffectiveViewportSize(),
+        ) : null)
+        : readGoogleCameraTarget(syncedGoogleMap);
       const introPlan = buildTripMapCameraIntroPlan({
         provider: 'mapbox',
         mapDockMode: mapDockModeRef.current,
@@ -497,7 +550,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           if (syncSourceRef.current === 'google') {
             syncSourceRef.current = null;
           }
-          syncMapboxToGoogleCamera(mapboxMap, googleMap);
+          if (syncedGoogleMap) {
+            syncMapboxToGoogleCamera(mapboxMap, syncedGoogleMap);
+          }
         }, introPlan.settleMs);
       }, introPlan.delayMs);
 
@@ -507,7 +562,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     const syncNow = () => {
       syncFrameRef.current = null;
       const mapboxMap = mapboxMapRef.current;
-      if (!mapboxMap || !googleMap) return;
+      if (!mapboxMap || !syncedGoogleMap) return;
       if (shouldDeferMapboxCameraSyncUntilSurfaceLoad({
         hasCompletedInitialLoad,
         initialCameraResolved: initialCameraResolvedRef.current,
@@ -517,7 +572,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (syncSourceRef.current === 'mapbox' || introActiveRef.current || gestureActiveRef.current) return;
       if (typeof mapboxMap.isMoving === 'function' && mapboxMap.isMoving()) return;
       if (Date.now() < ignoreGoogleSyncUntilRef.current) return;
-      const googleCameraTarget = readGoogleCameraTarget(googleMap);
+      const googleCameraTarget = readGoogleCameraTarget(syncedGoogleMap);
       if (areMapboxCameraTargetsNearlyEqual(googleCameraTarget, lastMapboxDrivenCameraRef.current)) {
         return;
       }
@@ -535,7 +590,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       }
 
       syncSourceRef.current = 'google';
-      syncMapboxToGoogleCamera(mapboxMap, googleMap, {
+      syncMapboxToGoogleCamera(mapboxMap, syncedGoogleMap, {
         animate: initialCameraResolvedRef.current,
       });
       window.requestAnimationFrame(() => {
@@ -566,7 +621,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       mapboxToGoogleFrameRef.current = null;
       if (syncSourceRef.current === 'google' || introActiveRef.current) return;
       const mapboxMap = mapboxMapRef.current;
-      if (!mapboxMap || !googleMap) return;
+      if (!mapboxMap || !syncedGoogleMap) return;
 
       const center = mapboxMap.getCenter();
       const zoom = mapboxMap.getZoom();
@@ -578,14 +633,14 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       ignoreGoogleSyncUntilRef.current = Date.now() + MAPBOX_TRIP_TUNING.intro.syncCooldownMs;
 
       syncSourceRef.current = 'mapbox';
-      if (typeof googleMap.moveCamera === 'function') {
-        googleMap.moveCamera({
+      if (typeof syncedGoogleMap.moveCamera === 'function') {
+        syncedGoogleMap.moveCamera({
           center: { lat: center.lat, lng: center.lng },
           zoom: Number(zoom),
         });
       } else {
-        googleMap.setCenter({ lat: center.lat, lng: center.lng });
-        googleMap.setZoom(Number(zoom));
+        syncedGoogleMap.setCenter({ lat: center.lat, lng: center.lng });
+        syncedGoogleMap.setZoom(Number(zoom));
       }
       window.requestAnimationFrame(() => {
         if (syncSourceRef.current === 'mapbox') {
@@ -700,9 +755,14 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           });
           window.requestAnimationFrame(() => {
             if (cancelled || mapboxMapRef.current !== mapboxMap) return;
-            if (!runGlobeIntro()) {
-              scheduleSync();
+            if (runGlobeIntro()) return;
+            if (standalone) {
+              // Nothing to follow: the trip map moves this camera itself.
+              initialCameraResolvedRef.current = true;
+              applyProjection({ introActive: false, force: true });
+              return;
             }
+            scheduleSync();
           });
         };
         handleMapboxStyleLoad = () => {
@@ -734,7 +794,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         mapboxMap.on('style.load', handleMapboxStyleLoad);
         mapboxMap.on('error', handleMapboxError);
 
-        if (interactive) {
+        if (interactive && !standalone) {
           mapboxMap.on('movestart', beginGestureSync);
           mapboxMap.on('zoomstart', beginGestureSync);
           mapboxMap.on('rotatestart', beginGestureSync);
@@ -752,15 +812,20 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         }
 
         scheduleViewportResize(true);
-        scheduleSync();
-
-        listeners = [
-          googleMap.addListener?.('idle', scheduleSync),
-        ];
+        if (syncedGoogleMap) {
+          scheduleSync();
+          listeners = [
+            syncedGoogleMap.addListener?.('idle', scheduleSync),
+          ];
+        }
       })
       .catch((error) => {
         onModuleReadyChange?.(null);
         console.warn('Failed to load Mapbox basemap runtime', error);
+        // With no Google map underneath, a missing runtime is the whole map.
+        if (standalone && !cancelled) {
+          onLoadError?.({ message: getMapboxErrorMessage(error), status: null });
+        }
       });
 
     return () => {
@@ -830,7 +895,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       ignoreGoogleSyncUntilRef.current = 0;
       lastMapboxDrivenCameraRef.current = null;
     };
-  }, [accessToken, googleMap, interactive, onLoadError, onMapReadyChange, onModuleReadyChange, onSurfaceReadyChange, onStyleReload]);
+  }, [accessToken, googleMap, interactive, onLoadError, onMapReadyChange, onModuleReadyChange, onSurfaceReadyChange, onStyleReload, standalone]);
 
   useEffect(() => {
     const mapboxMap = mapboxMapRef.current;

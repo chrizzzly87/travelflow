@@ -42,6 +42,7 @@ import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
+import { createGoogleTripMapCamera, createMapboxTripMapCamera, type TripMapCamera } from './maps/tripMapCamera';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
 import { MARKER_HOVER_Z_INDEX, MARKER_TOOLTIP_HIDDEN_TRANSFORM, MARKER_TOOLTIP_SHOWN_TRANSFORM } from './maps/markerTooltip';
@@ -233,6 +234,17 @@ interface ItineraryMapInstanceBridgeProps {
     onMapInstanceChange: (map: google.maps.Map | null) => void;
 }
 
+/** Google's own arrow symbol. Only call it on the Google branch: it reads `window.google`. */
+const buildGoogleRouteArrowIcon = (color: string, routeScale: number): google.maps.Symbol => ({
+    path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+    fillColor: color,
+    fillOpacity: 1,
+    strokeColor: color,
+    strokeOpacity: 1,
+    strokeWeight: 0.1,
+    scale: 3.2 * Math.max(0.72, routeScale),
+});
+
 const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({ mapId, onMapInstanceChange }) => {
     const map = useMap(mapId);
 
@@ -326,9 +338,27 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
     const onActivityMarkerSelectRef = useRef<typeof onActivityMarkerSelect>(onActivityMarkerSelect);
     const googleMixedSurfaceControllerRef = useRef<GoogleMixedSurfaceController | null>(null);
+    /**
+     * Every camera move goes through this: the Mapbox map in standalone mode,
+     * the Google map otherwise (where Mapbox, if shown, follows Google).
+     */
+    const cameraRef = useRef<TripMapCamera | null>(null);
     
-    const { isLoaded, loadError } = useGoogleMaps();
-    const { runtime, mapboxAccessToken } = useMapRuntime();
+    const { isLoaded, loadError: googleLoadError, disabled: googleMapsDisabled } = useGoogleMaps();
+    const { runtime, mapboxAccessToken, presetSettled } = useMapRuntime();
+    /**
+     * Mapbox with no Google underneath (`mapbox_all`). Decided only once the
+     * admin preset has settled; until then the map shows "Loading map…".
+     */
+    const isStandaloneMapbox = Boolean(presetSettled)
+        && runtime.effectiveSelection.renderer === 'mapbox'
+        && googleMapsDisabled;
+    const isStandaloneMapboxRef = useRef(isStandaloneMapbox);
+    isStandaloneMapboxRef.current = isStandaloneMapbox;
+    const [standaloneMapboxLoadError, setStandaloneMapboxLoadError] = useState<Error | null>(null);
+    const loadError = googleLoadError ?? (isStandaloneMapbox ? standaloneMapboxLoadError : null);
+    const routesImplementation = runtime.effectiveSelection.routes;
+    const locationSearchImplementation = runtime.effectiveSelection.locationSearch;
     const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
     const [mapInitialized, setMapInitialized] = useState(false);
     const [mapboxBasemapFailureKey, setMapboxBasemapFailureKey] = useState<string | null>(null);
@@ -376,16 +406,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const mapboxBasemapAvailabilityKey = `${mapboxAccessToken}::${runtime.activeSelectionKey}`;
     const mapboxBasemapAvailable = mapboxBasemapFailureKey !== mapboxBasemapAvailabilityKey;
     const shouldUseRequestedMapboxBasemap = runtime.effectiveSelection.renderer === 'mapbox' && mapboxAccessToken.length > 0;
-    const isMapboxBasemapEnabled = shouldUseRequestedMapboxBasemap && mapboxBasemapAvailable;
+    // Standalone has no Google map to fall back to, so a Mapbox failure is an error, not a switch.
+    const isMapboxBasemapEnabled = shouldUseRequestedMapboxBasemap && (mapboxBasemapAvailable || isStandaloneMapbox);
     const tripMapProvider = runtime.effectiveSelection.renderer;
     const tripMapTuning = useMemo(() => getTripMapProviderTuning(tripMapProvider), [tripMapProvider]);
     const mapSurfaceBackgroundColor = useMemo(() => getMapSurfaceBackgroundColor(activeStyle), [activeStyle]);
     const shouldHideGoogleCanvasInMixedMode = shouldHideGoogleMapCanvas({
         isMapboxEnabled: isMapboxBasemapEnabled,
     });
-    const shouldRenderMapCanvas = isLoaded && !loadError;
+    const shouldRenderMapCanvas = Boolean(presetSettled) && isLoaded && !loadError && !isStandaloneMapbox;
     const shouldShowMapLoadingOverlay = !loadError && (
-        (!isMapboxBasemapEnabled && !mapInitialized)
+        !presetSettled
+        || (!isMapboxBasemapEnabled && !mapInitialized)
         || (isMapboxBasemapEnabled && !isMapboxSurfaceReady)
     );
     const cities = useMemo(() => 
@@ -561,17 +593,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         dockModeRefitTimerRef.current = null;
     }, []);
 
-    const runFitBounds = useCallback(() => {
-        if (!googleMapRef.current || cities.length === 0) return;
+    const fitBoundsPoints = useMemo(() => collectTripMapFitBoundsCoordinates({
+        cities,
+        items,
+        provider: tripMapProvider,
+    }), [cities, items, tripMapProvider]);
 
-        const bounds = new window.google.maps.LatLngBounds();
-        collectTripMapFitBoundsCoordinates({
-            cities,
-            items,
-            provider: tripMapProvider,
-        }).forEach((point) => {
-            bounds.extend(point);
-        });
+    const runFitBounds = useCallback(() => {
+        const camera = cameraRef.current;
+        if (!camera || cities.length === 0) return;
+
         // Measure the container here rather than trusting the observed size:
         // the pane can change without a resize observation (a sheet sliding over
         // a full-bleed map), and a stale size produces padding that no longer
@@ -580,15 +611,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const fitViewportSize = liveRect && liveRect.width > 0 && liveRect.height > 0
             ? { width: liveRect.width, height: liveRect.height }
             : mapViewportSize;
-        googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
+        camera.fitBounds(fitBoundsPoints, resolveMapViewportPadding({
             provider: tripMapProvider,
             mapDockMode,
             mapViewportSize: fitViewportSize,
         }));
-    }, [cities, items, mapDockMode, mapViewportSize, tripMapProvider]);
+    }, [cities.length, fitBoundsPoints, mapDockMode, mapViewportSize, tripMapProvider]);
 
     const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
-        if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
+        if (!cameraRef.current || cities.length === 0 || typeof window === 'undefined') return;
         const respectSelection = options?.respectSelection ?? false;
         const selectionVersionAtSchedule = selectionVersionRef.current;
         cancelScheduledFit();
@@ -596,7 +627,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         let attemptCount = 0;
         const tryFit = () => {
             fitRafRef.current = null;
-            if (!googleMapRef.current || cities.length === 0) return;
+            const camera = cameraRef.current;
+            if (!camera || cities.length === 0) return;
 
             const rect = mapContainerRef.current?.getBoundingClientRect();
             if (!isMapViewportReady(rect) && attemptCount < maxAttempts) {
@@ -605,9 +637,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return;
             }
 
-            if (window.google?.maps?.event?.trigger) {
-                window.google.maps.event.trigger(googleMapRef.current, 'resize');
-            }
+            camera.resize();
             if (shouldSkipRouteFitForSelection({
                 respectSelection,
                 selectionVersionAtSchedule,
@@ -671,6 +701,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
         if (googleMapRef.current === map) return;
         googleMapRef.current = map;
+        cameraRef.current = map ? createGoogleTripMapCamera(map) : null;
         setMapInstance(map);
         setMapInitialized(Boolean(map));
         if (!map) {
@@ -691,8 +722,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     const handleMapboxMapReadyChange = useCallback((map: mapboxgl.Map | null) => {
         mapboxMapRef.current = map;
+        // Mixed mode keeps the Google camera; only a standalone map owns it.
+        if (isStandaloneMapboxRef.current && map) {
+            cameraRef.current = createMapboxTripMapCamera(map);
+        }
         if (!map) {
             setIsMapboxSurfaceReady(false);
+            if (!googleMapRef.current) {
+                cameraRef.current = null;
+                setMapInitialized(false);
+                setMapZoomLevel(null);
+            }
         }
     }, []);
 
@@ -702,6 +742,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     const handleMapboxSurfaceReadyChange = useCallback((isReady: boolean) => {
         setIsMapboxSurfaceReady(isReady);
+        // Standalone: the map is usable once its first style is in. A later
+        // style switch reports not-ready briefly, which must not tear down the
+        // camera or re-run everything keyed on `mapInitialized`.
+        if (!isReady || !isStandaloneMapboxRef.current || !cameraRef.current) return;
+        setMapInitialized(true);
+        const containerRect = mapContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+            setMapViewportSize({
+                width: Math.round(containerRect.width),
+                height: Math.round(containerRect.height),
+            });
+        }
     }, []);
 
     const handleMapboxStyleReload = useCallback(() => {
@@ -736,27 +788,25 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [isMapboxBasemapEnabled]);
 
     const handleMapboxBasemapError = useCallback((error: { message: string; status: number | null }) => {
+        if (isStandaloneMapboxRef.current) {
+            console.warn('Mapbox map failed in standalone mode', error);
+            setIsMapboxSurfaceReady(false);
+            setStandaloneMapboxLoadError(new Error(error.message));
+            return;
+        }
         console.warn('Mapbox basemap failed inside itinerary map; falling back to Google', error);
         setIsMapboxSurfaceReady(false);
         setMapboxBasemapFailureKey(mapboxBasemapAvailabilityKey);
     }, [mapboxBasemapAvailabilityKey]);
 
     useEffect(() => {
-        let listener: google.maps.MapsEventListener | null = null;
-        if (mapInitialized && googleMapRef.current) {
-            const mapInstance = googleMapRef.current as google.maps.Map;
-            const syncZoom = () => {
-                const nextZoom = mapInstance.getZoom?.();
-                setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
-            };
-            syncZoom();
-            listener = mapInstance.addListener('zoom_changed', syncZoom);
-        }
-        return () => {
-            if (listener) {
-                window.google?.maps?.event?.removeListener(listener);
-            }
+        const camera = cameraRef.current;
+        if (!mapInitialized || !camera) return;
+        const setZoom = (zoom: number | null) => {
+            setMapZoomLevel(Number.isFinite(zoom) ? Number(zoom) : null);
         };
+        setZoom(camera.getZoom());
+        return camera.onZoom(setZoom);
     }, [mapInitialized]);
 
     // Handle Style Change
@@ -814,8 +864,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const mapboxModule = isMapboxBasemapEnabled ? mapboxModuleRef.current : null;
         const canRenderMapVisuals = Boolean(
             mapInitialized
-            && googleMapRef.current
-            && window.google?.maps
+            // Standalone Mapbox draws everything itself; `window.google` does not exist there.
+            && (isStandaloneMapbox || (googleMapRef.current && window.google?.maps))
             && (!isMapboxBasemapEnabled || mapboxMap)
             && (!isMapboxBasemapEnabled || mapboxModule)
             && (!isMapboxBasemapEnabled || (
@@ -823,8 +873,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 && mapboxMap
                 && isMapboxStyleReadyForRuntimeMutations(mapboxMap)
             ))
-            && (isMapboxBasemapEnabled || window.google.maps.OverlayView)
+            && (isMapboxBasemapEnabled || window.google?.maps?.OverlayView)
         );
+        /** Google's geometry library, never read on the standalone Mapbox path. */
+        const readGoogleSpherical = () => (isStandaloneMapbox ? undefined : window.google?.maps?.geometry?.spherical);
 
         const clearRenderedMapVisuals = () => {
             markersRef.current.forEach((marker) => marker.setMap(null));
@@ -1032,7 +1084,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             to: google.maps.LatLngLiteral,
         ): number | undefined => {
             if (from.lat === to.lat && from.lng === to.lng) return undefined;
-            const geometry = window.google?.maps?.geometry?.spherical;
+            const geometry = readGoogleSpherical();
             if (geometry) {
                 return geometry.computeHeading(
                     new window.google.maps.LatLng(from.lat, from.lng),
@@ -1050,8 +1102,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             if (path.length === 0) return null;
             if (path.length === 1) return path[0];
             const clampedFraction = Math.max(0, Math.min(1, fraction));
-            const geometry = window.google?.maps?.geometry?.spherical;
+            const geometry = readGoogleSpherical();
             if (!geometry) {
+                // A straight two-point leg (standalone Mapbox) has no vertex in
+                // the middle, so interpolate instead of snapping to an end.
+                if (path.length === 2) {
+                    return {
+                        lat: path[0].lat + (path[1].lat - path[0].lat) * clampedFraction,
+                        lng: path[0].lng + (path[1].lng - path[0].lng) * clampedFraction,
+                    };
+                }
                 const fallbackIndex = Math.round((path.length - 1) * clampedFraction);
                 return path[Math.max(0, Math.min(path.length - 1, fallbackIndex))];
             }
@@ -1161,15 +1221,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             // thins its routes down at both ends of the slider.
             const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale)
                 * Math.max(0.5, Math.min(2, routeLineWeight));
-            const arrowIcon = {
-                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                fillColor: color,
-                fillOpacity: 1,
-                strokeColor: color,
-                strokeOpacity: 1,
-                strokeWeight: 0.1,
-                scale: 3.2 * Math.max(0.72, routeScale),
-            };
+            // Google symbols only exist on the Google branch: Mapbox line layers
+            // ignore polyline icons apart from the dash repeat.
+            const arrowIcon = mapboxMap ? null : buildGoogleRouteArrowIcon(color, routeScale);
             // A dashed line is drawn as repeated dot symbols with the stroke
             // turned off, which is the only way Google renders a dash pattern.
             const dashSymbol = {
@@ -1185,7 +1239,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             if (isDashed) {
                 routeIcons.push({ icon: dashSymbol as any, offset: '0', repeat: '14px' });
             }
-            if (withArrows) {
+            if (withArrows && arrowIcon) {
                 routeIcons.push(
                     { icon: arrowIcon, offset: '25%' },
                     { icon: arrowIcon, offset: '75%' },
@@ -1262,15 +1316,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const fallbackGroundPath = flightRouteVisualPaths?.groundPath ?? fallbackAirPath;
             const isDashedFallback = mode !== 'plane';
             const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
-            const arrowIcon = {
-                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                fillColor: color,
-                fillOpacity: 1,
-                strokeColor: color,
-                strokeOpacity: 1,
-                strokeWeight: 0.1,
-                scale: 3.2 * Math.max(0.72, routeScale),
-            };
+            const arrowIcon = mapboxMap ? null : buildGoogleRouteArrowIcon(color, routeScale);
+            const arrowIcons: google.maps.IconSequence[] = arrowIcon
+                ? [
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' },
+                ]
+                : [];
             const icons = isDashedFallback
                 ? [
                     {
@@ -1283,13 +1335,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         offset: '0',
                         repeat: '12px'
                     },
-                    { icon: arrowIcon, offset: '25%' },
-                    { icon: arrowIcon, offset: '75%' }
+                    ...arrowIcons,
                 ]
-                : [
-                    { icon: arrowIcon, offset: '25%' },
-                    { icon: arrowIcon, offset: '75%' },
-                ];
+                : arrowIcons;
 
             const groundShadowHandle = isFlightFallback
                 ? drawGroundShadowPath(fallbackGroundPath, 2.35)
@@ -1374,7 +1422,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 markersRef.current.push(marker);
             });
 
-            const currentZoomValue = googleMapRef.current?.getZoom?.();
+            const currentZoomValue = cameraRef.current?.getZoom();
             const resolvedZoomLevel = Number.isFinite(currentZoomValue)
                 ? Number(currentZoomValue)
                 : mapZoomLevelRef.current;
@@ -1485,7 +1533,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         }
 
-        if (!isPaywalled && showCityNames && googleMapRef.current) {
+        if (!isPaywalled && showCityNames && (mapboxMap || googleMapRef.current)) {
             const baseLabelOffsetPx = resolveTripMapCityLabelOffsetPx({
                 provider: tripMapProvider,
                 markerSize: effectiveMarkerRenderProfile.city.size,
@@ -1663,9 +1711,34 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         }
 
+        /**
+         * No routing service (`mapbox_all`): every leg is the straight or
+         * flight-arc line the Google path falls back to. Nothing is requested,
+         * logged or cached, because nothing failed.
+         */
+        const drawStraightRoutes = () => {
+             for (let i = 0; i < cities.length - 1; i++) {
+                 if (!isEffectActive()) return;
+                 const start = cities[i];
+                 const end = cities[i + 1];
+                 if (!start.coordinates || !end.coordinates) continue;
+                 drawFallbackLegVisual({
+                     startCoordinates: start.coordinates,
+                     endCoordinates: end.coordinates,
+                     mode: normalizeTransportMode(findTravelBetweenCities(items, start, end)?.transportMode),
+                     color: resolveMapColor(start.color),
+                     includeTransportMarker: true,
+                 });
+             }
+        };
+
         // 3. Draw Routes
         const drawRoutes = async () => {
              if (!isEffectActive()) return;
+             if (routesImplementation === 'none') {
+                 drawStraightRoutes();
+                 return;
+             }
              hydrateRouteCache();
              const googleRouteRuntime = await loadGoogleRouteRuntime();
              if (!isEffectActive()) return;
@@ -1689,12 +1762,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  let routingAttempted = false;
                  let routingFailed = false;
 
-                 const travelModes = window.google.maps.TravelMode;
-
                  const wantsRealRoute = routeMode === 'realistic';
-                 const routeAttemptModes = routeAttemptPolicy.modes.map((modeKey) =>
-                     (travelModes[modeKey] ?? modeKey) as google.maps.TravelMode
-                 );
+                 // The policy's mode names are Google's TravelMode values verbatim.
+                 const routeAttemptModes = routeAttemptPolicy.modes as readonly string[] as google.maps.TravelMode[];
                  const useRealRoute = wantsRealRoute && routeAttemptModes.length > 0;
                  let provisionalRouteHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
                  let provisionalGroundShadowHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
@@ -1938,7 +2008,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clearRenderedMapVisuals();
         };
 
-    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, dashedRoutes, showRouteArrows, routeLineWeight, routeMode, showCityNames]); 
+    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, isStandaloneMapbox, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, dashedRoutes, showRouteArrows, routeLineWeight, routeMode, routesImplementation, showCityNames]); 
 
     useEffect(() => {
         if (!mapInitialized) return;
@@ -2040,7 +2110,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             lastCityFrameKeyRef.current = null;
             return;
         }
-        if (!mapInitialized || !googleMapRef.current || !window.google?.maps) return;
+        const tripCamera = cameraRef.current;
+        if (!mapInitialized || !tripCamera) return;
 
         const frameKey = `${selectedCityId}|${mapDockMode}|${tripMapProvider}`;
         if (lastCityFrameKeyRef.current === frameKey) return;
@@ -2057,19 +2128,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!camera) return;
         lastCityFrameKeyRef.current = frameKey;
 
-        const mapInstance = googleMapRef.current;
         if (camera.kind === 'center') {
-            mapInstance.panTo(camera.center);
-            mapInstance.setZoom(camera.zoom);
+            tripCamera.panTo(camera.center, { zoom: camera.zoom });
             return;
         }
 
-        const bounds = new window.google.maps.LatLngBounds(
+        const liveRect = mapContainerRef.current?.getBoundingClientRect();
+        tripCamera.fitBounds([
             { lat: camera.bounds.south, lng: camera.bounds.west },
             { lat: camera.bounds.north, lng: camera.bounds.east },
-        );
-        const liveRect = mapContainerRef.current?.getBoundingClientRect();
-        mapInstance.fitBounds(bounds, resolveMapViewportPadding({
+        ], resolveMapViewportPadding({
             provider: tripMapProvider,
             mapDockMode,
             mapViewportSize: liveRect && liveRect.width > 0 && liveRect.height > 0
@@ -2081,11 +2149,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         // take it to street level. The clamp runs once the fit has settled, and
         // is owned by this effect: a re-run or an unmount before the fit settles
         // must not zoom a camera this effect no longer controls.
-        const idleListener = window.google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
-            const clamped = clampCityFocusZoom(mapInstance.getZoom?.(), camera);
-            if (clamped !== null) mapInstance.setZoom(clamped);
+        const stopListeningForIdle = tripCamera.onIdle(() => {
+            stopListeningForIdle();
+            const clamped = clampCityFocusZoom(tripCamera.getZoom(), camera);
+            if (clamped !== null) tripCamera.setZoom(clamped);
         });
-        return () => window.google?.maps?.event?.removeListener(idleListener);
+        return stopListeningForIdle;
     }, [
         cities,
         items,
@@ -2098,12 +2167,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     ]);
 
     useEffect(() => {
-        if (!googleMapRef.current || !window.google?.maps) return;
+        if (!cameraRef.current) return;
         // Cities are framed by the effect above; this one only chases activities.
         if (!selectedActivityId) return;
 
         const t = setTimeout(() => {
-            if (!googleMapRef.current) return;
+            const tripCamera = cameraRef.current;
+            if (!tripCamera) return;
             const focusTarget = resolveSelectedMapFocusPosition({
                 provider: tripMapProvider,
                 selectedActivityId,
@@ -2113,16 +2183,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
             if (!focusTarget) return;
 
-            const mapInstance = googleMapRef.current;
-            const currentBounds = mapInstance.getBounds?.();
-            const currentZoomValue = mapInstance.getZoom?.();
+            const currentZoomValue = tripCamera.getZoom();
             const currentZoom = Number.isFinite(currentZoomValue) ? Number(currentZoomValue) : null;
-            const targetLatLng = new window.google.maps.LatLng(
-                focusTarget.position.lat,
-                focusTarget.position.lng,
-            );
-            const isTargetVisible = Boolean(currentBounds?.contains?.(targetLatLng));
-            const isTargetWithinSafeZone = currentBounds
+            const isTargetVisible = tripCamera.containsPoint(focusTarget.position);
+            // The inset check needs Google's bounds object; standalone Mapbox
+            // leaves it out and goes by plain visibility.
+            const isStandalone = isStandaloneMapboxRef.current;
+            const currentBounds = isStandalone
+                ? undefined
+                : (googleMapRef.current as google.maps.Map | null)?.getBounds?.();
+            const isTargetWithinSafeZone = isStandalone ? undefined : currentBounds
                 ? isCoordinateWithinSafeBounds({
                     bounds: currentBounds,
                     point: focusTarget.position,
@@ -2141,14 +2211,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
 
             if (!shouldPan && !shouldZoom) return;
+            const targetZoom = Math.max(currentZoom ?? focusTarget.zoom, focusTarget.zoom);
             if (shouldPan) {
-                mapInstance.panTo({
-                    lat: focusTarget.position.lat,
-                    lng: focusTarget.position.lng,
-                });
-            }
-            if (shouldZoom) {
-                mapInstance.setZoom(Math.max(currentZoom ?? focusTarget.zoom, focusTarget.zoom));
+                tripCamera.panTo(
+                    { lat: focusTarget.position.lat, lng: focusTarget.position.lng },
+                    shouldZoom ? { zoom: targetZoom } : undefined,
+                );
+            } else {
+                tripCamera.setZoom(targetZoom);
             }
         }, 100);
         return () => clearTimeout(t);
@@ -2166,8 +2236,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         if (!isCityFocusMode || !onClearSelection || !mapInitialized) return;
         const googleMap = googleMapRef.current;
+        if (!googleMap) return;
         const mapsEvent = window.google?.maps?.event;
-        if (!googleMap || !mapsEvent) return;
+        if (!mapsEvent) return;
 
         const listener = googleMap.addListener('click', () => onClearSelection());
         return () => mapsEvent.removeListener(listener);
@@ -2195,10 +2266,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
      * costing tiles.
      */
     useEffect(() => {
-        if (!mapInitialized || !window.google?.maps?.TrafficLayer) return;
+        // Google is checked last: it does not exist on the standalone Mapbox path.
+        if (!mapInitialized || !showTrafficLayer || isMapboxBasemapEnabled) return;
         const googleMap = googleMapRef.current;
-        if (!googleMap) return;
-        if (!showTrafficLayer || isMapboxBasemapEnabled) return;
+        if (!googleMap || !window.google?.maps?.TrafficLayer) return;
 
         const layer = new window.google.maps.TrafficLayer();
         layer.setMap(googleMap);
@@ -2206,10 +2277,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [isMapboxBasemapEnabled, mapInitialized, showTrafficLayer]);
 
     useEffect(() => {
-        if (!mapInitialized || !window.google?.maps?.TransitLayer) return;
+        if (!mapInitialized || !showTransitLinesLayer || isMapboxBasemapEnabled) return;
         const googleMap = googleMapRef.current;
-        if (!googleMap) return;
-        if (!showTransitLinesLayer || isMapboxBasemapEnabled) return;
+        if (!googleMap || !window.google?.maps?.TransitLayer) return;
 
         const layer = new window.google.maps.TransitLayer();
         layer.setMap(googleMap);
@@ -2259,13 +2329,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const userLocationIsLive = userLocationFix?.isLive ?? false;
 
     const recenterOnUserLocation = useCallback((position: { lat: number; lng: number }) => {
-        const googleMap = googleMapRef.current as google.maps.Map | null;
-        if (!googleMap) return;
-        googleMap.panTo(position);
-        const zoom = googleMap.getZoom?.();
-        if (!Number.isFinite(zoom) || Number(zoom) < USER_LOCATION_RECENTER_MIN_ZOOM) {
-            googleMap.setZoom(USER_LOCATION_RECENTER_MIN_ZOOM);
-        }
+        const camera = cameraRef.current;
+        if (!camera) return;
+        const zoom = camera.getZoom();
+        const needsZoom = !Number.isFinite(zoom) || Number(zoom) < USER_LOCATION_RECENTER_MIN_ZOOM;
+        camera.panTo(position, needsZoom ? { zoom: USER_LOCATION_RECENTER_MIN_ZOOM } : undefined);
     }, []);
 
     useEffect(() => {
@@ -2286,18 +2354,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     /** Whether the dot is on screen, so the control can call attention to itself when it is not. */
     useEffect(() => {
         if (typeof userLocationLat !== 'number' || typeof userLocationLng !== 'number' || !mapInitialized) return;
-        const googleMap = googleMapRef.current as google.maps.Map | null;
-        const mapsEvent = window.google?.maps?.event;
-        if (!googleMap || !mapsEvent) return;
+        const camera = cameraRef.current;
+        if (!camera) return;
         const position = { lat: userLocationLat, lng: userLocationLng };
         const check = () => {
-            const bounds = googleMap.getBounds?.();
-            if (!bounds) return;
-            setIsUserLocationInView(bounds.contains(position));
+            setIsUserLocationInView(camera.containsPoint(position));
         };
         check();
-        const listener = googleMap.addListener('idle', check);
-        return () => mapsEvent.removeListener(listener);
+        return camera.onIdle(check);
     }, [mapInitialized, userLocationLat, userLocationLng]);
 
     const handleUserLocationControl = () => {
@@ -2378,7 +2442,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cancelScheduledFit, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.dockModeRefitDelayMs]);
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
+        if (!mapInitialized || !cameraRef.current || typeof ResizeObserver === 'undefined') return;
         const container = mapContainerRef.current;
         if (!container) return;
 
@@ -2390,13 +2454,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
         let resizeRafId: number | null = null;
         const observer = new ResizeObserver(() => {
-            if (resizeRafId !== null || !googleMapRef.current) return;
+            if (resizeRafId !== null || !cameraRef.current) return;
             resizeRafId = window.requestAnimationFrame(() => {
                 resizeRafId = null;
-                if (!googleMapRef.current) return;
-                if (window.google?.maps?.event?.trigger) {
-                    window.google.maps.event.trigger(googleMapRef.current, 'resize');
-                }
+                const camera = cameraRef.current;
+                if (!camera) return;
+                camera.resize();
                 if (selectedActivityIdRef.current || selectedCityIdRef.current || cities.length === 0) {
                     const currentViewportSize = container.getBoundingClientRect();
                     previousViewportSize = currentViewportSize;
@@ -2456,6 +2519,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 queries.push(query);
             }
         }
+        // Geocoding a focus query is a Google service; Mapbox city search does not cover it.
+        if (locationSearchImplementation !== 'google') return;
         if (queries.length === 0 || !mapInitialized || !googleMapRef.current || cities.length > 0) return;
         if (!window.google?.maps?.Geocoder) return;
         const focusKey = queries.join('||');
@@ -2510,7 +2575,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [cities.length, focusLocationQuery, mapDockMode, mapInitialized, mapViewportSize, tripMapProvider, tripMapTuning.selection.queryFocusZoom]);
+    }, [cities.length, focusLocationQuery, locationSearchImplementation, mapDockMode, mapInitialized, mapViewportSize, tripMapProvider, tripMapTuning.selection.queryFocusZoom]);
 
     const activityMarkerSourceById = useMemo(() => {
         const sources = new Map<string, 'activity' | 'city'>();
@@ -2573,10 +2638,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 backgroundColor: mapSurfaceBackgroundColor,
             }}
         >
-            {isMapboxBasemapEnabled && (
+            {presetSettled && isMapboxBasemapEnabled && (
                 <MapboxBasemapSync
                     accessToken={mapboxAccessToken}
-                    googleMap={googleMapRef.current}
+                    googleMap={isStandaloneMapbox ? null : googleMapRef.current}
+                    standalone={isStandaloneMapbox}
+                    introBounds={isStandaloneMapbox ? fitBoundsPoints : undefined}
                     mapStyle={activeStyle}
                     mapDockMode={mapDockMode}
                     mapViewportSize={mapViewportSize}

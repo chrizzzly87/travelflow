@@ -38,6 +38,13 @@ const resolveLongitudeArc = (lngs: number[]): { west: number; east: number } => 
   return { west: sorted[startIndex], east: sorted[startIndex - 1] + 360 };
 };
 
+/** Mapbox `[[west, south], [east, north]]` around the points, antimeridian-aware. Needs at least one point. */
+export const resolveMapboxTripBounds = (points: TripMapPoint[]): [[number, number], [number, number]] => {
+  const { west, east } = resolveLongitudeArc(points.map((point) => point.lng));
+  const lats = points.map((point) => point.lat);
+  return [[west, Math.min(...lats)], [east, Math.max(...lats)]];
+};
+
 // Only touch `google` inside methods: this module is imported on the Mapbox
 // path, where no Google script is loaded.
 export const createGoogleTripMapCamera = (map: google.maps.Map): TripMapCamera => {
@@ -85,9 +92,7 @@ export const createMapboxTripMapCamera = (map: mapboxgl.Map): TripMapCamera => {
         });
         return;
       }
-      const { west, east } = resolveLongitudeArc(points.map((point) => point.lng));
-      const lats = points.map((point) => point.lat);
-      map.fitBounds([[west, Math.min(...lats)], [east, Math.max(...lats)]], {
+      map.fitBounds(resolveMapboxTripBounds(points), {
         padding,
         maxZoom: options?.maxZoom,
         animate: options?.animate,
