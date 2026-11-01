@@ -695,7 +695,7 @@
         "description": "La carte que l'app affiche.",
         "google": "Google",
         "label": "Fournisseur de cartes",
-        "lockedToMapbox": "This site is using Mapbox right now.",
+        "lockedToMapbox": "Ce site utilise Mapbox pour le moment.",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox n'est pas configuré ici, Google est donc utilisé."
       },
@@ -886,7 +886,7 @@
       "statusSaved": "Enregistrée",
       "unsave": "Annuler l'enregistrement"
     },
-    "placeSearchUnavailable": "Place search is unavailable right now."
+    "placeSearchUnavailable": "La recherche de lieux n'est pas disponible pour le moment."
   },
   "tripRouteShell": {
     "loadingTrip": "Chargement du voyage",

@@ -686,7 +686,7 @@
         "description": "ایپ کون سا نقشہ بناتی ہے۔",
         "google": "Google",
         "label": "نقشہ فراہم کنندہ",
-        "lockedToMapbox": "This site is using Mapbox right now.",
+        "lockedToMapbox": "یہ سائٹ اس وقت Mapbox استعمال کر رہی ہے۔",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox یہاں ترتیب نہیں دیا گیا، اس لیے Google استعمال ہو رہا ہے۔"
       },
@@ -877,7 +877,7 @@
       "statusSaved": "محفوظ",
       "unsave": "محفوظ کرنا واپس لیں"
     },
-    "placeSearchUnavailable": "Place search is unavailable right now."
+    "placeSearchUnavailable": "جگہوں کی تلاش ابھی دستیاب نہیں ہے۔"
   },
   "tripRouteShell": {
     "loadingTrip": "سفر لوڈ ہو رہا ہے",

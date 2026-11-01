@@ -702,7 +702,7 @@
         "description": "Какую карту рисует приложение.",
         "google": "Google",
         "label": "Поставщик карт",
-        "lockedToMapbox": "This site is using Mapbox right now.",
+        "lockedToMapbox": "Сейчас этот сайт использует Mapbox.",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox здесь не настроен, поэтому используется Google."
       },
@@ -893,7 +893,7 @@
       "statusSaved": "Сохранено",
       "unsave": "Отменить сохранение"
     },
-    "placeSearchUnavailable": "Place search is unavailable right now."
+    "placeSearchUnavailable": "Поиск мест сейчас недоступен."
   },
   "tripRouteShell": {
     "loadingTrip": "Загрузка поездки",

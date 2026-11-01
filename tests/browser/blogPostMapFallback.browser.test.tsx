@@ -38,5 +38,6 @@ describe('pages/BlogPostPage map canvas', () => {
     const frame = container.querySelector('iframe');
     expect(frame).not.toBeNull();
     expect(frame?.getAttribute('src')).toBe(props.fallbackEmbedSrc);
+    expect((window as { google?: unknown }).google).toBeUndefined();
   });
 });

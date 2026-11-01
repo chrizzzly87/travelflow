@@ -686,7 +686,7 @@
         "description": "نقشه را کدام سرویس می‌کشد.",
         "google": "Google",
         "label": "ارائه‌دهندهٔ نقشه",
-        "lockedToMapbox": "This site is using Mapbox right now.",
+        "lockedToMapbox": "این سایت در حال حاضر از Mapbox استفاده می‌کند.",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox اینجا پیکربندی نشده است، بنابراین از Google استفاده می‌شود."
       },
@@ -877,7 +877,7 @@
       "statusSaved": "ذخیره شد",
       "unsave": "لغو ذخیره"
     },
-    "placeSearchUnavailable": "Place search is unavailable right now."
+    "placeSearchUnavailable": "جستجوی مکان‌ها در حال حاضر در دسترس نیست."
   },
   "tripRouteShell": {
     "loadingTrip": "در حال بارگذاری سفر",
