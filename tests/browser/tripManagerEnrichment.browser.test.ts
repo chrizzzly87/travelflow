@@ -75,11 +75,33 @@ vi.mock('../../utils', async () => {
   };
 });
 
+const runtimeMocks = vi.hoisted(() => ({
+  locationSearch: 'google' as 'google' | 'mapbox' | 'none',
+}));
+
+vi.mock('../../services/mapRuntimeService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/mapRuntimeService')>();
+  return {
+    ...actual,
+    getClientMapRuntimeResolution: () => {
+      const resolution = actual.getClientMapRuntimeResolution();
+      return {
+        ...resolution,
+        effectiveSelection: {
+          ...resolution.effectiveSelection,
+          locationSearch: runtimeMocks.locationSearch,
+        },
+      };
+    },
+  };
+});
+
 import { TripManager } from '../../components/TripManager';
 
 describe('components/TripManager enrichment flow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    runtimeMocks.locationSearch = 'google';
     mocks.readLocalStorageItem.mockReturnValue(null);
     mocks.syncTripsFromDb.mockResolvedValue(undefined);
     mocks.getGoogleMapsApiKey.mockReturnValue('google-key');
@@ -132,5 +154,42 @@ describe('components/TripManager enrichment flow', () => {
     });
 
     expect(mocks.dbUpsertTrip).not.toHaveBeenCalled();
+  });
+
+  it('makes no Google geocode request under mapbox_all even with a Google key set', async () => {
+    runtimeMocks.locationSearch = 'mapbox';
+    mocks.getAllTrips.mockReturnValue([
+      makeTrip({
+        id: 'trip-mapbox',
+        title: 'Berlin Loop',
+        items: [
+          makeCityItem({
+            id: 'city-berlin',
+            title: 'Berlin',
+            location: 'Berlin',
+            startDateOffset: 0,
+            duration: 2,
+            coordinates: { lat: 52.52, lng: 13.405 },
+          }),
+        ],
+      }),
+    ]);
+
+    render(
+      React.createElement(TripManager, {
+        isOpen: true,
+        onClose: vi.fn(),
+        onSelectTrip: vi.fn(),
+      })
+    );
+
+    await waitFor(() => {
+      expect(mocks.getAllTrips).toHaveBeenCalled();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const fetchMock = vi.mocked(globalThis.fetch);
+    const googleCalls = fetchMock.mock.calls.filter(([input]) => String(input).includes('maps.googleapis.com'));
+    expect(googleCalls).toHaveLength(0);
   });
 });

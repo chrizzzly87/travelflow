@@ -1,6 +1,6 @@
 import type { ITimelineItem } from '../../types';
 import type { MapImplementation } from '../../shared/mapRuntime';
-import { getTripMapProviderTuning, resolveTripMapViewportPadding } from './tripMapProviderTuning';
+import { getTripMapProviderTuning, resolveTripMapViewportPadding, type TripMapViewportPadding } from './tripMapProviderTuning';
 
 /**
  * Selection focus, viewport readiness and activity-marker visibility rules
@@ -94,7 +94,7 @@ export const resolveMapViewportPadding = ({
     provider?: MapImplementation;
     mapDockMode: 'docked' | 'floating';
     mapViewportSize: { width: number; height: number } | null;
-}): google.maps.Padding => {
+}): TripMapViewportPadding => {
     return resolveTripMapViewportPadding({
         provider,
         mapDockMode,

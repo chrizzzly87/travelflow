@@ -8,6 +8,7 @@ import { Switch } from '../ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { SettingsPanel, SettingsRow, SettingsSection } from '../ui/settings-panel';
 import { MapSegmentedControl } from './MapSegmentedControl';
+import { useMapRuntime } from '../MapRuntimeProvider';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
   disableUserLocation,
@@ -96,6 +97,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
   tripId,
 }) => {
   const { t } = useTranslation('common');
+  const { rendererLocked } = useMapRuntime();
   const [activeTab, setActiveTab] = useState<TabKey>('look');
   const [didCopyPreset, setDidCopyPreset] = useState(false);
   const userLocation = useSyncExternalStore(subscribeUserLocation, getUserLocationSnapshot, getUserLocationSnapshot);
@@ -338,9 +340,11 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
               label={key('renderer.label', 'Map provider')}
               description={key('renderer.description', 'Which map the app draws.')}
               layout="stacked"
-              note={preferences.renderer !== 'google' && !isMapboxAvailable
-                ? key('renderer.mapboxUnavailable', 'Mapbox is not configured here, so Google is being used.')
-                : undefined}
+              note={rendererLocked
+                ? key('renderer.lockedToMapbox', 'This site is using Mapbox right now.')
+                : preferences.renderer !== 'google' && !isMapboxAvailable
+                  ? key('renderer.mapboxUnavailable', 'Mapbox is not configured here, so Google is being used.')
+                  : undefined}
             >
               <MapSegmentedControl
                 name="map-renderer"
@@ -348,7 +352,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
                 value={preferences.renderer}
                 options={[
                   { value: 'auto', label: key('renderer.auto', 'Auto') },
-                  { value: 'google', label: key('renderer.google', 'Google') },
+                  { value: 'google', label: key('renderer.google', 'Google'), disabled: rendererLocked },
                   { value: 'mapbox', label: key('renderer.mapbox', 'Mapbox') },
                 ]}
                 onChange={(renderer) => handleChange({ renderer })}

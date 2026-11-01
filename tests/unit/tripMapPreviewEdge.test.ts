@@ -262,6 +262,27 @@ describe('trip-map-preview edge function hardening', () => {
     });
   });
 
+  describe('mapbox_all with a Google key still configured', () => {
+    it('mapbox_all preview never calls Google Directions', async () => {
+      const edgeEnv: Record<string, string> = {
+        VITE_GOOGLE_MAPS_API_KEY: 'test-google-key',
+        VITE_MAPBOX_ACCESS_TOKEN: 'test-mapbox-token',
+        VITE_MAP_RUNTIME_PRESET: 'mapbox_all',
+      };
+      vi.stubGlobal('Deno', { env: { get: (name: string) => edgeEnv[name] } });
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}', { status: 500 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const location = await upstreamUrlFor('coords=35.68,139.65|34.69,135.50&routeMode=realistic');
+
+      expect(location).toContain('api.mapbox.com/styles/v1/');
+      expect(location).not.toContain('maps.googleapis.com');
+      expect(fetchMock.mock.calls.filter(([input]) => String(input).includes('maps.googleapis.com')).length).toBe(0);
+      // Mapbox Directions are still tried with the token.
+      expect(fetchMock.mock.calls.filter(([input]) => String(input).includes('api.mapbox.com/directions')).length).toBe(1);
+    });
+  });
+
   describe('mapbox realistic routes', () => {
     const MAPBOX_DIRECTIONS_POLYLINE = 'yxk|Fyi~uOtCaB';
 

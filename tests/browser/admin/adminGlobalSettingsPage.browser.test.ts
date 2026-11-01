@@ -59,6 +59,7 @@ describe('AdminGlobalSettingsPage', () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllEnvs();
     vi.clearAllMocks();
   });
 
@@ -164,5 +165,61 @@ describe('AdminGlobalSettingsPage', () => {
 
     await screen.findByText('The settings were not saved. Your changes are still here; try saving again.');
     expect(screen.queryByText(/permission denied/)).toBeNull();
+  });
+  describe('map provider honesty', () => {
+    const statusLine = (google: string, mapbox: string) => (
+      `This deploy: Google key ${google} · Mapbox token ${mapbox}. Configured means set at build time, not checked to work.`
+    );
+
+    it('shows which keys this deploy has', async () => {
+      vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'g-key');
+      vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', '   ');
+      await renderPage();
+
+      expect(screen.getByText(statusLine('configured', 'not configured'))).toBeTruthy();
+    });
+
+    it('warns when google_all is chosen without a Google key', async () => {
+      vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', '');
+      vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'pk.test');
+      await renderPage();
+
+      expect(screen.getByText('The selected provider needs a Google key that this deploy does not have.')).toBeTruthy();
+    });
+
+    it('does not warn when the selected preset has what it needs', async () => {
+      vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'g-key');
+      vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', '');
+      await renderPage();
+
+      expect(screen.queryByText(/does not have/)).toBeNull();
+    });
+
+    it('names both missing keys for the mixed preset', async () => {
+      vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', '');
+      vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', '');
+      mocks.refreshPublicAiRuntimeSettings.mockResolvedValue({
+        ...settings,
+        mapRuntimePreset: 'mapbox_visual_google_services' as const,
+      });
+      await renderPage();
+
+      expect(screen.getByText(
+        'The selected provider needs a Google key and a Mapbox token that this deploy does not have.',
+      )).toBeTruthy();
+    });
+
+    it('mapbox_all note says Google is never loaded', async () => {
+      vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'pk.test');
+      mocks.refreshPublicAiRuntimeSettings.mockResolvedValue({
+        ...settings,
+        mapRuntimePreset: 'mapbox_all' as const,
+      });
+      await renderPage();
+
+      expect(screen.getByText(
+        'Mapbox only — Google is never loaded. Routes are straight lines, city search uses Mapbox, activity and hotel search are off. Needs a Mapbox token.',
+      )).toBeTruthy();
+    });
   });
 });

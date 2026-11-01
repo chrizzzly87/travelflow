@@ -106,6 +106,18 @@ describe('video rendering preferences and excursions', () => {
     const url = decodeURIComponent(summary.mapImageUrl || '');
     expect(url).toContain('ff0000'); expect(url).toContain('00ff00');
   });
+  it('OG map under mapbox_all draws without the Google key', async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL) => new Response('{}', { status: 500 })); vi.stubGlobal('fetch', fetcher);
+    const items = [
+      { type: 'city', startDateOffset: 0, duration: 1, coordinates: { lat: 35.68, lng: 139.65 } },
+      { type: 'city', startDateOffset: 1, duration: 1, coordinates: { lat: 34.69, lng: 135.5 } },
+    ];
+    const summary = await buildTripOgSummary({ items }, { includeMapImage: true, mapsApiKey: 'google-key', mapboxAccessToken: 'mb-token', mapStyle: 'standard', routeMode: 'realistic',
+      mapRuntimeSelection: { renderer: 'mapbox', routes: 'none', locationSearch: 'mapbox', staticMaps: 'mapbox' } });
+    expect(summary.mapImageUrl).toContain('api.mapbox.com/styles/v1/');
+    expect(summary.mapImageUrl).not.toContain('googleapis');
+    expect(fetcher.mock.calls.filter(([input]) => String(input).includes('maps.googleapis.com')).length).toBe(0);
+  });
   it('respects an explicit brand-color mode for markers and legs', async () => {
     vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'test-token');
     const map = await buildTripVideoMap({ ...trip, mapColorMode: 'brand' }, 'standard', 'simple');

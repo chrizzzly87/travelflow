@@ -1,5 +1,6 @@
 import type { ICoordinates, ITimelineItem } from '../types';
 import { searchPlaceLocation } from './locationSearchService';
+import { getClientMapRuntimeResolution } from './mapRuntimeService';
 import type { AppLanguage } from '../types';
 
 /**
@@ -115,6 +116,8 @@ export const needsCoordinateResolution = (input: ResolveItemCoordinatesInput): b
 export const resolveItemCoordinates = async (
   input: ResolveItemCoordinatesInput,
 ): Promise<ItemCoordinateUpdate | null> => {
+  // Only Google resolves activity positions; with search off there is nothing to ask.
+  if (getClientMapRuntimeResolution().effectiveSelection.locationSearch !== 'google') return null;
   if (!needsCoordinateResolution(input)) return null;
 
   const query = buildItemLocationQuery(input);

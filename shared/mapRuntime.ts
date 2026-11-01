@@ -2,13 +2,14 @@ export const MAP_RUNTIME_OVERRIDE_COOKIE_NAME = 'tf_debug_map_runtime_override_v
 export const MAP_RUNTIME_CACHE_KEY_QUERY_PARAM = 'mr';
 
 export type MapImplementation = 'google' | 'mapbox';
+export type MapServiceImplementation = MapImplementation | 'none';
 export type MapSubsystem = 'renderer' | 'routes' | 'locationSearch' | 'staticMaps';
 export type MapRuntimePreset = 'google_all' | 'mapbox_visual_google_services' | 'mapbox_all';
 
 export interface MapRuntimeSelection {
   renderer: MapImplementation;
-  routes: MapImplementation;
-  locationSearch: MapImplementation;
+  routes: MapServiceImplementation;
+  locationSearch: MapServiceImplementation;
   staticMaps: MapImplementation;
 }
 
@@ -58,7 +59,7 @@ export const MAP_RUNTIME_PRESET_TO_SELECTION: Record<MapRuntimePreset, MapRuntim
   },
   mapbox_all: {
     renderer: 'mapbox',
-    routes: 'mapbox',
+    routes: 'none',
     locationSearch: 'mapbox',
     staticMaps: 'mapbox',
   },
@@ -74,20 +75,37 @@ export const MAP_IMPLEMENTATION_CAPABILITIES: Record<MapImplementation, Record<M
   mapbox: {
     renderer: true,
     routes: false,
-    locationSearch: false,
+    locationSearch: true, // city lookup only
     staticMaps: true,
   },
 };
 
-const MAP_IMPLEMENTATION_CACHE_CODES: Record<MapImplementation, string> = {
+const MAP_IMPLEMENTATION_CACHE_CODES: Record<MapServiceImplementation, string> = {
   google: 'g',
   mapbox: 'm',
+  none: 'n',
 };
 
-const MAP_IMPLEMENTATION_FROM_CACHE_CODE: Record<string, MapImplementation> = {
+const MAP_IMPLEMENTATION_FROM_CACHE_CODE: Record<string, MapServiceImplementation> = {
   g: 'google',
   m: 'mapbox',
+  n: 'none',
 };
+
+const NONE_ALLOWED_SUBSYSTEMS: readonly MapSubsystem[] = ['routes', 'locationSearch'];
+
+const isSelectionValueForSubsystem = (
+  value: unknown,
+  subsystem: MapSubsystem,
+): value is MapServiceImplementation => (
+  isMapImplementation(value) || (value === 'none' && NONE_ALLOWED_SUBSYSTEMS.includes(subsystem))
+);
+
+export const usesGoogle = (selection: MapRuntimeSelection): boolean => (
+  MAP_RUNTIME_SUBSYSTEMS.some((subsystem) => selection[subsystem] === 'google')
+);
+
+export const isRendererLockedByPreset = (preset: MapRuntimePreset): boolean => preset === 'mapbox_all';
 
 export const isMapImplementation = (value: unknown): value is MapImplementation =>
   value === 'google' || value === 'mapbox';
@@ -133,12 +151,14 @@ export const parseMapRuntimeSelectionCacheKey = (
     .map((entry) => MAP_IMPLEMENTATION_FROM_CACHE_CODE[entry] ?? null);
   if (implementations.some((entry) => entry === null)) return null;
 
-  return {
+  const selection: MapRuntimeSelection = {
     renderer: implementations[0] as MapImplementation,
-    routes: implementations[1] as MapImplementation,
-    locationSearch: implementations[2] as MapImplementation,
+    routes: implementations[1] as MapServiceImplementation,
+    locationSearch: implementations[2] as MapServiceImplementation,
     staticMaps: implementations[3] as MapImplementation,
   };
+  if (implementations[0] === 'none' || implementations[3] === 'none') return null;
+  return selection;
 };
 
 export const serializeMapRuntimeOverrideCookie = (override: MapRuntimeOverride): string => {
@@ -154,8 +174,8 @@ export const serializeMapRuntimeOverrideCookie = (override: MapRuntimeOverride):
     const normalizedSelection: Partial<MapRuntimeSelection> = {};
     MAP_RUNTIME_SUBSYSTEMS.forEach((subsystem) => {
       const value = override.selection?.[subsystem];
-      if (isMapImplementation(value)) {
-        normalizedSelection[subsystem] = value;
+      if (isSelectionValueForSubsystem(value, subsystem)) {
+        (normalizedSelection as Record<MapSubsystem, MapServiceImplementation>)[subsystem] = value;
       }
     });
     if (Object.keys(normalizedSelection).length > 0) {
@@ -186,8 +206,8 @@ export const parseMapRuntimeOverrideCookie = (
     const selection = parsedSelection
       ? MAP_RUNTIME_SUBSYSTEMS.reduce<Partial<MapRuntimeSelection>>((accumulator, subsystem) => {
         const value = parsedSelection[subsystem];
-        if (isMapImplementation(value)) {
-          accumulator[subsystem] = value;
+        if (isSelectionValueForSubsystem(value, subsystem)) {
+          (accumulator as Record<MapSubsystem, MapServiceImplementation>)[subsystem] = value;
         }
         return accumulator;
       }, {})
@@ -207,10 +227,11 @@ export const parseMapRuntimeOverrideCookie = (
 };
 
 const isImplementationAvailableForSubsystem = (
-  implementation: MapImplementation,
+  implementation: MapServiceImplementation,
   subsystem: MapSubsystem,
   availability: MapRuntimeAvailability,
 ): boolean => {
+  if (implementation === 'none') return true;
   if (!MAP_IMPLEMENTATION_CAPABILITIES[implementation][subsystem]) return false;
   if (implementation === 'google') return availability.googleMapsKeyAvailable;
   return availability.mapboxAccessTokenAvailable;
@@ -220,10 +241,16 @@ const mergeMapRuntimeSelection = (
   baseSelection: MapRuntimeSelection,
   overrides?: Partial<MapRuntimeSelection>,
 ): MapRuntimeSelection => ({
-  renderer: isMapImplementation(overrides?.renderer) ? overrides.renderer : baseSelection.renderer,
-  routes: isMapImplementation(overrides?.routes) ? overrides.routes : baseSelection.routes,
-  locationSearch: isMapImplementation(overrides?.locationSearch) ? overrides.locationSearch : baseSelection.locationSearch,
-  staticMaps: isMapImplementation(overrides?.staticMaps) ? overrides.staticMaps : baseSelection.staticMaps,
+  renderer: isMapImplementation(overrides?.renderer)
+    ? overrides.renderer
+    : baseSelection.renderer,
+  routes: isSelectionValueForSubsystem(overrides?.routes, 'routes') ? overrides.routes : baseSelection.routes,
+  locationSearch: isSelectionValueForSubsystem(overrides?.locationSearch, 'locationSearch')
+    ? overrides.locationSearch
+    : baseSelection.locationSearch,
+  staticMaps: isMapImplementation(overrides?.staticMaps)
+    ? overrides.staticMaps
+    : baseSelection.staticMaps,
 });
 
 const resolveMapImplementationForSubsystem = ({
@@ -232,11 +259,12 @@ const resolveMapImplementationForSubsystem = ({
   availability,
   warnings,
 }: {
-  requestedImplementation: MapImplementation;
+  requestedImplementation: MapServiceImplementation;
   subsystem: MapSubsystem;
   availability: MapRuntimeAvailability;
   warnings: string[];
-}): MapImplementation => {
+}): MapServiceImplementation => {
+  if (requestedImplementation === 'none') return 'none';
   if (isImplementationAvailableForSubsystem(requestedImplementation, subsystem, availability)) {
     return requestedImplementation;
   }
@@ -285,9 +313,16 @@ export const resolveMapRuntime = ({
     override?.selection,
   );
   const warnings: string[] = [];
+  const mapboxAllNeedsGoogle = requestedPreset === 'mapbox_all' && !normalizedAvailability.mapboxAccessTokenAvailable;
+  if (mapboxAllNeedsGoogle) {
+    warnings.push('Map runtime fallback: Mapbox token is missing, so "Mapbox for everything" runs on Google.');
+  }
+  const resolutionSelection = mapboxAllNeedsGoogle
+    ? mergeMapRuntimeSelection(getSelectionForMapRuntimePreset('google_all'), override?.selection)
+    : requestedSelection;
   const effectiveSelection = MAP_RUNTIME_SUBSYSTEMS.reduce<MapRuntimeSelection>((accumulator, subsystem) => {
-    accumulator[subsystem] = resolveMapImplementationForSubsystem({
-      requestedImplementation: requestedSelection[subsystem],
+    (accumulator as Record<MapSubsystem, MapServiceImplementation>)[subsystem] = resolveMapImplementationForSubsystem({
+      requestedImplementation: resolutionSelection[subsystem],
       subsystem,
       availability: normalizedAvailability,
       warnings,

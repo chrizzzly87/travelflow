@@ -702,6 +702,7 @@
         "description": "Какую карту рисует приложение.",
         "google": "Google",
         "label": "Поставщик карт",
+        "lockedToMapbox": "Сейчас этот сайт использует Mapbox.",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox здесь не настроен, поэтому используется Google."
       },
@@ -891,7 +892,8 @@
       "statusToReview": "Нужно просмотреть",
       "statusSaved": "Сохранено",
       "unsave": "Отменить сохранение"
-    }
+    },
+    "placeSearchUnavailable": "Поиск мест сейчас недоступен."
   },
   "tripRouteShell": {
     "loadingTrip": "Загрузка поездки",

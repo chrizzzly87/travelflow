@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyMapRuntimePresetOverride,
   clearMapRuntimeAdminOverride,
+  getDefaultMapRuntimePreset,
+  setRuntimeMapPreset,
+  subscribeToRuntimeMapPreset,
   readMapRuntimeAdminOverride,
   writeMapRuntimeAdminOverride,
 } from '../../services/mapRuntimeService';
@@ -48,5 +51,21 @@ describe('services/mapRuntimeService', () => {
     applyMapRuntimePresetOverride('default', { reload: false });
 
     expect(readMapRuntimeAdminOverride()).toBeNull();
+  });
+
+  it('notifies subscribers when the admin preset changes', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeToRuntimeMapPreset(listener);
+
+    setRuntimeMapPreset('mapbox_all');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(getDefaultMapRuntimePreset()).toBe('mapbox_all');
+
+    setRuntimeMapPreset('mapbox_all');
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    setRuntimeMapPreset(null);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

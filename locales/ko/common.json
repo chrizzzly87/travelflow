@@ -681,6 +681,7 @@
         "description": "앱이 그리는 지도입니다.",
         "google": "Google",
         "label": "지도 제공자",
+        "lockedToMapbox": "현재 이 사이트는 Mapbox를 사용하고 있습니다.",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "여기에서는 Mapbox가 설정되지 않아 Google을 사용합니다."
       },
@@ -870,7 +871,8 @@
       "statusToReview": "검토 필요",
       "statusSaved": "저장됨",
       "unsave": "저장 취소"
-    }
+    },
+    "placeSearchUnavailable": "지금은 장소 검색을 사용할 수 없습니다."
   },
   "tripRouteShell": {
     "loadingTrip": "여행 불러오는 중",

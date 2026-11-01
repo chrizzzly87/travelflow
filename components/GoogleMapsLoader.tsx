@@ -18,6 +18,10 @@ export { useGoogleMaps, useMapRuntime, GoogleMapsApiGate, MapRuntimeProvider };
  * Map runtime plus the Google Maps script, for a page whose map is on screen
  * from the start.
  *
+ * The script loads only once the admin preset has settled, and never when the
+ * runtime uses no Google service (`mapbox_all`): the gate renders its children
+ * bare then. Print view and blog map inherit that rule.
+ *
  * A screen that defers its map must not use this: mount `MapRuntimeProvider`
  * high, and `GoogleMapsApiGate` around the map component itself. Toggling a
  * gate around long-lived UI re-parents it, and React answers that by
