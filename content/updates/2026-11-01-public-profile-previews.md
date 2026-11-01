@@ -17,3 +17,4 @@ summary: "Shared profile links now show the traveler's name and bio in link prev
 - [ ] [Internal] 🏷️ Per-profile `head`: title, description (bio or a new `publicProfile.metaDescription` key in all locales), Open Graph title/description/image via the existing `/api/og/site` image, and `noindex` on every profile state; profiles stay out of the sitemap.
 - [ ] [Internal] ⏱️ Profiles get their own CDN policy (`s-maxage=60, stale-while-revalidate=300`) so edits show within minutes; backend failures are sent `no-store`. Mixed-case and renamed handles redirect in the loader.
 - [ ] [Internal] 🕰️ Trip cards read "today" and expiry from the render clock so server-rendered dates match the first browser render.
+- [ ] [Internal] 📦 Kept the profile route's head helpers free of country data (row mapping lives in `shared/publicProfileRows.ts`), so the entry bundle and the trip view don't pull in the optional country-alias chunk; an import-graph test guards it.

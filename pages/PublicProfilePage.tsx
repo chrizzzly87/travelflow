@@ -29,11 +29,11 @@ import { useHydrated } from '../hooks/useHydrated';
 import {
     PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
     resolvePublicProfileDisplayName,
-    toPublicProfileView,
     type PublicProfilePageData,
     type PublicProfileTripsPage,
     type PublicProfileView,
 } from '../shared/publicProfile';
+import { toPublicProfileView } from '../shared/publicProfileRows';
 
 const PUBLIC_PROFILE_PASSPORT_QUERY_KEY = 'passport';
 const PUBLIC_PROFILE_PASSPORT_QUERY_VALUE = 'open';

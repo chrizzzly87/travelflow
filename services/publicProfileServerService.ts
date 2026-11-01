@@ -1,13 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import {
-    isPubliclyVisibleTrip,
-    mapProfileTripRow,
     PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
-    toPrivateProfilePreview,
-    toPublicProfileView,
     type PublicProfilePageData,
     type PublicProfileTripsPage,
 } from '../shared/publicProfile';
+import {
+    isPubliclyVisibleTrip,
+    mapProfileTripRow,
+    toPrivateProfilePreview,
+    toPublicProfileView,
+} from '../shared/publicProfileRows';
 
 /**
  * Server-side public profile reads for the server-rendered `/u/$username`

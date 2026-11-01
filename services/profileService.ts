@@ -4,7 +4,7 @@ import { dbUpsertUserSettings } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { normalizePassportStickerSelection } from './passportService';
 import { supabase } from './supabaseClient';
-import { mapProfileTripRow as mapTripRow } from '../shared/publicProfile';
+import { mapProfileTripRow as mapTripRow } from '../shared/publicProfileRows';
 
 export type ProfileGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
 export type ProfileAccountStatus = 'active' | 'disabled' | 'deleted';
