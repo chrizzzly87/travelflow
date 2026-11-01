@@ -123,7 +123,7 @@ Reconciled against the code on 2026-09-08, before merging #487.
 - [x] #484 Planner chat UI and timeline context — PoC foundation implemented.
 - [ ] #485 Hotel and route specialists — grounded adapter and result cards ship; turning a chosen option into a proposal without a second model call remains.
 - [ ] #482 Admin transcripts, prompt management, telemetry, and rollout — schema/records exist; admin workspace and rollout dashboards remain.
-- [ ] #483 JourneySpec interoperability — blocked on PR #444.
+- [x] #483 JourneySpec interoperability — closed 2026-11-01. PR #444 was closed unmerged, and the JourneySpec idea moved to spike #626, which includes how the Trip Agent would use a spec.
 
 ## Review findings (2026-09-04)
 
@@ -145,7 +145,7 @@ Reconciled against the code on 2026-09-08, before merging #487.
 - [ ] Replay operations inside the locked transaction rather than writing a precomputed snapshot (#481).
 - [ ] Enable the panel for editable-share sessions once quota ownership for shared editors is decided (#484).
 - [ ] Registry-first Gateway routing with ZDR, once `AI_GATEWAY_API_KEY` exists (#481).
-- [ ] Normalized hotel and route cards (#485), admin workspace and telemetry (#482), JourneySpec (#483).
+- [ ] Normalized hotel and route cards (#485), admin workspace and telemetry (#482). JourneySpec moved to spike #626.
 - [ ] Deterministic fake Gateway/MCP browser E2E, plus TripView coverage for launcher locking, preview lifecycle, version adoption, mobile, focus and RTL.
 
 ## Why the review findings happened
