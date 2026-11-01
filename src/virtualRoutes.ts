@@ -26,6 +26,8 @@ export const routes = rootRoute('__root.tsx', [
     route("/{-$locale}/terms", "public/terms.tsx"),
     route("/{-$locale}/cookies", "public/cookies.tsx"),
     route("/{-$locale}/share-unavailable", "public/share-unavailable.tsx"),
+    // Unprefixed like before; server-rendered from public fields only.
+    route("/u/$username", "public/profile.tsx"),
   ]),
   layout('_auth', 'areas/auth.tsx', [
     route("/{-$locale}/login", "auth/login.tsx"),
@@ -39,7 +41,6 @@ export const routes = rootRoute('__root.tsx', [
     route("/admin/access-denied", "account/access-denied.tsx"),
   ]),
   layout('_client', 'areas/client.tsx', [
-    route("/u/$username", "account/public-profile.tsx"),
     route("/u/$username/stamps", "account/public-stamps.tsx"),
     route("/checkout", "account/checkout.tsx"),
   ]),

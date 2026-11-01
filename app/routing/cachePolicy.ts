@@ -18,3 +18,15 @@ export const publicDocumentCacheHeaders = {
     'cache-control': 'public, max-age=0, must-revalidate',
     'netlify-cdn-cache-control': 'public, durable, s-maxage=3600, stale-while-revalidate=86400',
 } as const;
+
+/**
+ * Public profiles (`/u/$username`) change whenever their owner edits them, so
+ * the CDN keeps them for a minute and may serve a stale copy for five more
+ * while it refreshes: edits and visibility changes appear within minutes. The
+ * page renders the same anonymous view for everyone; owner and admin extras
+ * appear only in the browser after hydration.
+ */
+export const publicProfileDocumentCacheHeaders = {
+    'cache-control': 'public, max-age=0, must-revalidate',
+    'netlify-cdn-cache-control': 'public, durable, s-maxage=60, stale-while-revalidate=300',
+} as const;

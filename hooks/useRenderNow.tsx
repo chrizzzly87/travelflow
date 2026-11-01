@@ -32,3 +32,17 @@ export function useRenderNow(): Date {
         [hydrated, renderedAt],
     );
 }
+
+/**
+ * The render instant as a timestamp, for comparisons against stored instants
+ * (an expiry time, say). Like `useRenderNow`, the server and the hydration
+ * render share the document's render time; the live clock takes over after.
+ */
+export function useRenderTimestamp(): number {
+    const hydrated = useHydrated();
+    const renderedAt = useContext(RenderClockContext);
+    return useMemo(
+        () => (!hydrated && renderedAt !== undefined ? renderedAt : Date.now()),
+        [hydrated, renderedAt],
+    );
+}

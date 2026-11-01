@@ -45,10 +45,10 @@ import { Route as adminTripDraftsRouteImport } from './routes/admin/trip-drafts'
 import { Route as adminTripsRouteImport } from './routes/admin/trips'
 import { Route as adminUsersRouteImport } from './routes/admin/users'
 import { Route as authLoginRouteImport } from './routes/auth/login'
-import { Route as accountPublicProfileRouteImport } from './routes/account/public-profile'
 import { Route as createClassicRouteImport } from './routes/create/classic'
 import { Route as createImportRouteImport } from './routes/create/import'
 import { Route as libraryTripsRouteImport } from './routes/library/trips'
+import { Route as publicProfileRouteImport } from './routes/public/profile'
 import { Route as publicBlogRouteImport } from './routes/public/blog'
 import { Route as publicContactRouteImport } from './routes/public/contact'
 import { Route as publicCookiesRouteImport } from './routes/public/cookies'
@@ -263,11 +263,6 @@ const authLoginRoute = authLoginRouteImport.update({
   path: '/{-$locale}/login',
   getParentRoute: () => areasAuthRoute,
 } as any)
-const accountPublicProfileRoute = accountPublicProfileRouteImport.update({
-  id: '/u/$username',
-  path: '/u/$username',
-  getParentRoute: () => areasClientRoute,
-} as any)
 const createClassicRoute = createClassicRouteImport.update({
   id: '/{-$locale}/create-trip',
   path: '/{-$locale}/create-trip',
@@ -282,6 +277,11 @@ const libraryTripsRoute = libraryTripsRouteImport.update({
   id: '/{-$locale}/trips',
   path: '/{-$locale}/trips',
   getParentRoute: () => areasLibraryRoute,
+} as any)
+const publicProfileRoute = publicProfileRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => areasPublicRoute,
 } as any)
 const publicBlogRoute = publicBlogRouteImport.update({
   id: '/{-$locale}/blog',
@@ -515,10 +515,10 @@ export interface FileRoutesByFullPath {
   '/admin/trips': typeof adminTripsRoute
   '/admin/users': typeof adminUsersRoute
   '/{-$locale}/login': typeof authLoginRoute
-  '/u/$username': typeof accountPublicProfileRoute
   '/{-$locale}/create-trip': typeof createClassicRoute
   '/{-$locale}/import-trip': typeof createImportRoute
   '/{-$locale}/trips': typeof libraryTripsRoute
+  '/u/$username': typeof publicProfileRoute
   '/{-$locale}/blog': typeof publicBlogRoute
   '/{-$locale}/contact': typeof publicContactRoute
   '/{-$locale}/cookies': typeof publicCookiesRoute
@@ -589,10 +589,10 @@ export interface FileRoutesByTo {
   '/admin/trips': typeof adminTripsRoute
   '/admin/users': typeof adminUsersRoute
   '/{-$locale}/login': typeof authLoginRoute
-  '/u/$username': typeof accountPublicProfileRoute
   '/{-$locale}/create-trip': typeof createClassicRoute
   '/{-$locale}/import-trip': typeof createImportRoute
   '/{-$locale}/trips': typeof libraryTripsRoute
+  '/u/$username': typeof publicProfileRoute
   '/{-$locale}/blog': typeof publicBlogRoute
   '/{-$locale}/contact': typeof publicContactRoute
   '/{-$locale}/cookies': typeof publicCookiesRoute
@@ -672,10 +672,10 @@ export interface FileRoutesById {
   '/_admin/admin/trips': typeof adminTripsRoute
   '/_admin/admin/users': typeof adminUsersRoute
   '/_auth/{-$locale}/login': typeof authLoginRoute
-  '/_client/u/$username': typeof accountPublicProfileRoute
   '/_create/{-$locale}/create-trip': typeof createClassicRoute
   '/_create/{-$locale}/import-trip': typeof createImportRoute
   '/_library/{-$locale}/trips': typeof libraryTripsRoute
+  '/_public/u/$username': typeof publicProfileRoute
   '/_public/{-$locale}/blog': typeof publicBlogRoute
   '/_public/{-$locale}/contact': typeof publicContactRoute
   '/_public/{-$locale}/cookies': typeof publicCookiesRoute
@@ -748,10 +748,10 @@ export interface FileRouteTypes {
     | '/admin/trips'
     | '/admin/users'
     | '/{-$locale}/login'
-    | '/u/$username'
     | '/{-$locale}/create-trip'
     | '/{-$locale}/import-trip'
     | '/{-$locale}/trips'
+    | '/u/$username'
     | '/{-$locale}/blog'
     | '/{-$locale}/contact'
     | '/{-$locale}/cookies'
@@ -822,10 +822,10 @@ export interface FileRouteTypes {
     | '/admin/trips'
     | '/admin/users'
     | '/{-$locale}/login'
-    | '/u/$username'
     | '/{-$locale}/create-trip'
     | '/{-$locale}/import-trip'
     | '/{-$locale}/trips'
+    | '/u/$username'
     | '/{-$locale}/blog'
     | '/{-$locale}/contact'
     | '/{-$locale}/cookies'
@@ -904,10 +904,10 @@ export interface FileRouteTypes {
     | '/_admin/admin/trips'
     | '/_admin/admin/users'
     | '/_auth/{-$locale}/login'
-    | '/_client/u/$username'
     | '/_create/{-$locale}/create-trip'
     | '/_create/{-$locale}/import-trip'
     | '/_library/{-$locale}/trips'
+    | '/_public/u/$username'
     | '/_public/{-$locale}/blog'
     | '/_public/{-$locale}/contact'
     | '/_public/{-$locale}/cookies'
@@ -1217,13 +1217,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authLoginRouteImport
       parentRoute: typeof areasAuthRoute
     }
-    '/_client/u/$username': {
-      id: '/_client/u/$username'
-      path: '/u/$username'
-      fullPath: '/u/$username'
-      preLoaderRoute: typeof accountPublicProfileRouteImport
-      parentRoute: typeof areasClientRoute
-    }
     '/_create/{-$locale}/create-trip': {
       id: '/_create/{-$locale}/create-trip'
       path: '/{-$locale}/create-trip'
@@ -1244,6 +1237,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/{-$locale}/trips'
       preLoaderRoute: typeof libraryTripsRouteImport
       parentRoute: typeof areasLibraryRoute
+    }
+    '/_public/u/$username': {
+      id: '/_public/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof publicProfileRouteImport
+      parentRoute: typeof areasPublicRoute
     }
     '/_public/{-$locale}/blog': {
       id: '/_public/{-$locale}/blog'
@@ -1610,13 +1610,11 @@ const areasAuthRouteWithChildren = areasAuthRoute._addFileChildren(
 
 interface areasClientRouteChildren {
   accountCheckoutRoute: typeof accountCheckoutRoute
-  accountPublicProfileRoute: typeof accountPublicProfileRoute
   accountPublicStampsRoute: typeof accountPublicStampsRoute
 }
 
 const areasClientRouteChildren: areasClientRouteChildren = {
   accountCheckoutRoute: accountCheckoutRoute,
-  accountPublicProfileRoute: accountPublicProfileRoute,
   accountPublicStampsRoute: accountPublicStampsRoute,
 }
 
@@ -1656,6 +1654,7 @@ const areasLibraryRouteWithChildren = areasLibraryRoute._addFileChildren(
 
 interface areasPublicRouteChildren {
   publicHomeRoute: typeof publicHomeRoute
+  publicProfileRoute: typeof publicProfileRoute
   publicBlogRoute: typeof publicBlogRoute
   publicContactRoute: typeof publicContactRoute
   publicCookiesRoute: typeof publicCookiesRoute
@@ -1680,6 +1679,7 @@ interface areasPublicRouteChildren {
 
 const areasPublicRouteChildren: areasPublicRouteChildren = {
   publicHomeRoute: publicHomeRoute,
+  publicProfileRoute: publicProfileRoute,
   publicBlogRoute: publicBlogRoute,
   publicContactRoute: publicContactRoute,
   publicCookiesRoute: publicCookiesRoute,
