@@ -1,0 +1,615 @@
+# TravelFlow: trip format for assistants
+
+> TravelFlow is a visual travel planner. A trip is a timeline of stays, travel legs, activities and day trips, shown next to a map. Travellers plan multi-city trips, share them, and keep them in their account.
+
+## How to hand over a trip
+
+Assistants can plan a trip for a traveller and hand it to TravelFlow. TravelFlow checks the plan, stores it as a draft and returns a link. The traveller opens the link to see the trip on a timeline and map, then saves it to their TravelFlow account to edit, share or export it.
+
+TravelFlow does not run any AI for this. Plan the full itinerary yourself, then send it. Please do not use TravelFlow's own trip generator (/create-trip) on a traveller's behalf.
+
+Ways to hand over a trip, best first:
+1. MCP server (Streamable HTTP, no auth): https://travelflowapp.netlify.app/api/mcp. Tools: get_trip_draft_schema, validate_trip_draft, create_trip_draft, get_trip_draft.
+2. HTTP API: POST https://travelflowapp.netlify.app/api/trip-drafts with a JSON body. Dry run: POST https://travelflowapp.netlify.app/api/trip-drafts/validate. OpenAPI: https://travelflowapp.netlify.app/api/trip-drafts/openapi.json.
+3. WebMCP: on any TravelFlow page, browsers with WebMCP expose get_trip_draft_schema, validate_trip_draft and create_trip_draft.
+4. No tool access? Print the JSON in a code block and ask the traveller to paste it at https://travelflowapp.netlify.app/import-trip.
+
+Format, rules and a complete example: https://travelflowapp.netlify.app/api/trip-drafts/schema (JSON) or https://travelflowapp.netlify.app/llms-full.txt (text).
+
+## Request
+
+The body is a JSON object. `trip` is the itinerary in TravelFlow's travelflow_trip_plan_v3 format. `startDate` (YYYY-MM-DD), `roundTrip` and `client` are optional.
+
+Successful create response (HTTP 201):
+
+```json
+{
+  "ok": true,
+  "draftId": "drf_…",
+  "url": "https://travelflowapp.netlify.app/draft/drf_…",
+  "expiresAt": "…",
+  "title": "…",
+  "startDate": "…"
+}
+```
+
+Give `url` to the traveller. Unsaved drafts expire after 30 days. Errors come back as HTTP 422 with an `errors` list; fix each one and send again.
+
+## Rules
+
+- Send the itinerary as `trip` inside the request; every object must contain exactly the listed fields, no extras.
+- cities[].days counts nights and must be a positive whole number. Total trip length = sum of days.
+- travelSegments has exactly cities.length - 1 legs in order (cities.length legs when roundTrip is true). duration is in HOURS.
+- activities[].cityIndex points into cities (0-based). dayOffsetInCity < that city's days, and dayOffsetInCity + duration <= days. duration is in DAYS (0.125, 0.25, 0.5).
+- Descriptions are single lines: activities at most 90 characters, recommendation entries at most 80, headsUp at most 120.
+- Use real coordinates (lat/lng) for every city and day trip, and uppercase ISO alpha-2 country codes.
+- countryInfo describes the main country; all seven fields are required. exchangeRate is local units per 1 EUR.
+- Call validate first if unsure: it returns a precise list of errors and stores nothing.
+- The response contains a link. Give it to the traveller: they can view the plan right away and save it to their TravelFlow account to edit it.
+- TravelFlow does not generate trips for you here; plan the trip yourself, then send it.
+- Limits: at most 40 stops, 300 activities, 60 day trips and 256 KB per request.
+
+## Complete example
+
+```json
+{
+  "startDate": "2027-05-03",
+  "roundTrip": false,
+  "client": {
+    "name": "example",
+    "model": "none"
+  },
+  "trip": {
+    "tripTitle": "Portugal: Lisbon to Porto",
+    "countryInfo": {
+      "currencyCode": "EUR",
+      "currencyName": "Euro",
+      "exchangeRate": 1,
+      "languages": [
+        "Portuguese"
+      ],
+      "electricSockets": "Type C, Type F",
+      "visaInfoUrl": "https://en.wikipedia.org/wiki/Visa_policy_of_Portugal",
+      "auswaertigesAmtUrl": "https://www.auswaertiges-amt.de/de/service/laender/portugal-node"
+    },
+    "cities": [
+      {
+        "name": "Lisbon",
+        "days": 4,
+        "recommendations": {
+          "mustSee": [
+            "Belém Tower",
+            "Alfama",
+            "Jerónimos Monastery"
+          ],
+          "mustTry": [
+            "Pastel de nata",
+            "Bifana",
+            "Ginjinha"
+          ],
+          "mustDo": [
+            "Ride tram 28",
+            "Sunset at a miradouro",
+            "Fado night"
+          ],
+          "headsUp": [
+            "Steep, slippery cobblestones"
+          ]
+        },
+        "countryCode": "PT",
+        "lat": 38.7223,
+        "lng": -9.1393
+      },
+      {
+        "name": "Porto",
+        "days": 3,
+        "recommendations": {
+          "mustSee": [
+            "Ribeira",
+            "Livraria Lello",
+            "Dom Luís I Bridge"
+          ],
+          "mustTry": [
+            "Francesinha",
+            "Port wine",
+            "Grilled sardines"
+          ],
+          "mustDo": [
+            "Port cellar tour in Gaia",
+            "Douro river cruise",
+            "Walk the Ribeira at dusk"
+          ],
+          "headsUp": []
+        },
+        "countryCode": "PT",
+        "lat": 41.1579,
+        "lng": -8.6291
+      }
+    ],
+    "travelSegments": [
+      {
+        "transportMode": "train",
+        "duration": 3
+      }
+    ],
+    "activities": [
+      {
+        "title": "Alfama walk",
+        "cityIndex": 0,
+        "dayOffsetInCity": 0,
+        "duration": 0.25,
+        "description": "Lanes, viewpoints and the castle above the old town.",
+        "activityTypes": [
+          "culture",
+          "sightseeing"
+        ]
+      },
+      {
+        "title": "Belém",
+        "cityIndex": 0,
+        "dayOffsetInCity": 1,
+        "duration": 0.5,
+        "description": "Monastery, tower and the original pastéis de Belém.",
+        "activityTypes": [
+          "culture",
+          "food"
+        ]
+      },
+      {
+        "title": "LX Factory",
+        "cityIndex": 0,
+        "dayOffsetInCity": 3,
+        "duration": 0.25,
+        "description": "Creative hub with shops, cafés and a huge bookshop.",
+        "activityTypes": [
+          "shopping"
+        ]
+      },
+      {
+        "title": "Gaia cellars",
+        "cityIndex": 1,
+        "dayOffsetInCity": 0,
+        "duration": 0.25,
+        "description": "Port tasting across the river from Ribeira.",
+        "activityTypes": [
+          "food",
+          "culture"
+        ]
+      },
+      {
+        "title": "Douro cruise",
+        "cityIndex": 1,
+        "dayOffsetInCity": 1,
+        "duration": 0.25,
+        "description": "Six bridges cruise on the Douro.",
+        "activityTypes": [
+          "sightseeing"
+        ]
+      }
+    ],
+    "dayTrips": [
+      {
+        "title": "Sintra",
+        "cityIndex": 0,
+        "dayOffsetInCity": 2,
+        "duration": 0.75,
+        "destination": "Sintra",
+        "lat": 38.7975,
+        "lng": -9.3906,
+        "description": "Pena Palace and Quinta da Regaleira in the hills.",
+        "activityTypes": [
+          "culture",
+          "nature"
+        ]
+      }
+    ]
+  }
+}
+```
+
+Send it with curl:
+
+```bash
+curl -X POST https://travelflowapp.netlify.app/api/trip-drafts -H 'Content-Type: application/json' -d @trip.json
+```
+
+## JSON Schema
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TravelFlow trip draft request",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "trip": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tripTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Short, human trip title, at most 80 characters, e.g. 'Portugal: Lisbon to Porto'."
+        },
+        "countryInfo": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "currencyCode": {
+              "type": "string",
+              "minLength": 1,
+              "description": "ISO 4217 code, e.g. 'EUR'."
+            },
+            "currencyName": {
+              "type": "string",
+              "minLength": 1,
+              "description": "e.g. 'Euro'."
+            },
+            "exchangeRate": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Local currency units for exactly 1 EUR, as a number (1 for the euro)."
+            },
+            "languages": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Main spoken languages."
+            },
+            "electricSockets": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Socket types, e.g. 'Type C, Type F'."
+            },
+            "visaInfoUrl": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A URL about visa rules (Wikipedia visa policy page or an official site)."
+            },
+            "auswaertigesAmtUrl": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The country page on auswaertiges-amt.de (German Foreign Office travel advice)."
+            }
+          },
+          "required": [
+            "currencyCode",
+            "currencyName",
+            "exchangeRate",
+            "languages",
+            "electricSockets",
+            "visaInfoUrl",
+            "auswaertigesAmtUrl"
+          ],
+          "description": "Practical facts for the main destination country. Every field is required."
+        },
+        "cities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "City or town name as a traveller would search it."
+              },
+              "days": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Nights spent at this stop, a positive whole number. The trip length is the sum of all nights."
+              },
+              "recommendations": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "mustSee": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    }
+                  },
+                  "mustTry": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    }
+                  },
+                  "mustDo": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    }
+                  },
+                  "headsUp": {
+                    "type": "array",
+                    "maxItems": 2,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    }
+                  }
+                },
+                "required": [
+                  "mustSee",
+                  "mustTry",
+                  "mustDo",
+                  "headsUp"
+                ],
+                "description": "1-4 short strings each for mustSee, mustTry, mustDo (each at most 80 characters) and 0-2 headsUp warnings (each at most 120 characters)."
+              },
+              "countryCode": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$",
+                "description": "ISO 3166-1 alpha-2 country code in uppercase, e.g. 'PT'."
+              },
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90,
+                "description": "Latitude of the city centre."
+              },
+              "lng": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180,
+                "description": "Longitude of the city centre."
+              }
+            },
+            "required": [
+              "name",
+              "days",
+              "recommendations",
+              "countryCode",
+              "lat",
+              "lng"
+            ]
+          },
+          "description": "Overnight stops in travel order. Do not repeat the first city at the end; set roundTrip instead."
+        },
+        "travelSegments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "transportMode": {
+                "type": "string",
+                "enum": [
+                  "plane",
+                  "train",
+                  "bus",
+                  "boat",
+                  "car",
+                  "walk",
+                  "bicycle",
+                  "motorcycle"
+                ],
+                "description": "One of: plane, train, bus, boat, car, walk, bicycle, motorcycle."
+              },
+              "duration": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Door-to-door travel time in HOURS, e.g. 2.5."
+              }
+            },
+            "required": [
+              "transportMode",
+              "duration"
+            ]
+          },
+          "description": "Exactly one leg between each pair of consecutive cities (cities.length - 1 legs; cities.length legs when roundTrip is true, the last one returning to the first city)."
+        },
+        "activities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cityIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "0-based index into cities."
+              },
+              "dayOffsetInCity": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Day within that stop, starting at 0. Must be less than the stop's days."
+              },
+              "duration": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Length in DAYS: 0.125 (3 h), 0.25 (6 h) or 0.5 (half day). dayOffsetInCity + duration must not exceed the stop's days."
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 90,
+                "description": "One line, at most 90 characters."
+              },
+              "activityTypes": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "general",
+                    "food",
+                    "culture",
+                    "sightseeing",
+                    "relaxation",
+                    "nightlife",
+                    "sports",
+                    "hiking",
+                    "wildlife",
+                    "shopping",
+                    "adventure",
+                    "beach",
+                    "nature"
+                  ]
+                },
+                "description": "1-3 of: general, food, culture, sightseeing, relaxation, nightlife, sports, hiking, wildlife, shopping, adventure, beach, nature."
+              }
+            },
+            "required": [
+              "title",
+              "cityIndex",
+              "dayOffsetInCity",
+              "duration",
+              "description",
+              "activityTypes"
+            ]
+          },
+          "description": "Things to do inside a stop. Optional but strongly recommended: 1-3 per full day."
+        },
+        "dayTrips": {
+          "type": "array",
+          "description": "Same-day excursions from a stop that return in the evening. Use an empty array when there are none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cityIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Index of the base city the traveller leaves from and returns to the same day."
+              },
+              "dayOffsetInCity": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Whole day within the base city's stay; must be less than the city's days."
+              },
+              "duration": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Length in DAYS, usually 0.5 or 0.75, never more than 1."
+              },
+              "destination": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Place visited, e.g. 'Sintra'."
+              },
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90,
+                "description": "Latitude of the destination."
+              },
+              "lng": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180,
+                "description": "Longitude of the destination."
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 90
+              },
+              "activityTypes": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "general",
+                    "food",
+                    "culture",
+                    "sightseeing",
+                    "relaxation",
+                    "nightlife",
+                    "sports",
+                    "hiking",
+                    "wildlife",
+                    "shopping",
+                    "adventure",
+                    "beach",
+                    "nature"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "title",
+              "cityIndex",
+              "dayOffsetInCity",
+              "duration",
+              "destination",
+              "lat",
+              "lng",
+              "description",
+              "activityTypes"
+            ]
+          }
+        }
+      },
+      "required": [
+        "tripTitle",
+        "countryInfo",
+        "cities",
+        "travelSegments",
+        "activities",
+        "dayTrips"
+      ],
+      "description": "The itinerary, in TravelFlow's travelflow_trip_plan_v3 format."
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date",
+      "description": "First day of the trip, YYYY-MM-DD. Defaults to 30 days from today."
+    },
+    "roundTrip": {
+      "type": "boolean",
+      "description": "True when the trip ends back in the first city. Do not repeat that city in cities; add the return leg to travelSegments."
+    },
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Who is calling, for TravelFlow's statistics. Optional.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Assistant or app name, e.g. 'chatgpt', 'claude'."
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Model name, if known."
+        }
+      }
+    }
+  },
+  "required": [
+    "trip"
+  ]
+}
+```
