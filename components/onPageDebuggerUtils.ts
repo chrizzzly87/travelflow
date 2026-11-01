@@ -12,6 +12,7 @@ import {
     type MapRuntimePreset,
     type MapRuntimeResolution,
     type MapRuntimeSelection,
+    type MapServiceImplementation,
 } from '../shared/mapRuntime';
 
 export const readStoredDebuggerBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
@@ -83,7 +84,7 @@ const compactMapRuntimeSelectionOverride = (
 
     MAP_RUNTIME_SUBSYSTEMS.forEach((subsystem) => {
         if (selection[subsystem] !== baseSelection[subsystem]) {
-            override[subsystem] = selection[subsystem];
+            (override as Record<typeof subsystem, MapServiceImplementation>)[subsystem] = selection[subsystem];
         }
     });
 
