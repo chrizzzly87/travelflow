@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryRouter } from '@/tests/helpers/routerHarness';
+import { MemoryRouter, useLocation } from '@/tests/helpers/routerHarness';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -222,6 +222,11 @@ const renderPage = ({
   )
 );
 
+function LocationProbe() {
+  const location = useLocation();
+  return React.createElement('output', { 'data-testid': 'location' }, `${location.pathname}${location.search}`);
+}
+
 const getPrimaryActions = (label: RegExp) => screen.getAllByRole('button', { name: label });
 
 const getPrimaryAction = (label: RegExp) => {
@@ -430,6 +435,39 @@ describe('pages/CreateTripV3Page', () => {
 
     await waitForGenerationToFinish();
     expect(mocks.createTripGenerationRequest).not.toHaveBeenCalled();
+  });
+
+  it('returns from sign-in with the draft as edited, not as first opened', async () => {
+    const user = userEvent.setup();
+    mocks.ensureDbSession.mockResolvedValue(null);
+    render(React.createElement(
+      MemoryRouter,
+      { initialEntries: [buildPrefilledWizardEntry({
+        countries: ['Japan'], mode: 'wizard',
+        meta: { draft: { version: 2, dateInputMode: 'flex', flexWeeks: 1, flexWindow: 'any' } },
+      })] },
+      React.createElement(CreateTripV3Page, { onTripGenerated: vi.fn(), onOpenManager: vi.fn() }),
+      React.createElement(LocationProbe),
+    ));
+
+    await user.click(await screen.findByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
+    for (const step of ['wizard.destination.title', 'wizard.dates.title', 'wizard.preferences.title', 'wizard.details.title']) {
+      await waitForWizardText(step);
+      await continueWizard(user);
+    }
+    await waitForWizardText('wizard.review.title');
+    await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
+
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toMatch(/\/login\?/));
+    const loginUrl = new URL(screen.getByTestId('location').textContent || '', 'https://travelflow.test');
+    const nextUrl = new URL(loginUrl.searchParams.get('next') || '', 'https://travelflow.test');
+    const prefill = nextUrl.searchParams.get('prefill');
+    expect(prefill).toBeTruthy();
+    // The branch was chosen on the page; a return path built from a stale
+    // router location carried only the draft the page was opened with.
+    expect((decodePrefill(prefill as string).meta as { draft?: { wizardBranch?: string } }).draft?.wizardBranch)
+      .toBe('known_destinations_flexible_dates');
+    expect(mocks.startClientAsyncTripGeneration).not.toHaveBeenCalled();
   });
 
   it('blocks same-day exact ranges and sends totalNights for valid exact trips', async () => {

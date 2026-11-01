@@ -1528,6 +1528,7 @@ export const CheckoutPage: React.FC = () => {
                 tier: selectedTierKey,
                 source,
             });
+            // Full navigation on purpose: the billing portal is an external Paddle page.
             window.location.assign(destination);
         } catch (error) {
             const message = error instanceof Error ? error.message : t('checkout.manageBillingUnavailable', { ns: 'pricing' });

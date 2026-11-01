@@ -4,7 +4,6 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
   authState: {
@@ -12,7 +11,6 @@ const mocks = vi.hoisted(() => ({
     isAuthenticated: true,
     isAnonymous: false,
   },
-  retrySyncNow: vi.fn(),
   confirm: vi.fn().mockResolvedValue(false),
 }));
 
@@ -35,7 +33,27 @@ vi.mock('../../components/create-trip/CreateTripWizardCtaBanner', () => ({
 }));
 
 vi.mock('../../components/DateRangePicker', () => ({
-  DateRangePicker: () => React.createElement('div', { 'data-testid': 'date-range-picker' }),
+  DateRangePicker: ({
+    startDate,
+    endDate,
+    onChange,
+  }: {
+    startDate?: string;
+    endDate?: string;
+    onChange: (nextStartDate: string, nextEndDate: string) => void;
+  }) => React.createElement(
+    'div',
+    { 'data-testid': 'date-range-picker' },
+    React.createElement('div', null, `${startDate || 'unset'}:${endDate || 'unset'}`),
+    React.createElement('button', {
+      type: 'button',
+      onClick: () => onChange('2026-04-01', '2026-04-01'),
+    }, 'set-same-day-range'),
+    React.createElement('button', {
+      type: 'button',
+      onClick: () => onChange('2026-04-01', '2026-04-03'),
+    }, 'set-three-day-range'),
+  ),
 }));
 
 vi.mock('../../components/IdealTravelTimeline', () => ({
@@ -118,10 +136,6 @@ vi.mock('../../components/ConnectivityStatusBanner', () => ({
   ConnectivityStatusBanner: () => React.createElement('div', { 'data-testid': 'connectivity-banner' }),
 }));
 
-vi.mock('../../hooks/useDbSync', () => ({
-  useDbSync: () => undefined,
-}));
-
 vi.mock('../../hooks/useConnectivityStatus', () => ({
   useConnectivityStatus: () => ({
     snapshot: { state: 'online' },
@@ -137,7 +151,7 @@ vi.mock('../../hooks/useNetworkStatus', () => ({
 vi.mock('../../hooks/useSyncStatus', () => ({
   useSyncStatus: () => ({
     snapshot: { state: 'synced' },
-    retrySyncNow: (...args: unknown[]) => mocks.retrySyncNow(...args),
+    retrySyncNow: vi.fn(),
   }),
 }));
 
@@ -152,8 +166,24 @@ vi.mock('../../services/aiService', () => ({
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) => {
-      if (key === 'destination.islandOf' && options?.country) {
-        return `Island of ${options.country}`;
+      if (
+        options
+        && typeof options.days === 'number'
+        && typeof options.nights === 'number'
+        && key === 'dates.summaryExact'
+      ) {
+        return `${options.days} days / ${options.nights} nights`;
+      }
+      if (
+        options
+        && typeof options.days === 'number'
+        && typeof options.nights === 'number'
+        && key === 'snapshot.daysNights'
+      ) {
+        return `${options.days} days / ${options.nights} nights`;
+      }
+      if (key === 'errors.minimumNightStay') {
+        return 'Choose an end date at least one night after your start date.';
       }
       return key;
     },
@@ -164,16 +194,21 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { CreateTripClassicLabPage } from '../../pages/CreateTripClassicLabPage';
+import { CreateTripClassicPage } from '../../pages/CreateTripClassicPage';
 
 const renderPage = async () =>
   await render(
-    <MemoryRouter initialEntries={['/create-trip']}>
-      <CreateTripClassicLabPage onOpenManager={vi.fn()} onTripGenerated={vi.fn()} />
-    </MemoryRouter>
+    React.createElement(
+      MemoryRouter,
+      { initialEntries: ['/create-trip'] },
+      React.createElement(CreateTripClassicPage, {
+        onOpenManager: vi.fn(),
+        onTripGenerated: vi.fn(),
+      })
+    )
   );
 
-describe('pages/CreateTripClassicLabPage', () => {
+describe('pages/CreateTripClassicPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.authState.isAdmin = false;
@@ -208,31 +243,29 @@ describe('pages/CreateTripClassicLabPage', () => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
   });
 
-  it('renders special notes directly after dates and hides model selection for non-admins', async () => {
+  it('renders special notes directly after dates and before traveler preferences', async () => {
     await renderPage();
 
     const datesHeading = screen.getByText('dates.title');
     const notesHeading = screen.getByText('notes.title');
+    const travelerHeading = screen.getByText('traveler.title');
 
     expect(datesHeading.compareDocumentPosition(notesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.queryByText('modelPicker.label')).not.toBeInTheDocument();
+    expect(notesHeading.compareDocumentPosition(travelerHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('shows the model selection controls for admins', async () => {
-    mocks.authState.isAdmin = true;
-
+  it('shows exact-date day/night summaries and blocks same-day ranges', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
     await renderPage();
 
-    expect(screen.getAllByText('modelPicker.label')).toHaveLength(2);
-  });
+    for (const button of screen.getAllByRole('button', { name: 'set-same-day-range' })) {
+      await user.click(button);
+    }
+    expect(screen.getAllByText('Choose an end date at least one night after your start date.').length).toBeGreaterThan(0);
 
-  it('shows seasonal destination recommendations when the field is focused without a query', async () => {
-    const user = userEvent.setup();
-
-    await renderPage();
-
-    await user.click(screen.getByPlaceholderText('destination.searchPlaceholder'));
-
-    expect(await screen.findByText('Italy')).toBeInTheDocument();
+    for (const button of screen.getAllByRole('button', { name: 'set-three-day-range' })) {
+      await user.click(button);
+    }
+    expect(screen.getAllByText('3 days / 2 nights').length).toBeGreaterThan(0);
   });
 });

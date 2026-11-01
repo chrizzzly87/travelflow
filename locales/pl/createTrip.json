@@ -352,5 +352,9 @@
       "genericTitle": "Nie udało się otworzyć podróży",
       "genericBody": "Sprawdź połączenie i spróbuj ponownie."
     }
+  },
+  "stepper": {
+    "decrease": "Zmniejsz: {label}",
+    "increase": "Zwiększ: {label}"
   }
 }

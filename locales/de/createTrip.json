@@ -352,5 +352,9 @@
       "genericTitle": "Reise konnte nicht geöffnet werden",
       "genericBody": "Prüfe deine Verbindung und versuche es noch einmal."
     }
+  },
+  "stepper": {
+    "decrease": "{label} verringern",
+    "increase": "{label} erhöhen"
   }
 }

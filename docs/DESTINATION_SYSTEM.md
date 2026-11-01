@@ -183,7 +183,7 @@ Inspiration card click
         │  decodeTripPrefill(encoded) → TripPrefillData
         │  (validates country names against DESTINATION_OPTIONS)
         ▼
-   CreateTripClassicLabPage pre-fills fields
+   CreateTripClassicPage pre-fills fields
 ```
 
 ### `TripPrefillData` — `types.ts:139`
@@ -368,7 +368,7 @@ limit large enough to include the new entry.
 | `data/popularIslandDestinations.json` | Island seed data with optional ISO 3166-2 codes |
 | `data/inspirationsData.ts` | All inspiration content: categories, months, festivals, getaways, country groups, quick ideas |
 | `pages/InspirationsPage.tsx` | Renders cards, calls `resolveDestinationCodes()`, builds prefill URLs |
-| `pages/CreateTripClassicLabPage.tsx` | Reads `?prefill=` param, pre-fills form fields |
+| `pages/CreateTripClassicPage.tsx` | Reads `?prefill=` param, pre-fills form fields |
 | `components/CountrySelect.tsx` | Destination picker, searches `DESTINATION_OPTIONS` |
 | `netlify/edge-lib/site-og-metadata.ts` | Site metadata builder; strips `prefill` from canonical URLs |
 | `data/countryClimateNormals.json` | Monthly temperature/rainfall normals + curated season signal per country |

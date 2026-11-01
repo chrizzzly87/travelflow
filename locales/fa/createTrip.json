@@ -335,5 +335,9 @@
       "genericTitle": "باز کردن این سفر ممکن نشد",
       "genericBody": "اتصال خود را بررسی کنید و دوباره تلاش کنید."
     }
+  },
+  "stepper": {
+    "decrease": "کاهش {label}",
+    "increase": "افزایش {label}"
   }
 }

@@ -352,5 +352,9 @@
       "genericTitle": "Não foi possível abrir a viagem",
       "genericBody": "Verifique a sua ligação e tente novamente."
     }
+  },
+  "stepper": {
+    "decrease": "Diminuir {label}",
+    "increase": "Aumentar {label}"
   }
 }
