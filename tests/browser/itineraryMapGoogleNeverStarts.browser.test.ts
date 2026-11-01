@@ -9,9 +9,24 @@ import { resolveMapRuntime } from '../../shared/mapRuntime';
 import { loadEnglishCommonTranslations } from '../helpers/i18n';
 
 // A Google map that never produces an instance: the bridge never fires.
+const fakes = vi.hoisted(() => ({
+  // null until a test lets the Google map "start".
+  googleMap: null as null | Record<string, unknown>,
+}));
+const startedGoogleMap = {
+  getDiv: () => null,
+  getZoom: () => 5,
+  getBounds: () => undefined,
+  addListener: () => ({ remove: () => undefined }),
+  setMapTypeId: () => undefined,
+  setOptions: () => undefined,
+  panTo: () => undefined,
+  setZoom: () => undefined,
+  fitBounds: () => undefined,
+};
 vi.mock('@vis.gl/react-google-maps', () => ({
   Map: ({ children }: { children?: React.ReactNode }) => children ?? null,
-  useMap: () => null,
+  useMap: () => fakes.googleMap,
 }));
 vi.mock('../../components/GoogleMapsLoader', () => ({
   useGoogleMaps: vi.fn(),
@@ -27,10 +42,23 @@ const mockedUseMapRuntime = vi.mocked(useMapRuntime);
 
 const renderMap = () => render(React.createElement(ItineraryMap, { items: [], onLayoutChange: vi.fn() }));
 
+const useRuntime = (defaultPreset: 'google_all' | 'mapbox_all' | 'mapbox_visual_google_services', presetSettled = true) => {
+  mockedUseMapRuntime.mockReturnValue({
+    runtime: resolveMapRuntime({
+      defaultPreset,
+      availability: { googleMapsKeyAvailable: defaultPreset !== 'mapbox_all', mapboxAccessTokenAvailable: defaultPreset !== 'google_all' },
+    }),
+    mapboxAccessToken: defaultPreset === 'google_all' ? '' : 'pk.test',
+    presetSettled,
+    rendererLocked: false,
+  } as ReturnType<typeof useMapRuntime>);
+};
+
 describe('components/ItineraryMap Google that never starts', () => {
   beforeAll(loadEnglishCommonTranslations);
 
   beforeEach(() => {
+    fakes.googleMap = null;
     vi.useFakeTimers();
     (window as { google?: unknown }).google = { maps: {} };
     mockedUseMapRuntime.mockReturnValue({
@@ -69,5 +97,56 @@ describe('components/ItineraryMap Google that never starts', () => {
 
     expect(screen.getByText(/Error loading map/)).toBeTruthy();
     expect(screen.queryByText('Loading map…')).toBeNull();
+  });
+
+  it('clears the error when the map starts late and keeps the canvas mounted', () => {
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: true, loadError: null, disabled: false });
+    const view = renderMap();
+    act(() => { vi.advanceTimersByTime(MAP_INIT_TIMEOUT_MS); });
+    expect(screen.getByText(/Error loading map/)).toBeTruthy();
+
+    fakes.googleMap = startedGoogleMap;
+    view.rerender(React.createElement(ItineraryMap, { items: [], onLayoutChange: vi.fn() }));
+
+    expect(screen.queryByText(/Error loading map/)).toBeNull();
+    expect(screen.queryByText('Loading map…')).toBeNull();
+  });
+
+  it('recovers when the Google script loads late', () => {
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: false, loadError: null, disabled: false });
+    const view = renderMap();
+    act(() => { vi.advanceTimersByTime(MAP_INIT_TIMEOUT_MS); });
+    expect(screen.getByText(/Error loading map/)).toBeTruthy();
+
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: true, loadError: null, disabled: false });
+    fakes.googleMap = startedGoogleMap;
+    view.rerender(React.createElement(ItineraryMap, { items: [], onLayoutChange: vi.fn() }));
+
+    expect(screen.queryByText(/Error loading map/)).toBeNull();
+  });
+
+  it('shows no error after 15 s in mixed mode once the hidden Google map started', () => {
+    useRuntime('mapbox_visual_google_services');
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: true, loadError: null, disabled: false });
+    fakes.googleMap = startedGoogleMap;
+    renderMap();
+    act(() => { vi.advanceTimersByTime(MAP_INIT_TIMEOUT_MS); });
+    expect(screen.queryByText(/Error loading map/)).toBeNull();
+  });
+
+  it('does not run the timer before the preset has settled', () => {
+    useRuntime('google_all', false);
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: false, loadError: null, disabled: false });
+    renderMap();
+    act(() => { vi.advanceTimersByTime(MAP_INIT_TIMEOUT_MS * 2); });
+    expect(screen.queryByText(/Error loading map/)).toBeNull();
+  });
+
+  it('does not run the timer in standalone Mapbox', () => {
+    useRuntime('mapbox_all');
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: false, loadError: null, disabled: true });
+    renderMap();
+    act(() => { vi.advanceTimersByTime(MAP_INIT_TIMEOUT_MS * 2); });
+    expect(screen.queryByText(/Google Maps did not start/)).toBeNull();
   });
 });
