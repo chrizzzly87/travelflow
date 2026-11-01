@@ -472,6 +472,15 @@ interface TripViewProps {
         title: string;
         countries: string[];
         onCreateSimilarTrip?: () => void;
+        /** Replaces the example copy, e.g. for a draft from an AI assistant. */
+        copy?: {
+            eyebrow: string;
+            title: string;
+            body: string;
+            primaryLabel: string;
+            dismissLabel: string;
+        };
+        isPrimaryBusy?: boolean;
     };
 }
 

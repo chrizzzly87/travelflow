@@ -326,6 +326,33 @@
       "fast": "Fast"
     }
   },
+  "importTrip": {
+    "eyebrow": "내 AI 활용하기",
+    "title": "AI 대화를 TravelFlow 여행으로",
+    "intro": "ChatGPT, Claude, Gemini로 계획한 뒤 결과를 여기에 붙여 넣으세요. 타임라인과 지도로 보고 내 여행에 저장할 수 있어요.",
+    "prompt": {
+      "title": "1. 어시스턴트에게 요청하기",
+      "body": "아래 문장을 채팅에 복사하고 여행을 설명하세요. 도구를 쓰는 어시스턴트는 TravelFlow로 바로 보내고 링크를 알려 줘요.",
+      "text": "{url}을(를) 읽고 내 여행을 계획해 줘: [어디로, 언제, 얼마나, 누구와, 좋아하는 것]. TravelFlow로 보내거나 붙여 넣을 여행 JSON을 줘.",
+      "copy": "프롬프트 복사",
+      "copied": "복사됨"
+    },
+    "field": {
+      "label": "2. 여행 JSON 붙여 넣기",
+      "hint": "답변 전체를 붙여 넣으세요. JSON은 저희가 찾아요."
+    },
+    "submit": "여행 열기",
+    "errors": {
+      "invalidJsonTitle": "여행 JSON이 아니에요",
+      "invalidJsonBody": "올바른 JSON을 찾지 못했어요. 어시스턴트의 코드 블록 전체를 붙여 넣고 다시 시도해 주세요.",
+      "validationTitle": "여행을 조금 고쳐야 해요",
+      "validationBody": "이 오류를 채팅에 붙여 넣어 수정을 요청한 뒤 새 JSON을 여기에 붙여 넣으세요.",
+      "rateLimitedTitle": "지금은 가져오기가 너무 많아요",
+      "rateLimitedBody": "몇 분 뒤에 다시 시도해 주세요.",
+      "genericTitle": "여행을 열지 못했어요",
+      "genericBody": "연결을 확인하고 다시 시도해 주세요."
+    }
+  },
   "stepper": {
     "decrease": "{label} 줄이기",
     "increase": "{label} 늘리기"

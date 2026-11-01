@@ -77,6 +77,15 @@ interface TripViewStatusBannersProps {
         title: string;
         countries: string[];
         onCreateSimilarTrip?: () => void;
+        /** Replaces the example copy, e.g. for a draft from an AI assistant. */
+        copy?: {
+            eyebrow: string;
+            title: string;
+            body: string;
+            primaryLabel: string;
+            dismissLabel: string;
+        };
+        isPrimaryBusy?: boolean;
     };
     /** True while the "Plan with AI" launcher is pinned to the same bottom-end
      *  corner; the example banner then stacks above it instead of under it. */
@@ -607,15 +616,15 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             size="icon-sm"
                             onClick={() => setIsExampleBannerDismissed(true)}
                             className="absolute end-2 top-2 size-7 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground dark:text-foreground dark:hover:bg-secondary"
-                            aria-label={t('tripView.exampleBanner.dismiss')}
+                            aria-label={exampleTripBanner.copy?.dismissLabel ?? t('tripView.exampleBanner.dismiss')}
                         >
                             <X size={14} />
                         </Button>
-                        <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700 dark:text-accent-200">{t('tripView.exampleBanner.eyebrow')}</p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">{t('tripView.exampleBanner.title')}</p>
+                        <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700 dark:text-accent-200">{exampleTripBanner.copy?.eyebrow ?? t('tripView.exampleBanner.eyebrow')}</p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">{exampleTripBanner.copy?.title ?? t('tripView.exampleBanner.title')}</p>
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                            {t('tripView.exampleBanner.body')}
-                            {exampleTripBanner.countries.length > 0 && (
+                            {exampleTripBanner.copy?.body ?? t('tripView.exampleBanner.body')}
+                            {!exampleTripBanner.copy && exampleTripBanner.countries.length > 0 && (
                                 <span> {t('tripView.exampleBanner.countryFocus', { countries: exampleTripBanner.countries.join(', ') })}</span>
                             )}
                         </p>
@@ -638,10 +647,11 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     variant="default"
                                     size="sm"
                                     onClick={onCopyTrip}
+                                    loading={exampleTripBanner.isPrimaryBusy}
                                     className="min-h-10 gap-1.5 px-3 text-xs font-semibold"
                                 >
                                     <CopySimple size={14} weight="duotone" />
-                                    {t('tripView.banners.copyTrip')}
+                                    {exampleTripBanner.copy?.primaryLabel ?? t('tripView.banners.copyTrip')}
                                 </Button>
                             )}
                         </div>

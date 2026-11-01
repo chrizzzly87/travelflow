@@ -833,6 +833,16 @@
       "countryFocus": "국가: {countries}.",
       "dismiss": "예시 여행 안내 닫기"
     },
+    "draftBanner": {
+      "eyebrow": "AI 어시스턴트가 만든 일정",
+      "eyebrowFrom": "{client}이(가) 만든 일정",
+      "title": "둘러본 뒤 저장하면 계속 편집할 수 있어요.",
+      "body": "초안입니다. 여기서 바꾼 내용은 저장되지 않아요. 계정에 저장하면 편집, 공유, 내보내기를 할 수 있어요.",
+      "save": "내 여행에 저장",
+      "dismiss": "초안 안내 닫기",
+      "saveFailedTitle": "여행을 저장하지 못했어요",
+      "saveFailedBody": "연결을 확인하고 다시 시도해 주세요."
+    },
     "listView": {
       "openTransfer": "이동 세부 정보 열기 ({mode})",
       "taskCompleted": "완료된 할 일",

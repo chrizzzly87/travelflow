@@ -32,33 +32,24 @@ describe('itinerary map activity markers', () => {
   });
 });
 
-describe('components/itineraryMapUtils duplication guard', () => {
-  // `itineraryMapUtils.tsx` is a hand-maintained copy of helpers that also live
-  // in `ItineraryMap.tsx`; only the copy is importable, so the tests exercise
-  // the copy while the app runs the original. The two have already drifted in
-  // places, so rather than compare whole files, pin the selection helpers that
-  // drive map centring: if one side is edited alone, the tests would otherwise
-  // keep passing against dead code.
-  const extractFunction = (source: string, name: string): string => {
-    const startPattern = new RegExp(`^(?:export )?const ${name} = \\(`, 'm');
-    const match = startPattern.exec(source);
-    expect(match, `${name} not found`).not.toBeNull();
-    const start = (match as RegExpExecArray).index;
-    const end = source.indexOf('\n};', start);
-    expect(end, `${name} has no terminator`).toBeGreaterThan(start);
-    return source
-      .slice(start, end)
-      .replace(/^export /, '');
-  };
-
+describe('components/ItineraryMap pure helper extraction guard', () => {
+  // The pure helpers used to live both in `ItineraryMap.tsx` and in a
+  // hand-maintained copy (`itineraryMapUtils.tsx`) that only the tests ran.
+  // They now have one home under `components/maps/`; a local redefinition in
+  // the component would bring the untested-copy problem back.
   it.each([
     'resolveSelectedMapFocusPosition',
     'resolveSelectionViewportActions',
     'shouldDisplayActivityMarkers',
-  ])('keeps %s identical in both files', (name) => {
-    const utils = readComponent('itineraryMapUtils.tsx');
+    'resolveMarkerRenderTier',
+    'buildRouteAttemptPolicy',
+    'buildActivityMarkerHtml',
+    'buildMapboxRouteLayerConfigs',
+    'hydrateRouteCache',
+  ])('does not redefine %s inside the component', (name) => {
     const component = readComponent('ItineraryMap.tsx');
 
-    expect(extractFunction(utils, name)).toBe(extractFunction(component, name));
+    expect(component).not.toMatch(new RegExp(`^(?:export )?const ${name} = `, 'm'));
+    expect(component).toMatch(new RegExp(`\\b${name}\\b`));
   });
 });

@@ -41,11 +41,13 @@ import { Route as adminOgToolsRouteImport } from './routes/admin/og-tools'
 import { Route as adminRecommendationsRouteImport } from './routes/admin/recommendations'
 import { Route as adminSettingsRouteImport } from './routes/admin/settings'
 import { Route as adminTiersRouteImport } from './routes/admin/tiers'
+import { Route as adminTripDraftsRouteImport } from './routes/admin/trip-drafts'
 import { Route as adminTripsRouteImport } from './routes/admin/trips'
 import { Route as adminUsersRouteImport } from './routes/admin/users'
 import { Route as authLoginRouteImport } from './routes/auth/login'
 import { Route as accountPublicProfileRouteImport } from './routes/account/public-profile'
 import { Route as createClassicRouteImport } from './routes/create/classic'
+import { Route as createImportRouteImport } from './routes/create/import'
 import { Route as libraryTripsRouteImport } from './routes/library/trips'
 import { Route as publicBlogRouteImport } from './routes/public/blog'
 import { Route as publicContactRouteImport } from './routes/public/contact'
@@ -63,6 +65,7 @@ import { Route as redirectsRedirect02RouteImport } from './routes/redirects/redi
 import { Route as redirectsRedirect09RouteImport } from './routes/redirects/redirect-09'
 import { Route as redirectsRedirect10RouteImport } from './routes/redirects/redirect-10'
 import { Route as redirectsRedirect11RouteImport } from './routes/redirects/redirect-11'
+import { Route as tripsDraftRouteImport } from './routes/trips/draft'
 import { Route as tripsExampleRouteImport } from './routes/trips/example'
 import { Route as tripsSharedRouteImport } from './routes/trips/shared'
 import { Route as tripsOwnedRouteImport } from './routes/trips/owned'
@@ -240,6 +243,11 @@ const adminTiersRoute = adminTiersRouteImport.update({
   path: '/admin/tiers',
   getParentRoute: () => areasAdminRoute,
 } as any)
+const adminTripDraftsRoute = adminTripDraftsRouteImport.update({
+  id: '/admin/trip-drafts',
+  path: '/admin/trip-drafts',
+  getParentRoute: () => areasAdminRoute,
+} as any)
 const adminTripsRoute = adminTripsRouteImport.update({
   id: '/admin/trips',
   path: '/admin/trips',
@@ -263,6 +271,11 @@ const accountPublicProfileRoute = accountPublicProfileRouteImport.update({
 const createClassicRoute = createClassicRouteImport.update({
   id: '/{-$locale}/create-trip',
   path: '/{-$locale}/create-trip',
+  getParentRoute: () => areasCreateRoute,
+} as any)
+const createImportRoute = createImportRouteImport.update({
+  id: '/{-$locale}/import-trip',
+  path: '/{-$locale}/import-trip',
   getParentRoute: () => areasCreateRoute,
 } as any)
 const libraryTripsRoute = libraryTripsRouteImport.update({
@@ -349,6 +362,11 @@ const redirectsRedirect11Route = redirectsRedirect11RouteImport.update({
   id: '/create-trip/v3',
   path: '/create-trip/v3',
   getParentRoute: () => areasRedirectsRoute,
+} as any)
+const tripsDraftRoute = tripsDraftRouteImport.update({
+  id: '/draft/$draftId',
+  path: '/draft/$draftId',
+  getParentRoute: () => areasTripsRoute,
 } as any)
 const tripsExampleRoute = tripsExampleRouteImport.update({
   id: '/example/$templateId',
@@ -493,11 +511,13 @@ export interface FileRoutesByFullPath {
   '/admin/recommendations': typeof adminRecommendationsRoute
   '/admin/settings': typeof adminSettingsRoute
   '/admin/tiers': typeof adminTiersRoute
+  '/admin/trip-drafts': typeof adminTripDraftsRoute
   '/admin/trips': typeof adminTripsRoute
   '/admin/users': typeof adminUsersRoute
   '/{-$locale}/login': typeof authLoginRoute
   '/u/$username': typeof accountPublicProfileRoute
   '/{-$locale}/create-trip': typeof createClassicRoute
+  '/{-$locale}/import-trip': typeof createImportRoute
   '/{-$locale}/trips': typeof libraryTripsRoute
   '/{-$locale}/blog': typeof publicBlogRoute
   '/{-$locale}/contact': typeof publicContactRoute
@@ -515,6 +535,7 @@ export interface FileRoutesByFullPath {
   '/create-trip/v1': typeof redirectsRedirect09Route
   '/create-trip/v2': typeof redirectsRedirect10Route
   '/create-trip/v3': typeof redirectsRedirect11Route
+  '/draft/$draftId': typeof tripsDraftRoute
   '/example/$templateId': typeof tripsExampleRoute
   '/s/$token': typeof tripsSharedRoute
   '/trip/$tripId': typeof tripsOwnedRoute
@@ -564,11 +585,13 @@ export interface FileRoutesByTo {
   '/admin/recommendations': typeof adminRecommendationsRoute
   '/admin/settings': typeof adminSettingsRoute
   '/admin/tiers': typeof adminTiersRoute
+  '/admin/trip-drafts': typeof adminTripDraftsRoute
   '/admin/trips': typeof adminTripsRoute
   '/admin/users': typeof adminUsersRoute
   '/{-$locale}/login': typeof authLoginRoute
   '/u/$username': typeof accountPublicProfileRoute
   '/{-$locale}/create-trip': typeof createClassicRoute
+  '/{-$locale}/import-trip': typeof createImportRoute
   '/{-$locale}/trips': typeof libraryTripsRoute
   '/{-$locale}/blog': typeof publicBlogRoute
   '/{-$locale}/contact': typeof publicContactRoute
@@ -586,6 +609,7 @@ export interface FileRoutesByTo {
   '/create-trip/v1': typeof redirectsRedirect09Route
   '/create-trip/v2': typeof redirectsRedirect10Route
   '/create-trip/v3': typeof redirectsRedirect11Route
+  '/draft/$draftId': typeof tripsDraftRoute
   '/example/$templateId': typeof tripsExampleRoute
   '/s/$token': typeof tripsSharedRoute
   '/trip/$tripId': typeof tripsOwnedRoute
@@ -644,11 +668,13 @@ export interface FileRoutesById {
   '/_admin/admin/recommendations': typeof adminRecommendationsRoute
   '/_admin/admin/settings': typeof adminSettingsRoute
   '/_admin/admin/tiers': typeof adminTiersRoute
+  '/_admin/admin/trip-drafts': typeof adminTripDraftsRoute
   '/_admin/admin/trips': typeof adminTripsRoute
   '/_admin/admin/users': typeof adminUsersRoute
   '/_auth/{-$locale}/login': typeof authLoginRoute
   '/_client/u/$username': typeof accountPublicProfileRoute
   '/_create/{-$locale}/create-trip': typeof createClassicRoute
+  '/_create/{-$locale}/import-trip': typeof createImportRoute
   '/_library/{-$locale}/trips': typeof libraryTripsRoute
   '/_public/{-$locale}/blog': typeof publicBlogRoute
   '/_public/{-$locale}/contact': typeof publicContactRoute
@@ -666,6 +692,7 @@ export interface FileRoutesById {
   '/_redirects/create-trip/v1': typeof redirectsRedirect09Route
   '/_redirects/create-trip/v2': typeof redirectsRedirect10Route
   '/_redirects/create-trip/v3': typeof redirectsRedirect11Route
+  '/_trips/draft/$draftId': typeof tripsDraftRoute
   '/_trips/example/$templateId': typeof tripsExampleRoute
   '/_trips/s/$token': typeof tripsSharedRoute
   '/_trips/trip/$tripId': typeof tripsOwnedRoute
@@ -717,11 +744,13 @@ export interface FileRouteTypes {
     | '/admin/recommendations'
     | '/admin/settings'
     | '/admin/tiers'
+    | '/admin/trip-drafts'
     | '/admin/trips'
     | '/admin/users'
     | '/{-$locale}/login'
     | '/u/$username'
     | '/{-$locale}/create-trip'
+    | '/{-$locale}/import-trip'
     | '/{-$locale}/trips'
     | '/{-$locale}/blog'
     | '/{-$locale}/contact'
@@ -739,6 +768,7 @@ export interface FileRouteTypes {
     | '/create-trip/v1'
     | '/create-trip/v2'
     | '/create-trip/v3'
+    | '/draft/$draftId'
     | '/example/$templateId'
     | '/s/$token'
     | '/trip/$tripId'
@@ -788,11 +818,13 @@ export interface FileRouteTypes {
     | '/admin/recommendations'
     | '/admin/settings'
     | '/admin/tiers'
+    | '/admin/trip-drafts'
     | '/admin/trips'
     | '/admin/users'
     | '/{-$locale}/login'
     | '/u/$username'
     | '/{-$locale}/create-trip'
+    | '/{-$locale}/import-trip'
     | '/{-$locale}/trips'
     | '/{-$locale}/blog'
     | '/{-$locale}/contact'
@@ -810,6 +842,7 @@ export interface FileRouteTypes {
     | '/create-trip/v1'
     | '/create-trip/v2'
     | '/create-trip/v3'
+    | '/draft/$draftId'
     | '/example/$templateId'
     | '/s/$token'
     | '/trip/$tripId'
@@ -867,11 +900,13 @@ export interface FileRouteTypes {
     | '/_admin/admin/recommendations'
     | '/_admin/admin/settings'
     | '/_admin/admin/tiers'
+    | '/_admin/admin/trip-drafts'
     | '/_admin/admin/trips'
     | '/_admin/admin/users'
     | '/_auth/{-$locale}/login'
     | '/_client/u/$username'
     | '/_create/{-$locale}/create-trip'
+    | '/_create/{-$locale}/import-trip'
     | '/_library/{-$locale}/trips'
     | '/_public/{-$locale}/blog'
     | '/_public/{-$locale}/contact'
@@ -889,6 +924,7 @@ export interface FileRouteTypes {
     | '/_redirects/create-trip/v1'
     | '/_redirects/create-trip/v2'
     | '/_redirects/create-trip/v3'
+    | '/_trips/draft/$draftId'
     | '/_trips/example/$templateId'
     | '/_trips/s/$token'
     | '/_trips/trip/$tripId'
@@ -1153,6 +1189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminTiersRouteImport
       parentRoute: typeof areasAdminRoute
     }
+    '/_admin/admin/trip-drafts': {
+      id: '/_admin/admin/trip-drafts'
+      path: '/admin/trip-drafts'
+      fullPath: '/admin/trip-drafts'
+      preLoaderRoute: typeof adminTripDraftsRouteImport
+      parentRoute: typeof areasAdminRoute
+    }
     '/_admin/admin/trips': {
       id: '/_admin/admin/trips'
       path: '/admin/trips'
@@ -1186,6 +1229,13 @@ declare module '@tanstack/react-router' {
       path: '/{-$locale}/create-trip'
       fullPath: '/{-$locale}/create-trip'
       preLoaderRoute: typeof createClassicRouteImport
+      parentRoute: typeof areasCreateRoute
+    }
+    '/_create/{-$locale}/import-trip': {
+      id: '/_create/{-$locale}/import-trip'
+      path: '/{-$locale}/import-trip'
+      fullPath: '/{-$locale}/import-trip'
+      preLoaderRoute: typeof createImportRouteImport
       parentRoute: typeof areasCreateRoute
     }
     '/_library/{-$locale}/trips': {
@@ -1306,6 +1356,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/create-trip/v3'
       preLoaderRoute: typeof redirectsRedirect11RouteImport
       parentRoute: typeof areasRedirectsRoute
+    }
+    '/_trips/draft/$draftId': {
+      id: '/_trips/draft/$draftId'
+      path: '/draft/$draftId'
+      fullPath: '/draft/$draftId'
+      preLoaderRoute: typeof tripsDraftRouteImport
+      parentRoute: typeof areasTripsRoute
     }
     '/_trips/example/$templateId': {
       id: '/_trips/example/$templateId'
@@ -1505,6 +1562,7 @@ interface areasAdminRouteChildren {
   adminRecommendationsRoute: typeof adminRecommendationsRoute
   adminSettingsRoute: typeof adminSettingsRoute
   adminTiersRoute: typeof adminTiersRoute
+  adminTripDraftsRoute: typeof adminTripDraftsRoute
   adminTripsRoute: typeof adminTripsRoute
   adminUsersRoute: typeof adminUsersRoute
   adminAiBenchmarkTelemetryRoute: typeof adminAiBenchmarkTelemetryRoute
@@ -1525,6 +1583,7 @@ const areasAdminRouteChildren: areasAdminRouteChildren = {
   adminRecommendationsRoute: adminRecommendationsRoute,
   adminSettingsRoute: adminSettingsRoute,
   adminTiersRoute: adminTiersRoute,
+  adminTripDraftsRoute: adminTripDraftsRoute,
   adminTripsRoute: adminTripsRoute,
   adminUsersRoute: adminUsersRoute,
   adminAiBenchmarkTelemetryRoute: adminAiBenchmarkTelemetryRoute,
@@ -1567,12 +1626,14 @@ const areasClientRouteWithChildren = areasClientRoute._addFileChildren(
 
 interface areasCreateRouteChildren {
   createClassicRoute: typeof createClassicRoute
+  createImportRoute: typeof createImportRoute
   createClassicLabRoute: typeof createClassicLabRoute
   createWizardRoute: typeof createWizardRoute
 }
 
 const areasCreateRouteChildren: areasCreateRouteChildren = {
   createClassicRoute: createClassicRoute,
+  createImportRoute: createImportRoute,
   createClassicLabRoute: createClassicLabRoute,
   createWizardRoute: createWizardRoute,
 }
@@ -1680,12 +1741,14 @@ const areasRedirectsRouteWithChildren = areasRedirectsRoute._addFileChildren(
 )
 
 interface areasTripsRouteChildren {
+  tripsDraftRoute: typeof tripsDraftRoute
   tripsExampleRoute: typeof tripsExampleRoute
   tripsSharedRoute: typeof tripsSharedRoute
   tripsOwnedRoute: typeof tripsOwnedRoute
 }
 
 const areasTripsRouteChildren: areasTripsRouteChildren = {
+  tripsDraftRoute: tripsDraftRoute,
   tripsExampleRoute: tripsExampleRoute,
   tripsSharedRoute: tripsSharedRoute,
   tripsOwnedRoute: tripsOwnedRoute,

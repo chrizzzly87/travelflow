@@ -840,6 +840,16 @@
       "countryFocus": "Länderfokus: {countries}.",
       "dismiss": "Hinweis zur Beispielreise schließen"
     },
+    "draftBanner": {
+      "eyebrow": "Plan von einem KI-Assistenten",
+      "eyebrowFrom": "Plan von {client}",
+      "title": "Schau dich um und speichere ihn, um weiterzuplanen.",
+      "body": "Das ist ein Entwurf. Änderungen hier werden nicht gespeichert. Speichere ihn in deinem Konto, um ihn zu bearbeiten, zu teilen und zu exportieren.",
+      "save": "In meine Reisen speichern",
+      "dismiss": "Entwurfshinweis schließen",
+      "saveFailedTitle": "Reise konnte nicht gespeichert werden",
+      "saveFailedBody": "Prüfe deine Verbindung und versuche es noch einmal."
+    },
     "listView": {
       "openTransfer": "Transfer-Details öffnen ({mode})",
       "taskCompleted": "Erledigte Aufgabe",

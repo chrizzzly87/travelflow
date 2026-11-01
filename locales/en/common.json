@@ -840,6 +840,16 @@
       "countryFocus": "Country focus: {countries}.",
       "dismiss": "Dismiss example trip notice"
     },
+    "draftBanner": {
+      "eyebrow": "Plan from an AI assistant",
+      "eyebrowFrom": "Plan from {client}",
+      "title": "Look around, then save it to keep editing.",
+      "body": "This is a draft. Changes here aren't saved. Save it to your account to edit, share and export it.",
+      "save": "Save to my trips",
+      "dismiss": "Dismiss draft notice",
+      "saveFailedTitle": "Couldn't save this trip",
+      "saveFailedBody": "Check your connection and try again."
+    },
     "listView": {
       "openTransfer": "Open {mode} transfer details",
       "taskCompleted": "Completed task",

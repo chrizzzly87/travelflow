@@ -326,6 +326,33 @@
       "fast": "Fast"
     }
   },
+  "importTrip": {
+    "eyebrow": "Usa tu propia IA",
+    "title": "Convierte un chat con IA en un viaje de TravelFlow",
+    "intro": "Planifica con ChatGPT, Claude o Gemini y pega aquí el resultado. Lo verás en una línea de tiempo y un mapa, y podrás guardarlo en tus viajes.",
+    "prompt": {
+      "title": "1. Pregunta a tu asistente",
+      "body": "Copia esto en tu chat y describe tu viaje. Los asistentes con herramientas lo envían directamente a TravelFlow y te dan un enlace.",
+      "text": "Lee {url} y planifica mi viaje: [dónde, cuándo, cuánto tiempo, quién viene, qué nos gusta]. Envíalo a TravelFlow o dame el JSON del viaje para pegarlo.",
+      "copy": "Copiar prompt",
+      "copied": "Copiado"
+    },
+    "field": {
+      "label": "2. Pega el JSON del viaje",
+      "hint": "Pega la respuesta completa. Encontraremos el JSON."
+    },
+    "submit": "Abrir viaje",
+    "errors": {
+      "invalidJsonTitle": "Eso no es JSON de un viaje",
+      "invalidJsonBody": "No encontramos JSON válido. Pega el bloque de código completo de tu asistente e inténtalo de nuevo.",
+      "validationTitle": "El viaje necesita algunos ajustes",
+      "validationBody": "Pega estos errores en tu chat, pide que los corrija y pega aquí el nuevo JSON.",
+      "rateLimitedTitle": "Demasiadas importaciones ahora",
+      "rateLimitedBody": "Espera unos minutos e inténtalo de nuevo.",
+      "genericTitle": "No se pudo abrir el viaje",
+      "genericBody": "Comprueba tu conexión e inténtalo de nuevo."
+    }
+  },
   "stepper": {
     "decrease": "Disminuir {label}",
     "increase": "Aumentar {label}"
