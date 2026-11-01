@@ -335,5 +335,9 @@
       "genericTitle": "یہ سفر نہیں کھل سکا",
       "genericBody": "اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔"
     }
+  },
+  "stepper": {
+    "decrease": "{label} کم کریں",
+    "increase": "{label} بڑھائیں"
   }
 }

@@ -1,8 +1,8 @@
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Outlet, useMatches, useParams, useRouter } from '@tanstack/react-router';
+import { Outlet, useMatches, useParams, useRouter, useSearch } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useTripManager } from '../../contexts/TripManagerContext';
-import { useNavigate, useLocation } from '../../app/navigation';
+import { useNavigate } from '../../app/navigation';
 import { saveTrip } from '../../services/storageService';
 import { normalizeLocale } from '../../config/locales';
 import type { ITrip } from '../../types';
@@ -27,8 +27,8 @@ function TripSession({ data }: { data?: TripRouteData }) {
     // Reconcile before committing children, preserving local edits between loads.
     if (data && state.data !== data) setState({ data, trip: normalizeTripForRuntimeLoad(data.trip) });
     const trip = state.trip;
-    const location = useLocation();
-    const hasVersion = new URLSearchParams(location.search).has('v');
+    // The layout's own validated search; a historical version is never cached.
+    const hasVersion = useSearch({ from: '/_trips', select: search => typeof search.v === 'string' });
     useEffect(() => {
         if (data?.access?.source === 'owner' && !hasVersion) saveTrip(data.trip, { preserveUpdatedAt: true });
     }, [data, hasVersion]);

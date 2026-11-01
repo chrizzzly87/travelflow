@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -164,16 +164,16 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { CreateTripClassicLabPage } from '../../pages/CreateTripClassicLabPage';
+import { CreateTripClassicPage } from '../../pages/CreateTripClassicPage';
 
 const renderPage = async () =>
   await render(
     <MemoryRouter initialEntries={['/create-trip']}>
-      <CreateTripClassicLabPage onOpenManager={vi.fn()} onTripGenerated={vi.fn()} />
+      <CreateTripClassicPage onOpenManager={vi.fn()} onTripGenerated={vi.fn()} />
     </MemoryRouter>
   );
 
-describe('pages/CreateTripClassicLabPage', () => {
+describe('pages/CreateTripClassicPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.authState.isAdmin = false;
@@ -226,22 +226,21 @@ describe('pages/CreateTripClassicLabPage', () => {
     expect(screen.getAllByText('modelPicker.label')).toHaveLength(2);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('shows seasonal destination recommendations when the field is focused without a query', async () => {
-    // The default trip starts three weeks out, so the seasonal picks follow the
-    // calendar. Pin a spring date when Italy is in season; only Date is faked so
-    // userEvent's timers keep running.
+    // Seasonal picks follow the current month; pin it so the test doesn't
+    // start failing when the real calendar leaves Italy's season.
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-04-15T12:00:00Z'));
-    const user = userEvent.setup();
+    vi.setSystemTime(new Date('2026-10-15T12:00:00Z'));
+    try {
+      const user = userEvent.setup();
 
-    await renderPage();
+      await renderPage();
 
-    await user.click(screen.getByPlaceholderText('destination.searchPlaceholder'));
+      await user.click(screen.getByPlaceholderText('destination.searchPlaceholder'));
 
-    expect(await screen.findByText('Italy')).toBeInTheDocument();
+      expect(await screen.findByText('Italy')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

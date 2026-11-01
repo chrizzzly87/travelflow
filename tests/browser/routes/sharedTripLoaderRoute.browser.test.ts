@@ -10,6 +10,11 @@ const mocks = vi.hoisted(() => ({
     limit: vi.fn(), upsert: vi.fn(), version: vi.fn(), sharedUpdate: vi.fn(), save: vi.fn(), history: vi.fn(), shared: vi.fn(), view: vi.fn(), confirm: vi.fn(), track: vi.fn(),
 }));
 vi.mock('@/app/navigation', () => ({ useParams: () => mocks.params, useLocation: () => mocks.location, useNavigate: () => mocks.navigate }));
+// The presenter reads its route's validated search; derive it from the mocked location.
+vi.mock('../../../features/trips/tripRouteSearch', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../features/trips/tripRouteSearch')>();
+    return { ...actual, useTripRouteSearch: () => actual.parseTripRouteSearch(Object.fromEntries(new URLSearchParams(mocks.location.search))) };
+});
 vi.mock('../../../hooks/useAuth', () => ({ useAuth: () => ({ access: { tierKey: 'tier_free', entitlements: { tripExpirationDays: 14 } } }) }));
 vi.mock('../../../hooks/useDbSync', () => ({ useDbSync: vi.fn() }));
 vi.mock('../../../components/AppDialogProvider', () => ({ useAppDialog: () => ({ confirm: mocks.confirm }) }));

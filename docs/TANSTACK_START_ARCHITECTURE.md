@@ -156,6 +156,15 @@ so path, query and fragment are parsed before matching and hover preloads; a `?`
 Hover preloads are reused for 30 seconds by default and 10 seconds on owned/shared
 trips; entering a trip without a fresh preload always refetches.
 
+Area routes declare their query with lenient `validateSearch` schemas built from
+`app/routing/searchSchema.ts` (`_trips`: `features/trips/tripRouteSearch.ts`,
+`_create`: `features/trips/createTripRouteSearch.ts`). They never throw, add no
+defaults and keep unknown keys; valid values stay the exact string from the URL.
+A page that rewrites its own query uses `useRouteSearchWriter`, never
+`history.replaceState`: it navigates with `replace`, keeps hash, state and scroll,
+skips no-op writes (re-committing the same URL reloads `staleTime: 0` loaders) and
+writes nothing once the latest location resolves to another match (#586).
+
 The search codec preserves repeated query values and existing plain-string URL
 contracts. Changing it requires navigation regressions for query, hash, history state
 and back/forward behavior.
