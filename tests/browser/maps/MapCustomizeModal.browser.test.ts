@@ -3,6 +3,16 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 
+/**
+ * The provider loads the public runtime settings on mount. Without Supabase
+ * (CI) that load fails and resets the admin preset this test sets, so it must
+ * not touch the preset store here.
+ */
+vi.mock('../../../services/aiRuntimeSettingsService', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, loadPublicAiRuntimeSettings: () => new Promise(() => {}) };
+});
+
 import { MapRuntimeProvider } from '../../../components/GoogleMapsLoader';
 import { resetMapRendererChoiceForTests, setRuntimeMapPreset } from '../../../services/mapRuntimeService';
 import { MapCustomizeModal } from '../../../components/maps/MapCustomizeModal';

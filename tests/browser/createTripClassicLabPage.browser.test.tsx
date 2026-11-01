@@ -227,12 +227,20 @@ describe('pages/CreateTripClassicLabPage', () => {
   });
 
   it('shows seasonal destination recommendations when the field is focused without a query', async () => {
-    const user = userEvent.setup();
+    // Recommendations roll with the next three months, so pin "today" to a
+    // month where Italy is in season instead of depending on the run date.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T12:00:00Z'));
+    try {
+      const user = userEvent.setup();
 
-    await renderPage();
+      await renderPage();
 
-    await user.click(screen.getByPlaceholderText('destination.searchPlaceholder'));
+      await user.click(screen.getByPlaceholderText('destination.searchPlaceholder'));
 
-    expect(await screen.findByText('Italy')).toBeInTheDocument();
+      expect(await screen.findByText('Italy')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
