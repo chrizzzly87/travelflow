@@ -12,7 +12,7 @@ import {
     type SocialProviderFilter,
     type UserLoginType,
 } from '../adminUsersModel';
-import { LOGIN_PILL_STYLES } from './UserLoginPills';
+import { LOGIN_PILL_STYLES } from './loginPillStyles';
 
 /**
  * Sign-in method filter: email, social (with a per-provider sub-list) and

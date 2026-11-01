@@ -453,6 +453,8 @@ export type UserVisibleColumnId =
     | 'last_visit'
     | 'last_log'
     | 'created';
+/** Every column after the sticky User column. */
+export type UserDataColumnId = Exclude<UserVisibleColumnId, 'user'>;
 export type UserDetailTab = 'overview' | 'profile' | 'billing' | 'trips' | 'activity';
 
 export const USERS_PAGE_SIZE = 25;
@@ -513,7 +515,7 @@ export const USER_VISIBLE_COLUMN_OPTIONS: Array<{ value: UserVisibleColumnId; la
     { value: 'created', label: 'Created' },
 ];
 /** Header label and sort key for every sortable column after the sticky User column. */
-export const USER_SORTABLE_COLUMNS: ReadonlyArray<readonly [UserVisibleColumnId, string, UserSortKey]> = [
+export const USER_SORTABLE_COLUMNS: ReadonlyArray<readonly [UserDataColumnId, string, UserSortKey]> = [
     ['status', 'Status', 'account_status'],
     ['login', 'Sign-in', 'email'],
     ['tier', 'Plan', 'tier_key'],

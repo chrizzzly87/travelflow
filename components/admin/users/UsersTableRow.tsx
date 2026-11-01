@@ -42,6 +42,8 @@ import {
     resolveUserTermsState,
     subscriptionStatusTone,
     tierTone,
+    USER_SORTABLE_COLUMNS,
+    type UserDataColumnId,
     type UserSortKey,
     type UserVisibleColumnId,
 } from '../adminUsersModel';
@@ -94,6 +96,123 @@ const UserRowActionsMenu: React.FC<{
     </DropdownMenu>
 );
 
+interface UserCellContext {
+    user: AdminUserRecord;
+    currentTermsVersion: string | null;
+}
+
+const TIMESTAMP_CELL_CLASS = 'text-sm text-muted-foreground';
+
+const SubscriptionHint: React.FC<{ status: ReturnType<typeof resolveUserSubscriptionStatus> }> = ({ status }) => {
+    if (!hasNotableSubscription(status)) return null;
+    const isAtRisk = status === 'past_due' || status === 'canceled_grace';
+    return (
+        <span className={cn('text-xs', isAtRisk ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground')}>
+            {getUserSubscriptionStatusLabel(status)}
+        </span>
+    );
+};
+
+const TripsCell: React.FC<{ user: AdminUserRecord }> = ({ user }) => {
+    const totalTrips = getUserTotalTrips(user);
+    let hint: React.ReactNode = null;
+    if (totalTrips > 0) hint = <div className="text-xs tabular-nums text-muted-foreground">{getUserActiveTrips(user)} active</div>;
+    else if (isUserTriplessAndNoData(user)) hint = <div className="text-xs text-muted-foreground">Empty account</div>;
+    return (
+        <>
+            <div className="text-sm font-medium tabular-nums text-foreground">{totalTrips}</div>
+            {hint}
+        </>
+    );
+};
+
+/** What each optional column shows, in the order `USER_SORTABLE_COLUMNS` renders them. */
+const USER_COLUMN_CELLS: Record<UserDataColumnId, { className?: string; render: (context: UserCellContext) => React.ReactNode }> = {
+    status: {
+        render: ({ user }) => {
+            const lifecycle = resolveUserLifecycleStatus(user);
+            return <AdminStatusBadge tone={lifecycle.tone}>{lifecycle.label}</AdminStatusBadge>;
+        },
+    },
+    login: {
+        render: ({ user }) => <UserLoginPills user={user} />,
+    },
+    tier: {
+        render: ({ user }) => (
+            <div className="flex flex-col items-start gap-0.5">
+                <AdminStatusBadge tone={tierTone(user.tier_key)} dot={false}>
+                    {getPlanName(user.tier_key)}
+                </AdminStatusBadge>
+                <SubscriptionHint status={resolveUserSubscriptionStatus(user)} />
+            </div>
+        ),
+    },
+    subscription: {
+        render: ({ user }) => {
+            const subscriptionStatus = resolveUserSubscriptionStatus(user);
+            return (
+                <div className="flex min-w-[132px] flex-col gap-1">
+                    <AdminStatusBadge tone={subscriptionStatusTone(subscriptionStatus)}>
+                        {getUserSubscriptionStatusLabel(subscriptionStatus)}
+                    </AdminStatusBadge>
+                    {user.provider_subscription_id ? (
+                        <span className="max-w-[180px] truncate font-mono text-[11px] text-muted-foreground" data-tooltip={user.provider_subscription_id}>
+                            {user.provider_subscription_id}
+                        </span>
+                    ) : null}
+                </div>
+            );
+        },
+    },
+    trips: {
+        render: ({ user }) => <TripsCell user={user} />,
+    },
+    activation: {
+        render: ({ user }) => {
+            const activationStatus = resolveActivationStatus(user);
+            return (
+                <AdminStatusBadge tone={activationStatusTone(activationStatus)}>
+                    {getActivationStatusLabel(activationStatus)}
+                </AdminStatusBadge>
+            );
+        },
+    },
+    role: {
+        render: ({ user }) => (
+            <AdminStatusBadge tone={user.system_role === 'admin' ? 'accent' : 'neutral'} dot={false}>
+                {user.system_role === 'admin' ? 'Admin' : 'User'}
+            </AdminStatusBadge>
+        ),
+    },
+    toc: {
+        render: ({ user, currentTermsVersion }) => {
+            const termsState = resolveUserTermsState(user, currentTermsVersion);
+            return (
+                <>
+                    <AdminStatusBadge tone={getUserTermsStateTone(termsState)}>
+                        {getUserTermsStateLabel(termsState)}
+                    </AdminStatusBadge>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                        {user.terms_accepted_version || 'No accepted version'}
+                    </div>
+                </>
+            );
+        },
+    },
+    last_visit: {
+        className: TIMESTAMP_CELL_CLASS,
+        render: ({ user }) => <AdminRelativeTimestamp value={user.last_sign_in_at} fallback="Never" />,
+    },
+    last_log: {
+        className: TIMESTAMP_CELL_CLASS,
+        render: ({ user }) => <AdminRelativeTimestamp value={user.updated_at} fallback="Never" />,
+    },
+    created: {
+        className: TIMESTAMP_CELL_CLASS,
+        render: ({ user }) => <AdminRelativeTimestamp value={user.created_at} fallback="Unknown" />,
+    },
+};
+
 export interface UsersTableRowHandlers {
     onOpen: (user: AdminUserRecord) => void;
     onSelectedChange: (user: AdminUserRecord, selected: boolean) => void;
@@ -124,13 +243,8 @@ export const UsersTableRow: React.FC<UsersTableRowProps> = ({
     handlers,
 }) => {
     const userName = getUserDisplayName(user);
-    const accountStatus = getUserAccountStatus(user);
-    const activationStatus = resolveActivationStatus(user);
-    const lifecycle = resolveUserLifecycleStatus(user);
-    const subscriptionStatus = resolveUserSubscriptionStatus(user);
     const isHardDeleteEligible = isUserHardDeleteEligible(user);
-    const termsState = resolveUserTermsState(user, currentTermsVersion);
-    const totalTrips = getUserTotalTrips(user);
+    const cellContext: UserCellContext = { user, currentTermsVersion };
     const isVisible = (columnId: UserVisibleColumnId): boolean => visibleColumns.has(columnId);
     const sortedCell = (key: UserSortKey) => cn('px-3 py-2.5', sortKey === key && ADMIN_TABLE_SORTED_CELL_CLASS);
 
@@ -178,104 +292,19 @@ export const UsersTableRow: React.FC<UsersTableRowProps> = ({
                     </button>
                 </TableCell>
             )}
-            {isVisible('status') && (
-                <TableCell className={sortedCell('account_status')}>
-                    <AdminStatusBadge tone={lifecycle.tone}>{lifecycle.label}</AdminStatusBadge>
-                </TableCell>
-            )}
-            {isVisible('login') && (
-                <TableCell className={sortedCell('email')}>
-                    <UserLoginPills user={user} />
-                </TableCell>
-            )}
-            {isVisible('tier') && (
-                <TableCell className={sortedCell('tier_key')}>
-                    <div className="flex flex-col items-start gap-0.5">
-                        <AdminStatusBadge tone={tierTone(user.tier_key)} dot={false}>
-                            {getPlanName(user.tier_key)}
-                        </AdminStatusBadge>
-                        {hasNotableSubscription(subscriptionStatus) && (
-                            <span
-                                className={cn(
-                                    'text-xs',
-                                    subscriptionStatus === 'past_due' || subscriptionStatus === 'canceled_grace'
-                                        ? 'text-amber-700 dark:text-amber-300'
-                                        : 'text-muted-foreground'
-                                )}
-                            >
-                                {getUserSubscriptionStatusLabel(subscriptionStatus)}
-                            </span>
-                        )}
-                    </div>
-                </TableCell>
-            )}
-            {isVisible('subscription') && (
-                <TableCell className={sortedCell('subscription_status')}>
-                    <div className="flex min-w-[132px] flex-col gap-1">
-                        <AdminStatusBadge tone={subscriptionStatusTone(subscriptionStatus)}>
-                            {getUserSubscriptionStatusLabel(subscriptionStatus)}
-                        </AdminStatusBadge>
-                        {user.provider_subscription_id ? (
-                            <span className="max-w-[180px] truncate font-mono text-[11px] text-muted-foreground" data-tooltip={user.provider_subscription_id}>
-                                {user.provider_subscription_id}
-                            </span>
-                        ) : null}
-                    </div>
-                </TableCell>
-            )}
-            {isVisible('trips') && (
-                <TableCell className={sortedCell('total_trips')}>
-                    <div className="text-sm font-medium tabular-nums text-foreground">{totalTrips}</div>
-                    {totalTrips > 0 ? (
-                        <div className="text-xs tabular-nums text-muted-foreground">{getUserActiveTrips(user)} active</div>
-                    ) : isUserTriplessAndNoData(user) ? (
-                        <div className="text-xs text-muted-foreground">Empty account</div>
-                    ) : null}
-                </TableCell>
-            )}
-            {isVisible('activation') && (
-                <TableCell className={sortedCell('activation_status')}>
-                    <AdminStatusBadge tone={activationStatusTone(activationStatus)}>
-                        {getActivationStatusLabel(activationStatus)}
-                    </AdminStatusBadge>
-                </TableCell>
-            )}
-            {isVisible('role') && (
-                <TableCell className={sortedCell('system_role')}>
-                    <AdminStatusBadge tone={user.system_role === 'admin' ? 'accent' : 'neutral'} dot={false}>
-                        {user.system_role === 'admin' ? 'Admin' : 'User'}
-                    </AdminStatusBadge>
-                </TableCell>
-            )}
-            {isVisible('toc') && (
-                <TableCell className={sortedCell('terms_accepted_version')}>
-                    <AdminStatusBadge tone={getUserTermsStateTone(termsState)}>
-                        {getUserTermsStateLabel(termsState)}
-                    </AdminStatusBadge>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                        {user.terms_accepted_version || 'No accepted version'}
-                    </div>
-                </TableCell>
-            )}
-            {isVisible('last_visit') && (
-                <TableCell className={cn(sortedCell('last_sign_in_at'), 'text-sm text-muted-foreground')}>
-                    <AdminRelativeTimestamp value={user.last_sign_in_at} fallback="Never" />
-                </TableCell>
-            )}
-            {isVisible('last_log') && (
-                <TableCell className={cn(sortedCell('updated_at'), 'text-sm text-muted-foreground')}>
-                    <AdminRelativeTimestamp value={user.updated_at} fallback="Never" />
-                </TableCell>
-            )}
-            {isVisible('created') && (
-                <TableCell className={cn(sortedCell('created_at'), 'text-sm text-muted-foreground')}>
-                    <AdminRelativeTimestamp value={user.created_at} fallback="Unknown" />
-                </TableCell>
-            )}
+            {USER_SORTABLE_COLUMNS.map(([columnId, , key]) => {
+                if (!isVisible(columnId)) return null;
+                const cell = USER_COLUMN_CELLS[columnId];
+                return (
+                    <TableCell key={columnId} className={cn(sortedCell(key), cell.className)}>
+                        {cell.render(cellContext)}
+                    </TableCell>
+                );
+            })}
             <TableCell className="px-3 py-2.5 text-end">
                 <UserRowActionsMenu
                     disabled={isSaving}
-                    isDeleted={accountStatus === 'deleted'}
+                    isDeleted={getUserAccountStatus(user) === 'deleted'}
                     userName={userName}
                     tripsLink={buildAdminTripsLinkForUser(user)}
                     onOpenDetails={() => handlers.onOpen(user)}
