@@ -1,6 +1,6 @@
 ---
 id: rel-2026-11-01-planner-fixes-and-codebase-cleanup
-version: v0.214.0
+version: v0.216.0
 title: "Planner fixes and a tidier codebase"
 date: 2026-11-01
 published_at: 2026-11-01T15:28:08Z
