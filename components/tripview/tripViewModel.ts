@@ -209,7 +209,9 @@ export const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
     };
 };
 
-const HEADS_UP_SECTION_REGEX = /### Heads Up\s*([\s\S]*?)(?=\n###\s|\s*$)/i;
+// Only spaces after the heading belong to it: the line break stays in the
+// section, so an empty section still ends at the next `###` heading.
+const HEADS_UP_SECTION_REGEX = /### Heads Up[^\S\n]*([\s\S]*?)(?=\n###\s|\s*$)/i;
 
 export const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
     items.reduce<TripTravelerWarningSummary[]>((warnings, item) => {

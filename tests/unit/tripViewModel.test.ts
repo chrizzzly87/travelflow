@@ -125,6 +125,33 @@ describe('components/tripview/tripViewModel', () => {
                 { cityName: 'Faro', notes: ['Strong sun'] },
             ]);
         });
+        it('does not take the next section as warnings when the Heads Up section is empty', () => {
+            // Regression: an empty Heads Up section followed straight by another
+            // heading used to report that heading and its lines as warnings.
+            const items = [
+                withDescription(
+                    makeCityItem({ id: 'a', title: 'Evora', startDateOffset: 0, duration: 1 }),
+                    '### Heads Up\n\n### Next\nText',
+                ),
+                withDescription(
+                    makeCityItem({ id: 'b', title: 'Sintra', startDateOffset: 1, duration: 1 }),
+                    '### Heads Up\n### Food\n- Travesseiros',
+                ),
+            ];
+            expect(extractTripTravelerWarnings(items)).toEqual([]);
+        });
+
+        it('still stops a filled Heads Up section at the next heading', () => {
+            const items = [
+                withDescription(
+                    makeCityItem({ id: 'a', title: 'Evora', startDateOffset: 0, duration: 1 }),
+                    '### Heads Up\n\n- Closed on Mondays\n\n### Next\nText',
+                ),
+            ];
+            expect(extractTripTravelerWarnings(items)).toEqual([
+                { cityName: 'Evora', notes: ['Closed on Mondays'] },
+            ]);
+        });
     });
 
     describe('buildTripMetaSummary', () => {
