@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CreateTripClassicLabPage } from '../../../pages/CreateTripClassicLabPage';
+import { CreateTripClassicPage } from '../../../pages/CreateTripClassicPage';
 import { CreateTripRoute } from '../../../features/trips/CreateTripRoute';
 export const Route = createFileRoute("/_create/create-trip/labs/classic-card")({ component: CreatePage });
-function CreatePage() { return <CreateTripRoute Page={CreateTripClassicLabPage} />; }
+function CreatePage() { return <CreateTripRoute Page={CreateTripClassicPage} />; }

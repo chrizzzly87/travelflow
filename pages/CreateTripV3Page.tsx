@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from '@/app/navigation';
+import { Link, useLocation, useNavigate } from '@/app/navigation';
+import { useCreateTripRouteSearch } from '@/features/trips/createTripRouteSearch';
+import { useRouteSearchWriter } from '@/app/routing/useRouteSearchWriter';
 import { useTranslation } from 'react-i18next';
 import {
     AirplaneTilt,
@@ -33,6 +35,7 @@ import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { NumberStepper } from '../components/create-trip/NumberStepper';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -352,7 +355,7 @@ type CreateTripV3InitialState = {
 };
 
 const buildCreateTripV3InitialState = (
-    searchParams: URLSearchParams,
+    rawPrefill: string | undefined,
     defaultDates: ReturnType<typeof getDefaultTripDates>
 ): CreateTripV3InitialState => {
     const initialState: CreateTripV3InitialState = {
@@ -389,7 +392,7 @@ const buildCreateTripV3InitialState = (
         prefillMeta: null,
     };
 
-    const raw = searchParams.get('prefill');
+    const raw = rawPrefill;
     if (!raw) return initialState;
 
     const data = decodeTripPrefill(raw);
@@ -581,37 +584,6 @@ const buildPreviewTrip = (params: {
     };
 };
 
-const NumberStepper: React.FC<{
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    onChange: (next: number) => void;
-}> = ({ label, value, min, max, onChange }) => (
-    <div className="rounded-2xl border border-border bg-card p-3 dark:border-border dark:bg-card">
-        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-muted-foreground dark:text-muted-foreground">{label}</div>
-        <div className="mt-3 flex items-center justify-between gap-3">
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value - 1, min, max))}
-                disabled={value <= min}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                -
-            </button>
-            <span className="min-w-[2ch] text-center text-lg font-semibold text-foreground dark:text-foreground">{value}</span>
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value + 1, min, max))}
-                disabled={value >= max}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                +
-            </button>
-        </div>
-    </div>
-);
-
 const StepDots: React.FC<{
     currentStep: number;
     totalSteps: number;
@@ -654,9 +626,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const location = useLocation();
     const { confirm } = useAppDialog();
     const { isAuthenticated, isAnonymous } = useAuth();
-    const [searchParams] = useSearchParams();
+    const { prefill: rawPrefill } = useCreateTripRouteSearch();
+    const writeRouteSearch = useRouteSearchWriter();
     const defaultDates = getDefaultTripDates();
-    const [initialPrefillState] = useState(() => buildCreateTripV3InitialState(searchParams, defaultDates));
+    const [initialPrefillState] = useState(() => buildCreateTripV3InitialState(rawPrefill, defaultDates));
 
     const [wizardBranch, setWizardBranch] = useState<CreateTripWizardBranch | null>(initialPrefillState.wizardBranch);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -1099,12 +1072,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         if (typeof window === 'undefined') return;
         if (!prefillHydrated) return;
 
-        const params = new URLSearchParams(window.location.search);
         if (!hasPersistableState) {
-            if (!params.has('prefill')) return;
-            params.delete('prefill');
-            const nextSearch = params.toString();
-            window.history.replaceState(window.history.state, '', `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`);
+            writeRouteSearch(previous => ({ ...previous, prefill: undefined }));
             return;
         }
 
@@ -1129,10 +1098,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         };
 
         const encoded = encodeTripPrefill(payload);
-        if (params.get('prefill') === encoded) return;
-        params.set('prefill', encoded);
-        const nextSearch = params.toString();
-        window.history.replaceState(window.history.state, '', `${window.location.pathname}?${nextSearch}${window.location.hash}`);
+        // The router sees the draft, so sign-in return paths built from the
+        // current location keep it; a page being left writes nothing (#586).
+        writeRouteSearch(previous => ({ ...previous, prefill: encoded }));
     }, [
         budget,
         draftMeta,
@@ -1150,6 +1118,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         selectedVibes,
         specificCities,
         startDate,
+        writeRouteSearch,
     ]);
 
     const buildVariantUrl = useCallback((path: string) => {
@@ -1645,6 +1614,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="grid gap-3 md:grid-cols-2">
                     <NumberStepper
+                        variant="comfortable"
                         label={t('traveler.settings.groupSize')}
                         value={friendsCount}
                         min={2}
@@ -1671,6 +1641,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         return (
             <div className="grid gap-3 md:grid-cols-3">
                 <NumberStepper
+                    variant="comfortable"
                     label={t('traveler.settings.adults')}
                     value={familyAdults}
                     min={1}
@@ -1678,6 +1649,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     onChange={setFamilyAdults}
                 />
                 <NumberStepper
+                    variant="comfortable"
                     label={t('traveler.settings.children')}
                     value={familyChildren}
                     min={0}
@@ -1685,6 +1657,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     onChange={setFamilyChildren}
                 />
                 <NumberStepper
+                    variant="comfortable"
                     label={t('traveler.settings.babies')}
                     value={familyBabies}
                     min={0}
@@ -1891,6 +1864,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     ) : (
                         <div className="grid gap-4 md:grid-cols-[1fr,1fr]">
                             <NumberStepper
+                                variant="comfortable"
                                 label={t('dates.flexWindow.weeksLabel')}
                                 value={flexWeeks}
                                 min={1}

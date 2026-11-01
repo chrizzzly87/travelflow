@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from '@/app/navigation';
+import { useLocation, useNavigate } from '@/app/navigation';
+import { useCreateTripRouteSearch } from '@/features/trips/createTripRouteSearch';
+import { useRouteSearchWriter } from '@/app/routing/useRouteSearchWriter';
 import {
     AirplaneTilt,
     Bicycle,
@@ -46,6 +48,7 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
+import { NumberStepper } from '../components/create-trip/NumberStepper';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
@@ -132,7 +135,7 @@ import {
     isCreateTripTravelerType,
 } from '../shared/createTripPreferences';
 
-interface CreateTripClassicLabPageProps {
+interface CreateTripClassicPageProps {
     onOpenManager: () => void;
     onTripGenerated: (trip: ITrip) => void;
     onLanguageLoaded?: (lang: AppLanguage) => void;
@@ -381,7 +384,7 @@ type CreateTripClassicInitialState = {
 };
 
 const buildCreateTripClassicInitialState = (
-    searchParams: URLSearchParams,
+    rawPrefill: string | undefined,
     initialRange: ReturnType<typeof getInitialDateRange>
 ): CreateTripClassicInitialState => {
     const initialState: CreateTripClassicInitialState = {
@@ -415,7 +418,7 @@ const buildCreateTripClassicInitialState = (
         prefillMeta: null,
     };
 
-    const raw = searchParams.get('prefill');
+    const raw = rawPrefill;
     if (!raw) return initialState;
 
     const data = decodeTripPrefill(raw);
@@ -572,38 +575,7 @@ const buildCreateTripClassicInitialState = (
     return initialState;
 };
 
-const NumberStepper: React.FC<{
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    onChange: (next: number) => void;
-}> = ({ label, value, min, max, onChange }) => (
-    <div className="rounded-xl border border-border bg-secondary p-3 dark:border-border dark:bg-secondary">
-        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground dark:text-muted-foreground">{label}</div>
-        <div className="mt-2 flex items-center justify-between gap-2">
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value - 1, min, max))}
-                disabled={value <= min}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                <Minus size={14} />
-            </button>
-            <span className="min-w-[2ch] text-center text-sm font-semibold text-foreground dark:text-foreground">{value}</span>
-            <button
-                type="button"
-                onClick={() => onChange(clampNumber(value + 1, min, max))}
-                disabled={value >= max}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
-            >
-                <Plus size={14} />
-            </button>
-        </div>
-    </div>
-);
-
-export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> = ({
+export const CreateTripClassicPage: React.FC<CreateTripClassicPageProps> = ({
     onOpenManager,
     onTripGenerated,
     onLanguageLoaded,
@@ -612,7 +584,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const navigate = useNavigate();
     const location = useLocation();
     const { confirm } = useAppDialog();
-    const [searchParams] = useSearchParams();
+    const { prefill: rawPrefill } = useCreateTripRouteSearch();
+    const writeRouteSearch = useRouteSearchWriter();
     const { isAdmin, isAuthenticated, isAnonymous } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
@@ -621,7 +594,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     useDbSync(onLanguageLoaded);
 
     const initialRange = useMemo(() => getInitialDateRange(), []);
-    const [initialPrefillState] = useState(() => buildCreateTripClassicInitialState(searchParams, initialRange));
+    const [initialPrefillState] = useState(() => buildCreateTripClassicInitialState(rawPrefill, initialRange));
 
     const [query, setQuery] = useState('');
     const [destinations, setDestinations] = useState<string[]>(initialPrefillState.destinations);
@@ -1156,14 +1129,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         if (typeof window === 'undefined') return;
         if (!prefillHydrated) return;
 
-        const currentParams = new URLSearchParams(window.location.search);
-
         if (!hasPersistableState) {
-            if (!currentParams.has('prefill')) return;
-            currentParams.delete('prefill');
-            const nextSearch = currentParams.toString();
-            const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
-            window.history.replaceState(window.history.state, '', nextUrl);
+            writeRouteSearch(previous => ({ ...previous, prefill: undefined }));
             return;
         }
 
@@ -1187,12 +1154,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         };
 
         const encoded = encodeTripPrefill(prefillPayload);
-        if (currentParams.get('prefill') === encoded) return;
-
-        currentParams.set('prefill', encoded);
-        const nextSearch = currentParams.toString();
-        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
-        window.history.replaceState(window.history.state, '', nextUrl);
+        // The router sees the draft, so sign-in return paths built from the
+        // current location keep it; a page being left writes nothing (#586).
+        writeRouteSearch(previous => ({ ...previous, prefill: encoded }));
     }, [
         budget,
         destinations,
@@ -1208,6 +1172,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         roundTrip,
         selectedStyles,
         startDate,
+        writeRouteSearch,
     ]);
 
     useEffect(() => {
