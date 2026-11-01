@@ -38,6 +38,9 @@ vi.mock('../../services/mapRuntimeService', async (importOriginal) => {
 
 vi.mock('../../components/GoogleMapsLoader', () => ({
   useGoogleMaps: () => ({ isLoaded: googleMapsMocks.isLoaded, loadError: undefined, disabled: !googleMapsMocks.isLoaded }),
+  useMapRuntime: () => ({
+    runtime: { effectiveSelection: { locationSearch: runtimeMocks.locationSearch } },
+  }),
 }));
 
 vi.mock('../../services/locationSearchService', async (importOriginal) => {

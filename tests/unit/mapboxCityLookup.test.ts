@@ -43,6 +43,22 @@ describe('shared/mapboxCityLookup', () => {
     expect(url.searchParams.get('access_token')).toBe('pk.test');
   });
 
+  it('encodes the query and clamps the limit to 10', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ features: [] }));
+
+    await searchMapboxCitySuggestions('Zürich & Co', {
+      accessToken: 'pk.test',
+      maxResults: 50,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    const raw = String(fetchImpl.mock.calls[0][0]);
+    expect(raw).not.toContain('Zürich & Co');
+    expect(raw).toContain('q=Z%C3%BCrich+%26+Co');
+    expect(new URL(raw).searchParams.get('q')).toBe('Zürich & Co');
+    expect(new URL(raw).searchParams.get('limit')).toBe('10');
+  });
+
   it('maps a feature to a CityLookupSuggestion', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ features: [capeTownFeature] }));
 

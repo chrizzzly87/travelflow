@@ -67,11 +67,6 @@ export const mapSearchByTextPlacesToHotelResults = (
     .slice(0, 5);
 };
 
-/** True when city search runs on Mapbox Geocoding, so it needs no Google script. */
-export const isMapboxCitySearchActive = (): boolean => (
-  getActiveLocationSearchImplementation() === 'mapbox'
-);
-
 export const searchCitySuggestions = async (
   query: string,
   options?: { language?: AppLanguage; maxResults?: number },

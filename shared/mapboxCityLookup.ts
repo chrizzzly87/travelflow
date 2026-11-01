@@ -59,7 +59,7 @@ export const searchMapboxCitySuggestions = async (
   const params = new URLSearchParams({
     q: trimmedQuery,
     types: 'place',
-    limit: String(Math.max(1, options.maxResults ?? 5)),
+    limit: String(Math.min(10, Math.max(1, options.maxResults ?? 5))),
   });
   if (options.language) params.set('language', options.language);
   params.set('access_token', accessToken);
