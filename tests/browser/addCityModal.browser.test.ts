@@ -14,14 +14,40 @@ const googleMapsMocks = vi.hoisted(() => ({
   isLoaded: true,
 }));
 
-vi.mock('../../components/GoogleMapsLoader', () => ({
-  useGoogleMaps: () => ({ isLoaded: googleMapsMocks.isLoaded }),
+const runtimeMocks = vi.hoisted(() => ({
+  locationSearch: 'google' as 'google' | 'mapbox' | 'none',
 }));
 
-vi.mock('../../services/locationSearchService', () => ({
-  searchCitySuggestions: locationSearchMocks.searchCitySuggestions,
-  resolveCitySuggestion: locationSearchMocks.resolveCitySuggestion,
+vi.mock('../../services/mapRuntimeService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/mapRuntimeService')>();
+  return {
+    ...actual,
+    getMapboxAccessToken: () => 'pk.test-token',
+    getClientMapRuntimeResolution: () => {
+      const resolution = actual.getClientMapRuntimeResolution();
+      return {
+        ...resolution,
+        effectiveSelection: {
+          ...resolution.effectiveSelection,
+          locationSearch: runtimeMocks.locationSearch,
+        },
+      };
+    },
+  };
+});
+
+vi.mock('../../components/GoogleMapsLoader', () => ({
+  useGoogleMaps: () => ({ isLoaded: googleMapsMocks.isLoaded, loadError: undefined, disabled: !googleMapsMocks.isLoaded }),
 }));
+
+vi.mock('../../services/locationSearchService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/locationSearchService')>();
+  return {
+    ...actual,
+    searchCitySuggestions: locationSearchMocks.searchCitySuggestions,
+    resolveCitySuggestion: locationSearchMocks.resolveCitySuggestion,
+  };
+});
 
 const renderAddCityModal = (props?: {
   onAdd?: (name: string, lat: number, lng: number) => void;
@@ -35,6 +61,7 @@ const renderAddCityModal = (props?: {
 describe('AddCityModal', () => {
   beforeEach(() => {
     googleMapsMocks.isLoaded = true;
+    runtimeMocks.locationSearch = 'google';
     locationSearchMocks.searchCitySuggestions.mockResolvedValue([
       {
         id: 'kyoto-japan',
@@ -153,5 +180,65 @@ describe('AddCityModal', () => {
 
     expect(await screen.findByText('Map services are still loading. Please try again in a moment.')).toBeInTheDocument();
     expect(locationSearchMocks.resolveCitySuggestion).not.toHaveBeenCalled();
+  });
+  describe('with Mapbox city search and no Google', () => {
+    const capeTown = {
+      type: 'Feature',
+      properties: {
+        mapbox_id: 'cape-town',
+        name: 'Kapstadt',
+        full_address: 'Kapstadt, Westkap, Südafrika',
+        coordinates: { latitude: -33.92, longitude: 18.42 },
+        context: { country: { name: 'Südafrika', country_code: 'za' } },
+      },
+    };
+
+    beforeEach(async () => {
+      googleMapsMocks.isLoaded = false;
+      runtimeMocks.locationSearch = 'mapbox';
+      const actual = await vi.importActual<typeof import('../../services/locationSearchService')>(
+        '../../services/locationSearchService',
+      );
+      locationSearchMocks.searchCitySuggestions.mockImplementation(actual.searchCitySuggestions);
+      locationSearchMocks.resolveCitySuggestion.mockImplementation(actual.resolveCitySuggestion);
+      expect((window as unknown as { google?: unknown }).google).toBeUndefined();
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ features: [capeTown] }),
+      }));
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('adds a city through Mapbox with no Google loaded', async () => {
+      const onAdd = vi.fn();
+      renderAddCityModal({ onAdd });
+
+      expect(screen.queryByText('Loading Map services…')).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Search City'), { target: { value: 'Kapstadt' } });
+      const suggestion = await screen.findByRole('button', { name: /kapstadt/i });
+      fireEvent.click(suggestion);
+
+      expect(onAdd).toHaveBeenCalledWith('Kapstadt', -33.92, 18.42);
+      const requested = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
+      expect(requested.every((url) => url.startsWith('https://api.mapbox.com/'))).toBe(true);
+    });
+
+    it('resolves a typed name on Enter', async () => {
+      const onAdd = vi.fn();
+      renderAddCityModal({ onAdd });
+      locationSearchMocks.searchCitySuggestions.mockResolvedValue([]);
+
+      fireEvent.change(screen.getByLabelText('Search City'), { target: { value: 'Kapstadt' } });
+      fireEvent.keyDown(screen.getByLabelText('Search City'), { key: 'Enter' });
+
+      await waitFor(() => {
+        expect(onAdd).toHaveBeenCalledWith('Kapstadt', -33.92, 18.42);
+      });
+    });
   });
 });

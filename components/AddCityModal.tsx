@@ -3,7 +3,7 @@ import { Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { AppModal } from './ui/app-modal';
 import { getStoredAppLanguage } from '../utils';
-import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../services/locationSearchService';
+import { isMapboxCitySearchActive, resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../services/locationSearchService';
 
 interface AddCityModalProps {
     isOpen: boolean;
@@ -103,7 +103,9 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     const cityInputId = 'add-city-input';
     const mapLanguage = getStoredAppLanguage();
     
-    const { isLoaded } = useGoogleMaps();
+    const { isLoaded: googleLoaded } = useGoogleMaps();
+    // Mapbox city search needs no Google script, so it is ready without `isLoaded`.
+    const isLoaded = googleLoaded || isMapboxCitySearchActive();
 
     const resetModalState = useCallback(() => {
         lookupRequestIdRef.current += 1;
