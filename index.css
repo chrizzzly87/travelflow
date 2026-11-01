@@ -1104,7 +1104,9 @@ h6,
   animation: clouds-scroll 25s linear infinite;
 }
 
-.plane-window-static-clouds {
+/* Shared with the 404 porthole, which draws the same sky without WebGL. */
+.plane-window-static-clouds,
+.not-found-window-clouds {
   --cloud-puff: radial-gradient(
     ellipse 38% 26% at 50% 60%,
     rgba(255, 255, 255, 0.95) 0%,
@@ -1176,7 +1178,8 @@ h6,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .plane-window-static-clouds {
+  .plane-window-static-clouds,
+  .not-found-window-clouds {
     animation: none;
   }
 
@@ -1202,6 +1205,32 @@ h6,
 .plane-window-clouds-mask {
   inset: 17% 17% 16% 17%;
   border-radius: 42%;
+}
+
+/* The 404 porthole: the hero's frame and glass over a static sky. Same
+   opening geometry as .plane-window-clouds-mask; the hero's shade and its
+   theme variables are deliberately not shared. */
+.not-found-window-sky {
+  inset: 17% 17% 16% 17%;
+  border-radius: 42%;
+  background: linear-gradient(to bottom, #5cadf4 0%, #94ccfb 33%, #c8e6fb 45%, #ffffff 62%);
+}
+
+.not-found-window-frame {
+  -webkit-user-drag: none;
+}
+
+.dark .not-found-window-sky {
+  background: linear-gradient(to bottom, #1e3a5f 0%, #31598a 38%, #6f8fb5 58%, #a9bfd8 78%);
+}
+
+.dark .not-found-window-clouds {
+  opacity: 0.55;
+}
+
+/* Matches the hero frame at rest in dark mode (1 - FRAME_DIM). */
+.dark .not-found-window-frame {
+  filter: brightness(0.72);
 }
 
 
