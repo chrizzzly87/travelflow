@@ -1,11 +1,18 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getDefaultCreateTripModel } from '../../config/aiModelCatalog';
 import {
   applyAiRuntimeSettings,
   createRuntimeModelPlaceholder,
   normalizeAiRuntimeSettings,
+  loadPublicAiRuntimeSettings,
   resetAiRuntimeSettingsCacheForTests,
 } from '../../services/aiRuntimeSettingsService';
+import { getRuntimeMapPresetSnapshot, setRuntimeMapPreset } from '../../services/mapRuntimeService';
+
+const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
+vi.mock('../../services/supabaseClient', () => ({
+  supabase: { rpc: rpcMock },
+}));
 
 describe('aiRuntimeSettingsService', () => {
   afterEach(() => resetAiRuntimeSettingsCacheForTests());
@@ -65,5 +72,16 @@ describe('aiRuntimeSettingsService', () => {
   it('rejects placeholders for non-OpenRouter providers', () => {
     expect(createRuntimeModelPlaceholder('openai:gpt-5.4')).toBeNull();
     expect(createRuntimeModelPlaceholder('not-an-id')).toBeNull();
+  });
+
+  it('leaves the map preset to the env default when the settings RPC fails', async () => {
+    setRuntimeMapPreset('mapbox_all');
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: 'boom' } });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await loadPublicAiRuntimeSettings();
+
+    expect(getRuntimeMapPresetSnapshot()).toBeNull();
+    warn.mockRestore();
   });
 });
