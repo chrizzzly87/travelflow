@@ -1717,19 +1717,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
          * logged or cached, because nothing failed.
          */
         const drawStraightRoutes = () => {
-             for (let i = 0; i < cities.length - 1; i++) {
-                 if (!isEffectActive()) return;
-                 const start = cities[i];
-                 const end = cities[i + 1];
-                 if (!start.coordinates || !end.coordinates) continue;
-                 drawFallbackLegVisual({
-                     startCoordinates: start.coordinates,
-                     endCoordinates: end.coordinates,
-                     mode: normalizeTransportMode(findTravelBetweenCities(items, start, end)?.transportMode),
-                     color: resolveMapColor(start.color),
-                     includeTransportMarker: true,
-                 });
-             }
+            for (let i = 0; i < cities.length - 1; i++) {
+                if (!isEffectActive()) return;
+                const start = cities[i];
+                const end = cities[i + 1];
+                if (!start.coordinates || !end.coordinates) continue;
+                drawFallbackLegVisual({
+                    startCoordinates: start.coordinates,
+                    endCoordinates: end.coordinates,
+                    mode: normalizeTransportMode(findTravelBetweenCities(items, start, end)?.transportMode),
+                    color: resolveMapColor(start.color),
+                    includeTransportMarker: true,
+                });
+            }
         };
 
         // 3. Draw Routes
@@ -2134,16 +2134,27 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
 
         const liveRect = mapContainerRef.current?.getBoundingClientRect();
-        tripCamera.fitBounds([
-            { lat: camera.bounds.south, lng: camera.bounds.west },
-            { lat: camera.bounds.north, lng: camera.bounds.east },
-        ], resolveMapViewportPadding({
+        const cityPadding = resolveMapViewportPadding({
             provider: tripMapProvider,
             mapDockMode,
             mapViewportSize: liveRect && liveRect.width > 0 && liveRect.height > 0
                 ? { width: liveRect.width, height: liveRect.height }
                 : mapViewportSize,
-        }));
+        });
+        const googleMap = isStandaloneMapbox ? null : googleMapRef.current as google.maps.Map | null;
+        if (googleMap) {
+            // Google keeps its own corner-to-corner bounds; the antimeridian arc
+            // in the camera adapter is a Mapbox concern.
+            googleMap.fitBounds(new window.google.maps.LatLngBounds(
+                { lat: camera.bounds.south, lng: camera.bounds.west },
+                { lat: camera.bounds.north, lng: camera.bounds.east },
+            ), cityPadding);
+        } else {
+            tripCamera.fitBounds([
+                { lat: camera.bounds.south, lng: camera.bounds.west },
+                { lat: camera.bounds.north, lng: camera.bounds.east },
+            ], cityPadding);
+        }
 
         // `fitBounds` is free to land anywhere, and a compact city will happily
         // take it to street level. The clamp runs once the fit has settled, and
@@ -2157,6 +2168,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return stopListeningForIdle;
     }, [
         cities,
+        isStandaloneMapbox,
         items,
         mapDockMode,
         mapInitialized,
@@ -2358,6 +2370,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!camera) return;
         const position = { lat: userLocationLat, lng: userLocationLng };
         const check = () => {
+            // Google has no bounds before its first render: unknown is not "out of view".
+            const googleMap = isStandaloneMapboxRef.current ? null : googleMapRef.current as google.maps.Map | null;
+            if (googleMap && !googleMap.getBounds?.()) return;
             setIsUserLocationInView(camera.containsPoint(position));
         };
         check();

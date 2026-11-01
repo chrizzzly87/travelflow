@@ -5,6 +5,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 
 import { ItineraryMap } from '../../components/ItineraryMap';
 import { useGoogleMaps, useMapRuntime } from '../../components/GoogleMapsLoader';
+import { ROUTE_CACHE } from '../../components/maps/routeCache';
 import { getTripMapProviderTuning } from '../../components/maps/tripMapProviderTuning';
 import { resolveMapRuntime } from '../../shared/mapRuntime';
 import type { ITimelineItem } from '../../types';
@@ -141,6 +142,9 @@ describe('components/ItineraryMap standalone Mapbox (mapbox_all)', () => {
   });
 
   it('draws one straight line per leg and never imports Google routes', async () => {
+    const routeCacheSet = vi.spyOn(ROUTE_CACHE, 'set');
+    const storageSet = vi.spyOn(Storage.prototype, 'setItem');
+    const warn = vi.spyOn(console, 'warn');
     renderMap([PARIS, BERLIN, VIENNA]);
     await waitForMapReady();
 
@@ -157,6 +161,39 @@ describe('components/ItineraryMap standalone Mapbox (mapbox_all)', () => {
     ]);
     expect(routeServiceMocks.loadGoogleRouteRuntime).not.toHaveBeenCalled();
     expect(routeServiceMocks.computeGoogleRouteLeg).not.toHaveBeenCalled();
+    // Nothing failed, so nothing is cached, persisted or warned about.
+    expect(routeCacheSet).not.toHaveBeenCalled();
+    expect(storageSet.mock.calls.filter(([key]) => key === 'tf_route_cache_v1')).toEqual([]);
+    expect(warn).not.toHaveBeenCalled();
+    expect(googleAccessCount).toBe(0);
+  });
+
+  it('shows the error overlay, not "Loading map…", when Mapbox fails to load', async () => {
+    FakeMapboxMap.autoLoad = false;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    renderMap([PARIS, BERLIN]);
+
+    await waitFor(() => expect(FakeMapboxMap.instances).toHaveLength(1));
+    act(() => {
+      FakeMapboxMap.latest()!.emit('error', { error: { status: 401, message: 'Unauthorized' } });
+    });
+
+    expect(await screen.findByText('Error loading map: Unauthorized')).toBeInTheDocument();
+    expect(screen.queryByText('Loading map…')).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith('Mapbox map failed in standalone mode', expect.anything());
+    expect(googleAccessCount).toBe(0);
+  });
+
+  it('skips the Google Geocoder focus query when location search is not Google', async () => {
+    render(React.createElement(ItineraryMap, {
+      items: [],
+      focusLocationQuery: 'France || Italy',
+      onLayoutChange: vi.fn(),
+    }));
+    await waitForMapReady();
+
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+    expect(FakeMapboxMap.latest()!.cameraCallCount).toBe(0);
     expect(googleAccessCount).toBe(0);
   });
 

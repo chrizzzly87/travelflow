@@ -16,6 +16,8 @@ interface FakeCameraTarget {
 
 export class FakeMapboxMap {
   static instances: FakeMapboxMap[] = [];
+  /** Off to keep a map stuck before its first load, e.g. to fail it there. */
+  static autoLoad = true;
 
   readonly options: Record<string, unknown>;
   readonly container: HTMLElement;
@@ -40,6 +42,7 @@ export class FakeMapboxMap {
     this.center = { lng: center[0], lat: center[1] };
     this.zoom = typeof options.zoom === 'number' ? options.zoom : 0;
     FakeMapboxMap.instances.push(this);
+    if (!FakeMapboxMap.autoLoad) return;
     window.setTimeout(() => {
       if (this.removed) return;
       this.styleLoaded = true;
@@ -54,6 +57,7 @@ export class FakeMapboxMap {
 
   static reset(): void {
     FakeMapboxMap.instances.length = 0;
+    FakeMapboxMap.autoLoad = true;
   }
 
   /** Every camera call, in one list, so a test can assert "none at all". */
