@@ -23,11 +23,16 @@ const renderSites = (source: string, component: string): string[] => {
 
 describe('AI launcher clearance reaches every corner card', () => {
   const tripView = read('components/TripView.tsx');
+  const modalLayer = read('components/tripview/TripViewModalLayer.tsx');
 
-  it.each(['TripViewHudOverlays', 'TripViewStatusBanners', 'TripViewModalLayer'])(
-    'every <%s> in TripView passes isAgentLauncherVisible',
-    (component) => {
-      const sites = renderSites(tripView, component);
+  it.each([
+    ['TripViewStatusBanners', 'TripView', tripView],
+    ['TripViewModalLayer', 'TripView', tripView],
+    ['TripViewHudOverlays', 'TripViewModalLayer', modalLayer],
+  ])(
+    'every <%s> in %s passes isAgentLauncherVisible',
+    (component, _owner, source) => {
+      const sites = renderSites(source, component);
       expect(sites.length).toBeGreaterThan(0);
       for (const site of sites) {
         expect(site).toMatch(/\bisAgentLauncherVisible=\{/);
@@ -36,7 +41,7 @@ describe('AI launcher clearance reaches every corner card', () => {
   );
 
   it('TripViewModalLayer forwards the flag instead of swallowing it', () => {
-    const [hud] = renderSites(tripView, 'TripViewHudOverlays');
+    const [hud] = renderSites(modalLayer, 'TripViewHudOverlays');
     expect(hud).toMatch(/isAgentLauncherVisible=\{isAgentLauncherVisible\}/);
   });
 });
