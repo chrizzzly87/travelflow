@@ -28,7 +28,7 @@ export const setRuntimeMapPreset = (preset: MapRuntimePreset | null): void => {
   const next = isMapRuntimePreset(preset) ? preset : null;
   if (next === runtimeMapPreset) return;
   runtimeMapPreset = next;
-  runtimeMapPresetListeners.forEach((listener) => listener());
+  [...runtimeMapPresetListeners].forEach((listener) => listener());
 };
 
 /** The administrator's preset, or null when none was loaded (the env default applies). */
@@ -144,7 +144,7 @@ export const setMapRendererChoice = (choice: MapRendererChoice): void => {
   const next: MapRendererChoice = choice === 'google' || choice === 'mapbox' ? choice : 'auto';
   if (next === rendererChoice) return;
   rendererChoice = next;
-  rendererChoiceListeners.forEach((listener) => listener());
+  [...rendererChoiceListeners].forEach((listener) => listener());
 };
 
 export const subscribeToMapRendererChoice = (listener: () => void): (() => void) => {

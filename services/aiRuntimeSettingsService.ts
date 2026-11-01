@@ -121,6 +121,7 @@ export const createRuntimeModelPlaceholder = (id: string): AiModelCatalogItem | 
 export const applyAiRuntimeSettings = (
     settings: AiRuntimeSettings,
     catalogModels: AiModelCatalogItem[] = [],
+    options: { applyMapPreset?: boolean } = {},
 ): AiRuntimeSettings => {
     registerRuntimeAiModels(catalogModels);
     if (!getAiModelById(settings.defaultModelId)) {
@@ -129,7 +130,7 @@ export const applyAiRuntimeSettings = (
     }
     setRuntimeDefaultCreateTripModelId(settings.defaultModelId);
     setRuntimeDefaultMapStyle(settings.mapDefaultStyle);
-    setRuntimeMapPreset(settings.mapRuntimePreset);
+    if (options.applyMapPreset !== false) setRuntimeMapPreset(settings.mapRuntimePreset);
     return settings;
 };
 
@@ -140,7 +141,7 @@ export const loadPublicAiRuntimeSettings = async (): Promise<AiRuntimeSettings> 
     runtimeSettingsPromise = (async () => {
         // A failed or missing load must not force Google: leave the preset to the env default.
         const applyDefaults = (): AiRuntimeSettings => {
-            applyAiRuntimeSettings(DEFAULT_AI_RUNTIME_SETTINGS);
+            applyAiRuntimeSettings(DEFAULT_AI_RUNTIME_SETTINGS, [], { applyMapPreset: false });
             setRuntimeMapPreset(null);
             return DEFAULT_AI_RUNTIME_SETTINGS;
         };
