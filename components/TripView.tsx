@@ -121,7 +121,6 @@ import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession }
 import {
     getAsyncTripGenerationStallRecoveryAction,
     shouldUseRemoteTripForAsyncStallRecovery,
-    shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
 } from '../services/tripGenerationPollingService';
 import {
@@ -136,6 +135,7 @@ import { buildTripAgentContextRefs } from '../shared/tripAgentContextRefs';
 import { lazyWithRecovery } from './tripview/lazyWithRecovery';
 import { TripViewModalLayer, loadTripInfoModalModule } from './tripview/TripViewModalLayer';
 import { useTripCalendarExport } from './tripview/useTripCalendarExport';
+import { useTripGenerationPolling } from './tripview/useTripGenerationPolling';
 import {
     DEFAULT_DETAILS_WIDTH,
     GENERATION_PROGRESS_MESSAGES,
@@ -154,8 +154,6 @@ import {
     RESIZER_WIDTH,
     TIMELINE_ZOOM_LEVEL_PRESETS,
     TRIP_AGENT_PANEL_INSET_PX,
-    TRIP_GENERATION_POLL_INTERVAL_MS,
-    TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS,
     VERTICAL_TIMELINE_AUTO_FIT_PADDING,
     VIEW_TRANSITION_DEBUG_EVENT,
     buildTripMetaSummary,
@@ -489,83 +487,17 @@ const useTripViewRender = ({
         }), pendingAuthQueueRequestId),
         [location.hash, location.pathname, location.search, pendingAuthQueueRequestId],
     );
-    const shouldPollGenerationState = shouldPollTripGenerationState(trip, generationNowMs);
-    useEffect(() => {
-        if (!shouldPollGenerationState) return undefined;
-        const timer = window.setInterval(() => {
-            setGenerationNowMs(Date.now());
-        }, 1_000);
-        return () => window.clearInterval(timer);
-    }, [shouldPollGenerationState, trip.id]);
-    useEffect(() => {
-        if (!DB_ENABLED) return undefined;
-        if (!shouldPollGenerationState) return undefined;
-        if (connectivitySnapshot.state === 'offline') return undefined;
-        if (tripAccess?.source === 'public_read') return undefined;
-
-        let cancelled = false;
-        let inFlight = false;
-        const poll = async () => {
-            if (cancelled || inFlight) return;
-            inFlight = true;
-            try {
-                const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
-                if (cancelled || !remote?.trip) return;
-
-                const remoteTrip = remote.trip;
-                const localTrip = tripRef.current;
-                if (shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())) {
-                    onUpdateTripRef.current(remoteTrip, { preserveUpdatedAt: true });
-                }
-            } finally {
-                inFlight = false;
-            }
-        };
-
-        void poll();
-        const timer = window.setInterval(() => {
-            void poll();
-        }, TRIP_GENERATION_POLL_INTERVAL_MS);
-        return () => {
-            cancelled = true;
-            window.clearInterval(timer);
-        };
-    }, [
-        connectivitySnapshot.state,
-        shouldPollGenerationState,
-        trip.id,
-        tripAccess?.source,
-    ]);
-    useEffect(() => {
-        if (!DB_ENABLED) return undefined;
-        if (connectivitySnapshot.state === 'offline') return undefined;
-        if (tripAccess?.source === 'public_read') return undefined;
-        if (generationState !== 'queued') return undefined;
-        if (latestGenerationAttemptOrchestration !== 'async_worker') return undefined;
-
-        let cancelled = false;
-        const kickWorker = () => {
-            if (cancelled) return;
-            void triggerTripGenerationWorker({
-                tripId: trip.id,
-                limit: 1,
-                source: 'trip_view_generation_poll_nudge',
-            });
-        };
-
-        kickWorker();
-        const timer = window.setInterval(kickWorker, TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS);
-        return () => {
-            cancelled = true;
-            window.clearInterval(timer);
-        };
-    }, [
-        connectivitySnapshot.state,
+    useTripGenerationPolling({
+        trip,
+        generationNowMs,
+        setGenerationNowMs,
         generationState,
         latestGenerationAttemptOrchestration,
-        trip.id,
-        tripAccess?.source,
-    ]);
+        connectivityState: connectivitySnapshot.state,
+        tripAccessSource: tripAccess?.source,
+        tripRef,
+        onUpdateTripRef,
+    });
     useEffect(() => () => {
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = null;
