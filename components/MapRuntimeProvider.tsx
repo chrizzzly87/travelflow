@@ -6,11 +6,19 @@ import {
   getClientMapRuntimeResolution,
   getMapRendererChoice,
   getMapboxAccessToken,
+  getRuntimeMapPresetSnapshot,
   readMapRuntimeAdminOverride,
   setMapRendererChoice,
   subscribeToMapRendererChoice,
+  subscribeToRuntimeMapPreset,
 } from '../services/mapRuntimeService';
-import { resolveMapRuntime, type MapRuntimeResolution } from '../shared/mapRuntime';
+import { loadPublicAiRuntimeSettings } from '../services/aiRuntimeSettingsService';
+import {
+  isRendererLockedByPreset,
+  resolveMapRuntime,
+  usesGoogle,
+  type MapRuntimeResolution,
+} from '../shared/mapRuntime';
 import type { MapRendererChoice } from '../types';
 
 type GoogleMapsWindow = Window & typeof globalThis & {
@@ -20,7 +28,12 @@ type GoogleMapsWindow = Window & typeof globalThis & {
 interface GoogleMapsContextType {
   isLoaded: boolean;
   loadError: Error | null;
+  /** True when the runtime uses no Google service, so no Google script is loaded. */
+  disabled: boolean;
 }
+
+/** How long the provider waits for the admin preset before treating it as settled. */
+export const MAP_PRESET_SETTLE_TIMEOUT_MS = 3000;
 
 interface MapRuntimeContextType {
   runtime: MapRuntimeResolution;
@@ -37,6 +50,13 @@ interface MapRuntimeContextType {
    */
   setRendererChoice: (choice: MapRendererChoice) => void;
   rendererChoice: MapRendererChoice;
+  /** The preset is `mapbox_all`: the traveller's renderer choice is ignored. */
+  rendererLocked: boolean;
+  /**
+   * The administrator's preset has loaded (or failed, or timed out). Until then
+   * the resolution may still change, so Google is not mounted.
+   */
+  presetSettled: boolean;
 }
 
 const createFallbackMapRuntimeResolution = (): MapRuntimeResolution => resolveMapRuntime({
@@ -47,12 +67,14 @@ const createFallbackMapRuntimeResolution = (): MapRuntimeResolution => resolveMa
   },
 });
 
-const GoogleMapsContext = createContext<GoogleMapsContextType>({ isLoaded: false, loadError: null });
+const GoogleMapsContext = createContext<GoogleMapsContextType>({ isLoaded: false, loadError: null, disabled: false });
 const MapRuntimeContext = createContext<MapRuntimeContextType>({
   runtime: createFallbackMapRuntimeResolution(),
   mapboxAccessToken: '',
   setRendererChoice: setMapRendererChoice,
   rendererChoice: 'auto',
+  rendererLocked: false,
+  presetSettled: false,
 });
 
 export const useGoogleMaps = () => useContext(GoogleMapsContext);
@@ -70,6 +92,8 @@ export const useMapRuntime = () => useContext(MapRuntimeContext);
 interface MapsApiHostContextType {
   apiKey: string;
   isApiKeyValid: boolean;
+  disabled: boolean;
+  presetSettled: boolean;
   language: string;
   providerKey: string;
   reportLoaded: () => void;
@@ -122,6 +146,12 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<Error | null>(null);
+  const [presetSettled, setPresetSettled] = useState(false);
+  const presetSnapshot = useSyncExternalStore(
+    subscribeToRuntimeMapPreset,
+    getRuntimeMapPresetSnapshot,
+    () => null,
+  );
   /**
    * Read from the module store rather than from local state, so a component
    * that renders this provider inside its own JSX still sees the choice it
@@ -147,14 +177,20 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
     if (adminOverride) {
       return getClientMapRuntimeResolution({ override: adminOverride, overrideSource: 'cookie' });
     }
-    if (rendererChoice === 'auto') {
-      return getClientMapRuntimeResolution({ override: null });
+    const presetResolution = getClientMapRuntimeResolution({ override: null });
+    // `mapbox_all` fixes the renderer, so a stored traveller choice cannot pull Google back in.
+    if (rendererChoice === 'auto' || isRendererLockedByPreset(presetResolution.requestedPreset)) {
+      return presetResolution;
     }
     return getClientMapRuntimeResolution({
       override: { selection: { renderer: rendererChoice } },
       overrideSource: 'query',
     });
-  }, [rendererChoice]);
+    // The preset store is read inside the resolution, so its snapshot is a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rendererChoice, presetSnapshot]);
+  const rendererLocked = isRendererLockedByPreset(runtime.requestedPreset);
+  const disabled = !usesGoogle(runtime.effectiveSelection);
   const mapboxAccessToken = useMemo(() => getMapboxAccessToken().trim(), []);
   const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
   const requestedMapLanguage = MAPS_LANGUAGE_MAP[requestedLanguage] ?? 'en';
@@ -163,6 +199,24 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
   const providerKey = `${requestedMapLanguage}:${apiKey}`;
 
   useEffect(() => {
+    let cancelled = false;
+    const settle = () => {
+      if (!cancelled) setPresetSettled(true);
+    };
+    loadPublicAiRuntimeSettings().then(settle, settle);
+    const timer = setTimeout(settle, MAP_PRESET_SETTLE_TIMEOUT_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (disabled) {
+      setIsLoaded(false);
+      setLoadError(null);
+      return;
+    }
     if (!isApiKeyValid) {
       setIsLoaded(false);
       setLoadError(new Error('Google Maps API key is missing or invalid for this deploy context'));
@@ -170,10 +224,10 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
     }
     setIsLoaded(false);
     setLoadError(null);
-  }, [isApiKeyValid, providerKey]);
+  }, [disabled, isApiKeyValid, providerKey]);
 
   useEffect(() => {
-    if (!isApiKeyValid || typeof window === 'undefined') return;
+    if (disabled || !isApiKeyValid || typeof window === 'undefined') return;
     const mapsWindow = window as GoogleMapsWindow;
     const previousAuthFailure = mapsWindow.gm_authFailure;
     mapsWindow.gm_authFailure = () => {
@@ -184,7 +238,7 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
     return () => {
       mapsWindow.gm_authFailure = previousAuthFailure;
     };
-  }, [isApiKeyValid]);
+  }, [disabled, isApiKeyValid]);
 
   const handleProviderLoad = useCallback(() => {
     setIsLoaded(true);
@@ -205,16 +259,25 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
     mapboxAccessToken,
     rendererChoice,
     setRendererChoice: setMapRendererChoice,
-  }), [mapboxAccessToken, rendererChoice, runtime]);
+    rendererLocked,
+    presetSettled,
+  }), [mapboxAccessToken, presetSettled, rendererChoice, rendererLocked, runtime]);
+
+  const googleContextValue = useMemo<GoogleMapsContextType>(
+    () => ({ isLoaded, loadError, disabled }),
+    [disabled, isLoaded, loadError],
+  );
 
   const mapsApiHostValue = useMemo<MapsApiHostContextType>(() => ({
     apiKey,
     isApiKeyValid,
+    disabled,
+    presetSettled,
     language: requestedMapLanguage,
     providerKey,
     reportLoaded: handleProviderLoad,
     reportError: handleProviderError,
-  }), [apiKey, handleProviderError, handleProviderLoad, isApiKeyValid, providerKey, requestedMapLanguage]);
+  }), [apiKey, disabled, handleProviderError, handleProviderLoad, isApiKeyValid, presetSettled, providerKey, requestedMapLanguage]);
 
   /*
    * `children` sits at one fixed depth, always.
@@ -228,7 +291,7 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
    */
   return (
     <MapRuntimeContext.Provider value={runtimeContextValue}>
-      <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
+      <GoogleMapsContext.Provider value={googleContextValue}>
         <MapsApiHostContext.Provider value={mapsApiHostValue}>
           {children}
         </MapsApiHostContext.Provider>
@@ -243,12 +306,15 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
  * Render this immediately around a Google map component, never around
  * long-lived UI: it is the one place whose children are re-parented when the
  * script starts loading, so anything holding state must stay outside it.
- * Nothing defers here — deferral is decided by whether this is rendered at all.
+ * Deferral is decided by whether this is rendered at all. It also renders its
+ * children bare, with no script, until the admin preset has settled and while
+ * the runtime uses no Google service.
  */
 export const GoogleMapsApiGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const host = useContext(MapsApiHostContext);
 
-  if (!host || !host.isApiKeyValid) return <>{children}</>;
+  // Bare until the admin preset is known, and for good when nothing uses Google.
+  if (!host || host.disabled || !host.presetSettled || !host.isApiKeyValid) return <>{children}</>;
 
   return (
     <APIProvider
