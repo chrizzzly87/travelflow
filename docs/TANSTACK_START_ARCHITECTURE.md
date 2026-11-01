@@ -74,6 +74,16 @@ native route matching.
   stale-while-revalidate while browsers revalidate. This is only safe because public
   SSR reads no cookies or request headers; adding such a read requires a
   `Netlify-Vary` or opting the page out.
+- Public profiles (`/u/$username`, unprefixed) are a `_public` leaf (#607). Its loader
+  calls `getPublicProfilePageData` (`src/server/publicProfile.ts`), which validates the
+  handle and reads as an anonymous visitor through `services/publicProfileServerService.ts`:
+  only the fields in `shared/publicProfile.ts`, private profiles masked to first name,
+  last initial and handle, and only trips shown on the profile. The page renders from
+  loader data; owner and admin extras (own private profile, edit button, visibility
+  badge) wait for `useHydrated` and the browser session. The leaf `head` sets title,
+  description, Open Graph tags and `noindex`; its `headers` use the shorter
+  `publicProfileDocumentCacheHeaders` (60 s plus 300 s stale-while-revalidate) and
+  `no-store` when the backend failed. `/u/$username/stamps` stays client-only.
 - The trip area's `pendingComponent` is the planner-shaped `TripAreaLoadingShell`,
   excluded from code splitting, so a server-rendered trip/share/example document
   already has the planner's shape. It reads stored pane sizes only after hydration.

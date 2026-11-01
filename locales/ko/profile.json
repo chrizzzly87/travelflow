@@ -127,6 +127,7 @@
     "privateDescription": "이 여행자는 현재 공개 프로필을 숨겨두었습니다.",
     "notFoundTitle": "프로필을 찾을 수 없습니다",
     "notFoundDescription": "이 핸들에 해당하는 프로필을 찾지 못했습니다.",
+    "metaDescription": "TravelFlow에서 {name}님의 공개 여행과 여행 하이라이트를 살펴보세요.",
     "ctaExploreInspirations": "영감 둘러보기",
     "ctaBackProfile": "내 프로필로 이동",
     "tripsTitle": "공개 여행",

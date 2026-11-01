@@ -28,6 +28,7 @@ import {
 } from './tripPreviewUtils';
 import { buildTripLaneDayTripMarks } from '../../shared/dayTripPreview';
 import { TripLaneDayTripMarks } from './TripLaneDayTripMarks';
+import { useRenderNow, useRenderTimestamp } from '../../hooks/useRenderNow';
 
 interface ProfileTripCardLabels {
   open: string;
@@ -156,11 +157,14 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   const mapLoaded = mapStatus.key === mapStatusKey && mapStatus.loaded;
   const mapError = mapStatus.key === mapStatusKey && mapStatus.error;
   const summaryLine = React.useMemo(() => formatTripSummaryLine(trip, locale), [trip, locale]);
-  const dateRange = React.useMemo(() => formatTripDateRange(trip, locale), [trip, locale]);
+  // Server-rendered on public profiles: "today" comes from the render clock.
+  const renderNow = useRenderNow();
+  const renderTimestamp = useRenderTimestamp();
+  const dateRange = React.useMemo(() => formatTripDateRange(trip, locale, renderNow), [trip, locale, renderNow]);
   const tripSpan = React.useMemo(() => getTripSpan(trip), [trip]);
   const hasCreatorAttribution = showCreatorAttribution && Boolean(creatorHandle) && Boolean(creatorProfilePath);
   const isPublic = trip.showOnPublicProfile !== false;
-  const isExpired = trip.status === 'expired' || isTripExpiredByTimestamp(trip.tripExpiresAt);
+  const isExpired = trip.status === 'expired' || isTripExpiredByTimestamp(trip.tripExpiresAt, renderTimestamp);
   const isGenerationFailed = React.useMemo(
     () => getTripGenerationState(trip) === 'failed',
     [trip]

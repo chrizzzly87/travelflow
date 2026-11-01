@@ -127,6 +127,7 @@
     "visibilityPublic": "Public profile",
     "notFoundTitle": "Profile not found",
     "notFoundDescription": "We could not find a profile for this handle.",
+    "metaDescription": "See the public trips and travel highlights of {name} on TravelFlow.",
     "ctaExploreInspirations": "Explore inspirations",
     "ctaBackProfile": "Go to your profile",
     "tripsTitle": "Public trips",
