@@ -290,6 +290,7 @@ Behaviour in `ItineraryMap` when `isStandaloneMapbox = runtime.effectiveSelectio
   - `components/DetailsPanel.tsx` (city/activity search ~493/525, hotels ~1144)
   - `services/activityLocationResolver.ts`
   - `components/maps/MapCustomizeModal.tsx` (renderer field ~338-350)
+  - `pages/BlogPostPage.tsx` (~421-424): use the existing iframe-embed fallback when `disabled`, as it already does on `loadError`; otherwise the blog map would spin
   - `locales/*/` in the namespaces those components already use
 - Test: `tests/unit/detailsPanelPlacesSearch.test.ts`, `tests/browser/mapCustomizeModal*.browser.test.ts` (existing file, or create one)
 
@@ -303,7 +304,8 @@ Behaviour in `ItineraryMap` when `isStandaloneMapbox = runtime.effectiveSelectio
 - [ ] **Step 2: Write the failing tests:**
   - `'activity and hotel search show the unavailable notice under mapbox_all'`: no spinner element, notice text present;
   - `'activityLocationResolver resolves nothing and requests nothing when search is not google'`;
-  - `'the Google renderer option is disabled with the locked note under mapbox_all'`.
+  - `'the Google renderer option is disabled with the locked note under mapbox_all'`;
+  - `'a blog post map uses the embed fallback when Google is disabled'`.
 - [ ] **Step 3: Run, expect FAIL.**
 - [ ] **Step 4: Implement.** Add the keys to all 11 locales (English text as the fallback for locales other than EN and DE), then run `pnpm i18n:validate`.
 - [ ] **Step 5: Run the tests, expect PASS.**
