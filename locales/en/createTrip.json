@@ -352,5 +352,9 @@
       "genericTitle": "Couldn't open this trip",
       "genericBody": "Check your connection and try again."
     }
+  },
+  "stepper": {
+    "decrease": "Decrease {label}",
+    "increase": "Increase {label}"
   }
 }

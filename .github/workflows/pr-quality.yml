@@ -9,13 +9,53 @@ on:
 
 # A PR that is pushed to (or edited) several times in a row should only keep the
 # newest run. Without this, three edits 20 seconds apart cost three full
-# ~14-minute pipelines and queue behind each other.
+# pipelines and queue behind each other.
 concurrency:
   group: pr-quality-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# The pipeline is two independent halves run side by side: the checks (type-check
+# and the ~4.5 minute unit suite) and the deploy build with its browser suites.
+# Run in one job they took ~10 minutes; in parallel the wall time is the longer
+# half. The required status check is the `pr-quality` job at the bottom, which
+# only gathers the results, so branch protection did not have to change.
 jobs:
-  pr-quality:
+  changes:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # Docs-only PRs (docs/, .claude/, root-level *.md) skip the pipeline.
+      # Anything else runs it, including content/: release notes and blog posts
+      # are built into the site.
+      - name: Detect code changes
+        id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+          printf 'Changed files:\n%s\n' "$changed"
+          # A here-string, not a pipe: with pipefail, an early `grep -q` exit
+          # could SIGPIPE the writer and read as "docs-only".
+          if [ -n "$changed" ] && ! grep -qvE '^(docs/|\.claude/|[^/]+\.md$)' <<< "$changed"; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "Docs-only change: skipping the pipeline."
+          else
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  checks:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -56,10 +96,34 @@ jobs:
       - name: Run core regression tests
         run: pnpm test:core
 
-      # `pnpm build` re-runs `pnpm test:core` internally, which the step above has
-      # already done — that duplicate cost ~4.5 minutes of every run. `build:netlify`
-      # is byte-for-byte `build` minus `test:core`, and it is also what Netlify
-      # actually runs, so the gate now validates the real deploy command.
+  build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `build:netlify` is `build` minus its internal `test:core` (which the
+      # checks job runs), and it is what Netlify actually runs, so the gate
+      # validates the real deploy command.
       - name: Run build gate
         run: pnpm build:netlify
         env:
@@ -93,3 +157,28 @@ jobs:
             test-results/
           retention-days: 7
           if-no-files-found: ignore
+
+  # The required status check. It passes when both halves passed, or when the
+  # change was docs-only and both were skipped on purpose.
+  pr-quality:
+    needs: [changes, checks, build]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Gather results
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          CHECKS: ${{ needs.checks.result }}
+          BUILD: ${{ needs.build.result }}
+        run: |
+          echo "changes=$CHANGES code=$CODE checks=$CHECKS build=$BUILD"
+          if [ "$CHANGES" != "success" ]; then
+            echo "Change detection did not finish."; exit 1
+          fi
+          if [ "$CODE" = "false" ]; then
+            echo "Docs-only change: nothing to check."; exit 0
+          fi
+          if [ "$CHECKS" != "success" ] || [ "$BUILD" != "success" ]; then
+            echo "A pipeline job did not pass."; exit 1
+          fi

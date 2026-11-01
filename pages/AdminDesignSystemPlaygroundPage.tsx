@@ -162,7 +162,7 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         title: 'Country select + calendar',
         description: 'Create-trip destination selector variants and date-range calendar controls.',
         sourcePath: 'components/CountrySelect.tsx',
-        usagePaths: ['pages/CreateTripClassicLabPage.tsx', 'pages/CreateTripV3Page.tsx', 'components/DateRangePicker.tsx'],
+        usagePaths: ['pages/CreateTripClassicPage.tsx', 'pages/CreateTripV3Page.tsx', 'components/DateRangePicker.tsx'],
     },
     {
         id: 'switches',
@@ -211,7 +211,7 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         title: 'Data tables',
         description: 'Shared admin table patterns for sticky columns, sorted-state highlights, and stable fixed-width layouts.',
         sourcePath: 'components/admin/AdminDataTable.tsx',
-        usagePaths: ['pages/AdminUsersPage.tsx', 'pages/AdminTripsPage.tsx', 'pages/AdminAuditPage.tsx'],
+        usagePaths: ['components/admin/users/UsersTable.tsx', 'pages/AdminTripsPage.tsx', 'pages/AdminAuditPage.tsx'],
     },
     {
         id: 'tooltips',

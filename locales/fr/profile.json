@@ -127,6 +127,7 @@
     "privateDescription": "Ce voyageur a masqué son profil public pour le moment.",
     "notFoundTitle": "Profil introuvable",
     "notFoundDescription": "Aucun profil trouvé pour ce pseudo.",
+    "metaDescription": "Découvrez les voyages publics et les temps forts de {name} sur TravelFlow.",
     "ctaExploreInspirations": "Explorer les inspirations",
     "ctaBackProfile": "Aller à ton profil",
     "tripsTitle": "Voyages publics",

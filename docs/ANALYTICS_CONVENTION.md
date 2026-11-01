@@ -145,10 +145,10 @@ sub-surface such as a row menu or a sheet). One row per surface; the actions are
 | `admin__command--` | `{nav item id}`, `theme`, `app_home` | — | `components/admin/AdminCommandMenu.tsx` |
 | `admin__theme--toggle` | — | `{ to }` | `components/ui/ThemeToggle.tsx` (surface `admin`) |
 | `admin__dashboard--` | `all_users`, `recent_user`, `failed_generations`, `expiring_trips` | — | `pages/AdminDashboardPage.tsx` |
-| `admin__users--` | `create_user`, `export_csv`, `more_filters`, `reset_filters` | — | `pages/AdminUsersPage.tsx` |
-| `admin__users_queue--` | `awaiting_activation`, `subscriptions_at_risk`, `empty_accounts` | — | `pages/AdminUsersPage.tsx` |
-| `admin__users_row--` | `copy_id`, `view_trips` | — | `pages/AdminUsersPage.tsx` |
-| `admin__users_detail--tab` | — | `{ tab }` | `pages/AdminUsersPage.tsx` |
+| `admin__users--` | `create_user`, `export_csv`, `more_filters`, `reset_filters` | — | `pages/AdminUsersPage.tsx`, `components/admin/users/UsersFilterBar.tsx`, `components/admin/users/useAdminUsersActions.ts` |
+| `admin__users_queue--` | `awaiting_activation`, `subscriptions_at_risk`, `empty_accounts` | — | `components/admin/users/UsersQueueTiles.tsx` |
+| `admin__users_row--` | `copy_id`, `view_trips` | — | `components/admin/users/UsersTableRow.tsx`, `components/admin/users/useAdminUsersActions.ts` |
+| `admin__users_detail--tab` | — | `{ tab }` | `components/admin/users/UserDetailSheet.tsx` |
 | `admin__trips_kpi--filter` | — | `{ kpi }` | `pages/AdminTripsPage.tsx` |
 | `admin__trips_bulk--` | `archive`, `delete` | `{ count }` | `pages/AdminTripsPage.tsx` |
 | `admin__trips_selection--select_all_matching` | — | `{ count }` | `pages/AdminTripsPage.tsx` |
@@ -335,11 +335,11 @@ sub-surface such as a row menu or a sheet). One row per surface; the actions are
 ### Create Trip
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip, provider, model }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__model--select` | — | `{ provider, model, model_id, is_default }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip, provider, model }` | `CreateTripClassicPage.tsx` |
+| `create_trip__model--select` | — | `{ provider, model, model_id, is_default }` | `CreateTripClassicPage.tsx` |
+| `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicPage.tsx` |
+| `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicPage.tsx` |
+| `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicPage.tsx` |
 | `create_trip_wizard__branch--select` | — | `{ branch }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__date_mode--select` | — | `{ mode }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__traveler--select` | — | `{ traveler_type }` | `CreateTripV3Page.tsx` |

@@ -352,5 +352,9 @@
       "genericTitle": "Impossibile aprire il viaggio",
       "genericBody": "Controlla la connessione e riprova."
     }
+  },
+  "stepper": {
+    "decrease": "Diminuisci {label}",
+    "increase": "Aumenta {label}"
   }
 }

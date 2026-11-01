@@ -352,5 +352,9 @@
       "genericTitle": "No se pudo abrir el viaje",
       "genericBody": "Comprueba tu conexión e inténtalo de nuevo."
     }
+  },
+  "stepper": {
+    "decrease": "Disminuir {label}",
+    "increase": "Aumentar {label}"
   }
 }

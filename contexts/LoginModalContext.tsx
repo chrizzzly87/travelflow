@@ -149,6 +149,7 @@ export const useLoginModalContext = (): LoginModalContextValue => {
             rememberAuthReturnPath(nextPath);
             const loginUrl = new URL('/login', window.location.origin);
             loginUrl.searchParams.set('next', nextPath);
+            // Full navigation on purpose: this fallback runs outside the provider tree, where no router may be mounted.
             window.location.assign(loginUrl.toString());
         },
         closeLoginModal: () => {

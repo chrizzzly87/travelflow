@@ -464,6 +464,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 throw new Error(t('settings.billing.manageUnavailable'));
             }
             trackEvent(target === 'cancel' ? 'profile_settings__billing--cancel' : 'profile_settings__billing--manage');
+            // Full navigation on purpose: the billing portal is an external Paddle page.
             window.location.assign(destination);
         } catch (error) {
             showAppToast({

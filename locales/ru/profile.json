@@ -127,6 +127,7 @@
     "privateDescription": "Этот путешественник пока скрыл публичный профиль.",
     "notFoundTitle": "Профиль не найден",
     "notFoundDescription": "Мы не нашли профиль для этого имени пользователя.",
+    "metaDescription": "Публичные поездки и яркие моменты путешествий {name} в TravelFlow.",
     "ctaExploreInspirations": "Смотреть вдохновения",
     "ctaBackProfile": "Перейти в ваш профиль",
     "tripsTitle": "Публичные поездки",

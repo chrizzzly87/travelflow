@@ -453,10 +453,10 @@ export const getTripDurationDays = (trip: ITrip): number => {
   return getTripSpan(trip).days;
 };
 
-export const formatTripDateRange = (trip: ITrip, locale: AppLanguage): string => {
+export const formatTripDateRange = (trip: ITrip, locale: AppLanguage, now: Date = new Date()): string => {
   const { start, end } = getTripDateRange(trip);
 
-  const currentYear = new Date().getFullYear();
+  const currentYear = now.getFullYear();
   const includeYear = start.getFullYear() !== currentYear || end.getFullYear() !== currentYear;
   const fmt: Intl.DateTimeFormatOptions = includeYear
     ? { month: 'short', day: 'numeric', year: 'numeric' }

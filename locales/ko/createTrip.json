@@ -352,5 +352,9 @@
       "genericTitle": "여행을 열지 못했어요",
       "genericBody": "연결을 확인하고 다시 시도해 주세요."
     }
+  },
+  "stepper": {
+    "decrease": "{label} 줄이기",
+    "increase": "{label} 늘리기"
   }
 }

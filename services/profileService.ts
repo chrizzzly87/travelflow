@@ -4,6 +4,7 @@ import { dbUpsertUserSettings } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { normalizePassportStickerSelection } from './passportService';
 import { supabase } from './supabaseClient';
+import { mapProfileTripRow as mapTripRow } from '../shared/publicProfileRows';
 
 export type ProfileGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
 export type ProfileAccountStatus = 'active' | 'disabled' | 'deleted';
@@ -344,30 +345,6 @@ const maskPrivateProfileForPublicPreview = (profile: UserProfileRecord): UserPro
         publicProfileEnabled: false,
         passportStickerPositions: {},
         passportStickerSelection: [],
-    };
-};
-
-const mapTripRow = (row: Record<string, unknown>): ITrip | null => {
-    const rawTrip = row.data as ITrip | undefined;
-    if (!rawTrip || typeof rawTrip !== 'object') return null;
-    if (typeof rawTrip.id !== 'string') return null;
-
-    const tripExpiresAt = typeof row.trip_expires_at === 'string'
-        ? row.trip_expires_at
-        : (typeof rawTrip.tripExpiresAt === 'string' ? rawTrip.tripExpiresAt : null);
-
-    return {
-        ...rawTrip,
-        id: typeof row.id === 'string' ? row.id : rawTrip.id,
-        showOnPublicProfile: row.show_on_public_profile !== false && rawTrip.showOnPublicProfile !== false,
-        status: row.status === 'archived' || row.status === 'expired'
-            ? row.status
-            : (rawTrip.status || 'active'),
-        tripExpiresAt,
-        sourceKind: typeof row.source_kind === 'string' ? row.source_kind as ITrip['sourceKind'] : rawTrip.sourceKind,
-        sourceTemplateId: typeof row.source_template_id === 'string'
-            ? row.source_template_id
-            : (rawTrip.sourceTemplateId ?? null),
     };
 };
 

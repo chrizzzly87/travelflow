@@ -352,5 +352,9 @@
       "genericTitle": "Impossible d'ouvrir ce voyage",
       "genericBody": "Vérifiez votre connexion et réessayez."
     }
+  },
+  "stepper": {
+    "decrease": "Diminuer {label}",
+    "increase": "Augmenter {label}"
   }
 }

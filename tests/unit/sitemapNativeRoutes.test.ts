@@ -9,6 +9,8 @@ describe('native route sitemap discovery', () => {
         expect(paths).toEqual(expect.arrayContaining(['/', '/features', '/pricing', '/login', '/inspirations/countries', '/imprint']));
         expect(paths).not.toEqual(expect.arrayContaining(['/auth/reset-password', '/share-unavailable', '/profile', '/checkout', '/admin/dashboard', '/create-trip']));
         expect(paths.every(path => !path.includes('$') && !path.includes('{'))).toBe(true);
+        // Public profiles are server-rendered but stay out of the sitemap (and carry noindex).
+        expect(paths.some(path => path.startsWith('/u/') || path === '/u')).toBe(false);
         expect(new Set(paths).size).toBe(paths.length);
     });
 

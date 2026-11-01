@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate, useParams, useSearchParams } from '@/app/navigation';
+import { NavLink, useSearchParams } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
@@ -17,11 +17,7 @@ import {
     getPassportDisplayStamps,
 } from '../components/profile/profileStamps';
 import { getProfileCountryDisplayName } from '../services/profileCountryService';
-import {
-    getPublicTripsPageByUserId,
-    resolvePublicProfileByHandle,
-    type UserProfileRecord,
-} from '../services/profileService';
+import { getPublicTripsPageByUserId, resolvePublicProfileByHandle } from '../services/profileService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { normalizeLocale } from '../config/locales';
 import { buildPath } from '../config/routes';
@@ -29,23 +25,40 @@ import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../uti
 import type { ITrip } from '../types';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
 import { useAuth } from '../hooks/useAuth';
-import { setCanonicalDocumentTitle } from '../services/tripGenerationTabFeedbackService';
-import { APP_NAME } from '../config/appGlobals';
+import { useHydrated } from '../hooks/useHydrated';
+import {
+    PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
+    resolvePublicProfileDisplayName,
+    type PublicProfilePageData,
+    type PublicProfileTripsPage,
+    type PublicProfileView,
+} from '../shared/publicProfile';
+import { toPublicProfileView } from '../shared/publicProfileRows';
 
-const PUBLIC_PROFILE_TRIPS_PAGE_SIZE = 9;
 const PUBLIC_PROFILE_PASSPORT_QUERY_KEY = 'passport';
 const PUBLIC_PROFILE_PASSPORT_QUERY_VALUE = 'open';
+const EMPTY_TRIPS_PAGE: PublicProfileTripsPage = { trips: [], hasMore: false, nextOffset: 0 };
 
-interface ProfileState {
-    status: 'loading' | 'found' | 'private' | 'not_found';
-    profile: UserProfileRecord | null;
+/** Owner and admin extras only exist in the browser, after hydration. */
+type ViewerMode = 'owner' | 'admin' | null;
+
+interface ViewerFetchState {
+    key: string;
+    adminProfile: PublicProfileView | null;
+    tripsPage: PublicProfileTripsPage | null;
+    tripsFailed: boolean;
 }
 
-const initialsFromProfile = (profile: UserProfileRecord | null): string => {
-    const first = profile?.firstName?.trim() || '';
-    const last = profile?.lastName?.trim() || '';
+interface PagerState {
+    base: PublicProfileTripsPage;
+    extraTrips: ITrip[];
+    nextOffset: number;
+    hasMore: boolean;
+}
+
+const initialsFrom = (first: string, last: string, username: string): string => {
     if (first || last) return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
-    if (profile?.username) return profile.username.charAt(0).toUpperCase();
+    if (username) return username.charAt(0).toUpperCase();
     return 'U';
 };
 
@@ -60,210 +73,170 @@ const normalizeUsername = (value: unknown): string => (
     typeof value === 'string' ? value.trim().toLowerCase() : ''
 );
 
-const formatPrivateDisplayName = (profile: UserProfileRecord | null, fallback: string): string => {
-    const firstName = profile?.firstName?.trim() || '';
-    const lastInitial = profile?.lastName?.trim().charAt(0) || '';
-    if (firstName) return `${firstName}${lastInitial ? ` ${lastInitial}.` : ''}`;
-    return profile?.displayName || profile?.usernameDisplay || profile?.username || fallback;
-};
+/**
+ * Loads what only a signed-in owner or an admin may see: the owner's own
+ * profile while it is private, or a private profile for an admin. This syncs
+ * with the browser's auth session, so it runs in an effect after hydration;
+ * the anonymous view comes from the route loader.
+ */
+function useViewerProfileFetch(mode: ViewerMode, username: string, viewerProfileId: string | null): ViewerFetchState | null {
+    const key = mode ? `${mode}:${username}:${viewerProfileId ?? ''}` : '';
+    const [state, setState] = useState<ViewerFetchState | null>(null);
 
-const upsertPublicProfileRobotsMeta = (content: string | null): void => {
-    if (typeof document === 'undefined') return;
-    const selector = 'meta[name="robots"][data-managed-by="public-profile"]';
-    let meta = document.head.querySelector<HTMLMetaElement>(selector);
+    useEffect(() => {
+        if (!mode) return;
+        let active = true;
+        const run = async () => {
+            let adminProfile: PublicProfileView | null = null;
+            let profileId = mode === 'owner' ? viewerProfileId : null;
+            if (mode === 'admin') {
+                const result = await resolvePublicProfileByHandle(username);
+                if (!active) return;
+                if ((result.status === 'found' || result.status === 'redirect') && result.profile?.id) {
+                    adminProfile = toPublicProfileView(result.profile as unknown as Record<string, unknown>);
+                    profileId = adminProfile.id;
+                }
+            }
+            if (!profileId) {
+                setState({ key, adminProfile: null, tripsPage: EMPTY_TRIPS_PAGE, tripsFailed: false });
+                return;
+            }
+            setState({ key, adminProfile, tripsPage: null, tripsFailed: false });
+            try {
+                const tripsPage = await getPublicTripsPageByUserId(profileId, { offset: 0, limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE });
+                if (active) setState({ key, adminProfile, tripsPage, tripsFailed: false });
+            } catch {
+                if (active) setState({ key, adminProfile, tripsPage: EMPTY_TRIPS_PAGE, tripsFailed: true });
+            }
+        };
+        run().catch(() => {
+            if (active) setState({ key, adminProfile: null, tripsPage: EMPTY_TRIPS_PAGE, tripsFailed: true });
+        });
+        return () => { active = false; };
+    }, [key, mode, username, viewerProfileId]);
 
-    if (!content) {
-        if (meta) meta.remove();
-        return;
-    }
+    return state?.key === key ? state : null;
+}
 
-    if (!meta) {
-        meta = document.createElement('meta');
-        meta.setAttribute('name', 'robots');
-        meta.setAttribute('data-managed-by', 'public-profile');
-        document.head.appendChild(meta);
-    }
+/** Appends further pages to a first page; a new first page (another profile or a reload) starts over. */
+function usePublicTripsPager(profileId: string | null, base: PublicProfileTripsPage | null) {
+    const [pager, setPager] = useState<PagerState | null>(null);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const current = base && pager?.base === base ? pager : null;
+    const trips = useMemo(
+        () => (base ? (current ? mergeTripsById(base.trips, current.extraTrips) : base.trips) : []),
+        [base, current]
+    );
+    const hasMore = current ? current.hasMore : Boolean(base?.hasMore);
+    const nextOffset = current ? current.nextOffset : (base?.nextOffset ?? 0);
 
-    meta.setAttribute('content', content);
-};
+    const loadMore = useCallback(() => {
+        if (!profileId || !base || !hasMore || isLoadingMore) return;
+        setIsLoadingMore(true);
+        const extraTrips = current?.extraTrips ?? [];
+        void getPublicTripsPageByUserId(profileId, { offset: nextOffset, limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE })
+            .then((page) => {
+                setPager({ base, extraTrips: [...extraTrips, ...page.trips], nextOffset: page.nextOffset, hasMore: page.hasMore });
+            })
+            .catch(() => {
+                setPager({ base, extraTrips, nextOffset, hasMore: false });
+            })
+            .finally(() => {
+                setIsLoadingMore(false);
+            });
+    }, [base, current, hasMore, isLoadingMore, nextOffset, profileId]);
 
-export const PublicProfilePage: React.FC = () => {
-    const { username = '' } = useParams();
-    const navigate = useNavigate();
+    return { trips, hasMore, isLoadingMore, loadMore };
+}
+
+interface PublicProfilePageProps {
+    /** The canonical (lowercase) handle from the URL. */
+    username: string;
+    /** The anonymous, server-rendered view from the route loader. */
+    data: PublicProfilePageData;
+}
+
+export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({ username, data }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { t, i18n } = useTranslation('profile');
     const { isLoading: isAuthLoading, isAuthenticated, isAdmin, profile: viewerProfile } = useAuth();
-
-    const [state, setState] = useState<ProfileState>({
-        status: 'loading',
-        profile: null,
-    });
-    const [trips, setTrips] = useState<ITrip[]>([]);
-    const [nextTripsOffset, setNextTripsOffset] = useState(0);
-    const [hasMoreTrips, setHasMoreTrips] = useState(false);
-    const [isTripsLoading, setIsTripsLoading] = useState(false);
-    const [isTripsLoadingMore, setIsTripsLoadingMore] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const hydrated = useHydrated();
 
     const appLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
         [i18n.language, i18n.resolvedLanguage]
     );
-    const profileLoadErrorLabel = useMemo(
-        () => t('errors.profileLoad'),
-        [i18n.language, i18n.resolvedLanguage, t]
+
+    // The server and the hydration render know nothing about the visitor.
+    const viewerReady = hydrated && !isAuthLoading;
+    const viewerProfileId = viewerReady && isAuthenticated ? viewerProfile?.id || null : null;
+    const viewerIsAdmin = viewerReady && isAdmin;
+    const viewerIsOwner = Boolean(viewerProfileId && normalizeUsername(viewerProfile?.username) === username);
+    const viewerMode: ViewerMode = viewerIsOwner && data.status !== 'found'
+        ? 'owner'
+        : (viewerIsAdmin && data.status === 'private' ? 'admin' : null);
+    const viewerFetch = useViewerProfileFetch(viewerMode, username, viewerProfileId);
+    const ownerProfile = useMemo(
+        () => (viewerMode === 'owner' && viewerProfile
+            ? toPublicProfileView(viewerProfile as unknown as Record<string, unknown>)
+            : null),
+        [viewerMode, viewerProfile]
     );
-    const viewerHandle = useMemo(
-        () => normalizeUsername(viewerProfile?.username),
-        [viewerProfile?.username]
+
+    const view = useMemo(() => {
+        if (ownerProfile) {
+            return {
+                profile: ownerProfile,
+                tripsPage: viewerFetch ? viewerFetch.tripsPage : null,
+                tripsFailed: Boolean(viewerFetch?.tripsFailed),
+                isPublic: viewerProfile?.publicProfileEnabled !== false,
+            };
+        }
+        if (viewerMode === 'admin' && viewerFetch?.adminProfile) {
+            return {
+                profile: viewerFetch.adminProfile,
+                tripsPage: viewerFetch.tripsPage,
+                tripsFailed: viewerFetch.tripsFailed,
+                isPublic: false,
+            };
+        }
+        if (data.status === 'found') {
+            return { profile: data.profile, tripsPage: data.tripsPage, tripsFailed: data.tripsFailed, isPublic: true };
+        }
+        return null;
+    }, [data, ownerProfile, viewerFetch, viewerMode, viewerProfile?.publicProfileEnabled]);
+
+    const profile = view?.profile ?? null;
+    const isTripsLoading = Boolean(view && !view.tripsPage);
+    const { trips, hasMore: hasMoreTrips, isLoadingMore: isTripsLoadingMore, loadMore: loadMoreTrips } = usePublicTripsPager(
+        profile?.id ?? null,
+        view?.tripsPage ?? null
     );
-    const viewerProfileId = viewerProfile?.id || null;
-    const isPassportDialogOpen = searchParams.get(PUBLIC_PROFILE_PASSPORT_QUERY_KEY) === PUBLIC_PROFILE_PASSPORT_QUERY_VALUE;
-
-    useEffect(() => {
-        if (isAuthLoading) return;
-
-        const rawHandle = (username || '').trim();
-        const handle = rawHandle.toLowerCase();
-        if (!handle) {
-            setState({ status: 'not_found', profile: null });
-            return;
-        }
-
-        if (rawHandle !== handle) {
-            navigate(buildPath('publicProfile', { username: handle }), { replace: true });
-            return;
-        }
-
-        let active = true;
-        setErrorMessage(null);
-        setState({ status: 'loading', profile: null });
-        setTrips([]);
-        setNextTripsOffset(0);
-        setHasMoreTrips(false);
-        setIsTripsLoading(false);
-        setIsTripsLoadingMore(false);
-
-        const loadFirstTripsPage = async (profileRecord: UserProfileRecord) => {
-            setState({ status: 'found', profile: profileRecord });
-            trackEvent('public_profile__view', {
-                username: profileRecord.username || handle,
-            });
-
-            setIsTripsLoading(true);
-            try {
-                const firstPage = await getPublicTripsPageByUserId(profileRecord.id, {
-                    offset: 0,
-                    limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
-                });
-                if (!active) return;
-                setTrips(firstPage.trips);
-                setNextTripsOffset(firstPage.nextOffset);
-                setHasMoreTrips(firstPage.hasMore);
-            } catch (error) {
-                if (!active) return;
-                setTrips([]);
-                setNextTripsOffset(0);
-                setHasMoreTrips(false);
-                setErrorMessage(error instanceof Error ? error.message : profileLoadErrorLabel);
-            } finally {
-                if (!active) return;
-                setIsTripsLoading(false);
-            }
-        };
-
-        void resolvePublicProfileByHandle(handle)
-            .then(async (result) => {
-                if (!active) return;
-
-                if (result.status === 'redirect' && result.canonicalUsername) {
-                    const canonicalPath = buildPath('publicProfile', { username: result.canonicalUsername });
-                    const currentPath = buildPath('publicProfile', { username: rawHandle });
-                    if (canonicalPath !== currentPath) {
-                        navigate(canonicalPath, { replace: true });
-                        return;
-                    }
-                }
-
-                if (result.status === 'private') {
-                    if (isAuthenticated && viewerProfileId && viewerProfile && viewerHandle === handle) {
-                        await loadFirstTripsPage(viewerProfile);
-                        return;
-                    }
-                    setState({ status: 'private', profile: result.profile || null });
-                    return;
-                }
-
-                if (result.status === 'not_found' || !result.profile) {
-                    if (isAuthenticated && viewerProfileId && viewerProfile && viewerHandle === handle) {
-                        await loadFirstTripsPage(viewerProfile);
-                        return;
-                    }
-                    setState({ status: 'not_found', profile: null });
-                    return;
-                }
-
-                await loadFirstTripsPage(result.profile);
-            })
-            .catch((error) => {
-                if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : profileLoadErrorLabel);
-                setState({ status: 'not_found', profile: null });
-                setIsTripsLoading(false);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [isAuthLoading, isAuthenticated, navigate, profileLoadErrorLabel, username, viewerHandle, viewerProfile, viewerProfileId]);
-
-    const loadMoreTrips = useCallback(() => {
-        if (state.status !== 'found' || !state.profile || !hasMoreTrips || isTripsLoading || isTripsLoadingMore) return;
-        setIsTripsLoadingMore(true);
-        void getPublicTripsPageByUserId(state.profile.id, {
-            offset: nextTripsOffset,
-            limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
-        })
-            .then((page) => {
-                setTrips((current) => mergeTripsById(current, page.trips));
-                setNextTripsOffset(page.nextOffset);
-                setHasMoreTrips(page.hasMore);
-            })
-            .catch(() => {
-                setHasMoreTrips(false);
-            })
-            .finally(() => {
-                setIsTripsLoadingMore(false);
-            });
-    }, [hasMoreTrips, isTripsLoading, isTripsLoadingMore, nextTripsOffset, state.profile, state.status]);
 
     const loadMoreTripsRef = useInfiniteScrollSentinel({
-        enabled: state.status === 'found',
+        enabled: Boolean(view),
         hasMore: hasMoreTrips,
         isLoading: isTripsLoading || isTripsLoadingMore,
         onLoadMore: loadMoreTrips,
         rootMargin: '640px 0px',
     });
 
-    const isOwnPublicProfile = Boolean(
-        state.profile
-        && viewerProfileId
-        && state.profile.id === viewerProfileId
-    );
-    const isMaskedPrivateView = state.status === 'private' && !isAdmin;
+    const viewedUsername = profile?.username || null;
+    useEffect(() => {
+        if (!viewedUsername) return;
+        trackEvent('public_profile__view', { username: viewedUsername });
+    }, [viewedUsername]);
 
-    const displayName = isMaskedPrivateView
-        ? formatPrivateDisplayName(state.profile, t('fallback.displayName'))
-        : (
-            state.profile?.displayName
-            || [state.profile?.firstName || '', state.profile?.lastName || ''].filter(Boolean).join(' ')
-            || state.profile?.usernameDisplay
-            || state.profile?.username
-            || t('fallback.displayName')
-        );
+    const privatePreview = data.status === 'private' && !view ? data.preview : null;
+    const isNotFound = !view && !privatePreview;
+    const isOwnPublicProfile = Boolean(profile && viewerProfileId && profile.id === viewerProfileId);
 
-    const profileCountryLabel = getProfileCountryDisplayName(state.profile?.country, appLocale);
-    const locationLabel = [state.profile?.city || '', profileCountryLabel]
+    const displayName = privatePreview
+        ? (privatePreview.displayName || t('fallback.displayName'))
+        : (profile ? resolvePublicProfileDisplayName(profile, t('fallback.displayName')) : t('fallback.displayName'));
+
+    const profileCountryLabel = getProfileCountryDisplayName(profile?.country, appLocale);
+    const locationLabel = [profile?.city || '', profileCountryLabel]
         .map((part) => part.trim())
         .filter(Boolean)
         .join(', ') || t('summary.locationUnknown');
@@ -282,16 +255,13 @@ export const PublicProfilePage: React.FC = () => {
         () => resolveProfileStatusByTripCount(trips.length),
         [trips.length]
     );
-    const visibilityBadgeLabel = useMemo(() => {
-        if (!state.profile) return null;
-        if (isAdmin) {
-            return state.profile.publicProfileEnabled
-                ? t('publicProfile.visibilityPublic')
-                : t('publicProfile.visibilityPrivate');
+    const visibilityBadgeLabel = (() => {
+        if (privatePreview) return t('publicProfile.visibilityPrivate');
+        if (view && viewerIsAdmin) {
+            return view.isPublic ? t('publicProfile.visibilityPublic') : t('publicProfile.visibilityPrivate');
         }
-        if (state.status === 'private') return t('publicProfile.visibilityPrivate');
         return null;
-    }, [isAdmin, state.profile, state.status, t]);
+    })();
     const allStampProgress = useMemo(() => {
         const metrics = computeProfileStampMetrics(trips, {
             likesGiven: 0,
@@ -299,16 +269,14 @@ export const PublicProfilePage: React.FC = () => {
         });
         return buildProfileStampProgress(metrics);
     }, [trips]);
+    const passportStickerSelection = ownerProfile ? viewerProfile?.passportStickerSelection : undefined;
     const passportDisplayStamps = useMemo(() => {
-        return getPassportDisplayStamps(
-            allStampProgress,
-            state.profile?.passportStickerSelection
-        );
-    }, [allStampProgress, state.profile?.passportStickerSelection]);
+        return getPassportDisplayStamps(allStampProgress, passportStickerSelection);
+    }, [allStampProgress, passportStickerSelection]);
 
     const handleOpenTrip = (trip: ITrip) => {
         trackEvent('public_profile__trip--open', {
-            username: state.profile?.username || username,
+            username: profile?.username || username,
             trip_id: trip.id,
         });
     };
@@ -336,54 +304,18 @@ export const PublicProfilePage: React.FC = () => {
         trackEvent('public_profile__summary--open_passport');
         if (rect) setPassportTriggerRect(rect);
         handlePassportDialogOpenChange(true);
-    }, [handlePassportDialogOpenChange, trackEvent]);
-
-    useEffect(() => {
-        const titleByState = (() => {
-            if (state.status === 'not_found') return `${t('publicProfile.notFoundTitle')} · ${APP_NAME}`;
-            if (state.status === 'private') return `${t('publicProfile.privateTitle')} · ${APP_NAME}`;
-            if (state.status === 'found') return `${displayName} · ${APP_NAME}`;
-            return `${t('publicProfile.title')} · ${APP_NAME}`;
-        })();
-
-        setCanonicalDocumentTitle(titleByState);
-        const isUnavailable = state.status === 'not_found' || state.status === 'private';
-        upsertPublicProfileRobotsMeta(isUnavailable ? 'noindex, nofollow' : null);
-
-        if (typeof document !== 'undefined') {
-            if (state.status === 'not_found') {
-                document.documentElement.setAttribute('data-public-profile-status', '404');
-            } else {
-                document.documentElement.removeAttribute('data-public-profile-status');
-            }
-        }
-
-        return () => {
-            if (typeof document !== 'undefined') {
-                document.documentElement.removeAttribute('data-public-profile-status');
-            }
-            upsertPublicProfileRobotsMeta(null);
-        };
-    }, [displayName, state.status, t]);
+    }, [handlePassportDialogOpenChange]);
 
     return (
         <div className="flex min-h-screen flex-col bg-secondary">
             <SiteHeader />
             <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
-                {state.status === 'loading' && (
-                    <section
-                        data-testid="public-profile-loading-placeholder"
-                        className="min-h-[62vh]"
-                        aria-hidden="true"
-                    />
-                )}
-
-                {state.status === 'private' && (
+                {privatePreview && (
                     <section className="flex justify-center">
                         <ProfileVisitorSummary
                             displayName={displayName}
-                            username={state.profile?.usernameDisplay || state.profile?.username || ''}
-                            initials={initialsFromProfile(state.profile)}
+                            username={privatePreview.usernameDisplay || privatePreview.username}
+                            initials={initialsFrom(privatePreview.firstName, privatePreview.lastInitial, privatePreview.username)}
                             status={profileStatus}
                             bio=""
                             location=""
@@ -417,7 +349,7 @@ export const PublicProfilePage: React.FC = () => {
                     </section>
                 )}
 
-                {state.status === 'not_found' && (
+                {isNotFound && (
                     <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
                         <div className="mx-auto max-w-3xl space-y-4">
                             <img
@@ -450,19 +382,19 @@ export const PublicProfilePage: React.FC = () => {
                     </section>
                 )}
 
-                {state.status === 'found' && state.profile && (
+                {view && profile && (
                     <>
                         <ProfileVisitorSummary
                             displayName={displayName}
-                            username={state.profile.usernameDisplay || state.profile.username || ''}
-                            initials={initialsFromProfile(state.profile)}
+                            username={profile.usernameDisplay || profile.username}
+                            initials={initialsFrom(profile.firstName, profile.lastName, profile.username)}
                             status={profileStatus}
-                            bio={state.profile.bio || ''}
+                            bio={profile.bio}
                             location={locationLabel}
                             distanceLabel={distanceLabel}
                             countries={visitedCountries}
                             stamps={passportDisplayStamps}
-                            passportCountryCode={state.profile.country}
+                            passportCountryCode={profile.country}
                             stats={[
                                 { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                                 { id: 'likes_saved', label: t('stats.likesSaved'), value: 0 },
@@ -492,9 +424,9 @@ export const PublicProfilePage: React.FC = () => {
                             visibilityBadgeLabel={visibilityBadgeLabel}
                         />
 
-                        {errorMessage && (
+                        {view.tripsFailed && (
                             <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                                {errorMessage}
+                                {t('errors.profileLoad')}
                             </section>
                         )}
 
@@ -603,7 +535,7 @@ export const PublicProfilePage: React.FC = () => {
                     </>
                 )}
 
-                {PASSPORT_FEATURE_ENABLED && state.status === 'found' && (
+                {PASSPORT_FEATURE_ENABLED && view && (
                     <ProfilePassportDialog
                         open={searchParams.get(PUBLIC_PROFILE_PASSPORT_QUERY_KEY) === PUBLIC_PROFILE_PASSPORT_QUERY_VALUE}
                         onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
@@ -621,7 +553,7 @@ export const PublicProfilePage: React.FC = () => {
                         onPageChange={(page) => {
                             trackEvent('public_profile__stamps_page--change', { page });
                         }}
-                        countryCode={state.profile?.country}
+                        countryCode={profile?.country}
                         triggerRect={passportTriggerRect}
                     />
                 )}
