@@ -5,9 +5,20 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { DEFAULT_LOCALE } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { buildImageCdnUrl } from '../utils/imageDelivery';
 
 const PLAN_CTA_EVENT = 'not_found__cta--plan_yours';
 const CONTACT_LINK_EVENT = 'not_found__link--contact';
+
+// Same frame artwork as the hero PlaneWindow, sized for the 404 porthole.
+const NOT_FOUND_WINDOW_SRC = '/images/plane-window.png';
+const NOT_FOUND_WINDOW_IMAGE_WIDTH = 640;
+const NOT_FOUND_WINDOW_IMAGE_HEIGHT = 938;
+const notFoundWindowSrc = buildImageCdnUrl(NOT_FOUND_WINDOW_SRC, {
+    width: NOT_FOUND_WINDOW_IMAGE_WIDTH,
+    format: 'webp',
+    quality: 68,
+});
 
 export const NotFoundPage: React.FC = () => {
     const { t } = useTranslation('pages');
@@ -33,25 +44,37 @@ export const NotFoundPage: React.FC = () => {
                     >
                         4
                     </span>
-                    {/* The "0" of 404, drawn as a porthole.
+                    {/* The "0" of 404: the hero's window frame and glass over a
+                      * sky with drifting CSS clouds.
                       *
-                      * This used to render PlaneWindowAnimation. That mattered
-                      * beyond styling: on a direct load of a deferred route the
-                      * 404 page renders before the route chunk resolves, and its
-                      * subtree leaked into the resolved page — which is how a
-                      * plane window ended up on /features and got baked into the
-                      * prerendered HTML. A static element with no shared class
-                      * names cannot leak anything recognisable, and the old
-                      * component (with the broken scroll loop) is gone. */}
+                      * Deliberately not the hero PlaneWindow component. On a
+                      * direct load of a deferred route the 404 page once rendered
+                      * before the route chunk resolved and its subtree leaked into
+                      * the resolved page, so this stays a static element with its
+                      * own class names: no WebGL scene, no shade, no theme grip. */}
                     <div
                         aria-hidden="true"
-                        className="relative w-[clamp(8.25rem,24vw,15.5rem)] shrink-0"
+                        className="not-found-window relative w-[clamp(8.25rem,24vw,15.5rem)] shrink-0 select-none"
                         style={{ aspectRatio: '580 / 850' }}
                     >
-                        <div className="absolute inset-[6%] overflow-hidden rounded-[46%/40%] bg-gradient-to-b from-sky-400 via-sky-200 to-white shadow-inner dark:from-sky-900 dark:via-sky-800 dark:to-slate-700">
-                            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-white/70 blur-md dark:bg-white/10" />
+                        <div className="not-found-window-sky absolute overflow-hidden">
+                            <div className="not-found-window-clouds absolute inset-0" />
                         </div>
-                        <div className="absolute inset-0 rounded-[46%/40%] border-[6px] border-secondary shadow-lg dark:border-border dark:shadow-none" />
+                        <img
+                            src={notFoundWindowSrc}
+                            alt=""
+                            width={NOT_FOUND_WINDOW_IMAGE_WIDTH}
+                            height={NOT_FOUND_WINDOW_IMAGE_HEIGHT}
+                            draggable={false}
+                            decoding="async"
+                            onError={(event) => {
+                                // Fall back to the original asset if the image CDN fails.
+                                if (!event.currentTarget.src.endsWith(NOT_FOUND_WINDOW_SRC)) {
+                                    event.currentTarget.src = NOT_FOUND_WINDOW_SRC;
+                                }
+                            }}
+                            className="not-found-window-frame relative z-10 size-full object-contain drop-shadow-xl"
+                        />
                     </div>
                     <span
                         className="pointer-events-none select-none text-[clamp(6.8rem,24vw,17rem)] font-black leading-[0.84] tracking-normal text-muted-foreground/95"
