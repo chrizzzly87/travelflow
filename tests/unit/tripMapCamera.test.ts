@@ -55,7 +55,7 @@ const installGoogleBounds = () => {
 };
 
 describe('tripMapCamera', () => {
-  it('mapbox fitBounds builds LngLatBounds from points in lng,lat order and passes padding', () => {
+  it('mapbox fitBounds passes [[west,south],[east,north]] in lng,lat order with padding', () => {
     const { map } = makeMapboxMap();
     const camera = createMapboxTripMapCamera(map as never);
     const padding = { top: 1, right: 2, bottom: 3, left: 4 };
@@ -85,7 +85,7 @@ describe('tripMapCamera', () => {
     vi.unstubAllGlobals();
   });
 
-  it('fitBounds with one point pans instead', () => {
+  it('mapbox fitBounds with one point pans instead', () => {
     const mapbox = makeMapboxMap();
     createMapboxTripMapCamera(mapbox.map as never).fitBounds([{ lat: 48, lng: 11 }], 10, { animate: false });
     expect(mapbox.map.fitBounds).not.toHaveBeenCalled();
@@ -94,13 +94,28 @@ describe('tripMapCamera', () => {
       zoom: getTripMapProviderTuning('mapbox').selection.cityFocusZoom,
     });
 
+  });
+
+  it('google fitBounds with one point still fits with padding', () => {
     installGoogleBounds();
     const google = makeGoogleMap();
     createGoogleTripMapCamera(google.map as never).fitBounds([{ lat: 48, lng: 11 }], 10);
-    expect(google.map.fitBounds).not.toHaveBeenCalled();
-    expect(google.map.panTo).toHaveBeenCalledWith({ lat: 48, lng: 11 });
-    expect(google.map.setZoom).toHaveBeenCalledWith(getTripMapProviderTuning('google').selection.cityFocusZoom);
+    expect(google.map.fitBounds).toHaveBeenCalledWith(expect.anything(), 10);
+    expect(google.map.panTo).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  it('mapbox fitBounds frames the short arc across the antimeridian', () => {
+    const { map } = makeMapboxMap();
+    createMapboxTripMapCamera(map as never).fitBounds([{ lat: -18, lng: 178 }, { lat: -14, lng: -172 }], 10);
+    expect(map.fitBounds).toHaveBeenCalledWith([[178, -18], [188, -14]], expect.anything());
+  });
+
+  it('google panTo with animate false uses setCenter', () => {
+    const { map } = makeGoogleMap();
+    createGoogleTripMapCamera(map as never).panTo({ lat: 1, lng: 2 }, { animate: false });
+    expect(map.setCenter).toHaveBeenCalledWith({ lat: 1, lng: 2 });
+    expect(map.panTo).not.toHaveBeenCalled();
   });
 
   it('google fitBounds extends a LatLngBounds and passes padding', () => {

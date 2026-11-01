@@ -19,39 +19,39 @@ export interface TripMapCamera {
   resize(): void;
 }
 
-// Both adapters share this rule: nothing to frame is a no-op, a single point
-// has no extent to fit so it becomes a pan at the provider's city zoom.
-const fitPointsOrPan = (
-  camera: TripMapCamera,
-  provider: 'google' | 'mapbox',
-  points: TripMapPoint[],
-  fit: () => void,
-  options?: { animate?: boolean },
-) => {
-  if (points.length === 0) return;
-  if (points.length === 1) {
-    camera.panTo(points[0], {
-      zoom: getTripMapProviderTuning(provider).selection.cityFocusZoom,
-      animate: options?.animate,
-    });
-    return;
+// Smallest longitude arc covering every point. A trip across the antimeridian
+// (Fiji 178 to Samoa -172) is a 10 degree arc, not a 350 degree box: drop the
+// largest gap between sorted longitudes and, when the arc wraps, express east
+// as lng + 360.
+const resolveLongitudeArc = (lngs: number[]): { west: number; east: number } => {
+  const sorted = [...lngs].sort((a, b) => a - b);
+  let largestGap = sorted[0] + 360 - sorted[sorted.length - 1];
+  let startIndex = 0;
+  for (let i = 0; i < sorted.length - 1; i += 1) {
+    const gap = sorted[i + 1] - sorted[i];
+    if (gap > largestGap) {
+      largestGap = gap;
+      startIndex = i + 1;
+    }
   }
-  fit();
+  if (startIndex === 0) return { west: sorted[0], east: sorted[sorted.length - 1] };
+  return { west: sorted[startIndex], east: sorted[startIndex - 1] + 360 };
 };
 
 // Only touch `google` inside methods: this module is imported on the Mapbox
 // path, where no Google script is loaded.
 export const createGoogleTripMapCamera = (map: google.maps.Map): TripMapCamera => {
-  const camera: TripMapCamera = {
-    fitBounds(points, padding, options) {
-      fitPointsOrPan(camera, 'google', points, () => {
-        const bounds = new window.google.maps.LatLngBounds();
-        points.forEach((point) => bounds.extend(point));
-        map.fitBounds(bounds, padding);
-      }, options);
+  return {
+    // Google `fitBounds` has no maxZoom/animate option, so both are ignored here.
+    fitBounds(points, padding) {
+      if (points.length === 0) return;
+      const bounds = new window.google.maps.LatLngBounds();
+      points.forEach((point) => bounds.extend(point));
+      map.fitBounds(bounds, padding);
     },
     panTo(point, options) {
-      map.panTo(point);
+      if (options?.animate === false) map.setCenter(point);
+      else map.panTo(point);
       if (options?.zoom !== undefined) map.setZoom(options.zoom);
     },
     getZoom: () => map.getZoom() ?? null,
@@ -72,29 +72,26 @@ export const createGoogleTripMapCamera = (map: google.maps.Map): TripMapCamera =
       window.google?.maps?.event?.trigger(map, 'resize');
     },
   };
-  return camera;
 };
 
 export const createMapboxTripMapCamera = (map: mapboxgl.Map): TripMapCamera => {
   const camera: TripMapCamera = {
     fitBounds(points, padding, options) {
-      fitPointsOrPan(camera, 'mapbox', points, () => {
-        let west = Infinity;
-        let south = Infinity;
-        let east = -Infinity;
-        let north = -Infinity;
-        points.forEach(({ lat, lng }) => {
-          west = Math.min(west, lng);
-          east = Math.max(east, lng);
-          south = Math.min(south, lat);
-          north = Math.max(north, lat);
-        });
-        map.fitBounds([[west, south], [east, north]], {
-          padding,
-          maxZoom: options?.maxZoom,
+      if (points.length === 0) return;
+      if (points.length === 1) {
+        camera.panTo(points[0], {
+          zoom: getTripMapProviderTuning('mapbox').selection.cityFocusZoom,
           animate: options?.animate,
         });
-      }, options);
+        return;
+      }
+      const { west, east } = resolveLongitudeArc(points.map((point) => point.lng));
+      const lats = points.map((point) => point.lat);
+      map.fitBounds([[west, Math.min(...lats)], [east, Math.max(...lats)]], {
+        padding,
+        maxZoom: options?.maxZoom,
+        animate: options?.animate,
+      });
     },
     panTo(point, options) {
       const target = {
