@@ -62,6 +62,7 @@ export const routes = rootRoute('__root.tsx', [
     route("/admin/og-tools", "admin/og-tools.tsx"),
     route("/admin/design-system-playground", "admin/design-system-playground.tsx"),
     route("/admin/component-playground", "admin/component-playground.tsx"),
+    route("/admin/component-canvas", "admin/component-canvas.tsx"),
   ]),
   layout('_trips', 'areas/trips.tsx', [
     route("/trip/$tripId", "trips/owned.tsx"),
