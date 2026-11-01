@@ -261,6 +261,9 @@ const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({
     return null;
 };
 
+/** How long the Google map may take to start before the surface says it failed. */
+export const MAP_INIT_TIMEOUT_MS = 15000;
+
 export const ItineraryMap: React.FC<ItineraryMapProps> = ({ 
     items, 
     selectedItemId, 
@@ -356,7 +359,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const isStandaloneMapboxRef = useRef(isStandaloneMapbox);
     isStandaloneMapboxRef.current = isStandaloneMapbox;
     const [standaloneMapboxLoadError, setStandaloneMapboxLoadError] = useState<Error | null>(null);
-    const loadError = googleLoadError ?? (isStandaloneMapbox ? standaloneMapboxLoadError : null);
+    const [googleInitTimeoutError, setGoogleInitTimeoutError] = useState<Error | null>(null);
+    const loadError = googleLoadError
+        ?? (isStandaloneMapbox ? standaloneMapboxLoadError : googleInitTimeoutError);
     const routesImplementation = runtime.effectiveSelection.routes;
     const locationSearchImplementation = runtime.effectiveSelection.locationSearch;
     const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
@@ -414,6 +419,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const shouldHideGoogleCanvasInMixedMode = shouldHideGoogleMapCanvas({
         isMapboxEnabled: isMapboxBasemapEnabled,
     });
+    // Waiting on Google: the preset is settled, Google is the one to start, and it has not.
+    const isWaitingForGoogleMap = Boolean(presetSettled) && !isStandaloneMapbox && !googleLoadError && !mapInitialized;
+    useEffect(() => {
+        if (!isWaitingForGoogleMap) return;
+        const timer = window.setTimeout(() => {
+            setGoogleInitTimeoutError(new Error('Google Maps did not start (check the API key)'));
+        }, MAP_INIT_TIMEOUT_MS);
+        return () => window.clearTimeout(timer);
+    }, [isWaitingForGoogleMap]);
     const shouldRenderMapCanvas = Boolean(presetSettled) && isLoaded && !loadError && !isStandaloneMapbox;
     const shouldShowMapLoadingOverlay = !loadError && (
         !presetSettled
