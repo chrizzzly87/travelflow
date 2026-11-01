@@ -695,6 +695,7 @@
         "description": "Quale mappa disegna l'app.",
         "google": "Google",
         "label": "Fornitore di mappe",
+        "lockedToMapbox": "This site is using Mapbox right now.",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox non è configurato qui, quindi viene usato Google."
       },
@@ -884,7 +885,8 @@
       "statusToReview": "Da valutare",
       "statusSaved": "Salvata",
       "unsave": "Annulla salvataggio"
-    }
+    },
+    "placeSearchUnavailable": "Place search is unavailable right now."
   },
   "tripRouteShell": {
     "loadingTrip": "Caricamento viaggio",

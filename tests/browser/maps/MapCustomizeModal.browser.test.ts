@@ -3,6 +3,8 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 
+import { MapRuntimeProvider } from '../../../components/GoogleMapsLoader';
+import { resetMapRendererChoiceForTests, setRuntimeMapPreset } from '../../../services/mapRuntimeService';
 import { MapCustomizeModal } from '../../../components/maps/MapCustomizeModal';
 import {
   MAP_PREFERENCE_PRESETS,
@@ -101,5 +103,28 @@ describe('components/maps/MapCustomizeModal', () => {
 
     const body = sheet.querySelector('[data-slot], div');
     expect(body?.className ?? '').not.toContain('max-h-[58vh]');
+  });
+
+  it('the Google renderer option is disabled with the locked note under mapbox_all', () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', `AIzaBAD${'x'.repeat(32)}`);
+    vi.stubEnv('VITE_MAPBOX_ACCESS_TOKEN', 'pk.test-token');
+    resetMapRendererChoiceForTests();
+    setRuntimeMapPreset('mapbox_all');
+    try {
+      render(React.createElement(
+        MapRuntimeProvider,
+        null,
+        React.createElement(MapCustomizeModal, baseProps()),
+      ));
+
+      const google = document.querySelector('input[name="map-renderer"][value="google"]') as HTMLInputElement;
+      const mapbox = document.querySelector('input[name="map-renderer"][value="mapbox"]') as HTMLInputElement;
+      expect(google.disabled).toBe(true);
+      expect(mapbox.disabled).toBe(false);
+      expect(screen.getByText('This site is using Mapbox right now.')).toBeInTheDocument();
+    } finally {
+      setRuntimeMapPreset(null);
+      vi.unstubAllEnvs();
+    }
   });
 });

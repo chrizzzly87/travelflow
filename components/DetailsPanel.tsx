@@ -10,14 +10,15 @@ import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
-import { useGoogleMaps } from './GoogleMapsLoader';
+import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import type { MarkdownAiAction } from './MarkdownEditor';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityTypeVisualsUtils';
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
-import { resolveCitySuggestion, searchCitySuggestions, searchPlaceSuggestions, type CityLookupSuggestion } from '../shared/cityLookup';
+import { searchPlaceSuggestions } from '../shared/cityLookup';
+import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../services/locationSearchService';
 import { FlagIcon } from './flags/FlagIcon';
 import { MapAppLinks } from './maps/MapAppLinks';
 import { needsCoordinateResolution, resolveItemCoordinates } from '../services/activityLocationResolver';
@@ -223,6 +224,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [customColorError, setCustomColorError] = useState<string | null>(null);
 
   const { isLoaded } = useGoogleMaps();
+  const { runtime } = useMapRuntime();
+  const locationSearch = runtime.effectiveSelection.locationSearch;
+  // City search also runs on Mapbox; activity and hotel search are Google-only.
+  const isCitySearchReady = isLoaded || locationSearch === 'mapbox';
+  const isPlaceSearchAvailable = locationSearch === 'google';
   const { confirm: confirmDialog } = useAppDialog();
   const { t } = useTranslation('common');
   const mapLanguage = getStoredAppLanguage();
@@ -490,7 +496,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       }
 
       const query = cityInputValue.trim();
-      if (!isLoaded || query.length < 2) {
+      if (!isCitySearchReady || query.length < 2) {
           setCitySuggestions([]);
           setIsSearchingCities(false);
           return;
@@ -512,7 +518,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       return () => {
           window.clearTimeout(timeoutId);
       };
-  }, [cityInputValue, isCityEditorOpen, isLoaded, mapLanguage]);
+  }, [cityInputValue, isCityEditorOpen, isCitySearchReady, mapLanguage]);
 
   useEffect(() => {
       if (!isActivityLocationEditorOpen) {
@@ -522,7 +528,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       }
 
       const query = activityLocationInputValue.trim();
-      if (!isLoaded || query.length < 2) {
+      if (!isLoaded || !isPlaceSearchAvailable || query.length < 2) {
           setActivityLocationSuggestions([]);
           setIsSearchingActivityLocations(false);
           return;
@@ -544,7 +550,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       return () => {
           window.clearTimeout(timeoutId);
       };
-  }, [activityLocationInputValue, isActivityLocationEditorOpen, isLoaded, mapLanguage]);
+  }, [activityLocationInputValue, isActivityLocationEditorOpen, isLoaded, isPlaceSearchAvailable, mapLanguage]);
 
   useEffect(() => {
       if (!aiStatus || isEnhancing) return;
@@ -950,7 +956,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       const normalizedNext = getNormalizedCityName(nextLocation);
       const isUnchanged = normalizedCurrent === normalizedNext;
       let resolvedSuggestion: CityLookupSuggestion | null = null;
-      if (!isUnchanged && !cityDraft.coordinates && isLoaded) {
+      if (!isUnchanged && !cityDraft.coordinates && isCitySearchReady) {
           resolvedSuggestion = await resolveCitySuggestion(nextLocation, { language: mapLanguage });
       }
       if (!isUnchanged && !cityDraft.coordinates && !resolvedSuggestion) {
@@ -1141,7 +1147,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const handleHotelSearch = async () => {
-      if (!hotelQuery || !displayItem || !isLoaded) return;
+      if (!hotelQuery || !displayItem || !isLoaded || !isPlaceSearchAvailable) return;
       setIsSearchingHotels(true);
       setHotelSearchUnavailable(false);
 
@@ -1904,6 +1910,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         />
                         <Search size={14} className="absolute left-3 top-3.5 text-muted-foreground" />
                     </div>
+                    {!isPlaceSearchAvailable && (
+                        <p role="status" className="mt-2 text-xs text-muted-foreground">
+                            {t('tripView.placeSearchUnavailable', 'Place search is unavailable right now.')}
+                        </p>
+                    )}
                     {(isSearchingActivityLocations || activityLocationSuggestions.length > 0) && (
                         <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto dark:shadow-none">
                             {isSearchingActivityLocations && (
@@ -2114,7 +2125,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                          </button>
                      </div>
                      <div className="mb-4 relative">
-                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2 dark:bg-red-400/12 dark:border-red-400/25"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
+                        {!isPlaceSearchAvailable ? <p role="status" className="text-xs text-muted-foreground">{t('tripView.placeSearchUnavailable', 'Place search is unavailable right now.')}</p> : hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2 dark:bg-red-400/12 dark:border-red-400/25"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
                             <>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">

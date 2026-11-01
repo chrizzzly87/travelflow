@@ -688,6 +688,7 @@
         "description": "Welche Karte die App zeichnet.",
         "google": "Google",
         "label": "Kartenanbieter",
+        "lockedToMapbox": "Diese Seite nutzt gerade Mapbox.",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox ist hier nicht eingerichtet, deshalb wird Google verwendet."
       },
@@ -877,7 +878,8 @@
       "statusToReview": "Zu prüfen",
       "statusSaved": "Gemerkt",
       "unsave": "Nicht mehr merken"
-    }
+    },
+    "placeSearchUnavailable": "Die Ortssuche ist gerade nicht verfügbar."
   },
   "tripRouteShell": {
     "loadingTrip": "Reise wird geladen",
