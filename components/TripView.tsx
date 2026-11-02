@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, Suspense } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, useSyncExternalStore, Suspense } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
@@ -81,6 +81,8 @@ import { useTripLiveUpdate, type PendingTripCommitState } from './tripview/useTr
 import { useTripCommitFlush } from './tripview/useTripCommitFlush';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
 import { useTripResizeControls } from './tripview/useTripResizeControls';
+import { useDockedPaneRebalance, useTripLayoutSizing } from './tripview/useTripLayoutSizing';
+import { useTripSelection } from './tripview/useTripSelection';
 import { useTripShareActions } from './tripview/useTripShareActions';
 import { useTripSelectionController } from './tripview/useTripSelectionController';
 import { useTripTitleEditHandlers } from './tripview/useTripTitleEditHandlers';
@@ -88,7 +90,7 @@ import { useTripTitleEditorState } from './tripview/useTripTitleEditorState';
 import { useTripUpdateItemsHandler } from './tripview/useTripUpdateItemsHandler';
 import { useTripViewModeState } from './tripview/useTripViewModeState';
 import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
-import { buildVisualHistoryLabel, resolveVisualDiff, type ZoomChangeSource } from './tripview/viewChangeDiff';
+import { buildVisualHistoryLabel, resolveVisualDiff } from './tripview/viewChangeDiff';
 import { readFloatingMapPreviewState, writeFloatingMapPreviewState } from './tripview/floatingMapPreviewState';
 import { TRIP_SYNC_TOAST_EVENT, type SyncToastEventDetail } from '../services/tripSyncManager';
 import {
@@ -141,14 +143,12 @@ import {
     GENERATION_PROGRESS_MESSAGES,
     HARD_MIN_DETAILS_WIDTH,
     HORIZONTAL_TIMELINE_AUTO_FIT_PADDING,
-    MAX_ZOOM_LEVEL,
     MIN_BOTTOM_MAP_HEIGHT,
     MIN_DETAILS_WIDTH,
     MIN_MAP_WIDTH,
     MIN_SIDEBAR_WIDTH,
     MIN_TIMELINE_COLUMN_WIDTH,
     MIN_TIMELINE_HEIGHT,
-    MIN_ZOOM_LEVEL,
     MOBILE_VIEWPORT_MAX_WIDTH,
     RESIZE_KEYBOARD_STEP,
     RESIZER_WIDTH,
@@ -971,8 +971,6 @@ const useTripViewRender = ({
 
     // View State
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
-    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-    const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
     const [isTripAgentOpen, setIsTripAgentOpen] = useState(() => readTripAgentOpenState());
     // Hides the recovery banner in this session as soon as the choice is made,
     // without waiting for the next sync snapshot to report the cleared backup.
@@ -1003,8 +1001,6 @@ const useTripViewRender = ({
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingCommitRef = useRef<PendingTripCommitState | null>(null);
     const suppressCommitRef = useRef(false);
-    const pendingManualViewSettingsPersistRef = useRef(false);
-    const pendingManualVisualCommitRef = useRef(false);
     const navigateHistoryRef = useRef<((action: 'undo' | 'redo', options?: { silent?: boolean }) => boolean) | null>(null);
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
@@ -1038,8 +1034,21 @@ const useTripViewRender = ({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
-    const zoomChangeSourceRef = useRef<ZoomChangeSource>(null);
-    const [isZoomDirty, setIsZoomDirty] = useState(false);
+    const {
+        pendingManualViewSettingsPersistRef,
+        pendingManualVisualCommitRef,
+        paneLayoutCustomizedRef,
+        zoomChangeSourceRef,
+        isZoomDirty,
+        markManualViewChange,
+        markZoomDirty,
+        markAutoFitZoomChange,
+        clampZoomLevel,
+        resolveSteppedZoomLevel,
+    } = useTripLayoutSizing({
+        tripId: trip.id,
+        setZoomBehavior,
+    });
     const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>(() => {
         if (initialViewSettings?.mapDockMode === 'floating' || initialViewSettings?.mapDockMode === 'docked') {
             return initialViewSettings.mapDockMode;
@@ -1047,37 +1056,9 @@ const useTripViewRender = ({
         const persisted = readFloatingMapPreviewState().mode;
         return persisted === 'floating' || persisted === 'docked' ? persisted : 'docked';
     });
-    const markManualViewChange = useCallback(() => {
-        pendingManualViewSettingsPersistRef.current = true;
-        pendingManualVisualCommitRef.current = true;
-    }, []);
-    const markZoomDirty = useCallback((source: ZoomChangeSource = 'manual') => {
-        if (source) {
-            zoomChangeSourceRef.current = source;
-        }
-        if (source === 'manual') {
-            setZoomBehavior('manual');
-            markManualViewChange();
-            setIsZoomDirty(true);
-        }
-    }, [markManualViewChange, setZoomBehavior]);
-    const markAutoFitZoomChange = useCallback(() => {
-        zoomChangeSourceRef.current = 'auto';
-        setZoomBehavior('fit');
-    }, [setZoomBehavior]);
-    useEffect(() => {
-        setIsZoomDirty(false);
-        zoomChangeSourceRef.current = null;
-        pendingManualViewSettingsPersistRef.current = false;
-        pendingManualVisualCommitRef.current = false;
-    }, [trip.id]);
     useEffect(() => {
         writeFloatingMapPreviewState({ mode: mapDockMode });
     }, [mapDockMode]);
-    const clampZoomLevel = useCallback((value: number) => {
-        if (!Number.isFinite(value)) return 1;
-        return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
-    }, []);
     const pixelsPerDay = BASE_PIXELS_PER_DAY * zoomLevel;
     const {
         handleTimelineTouchStart,
@@ -1639,22 +1620,12 @@ const useTripViewRender = ({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    useEffect(() => {
-        const cityIdSet = new Set<string>();
-        for (const item of trip.items) {
-            if (item.type === 'city') {
-                cityIdSet.add(item.id);
-            }
-        }
-
-        if (selectedCityIds.some(id => !cityIdSet.has(id))) {
-            setSelectedCityIds(prev => prev.filter(id => cityIdSet.has(id)));
-        }
-
-        if (selectedItemId && !trip.items.some(item => item.id === selectedItemId)) {
-            setSelectedItemId(null);
-        }
-    }, [trip.items, selectedCityIds, selectedItemId]);
+    const {
+        selectedItemId,
+        setSelectedItemId,
+        selectedCityIds,
+        setSelectedCityIds,
+    } = useTripSelection({ tripItems: trip.items });
 
     const tripMeta = useMemo(() => buildTripMetaSummary(trip), [trip.items, trip.startDate]);
     const tripSummary = tripMeta.summaryLine;
@@ -1959,7 +1930,6 @@ const useTripViewRender = ({
     const isMobile = isMobileViewport;
     const effectiveLayoutMode: 'vertical' | 'horizontal' = isMobile ? 'vertical' : layoutMode;
     const effectiveMapDockMode: 'docked' | 'floating' = isMobile ? 'docked' : mapDockMode;
-    const paneLayoutCustomizedRef = useRef(false);
 
     const {
         handleUpdateItem,
@@ -2292,42 +2262,17 @@ const useTripViewRender = ({
         },
     });
 
-    useLayoutEffect(() => {
-        if (typeof window === 'undefined') return;
-        if (isMobile) return;
-        if (paneLayoutCustomizedRef.current) return;
-        if (effectiveLayoutMode !== 'horizontal' || effectiveMapDockMode !== 'docked') return;
-
-        const rebalanceDockedPaneWidths = () => {
-            const availableWidth = window.innerWidth - (detailsPanelVisible ? RESIZER_WIDTH * 2 : RESIZER_WIDTH);
-            const targetPaneWidth = Math.floor(availableWidth / (detailsPanelVisible ? 3 : 2));
-
-            if (detailsPanelVisible) {
-                const nextDetailsWidth = clampDetailsWidth(targetPaneWidth);
-                const nextSidebarWidth = clampSidebarWidth(targetPaneWidth, nextDetailsWidth);
-                setDetailsWidth(nextDetailsWidth);
-                setSidebarWidth(nextSidebarWidth);
-                return;
-            }
-
-            setSidebarWidth(clampSidebarWidth(targetPaneWidth, 0));
-        };
-
-        rebalanceDockedPaneWidths();
-        window.addEventListener('resize', rebalanceDockedPaneWidths);
-        return () => {
-            window.removeEventListener('resize', rebalanceDockedPaneWidths);
-        };
-    }, [
-        clampDetailsWidth,
-        clampSidebarWidth,
-        detailsPanelVisible,
+    useDockedPaneRebalance({
+        isMobile,
         effectiveLayoutMode,
         effectiveMapDockMode,
-        isMobile,
+        detailsPanelVisible,
+        paneLayoutCustomizedRef,
+        clampDetailsWidth,
+        clampSidebarWidth,
         setDetailsWidth,
         setSidebarWidth,
-    ]);
+    });
 
     const focusCityBlockById = useCallback((cityId: string) => {
         if (typeof document === 'undefined') return;
@@ -2382,29 +2327,6 @@ const useTripViewRender = ({
         ].join(':'),
         [detailsPanelVisible, detailsWidth, effectiveLayoutMode, effectiveMapDockMode, sidebarWidth, timelineHeight]
     );
-
-    const resolveSteppedZoomLevel = useCallback((
-        currentZoomLevel: number,
-        direction: 'in' | 'out',
-    ) => {
-        const uniquePresets = new Set<number>();
-        for (const value of TIMELINE_ZOOM_LEVEL_PRESETS) {
-            uniquePresets.add(clampZoomLevel(value));
-        }
-        const normalizedPresets = Array.from(uniquePresets).sort((left, right) => left - right);
-
-        if (direction === 'in') {
-            return normalizedPresets.find((preset) => preset > (currentZoomLevel + 0.001))
-                ?? normalizedPresets[normalizedPresets.length - 1]
-                ?? clampZoomLevel(currentZoomLevel);
-        }
-
-        return [...normalizedPresets]
-            .reverse()
-            .find((preset) => preset < (currentZoomLevel - 0.001))
-            ?? normalizedPresets[0]
-            ?? clampZoomLevel(currentZoomLevel);
-    }, [clampZoomLevel]);
 
     const {
         mapViewportRef,
