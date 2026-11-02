@@ -3,7 +3,7 @@ id: rel-2026-11-01-standalone-mapbox
 version: v0.218.0
 title: "Trip maps keep working without Google Maps"
 date: 2026-11-01
-published_at: 2026-11-02T06:16:31Z
+published_at: 2026-11-02T06:46:00Z
 status: published
 notify_in_app: false
 in_app_hours: 24
