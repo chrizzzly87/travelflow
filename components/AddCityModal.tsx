@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useReducer, useRef } from 'react';
 import { Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
-import { useGoogleMaps } from './GoogleMapsLoader';
+import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { AppModal } from './ui/app-modal';
 import { getStoredAppLanguage } from '../utils';
 import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../services/locationSearchService';
@@ -103,7 +103,11 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     const cityInputId = 'add-city-input';
     const mapLanguage = getStoredAppLanguage();
     
-    const { isLoaded } = useGoogleMaps();
+    const { isLoaded: googleLoaded } = useGoogleMaps();
+    const { runtime } = useMapRuntime();
+    // Mapbox city search needs no Google script. Read from the provider so the
+    // modal re-renders when the admin preset arrives after mount.
+    const isSearchReady = googleLoaded || runtime.effectiveSelection.locationSearch === 'mapbox';
 
     const resetModalState = useCallback(() => {
         lookupRequestIdRef.current += 1;
@@ -133,7 +137,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
         }
 
         const query = state.inputValue.trim();
-        if (!isLoaded || query.length < 2) {
+        if (!isSearchReady || query.length < 2) {
             dispatch({ type: 'suggestionsIdle' });
             return;
         }
@@ -153,7 +157,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
         return () => {
             window.clearTimeout(timeoutId);
         };
-    }, [isLoaded, isOpen, mapLanguage, state.inputValue]);
+    }, [isSearchReady, isOpen, mapLanguage, state.inputValue]);
 
     const handleSuggestionSelect = (suggestion: CityLookupSuggestion) => {
         onAdd(suggestion.name, suggestion.coordinates.lat, suggestion.coordinates.lng);
@@ -163,7 +167,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     const handleManualSubmit = async () => {
         const query = state.inputValue.trim();
         if (!query) return;
-        if (!isLoaded) {
+        if (!isSearchReady) {
             dispatch({
                 type: 'mapUnavailable',
                 error: 'Map services are still loading. Please try again in a moment.',
@@ -245,7 +249,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                             placeholder="e.g. Kyoto, Japan"
                         />
                         <div className="absolute left-3 top-3.5 text-muted-foreground">
-                            {!isLoaded || state.isSearchingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                            {!isSearchReady || state.isSearchingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                         </div>
                         
                         {state.isManualMode && (
@@ -278,7 +282,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                         </div>
                     )}
                     <p className="mt-2 text-xs text-muted-foreground">
-                        {!isLoaded
+                        {!isSearchReady
                             ? "Loading Map services…"
                             : "Start typing to search and select a city suggestion."}
                     </p>

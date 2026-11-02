@@ -7,6 +7,7 @@ import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AiModelPicker, ApprovedOpenRouterModelsField } from '../components/admin/AiModelPicker';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { NumberInput } from '../components/ui/number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -22,6 +23,8 @@ import {
 import type { MapStyle } from '../types';
 import type { MapRuntimePreset } from '../shared/mapRuntime';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { getMapboxAccessToken } from '../services/mapRuntimeService';
+import { getGoogleMapsApiKey } from '../utils';
 
 const MODEL_AGE_INPUT_ID = 'admin-settings-model-age';
 
@@ -52,23 +55,39 @@ const MAP_STYLE_LABELS: Record<MapStyle, string> = {
     cleanDark: 'Clean dark',
 };
 
-const MAP_RUNTIME_PRESETS: Array<{ value: MapRuntimePreset; label: string; note: string }> = [
+const MAP_RUNTIME_PRESETS: Array<{
+    value: MapRuntimePreset;
+    label: string;
+    note: string;
+    needsGoogleKey: boolean;
+    needsMapboxToken: boolean;
+}> = [
     {
         value: 'google_all',
         label: 'Google for everything',
-        note: 'Google draws the map and answers routing, place search and the preview images.',
+        note: 'Google draws the map and answers routing, place search and the preview images. Needs a Google key.',
+        needsGoogleKey: true,
+        needsMapboxToken: false,
     },
     {
         value: 'mapbox_visual_google_services',
         label: 'Mapbox visuals, Google services',
-        note: 'Mapbox draws the map and the preview images. Routing and place search stay on Google.',
+        note: 'Mapbox draws the map and the preview images; routing and place search use Google. Needs a Google key and a Mapbox token.',
+        needsGoogleKey: true,
+        needsMapboxToken: true,
     },
     {
         value: 'mapbox_all',
         label: 'Mapbox for everything',
-        note: 'Routing and place search still fall back to Google — there is no Mapbox implementation for them here.',
+        note: 'Mapbox only — Google is never loaded. Routes are straight lines, city search uses Mapbox, activity and hotel search are off. Needs a Mapbox token.',
+        needsGoogleKey: false,
+        needsMapboxToken: true,
     },
 ];
+
+// Build-time presence only: the key is not checked against the provider.
+const hasBuildKey = (value: string): boolean => value.trim().length > 0;
+const keyState = (present: boolean): string => (present ? 'configured' : 'not configured');
 
 /**
  * The app-wide switches, in one place. Every one of these used to be a hand
@@ -177,8 +196,26 @@ export const AdminGlobalSettingsPage: React.FC = () => {
         }
     }, [draft]);
 
-    const activeMapPresetNote = MAP_RUNTIME_PRESETS
-        .find((preset) => preset.value === draft?.mapRuntimePreset)?.note;
+    const activeMapPreset = MAP_RUNTIME_PRESETS.find((preset) => preset.value === draft?.mapRuntimePreset);
+    const hasGoogleKey = hasBuildKey(getGoogleMapsApiKey());
+    const hasMapboxToken = hasBuildKey(getMapboxAccessToken());
+    const missingMapKeys = [
+        activeMapPreset?.needsGoogleKey && !hasGoogleKey ? 'a Google key' : null,
+        activeMapPreset?.needsMapboxToken && !hasMapboxToken ? 'a Mapbox token' : null,
+    ].filter((name): name is string => name !== null);
+    const activeMapPresetNote = activeMapPreset && (
+        <>
+            <span className="block">{activeMapPreset.note}</span>
+            <span className="mt-1 block">
+                {`This deploy: Google key ${keyState(hasGoogleKey)} · Mapbox token ${keyState(hasMapboxToken)}. Configured means set at build time, not checked to work.`}
+            </span>
+            {missingMapKeys.length > 0 && (
+                <Badge variant="warning" className="mt-2 h-auto max-w-full whitespace-normal text-start">
+                    {`The selected provider needs ${missingMapKeys.join(' and ')} that this deploy does not have.`}
+                </Badge>
+            )}
+        </>
+    );
 
     return (
         <AdminShell

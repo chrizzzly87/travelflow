@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const searchPlaceLocation = vi.fn();
+const runtime = vi.hoisted(() => ({ locationSearch: 'google' as 'google' | 'mapbox' | 'none' }));
+
+vi.mock('../../services/mapRuntimeService', () => ({
+  getClientMapRuntimeResolution: () => ({ effectiveSelection: { locationSearch: runtime.locationSearch } }),
+}));
 
 vi.mock('../../services/locationSearchService', () => ({
   searchPlaceLocation: (...args: unknown[]) => searchPlaceLocation(...args),
@@ -21,6 +26,7 @@ const activity = {
 describe('services/activityLocationResolver', () => {
   beforeEach(() => {
     searchPlaceLocation.mockReset();
+    runtime.locationSearch = 'google';
     resetActivityLocationResolverCache();
   });
 
@@ -114,4 +120,15 @@ describe('services/activityLocationResolver', () => {
     expect(await resolveItemCoordinates({ item: { title: '', location: '' } })).toBeNull();
     expect(searchPlaceLocation).not.toHaveBeenCalled();
   });
+
+  it.each(['mapbox', 'none'] as const)(
+    'activityLocationResolver resolves nothing and requests nothing when search is not google (%s)',
+    async (locationSearch) => {
+      runtime.locationSearch = locationSearch;
+      searchPlaceLocation.mockResolvedValue({ coordinates: { lat: 1, lng: 2 } });
+
+      expect(await resolveItemCoordinates({ item: activity, contextLabel: 'Taipei' })).toBeNull();
+      expect(searchPlaceLocation).not.toHaveBeenCalled();
+    },
+  );
 });

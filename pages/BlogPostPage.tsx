@@ -218,7 +218,7 @@ interface BlogMapCanvasProps {
     fallbackEmbedSrc: string;
 }
 
-const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
+export const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
     mapId,
     config,
     activeCategory,
@@ -226,7 +226,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
     postSlug,
     fallbackEmbedSrc,
 }) => {
-    const { isLoaded, loadError } = useGoogleMaps();
+    const { isLoaded, loadError, disabled } = useGoogleMaps();
     const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
     const [spotResolutionState, setSpotResolutionState] = useState<{
         coordinatesBySpotId: Record<string, google.maps.LatLngLiteral | null | undefined>;
@@ -418,7 +418,8 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
         mapInstance.fitBounds(bounds, { top: 52, right: 52, bottom: 52, left: 52 });
     }, [mapCenter, mapInstance, mapZoom, markerSpots]);
 
-    if (loadError) {
+    // `disabled`: no subsystem uses Google, so the script never loads and `isLoaded` stays false.
+    if (loadError || disabled) {
         return (
             <iframe
                 src={fallbackEmbedSrc}

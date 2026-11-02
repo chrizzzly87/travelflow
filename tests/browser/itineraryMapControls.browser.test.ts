@@ -39,7 +39,7 @@ describe('components/ItineraryMap map controls availability', () => {
   });
 
   it('keeps controls visible while map is loading and disables map-only actions', () => {
-    mockedUseGoogleMaps.mockReturnValue({ isLoaded: false, loadError: null });
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: false, loadError: null, disabled: false });
 
     const onLayoutChange = vi.fn();
 
@@ -70,7 +70,7 @@ describe('components/ItineraryMap map controls availability', () => {
   });
 
   it('shows load errors with controls still visible and map-only actions disabled', () => {
-    mockedUseGoogleMaps.mockReturnValue({ isLoaded: false, loadError: new Error('Failed to load map') });
+    mockedUseGoogleMaps.mockReturnValue({ isLoaded: false, loadError: new Error('Failed to load map'), disabled: false });
 
     render(
       React.createElement(ItineraryMap, {

@@ -719,7 +719,9 @@ export const resolvePreviewUpstreamUrl = async (
       scale,
       zoom,
       mapboxToken,
-      googleApiKey,
+      // Google Directions only when the runtime routes through Google; under
+      // mapbox_all a configured Google key must stay unused.
+      googleApiKey: mapRuntime.effectiveSelection.routes === "google" ? googleApiKey : "",
     });
 
     return { ok: true, url: mapUrl };

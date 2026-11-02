@@ -3,8 +3,9 @@ import { Trans, useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
-import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
+import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { reverseGeocodeCountry as reverseGeocodeCountryLookup } from '../services/locationSearchService';
 import { getConnectivitySnapshot } from '../services/supabaseHealthMonitor';
 import { enqueueTripCommitAndSync } from '../services/tripSyncManager';
 import { useAppDialog } from './AppDialogProvider';
@@ -836,32 +837,16 @@ export const TripManager: React.FC<TripManagerProps> = ({
       return null;
     }
 
-    const apiKey = getGoogleMapsApiKey();
-    if (!apiKey) return null;
-
     try {
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(`${lat},${lng}`)}&result_type=country&key=${encodeURIComponent(apiKey)}`;
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      const payload = await response.json();
-      if (!Array.isArray(payload?.results) || payload.results.length === 0) return null;
+      const match = await reverseGeocodeCountryLookup(lat, lng);
+      if (!match) return null;
 
-      const components = payload.results[0]?.address_components;
-      if (!Array.isArray(components)) return null;
-
-      const countryComponent = components.find((component: any) =>
-        Array.isArray(component?.types) && component.types.includes('country')
-      );
-      if (!countryComponent) return null;
-
-      const shortName = String(countryComponent.short_name || '').toLowerCase();
-      const longName = String(countryComponent.long_name || '');
-      const byCode = COUNTRY_BY_CODE.get(shortName);
+      const byCode = COUNTRY_BY_CODE.get(match.code.toLowerCase());
       if (!byCode) return null;
 
       countryCacheRef.current[key] = {
         countryCode: byCode.code,
-        countryName: longName || byCode.name,
+        countryName: match.name || byCode.name,
       };
       persistCountryCache();
 

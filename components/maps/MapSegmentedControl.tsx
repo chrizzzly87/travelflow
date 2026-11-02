@@ -16,6 +16,8 @@ import React from 'react';
 export interface MapSegmentedOption<T extends string | number> {
   value: T;
   label: string;
+  /** Greys out this one choice while the others stay available. */
+  disabled?: boolean;
   /** A colour chip shown above the label, for the style swatches. */
   swatch?: { background: string; border?: string };
 }
@@ -55,13 +57,15 @@ export const MapSegmentedControl = <T extends string | number>({
   >
     {options.map((option) => {
       const isSelected = option.value === value;
+      const isDisabled = disabled || option.disabled === true;
       return (
         <label
           key={String(option.value)}
           className={[
             'relative flex min-h-9 cursor-pointer select-none items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors',
             wrap ? 'flex-col justify-center py-2' : 'flex-1',
-            disabled ? 'cursor-not-allowed' : '',
+            isDisabled ? 'cursor-not-allowed' : '',
+            option.disabled && !disabled ? 'opacity-50' : '',
             isSelected
               ? 'bg-card text-accent-700 shadow-sm ring-1 ring-accent-300 dark:text-accent-200 dark:shadow-none'
               : 'text-muted-foreground hover:text-foreground',
@@ -78,7 +82,7 @@ export const MapSegmentedControl = <T extends string | number>({
             name={name}
             value={String(option.value)}
             checked={isSelected}
-            disabled={disabled}
+            disabled={isDisabled}
             onChange={() => onChange(option.value)}
             className="absolute size-0 opacity-0"
           />

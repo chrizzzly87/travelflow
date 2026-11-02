@@ -5,7 +5,11 @@ import {
   searchCitySuggestions as searchGoogleCitySuggestions,
   type CityLookupSuggestion,
 } from '../shared/cityLookup';
-import { getClientMapRuntimeResolution } from './mapRuntimeService';
+import {
+  resolveMapboxCitySuggestion,
+  searchMapboxCitySuggestions,
+} from '../shared/mapboxCityLookup';
+import { getClientMapRuntimeResolution, getMapboxAccessToken } from './mapRuntimeService';
 
 export type { CityLookupSuggestion } from '../shared/cityLookup';
 
@@ -68,6 +72,13 @@ export const searchCitySuggestions = async (
   options?: { language?: AppLanguage; maxResults?: number },
 ): Promise<CityLookupSuggestion[]> => {
   const implementation = getActiveLocationSearchImplementation();
+  if (implementation === 'mapbox') {
+    return searchMapboxCitySuggestions(query, {
+      accessToken: getMapboxAccessToken(),
+      language: options?.language,
+      maxResults: options?.maxResults,
+    });
+  }
   if (implementation !== 'google') {
     return [];
   }
@@ -79,6 +90,12 @@ export const resolveCitySuggestion = async (
   options?: { language?: AppLanguage },
 ): Promise<CityLookupSuggestion | null> => {
   const implementation = getActiveLocationSearchImplementation();
+  if (implementation === 'mapbox') {
+    return resolveMapboxCitySuggestion(query, {
+      accessToken: getMapboxAccessToken(),
+      language: options?.language,
+    });
+  }
   if (implementation !== 'google') {
     return null;
   }

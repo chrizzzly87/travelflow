@@ -121,6 +121,7 @@ export const createRuntimeModelPlaceholder = (id: string): AiModelCatalogItem | 
 export const applyAiRuntimeSettings = (
     settings: AiRuntimeSettings,
     catalogModels: AiModelCatalogItem[] = [],
+    options: { applyMapPreset?: boolean } = {},
 ): AiRuntimeSettings => {
     registerRuntimeAiModels(catalogModels);
     if (!getAiModelById(settings.defaultModelId)) {
@@ -129,7 +130,7 @@ export const applyAiRuntimeSettings = (
     }
     setRuntimeDefaultCreateTripModelId(settings.defaultModelId);
     setRuntimeDefaultMapStyle(settings.mapDefaultStyle);
-    setRuntimeMapPreset(settings.mapRuntimePreset);
+    if (options.applyMapPreset !== false) setRuntimeMapPreset(settings.mapRuntimePreset);
     return settings;
 };
 
@@ -138,11 +139,17 @@ let runtimeSettingsPromise: Promise<AiRuntimeSettings> | null = null;
 export const loadPublicAiRuntimeSettings = async (): Promise<AiRuntimeSettings> => {
     if (runtimeSettingsPromise) return runtimeSettingsPromise;
     runtimeSettingsPromise = (async () => {
-        if (!supabase) return applyAiRuntimeSettings(DEFAULT_AI_RUNTIME_SETTINGS);
+        // A failed or missing load must not force Google: leave the preset to the env default.
+        const applyDefaults = (): AiRuntimeSettings => {
+            applyAiRuntimeSettings(DEFAULT_AI_RUNTIME_SETTINGS, [], { applyMapPreset: false });
+            setRuntimeMapPreset(null);
+            return DEFAULT_AI_RUNTIME_SETTINGS;
+        };
+        if (!supabase) return applyDefaults();
         const { data, error } = await supabase.rpc('get_public_runtime_settings');
         if (error) {
             console.warn('Could not load public AI runtime settings; using the code default.', error);
-            return applyAiRuntimeSettings(DEFAULT_AI_RUNTIME_SETTINGS);
+            return applyDefaults();
         }
         return applyAiRuntimeSettings(normalizeAiRuntimeSettings(data));
     })();

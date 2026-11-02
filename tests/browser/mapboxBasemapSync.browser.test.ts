@@ -1,5 +1,10 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { render, waitFor } from '@testing-library/react';
+
+import { MapboxBasemapSync } from '../../components/maps/MapboxBasemapSync';
+import { FakeMapboxMap } from '../helpers/fakeMapboxGl';
 
 import {
   areMapboxCameraTargetsNearlyEqual,
@@ -13,6 +18,8 @@ import {
   shouldRunMapboxGlobeIntro,
   stretchMapboxViewport,
 } from '../../components/maps/mapboxBasemapUtils';
+
+vi.mock('mapbox-gl', async () => ({ default: (await import('../helpers/fakeMapboxGl')).fakeMapboxModule }));
 
 describe('components/maps/MapboxBasemapSync', () => {
   it('detects fatal auth and restriction errors from Mapbox tile requests', () => {
@@ -129,5 +136,28 @@ describe('components/maps/MapboxBasemapSync', () => {
       mapViewportSize: { width: 320, height: 220 },
       introActive: true,
     })).toBe('mercator');
+  });
+
+  it('standalone mode creates the map without a Google map', async () => {
+    FakeMapboxMap.reset();
+    const onMapReadyChange = vi.fn();
+    const onSurfaceReadyChange = vi.fn();
+
+    render(React.createElement(MapboxBasemapSync, {
+      accessToken: 'pk.test',
+      googleMap: null,
+      standalone: true,
+      introBounds: [{ lat: 48.85, lng: 2.35 }, { lat: 52.52, lng: 13.4 }],
+      mapStyle: 'standard',
+      mapDockMode: 'docked',
+      mapViewportSize: null,
+      interactive: true,
+      onMapReadyChange,
+      onSurfaceReadyChange,
+    }));
+
+    await waitFor(() => expect(onSurfaceReadyChange).toHaveBeenCalledWith(true));
+    expect(onMapReadyChange).toHaveBeenCalledWith(FakeMapboxMap.latest());
+    expect(FakeMapboxMap.instances).toHaveLength(1);
   });
 });

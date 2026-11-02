@@ -1071,9 +1071,14 @@ const buildMapPreviewUrl = async (
   let mapboxPathOverlays: string[] = [];
   const routeTrip = { ...trip, mapColorMode };
   const legColor = (index: number) => mapColorMode === "brand" ? routeColor : resolveColorHex(routeCities[index]?.color) || routeColor;
-  if (!preferences?.hideRoutes && routeMode === "realistic" && mapsApiKey) {
-    if (staticMapImplementation === "google") pathParams = await buildRealisticPathParams(routeTrip, mapsApiKey, routeColor);
-    else mapboxPathOverlays = await buildMapboxRealisticPathOverlays(routeTrip, mapsApiKey, routeColor);
+  // Google Directions are off-limits when the runtime routes elsewhere: the
+  // realistic path then degrades to straight lines instead of calling Google.
+  const routesKey = preferences?.mapRuntimeSelection && preferences.mapRuntimeSelection.routes !== "google"
+    ? ""
+    : mapsApiKey;
+  if (!preferences?.hideRoutes && routeMode === "realistic" && routesKey) {
+    if (staticMapImplementation === "google") pathParams = await buildRealisticPathParams(routeTrip, routesKey, routeColor);
+    else mapboxPathOverlays = await buildMapboxRealisticPathOverlays(routeTrip, routesKey, routeColor);
   }
   if (pathParams.length === 0) {
     pathParams = routeCoordinates.slice(1).map((coord, index) => buildSimplePathParam([routeCoordinates[index], coord], legColor(index))).filter((value): value is string => Boolean(value));
