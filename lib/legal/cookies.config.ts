@@ -427,6 +427,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_admin_component_canvas_camera',
+      purpose: 'Remembers the pan and zoom position of the admin component canvas.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_dev_admin_bypass_disabled',
       purpose: 'Session flag to disable dev-admin bypass after explicit logout in the current tab.',
       duration: 'Session',

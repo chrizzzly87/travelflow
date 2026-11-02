@@ -32,6 +32,7 @@ import { Route as adminAiBenchmarkRouteImport } from './routes/admin/ai-benchmar
 import { Route as adminAirportsRouteImport } from './routes/admin/airports'
 import { Route as adminAuditRouteImport } from './routes/admin/audit'
 import { Route as adminBillingRouteImport } from './routes/admin/billing'
+import { Route as adminComponentCanvasRouteImport } from './routes/admin/component-canvas'
 import { Route as adminComponentPlaygroundRouteImport } from './routes/admin/component-playground'
 import { Route as adminDashboardRouteImport } from './routes/admin/dashboard'
 import { Route as adminDesignSystemPlaygroundRouteImport } from './routes/admin/design-system-playground'
@@ -194,6 +195,11 @@ const adminAuditRoute = adminAuditRouteImport.update({
 const adminBillingRoute = adminBillingRouteImport.update({
   id: '/admin/billing',
   path: '/admin/billing',
+  getParentRoute: () => areasAdminRoute,
+} as any)
+const adminComponentCanvasRoute = adminComponentCanvasRouteImport.update({
+  id: '/admin/component-canvas',
+  path: '/admin/component-canvas',
   getParentRoute: () => areasAdminRoute,
 } as any)
 const adminComponentPlaygroundRoute =
@@ -502,6 +508,7 @@ export interface FileRoutesByFullPath {
   '/admin/airports': typeof adminAirportsRoute
   '/admin/audit': typeof adminAuditRoute
   '/admin/billing': typeof adminBillingRoute
+  '/admin/component-canvas': typeof adminComponentCanvasRoute
   '/admin/component-playground': typeof adminComponentPlaygroundRoute
   '/admin/dashboard': typeof adminDashboardRoute
   '/admin/design-system-playground': typeof adminDesignSystemPlaygroundRoute
@@ -576,6 +583,7 @@ export interface FileRoutesByTo {
   '/admin/airports': typeof adminAirportsRoute
   '/admin/audit': typeof adminAuditRoute
   '/admin/billing': typeof adminBillingRoute
+  '/admin/component-canvas': typeof adminComponentCanvasRoute
   '/admin/component-playground': typeof adminComponentPlaygroundRoute
   '/admin/dashboard': typeof adminDashboardRoute
   '/admin/design-system-playground': typeof adminDesignSystemPlaygroundRoute
@@ -659,6 +667,7 @@ export interface FileRoutesById {
   '/_admin/admin/airports': typeof adminAirportsRoute
   '/_admin/admin/audit': typeof adminAuditRoute
   '/_admin/admin/billing': typeof adminBillingRoute
+  '/_admin/admin/component-canvas': typeof adminComponentCanvasRoute
   '/_admin/admin/component-playground': typeof adminComponentPlaygroundRoute
   '/_admin/admin/dashboard': typeof adminDashboardRoute
   '/_admin/admin/design-system-playground': typeof adminDesignSystemPlaygroundRoute
@@ -735,6 +744,7 @@ export interface FileRouteTypes {
     | '/admin/airports'
     | '/admin/audit'
     | '/admin/billing'
+    | '/admin/component-canvas'
     | '/admin/component-playground'
     | '/admin/dashboard'
     | '/admin/design-system-playground'
@@ -809,6 +819,7 @@ export interface FileRouteTypes {
     | '/admin/airports'
     | '/admin/audit'
     | '/admin/billing'
+    | '/admin/component-canvas'
     | '/admin/component-playground'
     | '/admin/dashboard'
     | '/admin/design-system-playground'
@@ -891,6 +902,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/airports'
     | '/_admin/admin/audit'
     | '/_admin/admin/billing'
+    | '/_admin/admin/component-canvas'
     | '/_admin/admin/component-playground'
     | '/_admin/admin/dashboard'
     | '/_admin/admin/design-system-playground'
@@ -1124,6 +1136,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/billing'
       fullPath: '/admin/billing'
       preLoaderRoute: typeof adminBillingRouteImport
+      parentRoute: typeof areasAdminRoute
+    }
+    '/_admin/admin/component-canvas': {
+      id: '/_admin/admin/component-canvas'
+      path: '/admin/component-canvas'
+      fullPath: '/admin/component-canvas'
+      preLoaderRoute: typeof adminComponentCanvasRouteImport
       parentRoute: typeof areasAdminRoute
     }
     '/_admin/admin/component-playground': {
@@ -1553,6 +1572,7 @@ interface areasAdminRouteChildren {
   adminAirportsRoute: typeof adminAirportsRoute
   adminAuditRoute: typeof adminAuditRoute
   adminBillingRoute: typeof adminBillingRoute
+  adminComponentCanvasRoute: typeof adminComponentCanvasRoute
   adminComponentPlaygroundRoute: typeof adminComponentPlaygroundRoute
   adminDashboardRoute: typeof adminDashboardRoute
   adminDesignSystemPlaygroundRoute: typeof adminDesignSystemPlaygroundRoute
@@ -1574,6 +1594,7 @@ const areasAdminRouteChildren: areasAdminRouteChildren = {
   adminAirportsRoute: adminAirportsRoute,
   adminAuditRoute: adminAuditRoute,
   adminBillingRoute: adminBillingRoute,
+  adminComponentCanvasRoute: adminComponentCanvasRoute,
   adminComponentPlaygroundRoute: adminComponentPlaygroundRoute,
   adminDashboardRoute: adminDashboardRoute,
   adminDesignSystemPlaygroundRoute: adminDesignSystemPlaygroundRoute,

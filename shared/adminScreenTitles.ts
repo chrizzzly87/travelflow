@@ -23,6 +23,7 @@ export const ADMIN_SCREEN_TITLES: Readonly<Record<string, string>> = {
     '/admin/og-tools': 'OG tools',
     '/admin/design-system-playground': 'Design system',
     '/admin/component-playground': 'Component playground',
+    '/admin/component-canvas': 'Component canvas',
 };
 
 /** "Users · Admin" for a known screen, plain "Admin" otherwise. */
