@@ -84,14 +84,16 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({ groups }) => {
     const saveTimerRef = useRef<number | null>(null);
 
     const [rects, setRects] = useState<Record<string, CanvasRect>>({});
+    /** The latest placed rects, for event handlers; written by `runLayout`. */
     const rectsRef = useRef(rects);
-    rectsRef.current = rects;
     const sizesRef = useRef(new Map<string, GroupSize>());
     const assignmentRef = useRef<Record<string, number>>({});
     const columnsRef = useRef<number | null>(null);
     const hasFittedRef = useRef(storedCamera !== null);
     const groupsRef = useRef(groups);
-    groupsRef.current = groups;
+    useLayoutEffect(() => {
+        groupsRef.current = groups;
+    }, [groups]);
 
     // --- Camera ---------------------------------------------------------
 
@@ -163,7 +165,9 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({ groups }) => {
             const b = result.rects[id];
             return !a || a.x !== b.x || a.y !== b.y || a.width !== b.width || a.height !== b.height;
         });
-        if (changed) setRects(result.rects);
+        if (!changed) return;
+        rectsRef.current = result.rects;
+        setRects(result.rects);
     }, []);
 
     const observerRef = useRef<ResizeObserver | null>(null);
@@ -485,7 +489,7 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({ groups }) => {
             <div
                 ref={worldRef}
                 {...{ [CANVAS_SURFACE_ATTRIBUTE]: '' }}
-                className="absolute start-0 top-0 size-0 origin-top-left will-change-transform"
+                className="absolute start-0 top-0 size-0 origin-top-left"
                 style={{ direction: 'ltr' }}
             >
                 {groups.map((group) => {
