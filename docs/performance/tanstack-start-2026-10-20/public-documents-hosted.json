@@ -1,0 +1,624 @@
+{
+  "recordedAt": "2026-10-20T05:00:22.221086+00:00",
+  "revision": "22a203af305dff2d9aa691db6103cfd6c06f82ca",
+  "deployId": "6ad6f4566bdac6dd07b3ca87",
+  "baseUrl": "https://6ad6f4566bdac6dd07b3ca87--travelflowapp.netlify.app",
+  "samples": [
+    {
+      "path": "/",
+      "status": 200,
+      "lang": "en",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/",
+      "passed": true
+    },
+    {
+      "path": "/features",
+      "status": 200,
+      "lang": "en",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/features",
+      "passed": true
+    },
+    {
+      "path": "/pricing",
+      "status": 200,
+      "lang": "en",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pricing",
+      "passed": true
+    },
+    {
+      "path": "/faq",
+      "status": 200,
+      "lang": "en",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/faq",
+      "passed": true
+    },
+    {
+      "path": "/blog",
+      "status": 200,
+      "lang": "en",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/blog",
+      "passed": true
+    },
+    {
+      "path": "/updates",
+      "status": 200,
+      "lang": "en",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/updates",
+      "passed": true
+    },
+    {
+      "path": "/inspirations",
+      "status": 200,
+      "lang": "en",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/es",
+      "status": 200,
+      "lang": "es",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/es",
+      "passed": true
+    },
+    {
+      "path": "/es/features",
+      "status": 200,
+      "lang": "es",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/es/features",
+      "passed": true
+    },
+    {
+      "path": "/es/pricing",
+      "status": 200,
+      "lang": "es",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/es/pricing",
+      "passed": true
+    },
+    {
+      "path": "/es/faq",
+      "status": 200,
+      "lang": "es",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/es/faq",
+      "passed": true
+    },
+    {
+      "path": "/es/blog",
+      "status": 200,
+      "lang": "es",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/es/blog",
+      "passed": true
+    },
+    {
+      "path": "/es/updates",
+      "status": 200,
+      "lang": "es",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/es/updates",
+      "passed": true
+    },
+    {
+      "path": "/es/inspirations",
+      "status": 200,
+      "lang": "es",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/es/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/de",
+      "status": 200,
+      "lang": "de",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/de",
+      "passed": true
+    },
+    {
+      "path": "/de/features",
+      "status": 200,
+      "lang": "de",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/de/features",
+      "passed": true
+    },
+    {
+      "path": "/de/pricing",
+      "status": 200,
+      "lang": "de",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/de/pricing",
+      "passed": true
+    },
+    {
+      "path": "/de/faq",
+      "status": 200,
+      "lang": "de",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/de/faq",
+      "passed": true
+    },
+    {
+      "path": "/de/blog",
+      "status": 200,
+      "lang": "de",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/de/blog",
+      "passed": true
+    },
+    {
+      "path": "/de/updates",
+      "status": 200,
+      "lang": "de",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/de/updates",
+      "passed": true
+    },
+    {
+      "path": "/de/inspirations",
+      "status": 200,
+      "lang": "de",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/de/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/fr",
+      "status": 200,
+      "lang": "fr",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/fr",
+      "passed": true
+    },
+    {
+      "path": "/fr/features",
+      "status": 200,
+      "lang": "fr",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/fr/features",
+      "passed": true
+    },
+    {
+      "path": "/fr/pricing",
+      "status": 200,
+      "lang": "fr",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/fr/pricing",
+      "passed": true
+    },
+    {
+      "path": "/fr/faq",
+      "status": 200,
+      "lang": "fr",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/fr/faq",
+      "passed": true
+    },
+    {
+      "path": "/fr/blog",
+      "status": 200,
+      "lang": "fr",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/fr/blog",
+      "passed": true
+    },
+    {
+      "path": "/fr/updates",
+      "status": 200,
+      "lang": "fr",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/fr/updates",
+      "passed": true
+    },
+    {
+      "path": "/fr/inspirations",
+      "status": 200,
+      "lang": "fr",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/fr/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/pt",
+      "status": 200,
+      "lang": "pt",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pt",
+      "passed": true
+    },
+    {
+      "path": "/pt/features",
+      "status": 200,
+      "lang": "pt",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pt/features",
+      "passed": true
+    },
+    {
+      "path": "/pt/pricing",
+      "status": 200,
+      "lang": "pt",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pt/pricing",
+      "passed": true
+    },
+    {
+      "path": "/pt/faq",
+      "status": 200,
+      "lang": "pt",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pt/faq",
+      "passed": true
+    },
+    {
+      "path": "/pt/blog",
+      "status": 200,
+      "lang": "pt",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pt/blog",
+      "passed": true
+    },
+    {
+      "path": "/pt/updates",
+      "status": 200,
+      "lang": "pt",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pt/updates",
+      "passed": true
+    },
+    {
+      "path": "/pt/inspirations",
+      "status": 200,
+      "lang": "pt",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pt/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/ru",
+      "status": 200,
+      "lang": "ru",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ru",
+      "passed": true
+    },
+    {
+      "path": "/ru/features",
+      "status": 200,
+      "lang": "ru",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ru/features",
+      "passed": true
+    },
+    {
+      "path": "/ru/pricing",
+      "status": 200,
+      "lang": "ru",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ru/pricing",
+      "passed": true
+    },
+    {
+      "path": "/ru/faq",
+      "status": 200,
+      "lang": "ru",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ru/faq",
+      "passed": true
+    },
+    {
+      "path": "/ru/blog",
+      "status": 200,
+      "lang": "ru",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ru/blog",
+      "passed": true
+    },
+    {
+      "path": "/ru/updates",
+      "status": 200,
+      "lang": "ru",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ru/updates",
+      "passed": true
+    },
+    {
+      "path": "/ru/inspirations",
+      "status": 200,
+      "lang": "ru",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ru/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/it",
+      "status": 200,
+      "lang": "it",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/it",
+      "passed": true
+    },
+    {
+      "path": "/it/features",
+      "status": 200,
+      "lang": "it",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/it/features",
+      "passed": true
+    },
+    {
+      "path": "/it/pricing",
+      "status": 200,
+      "lang": "it",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/it/pricing",
+      "passed": true
+    },
+    {
+      "path": "/it/faq",
+      "status": 200,
+      "lang": "it",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/it/faq",
+      "passed": true
+    },
+    {
+      "path": "/it/blog",
+      "status": 200,
+      "lang": "it",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/it/blog",
+      "passed": true
+    },
+    {
+      "path": "/it/updates",
+      "status": 200,
+      "lang": "it",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/it/updates",
+      "passed": true
+    },
+    {
+      "path": "/it/inspirations",
+      "status": 200,
+      "lang": "it",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/it/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/pl",
+      "status": 200,
+      "lang": "pl",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pl",
+      "passed": true
+    },
+    {
+      "path": "/pl/features",
+      "status": 200,
+      "lang": "pl",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pl/features",
+      "passed": true
+    },
+    {
+      "path": "/pl/pricing",
+      "status": 200,
+      "lang": "pl",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pl/pricing",
+      "passed": true
+    },
+    {
+      "path": "/pl/faq",
+      "status": 200,
+      "lang": "pl",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pl/faq",
+      "passed": true
+    },
+    {
+      "path": "/pl/blog",
+      "status": 200,
+      "lang": "pl",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pl/blog",
+      "passed": true
+    },
+    {
+      "path": "/pl/updates",
+      "status": 200,
+      "lang": "pl",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pl/updates",
+      "passed": true
+    },
+    {
+      "path": "/pl/inspirations",
+      "status": 200,
+      "lang": "pl",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/pl/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/ko",
+      "status": 200,
+      "lang": "ko",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ko",
+      "passed": true
+    },
+    {
+      "path": "/ko/features",
+      "status": 200,
+      "lang": "ko",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ko/features",
+      "passed": true
+    },
+    {
+      "path": "/ko/pricing",
+      "status": 200,
+      "lang": "ko",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ko/pricing",
+      "passed": true
+    },
+    {
+      "path": "/ko/faq",
+      "status": 200,
+      "lang": "ko",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ko/faq",
+      "passed": true
+    },
+    {
+      "path": "/ko/blog",
+      "status": 200,
+      "lang": "ko",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ko/blog",
+      "passed": true
+    },
+    {
+      "path": "/ko/updates",
+      "status": 200,
+      "lang": "ko",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ko/updates",
+      "passed": true
+    },
+    {
+      "path": "/ko/inspirations",
+      "status": 200,
+      "lang": "ko",
+      "dir": "ltr",
+      "canonical": "https://travelflowapp.netlify.app/ko/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/fa",
+      "status": 200,
+      "lang": "fa",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/fa",
+      "passed": true
+    },
+    {
+      "path": "/fa/features",
+      "status": 200,
+      "lang": "fa",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/fa/features",
+      "passed": true
+    },
+    {
+      "path": "/fa/pricing",
+      "status": 200,
+      "lang": "fa",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/fa/pricing",
+      "passed": true
+    },
+    {
+      "path": "/fa/faq",
+      "status": 200,
+      "lang": "fa",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/fa/faq",
+      "passed": true
+    },
+    {
+      "path": "/fa/blog",
+      "status": 200,
+      "lang": "fa",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/fa/blog",
+      "passed": true
+    },
+    {
+      "path": "/fa/updates",
+      "status": 200,
+      "lang": "fa",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/fa/updates",
+      "passed": true
+    },
+    {
+      "path": "/fa/inspirations",
+      "status": 200,
+      "lang": "fa",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/fa/inspirations",
+      "passed": true
+    },
+    {
+      "path": "/ur",
+      "status": 200,
+      "lang": "ur",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/ur",
+      "passed": true
+    },
+    {
+      "path": "/ur/features",
+      "status": 200,
+      "lang": "ur",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/ur/features",
+      "passed": true
+    },
+    {
+      "path": "/ur/pricing",
+      "status": 200,
+      "lang": "ur",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/ur/pricing",
+      "passed": true
+    },
+    {
+      "path": "/ur/faq",
+      "status": 200,
+      "lang": "ur",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/ur/faq",
+      "passed": true
+    },
+    {
+      "path": "/ur/blog",
+      "status": 200,
+      "lang": "ur",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/ur/blog",
+      "passed": true
+    },
+    {
+      "path": "/ur/updates",
+      "status": 200,
+      "lang": "ur",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/ur/updates",
+      "passed": true
+    },
+    {
+      "path": "/ur/inspirations",
+      "status": 200,
+      "lang": "ur",
+      "dir": "rtl",
+      "canonical": "https://travelflowapp.netlify.app/ur/inspirations",
+      "passed": true
+    }
+  ]
+}

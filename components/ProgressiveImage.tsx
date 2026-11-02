@@ -1,49 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { decode } from 'blurhash';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { createBlurhashPlaceholder } from './images/blurhashPlaceholder';
+import { useHydrated } from '../hooks/useHydrated';
 import { IMAGE_PLACEHOLDERS } from '../data/imagePlaceholders.generated';
 import { buildImageCdnUrl, buildImageSrcSet, isImageCdnEnabled } from '../utils/imageDelivery';
 import { cn } from '../lib/utils';
 
-const blurhashDataUrlCache = new Map<string, string>();
-
 const normalizePlaceholderPath = (value: string): string => {
-    if (!value) return value;
-    try {
-        const normalized = new URL(value, window.location.origin);
-        return normalized.pathname;
-    } catch {
-        return value.split('#')[0].split('?')[0];
-    }
-};
-
-const clampDimension = (value: number): number => {
-    const normalized = Number.isFinite(value) ? Math.round(value) : 32;
-    return Math.max(1, normalized);
-};
-
-const createBlurhashDataUrl = (hash: string, width: number, height: number): string | null => {
-    if (!hash) return null;
-    const key = `${hash}:${width}x${height}`;
-    const cached = blurhashDataUrlCache.get(key);
-    if (cached) return cached;
-    try {
-        const w = clampDimension(Math.min(width, 48));
-        const h = clampDimension(Math.min(height, 48));
-        const pixels = decode(hash, w, h);
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const context = canvas.getContext('2d');
-        if (!context) return null;
-        const imageData = context.createImageData(w, h);
-        imageData.data.set(pixels);
-        context.putImageData(imageData, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
-        blurhashDataUrlCache.set(key, dataUrl);
-        return dataUrl;
-    } catch {
-        return null;
-    }
+    try { return new URL(value, 'https://travelflow.invalid').pathname; }
+    catch { return value.split('#')[0].split('?')[0]; }
 };
 
 export interface ProgressiveImageProps {
@@ -63,7 +27,7 @@ export interface ProgressiveImageProps {
     skipFade?: boolean;
 }
 
-export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
+const ProgressiveImageContent: React.FC<ProgressiveImageProps> = ({
     src,
     alt,
     width,
@@ -79,8 +43,12 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     disableCdn = false,
     skipFade = false,
 }) => {
+    const hydrated = useHydrated();
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [useOriginal, setUseOriginal] = useState(false);
+    const handledErrors = useRef(new Set<string>());
+    const deliverOriginal = disableCdn || useOriginal;
 
     const normalizedKey = useMemo(
         () => normalizePlaceholderPath(placeholderKey || src),
@@ -90,32 +58,44 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     const resolvedWidth = width ?? placeholderMeta?.width ?? 1536;
     const resolvedHeight = height ?? placeholderMeta?.height ?? 1024;
     const blurhashValue = placeholderBlurhash || placeholderMeta?.blurhash || '';
-    const placeholderDataUrl = useMemo(() => {
-        if (!blurhashValue) return null;
-        if (typeof document === 'undefined') return null;
-        const sourceWidth = placeholderMeta?.width ?? resolvedWidth;
-        const sourceHeight = placeholderMeta?.height ?? resolvedHeight;
-        return createBlurhashDataUrl(blurhashValue, sourceWidth, sourceHeight);
-    }, [blurhashValue, placeholderMeta?.height, placeholderMeta?.width, resolvedWidth, resolvedHeight]);
+    const placeholderDataUrl = useMemo(() => createBlurhashPlaceholder(blurhashValue), [blurhashValue]);
 
     const avifSrcSet = useMemo(
-        () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
-        [disableCdn, src, srcSetWidths]
+        () => (isImageCdnEnabled() && !deliverOriginal ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
+        [deliverOriginal, src, srcSetWidths]
     );
     const webpSrcSet = useMemo(
-        () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'webp', quality: 60 }) : ''),
-        [disableCdn, src, srcSetWidths]
+        () => (isImageCdnEnabled() && !deliverOriginal ? buildImageSrcSet(src, srcSetWidths, { format: 'webp', quality: 60 }) : ''),
+        [deliverOriginal, src, srcSetWidths]
     );
     const imgSrcSet = useMemo(
-        () => (disableCdn ? '' : buildImageSrcSet(src, srcSetWidths, { quality: 66 })),
-        [disableCdn, src, srcSetWidths]
+        () => (deliverOriginal ? '' : buildImageSrcSet(src, srcSetWidths, { quality: 66 })),
+        [deliverOriginal, src, srcSetWidths]
     );
 
     const fallbackWidth = srcSetWidths[srcSetWidths.length - 1] || width;
-    const resolvedSrc = disableCdn ? src : buildImageCdnUrl(src, { width: fallbackWidth, quality: 66 });
-    const fetchPriorityAttr = fetchPriority
-        ? ({ fetchpriority: fetchPriority } as { fetchpriority: 'high' | 'low' | 'auto' })
-        : undefined;
+    const resolvedSrc = deliverOriginal ? src : buildImageCdnUrl(src, { width: fallbackWidth, quality: 66 });
+    const attempt = deliverOriginal ? 'original' : 'cdn';
+    const canRetryOriginal = !deliverOriginal && resolvedSrc !== src;
+    const handleImageError = useCallback(() => {
+        // Cache reconciliation and the error event can describe the same failed
+        // request. Each attempt may advance the lifecycle only once.
+        if (handledErrors.current.has(attempt)) return;
+        handledErrors.current.add(attempt);
+        setIsLoaded(false);
+        if (canRetryOriginal) {
+            setUseOriginal(true);
+            return;
+        }
+        setHasError(true);
+        onError?.();
+    }, [attempt, canRetryOriginal, onError]);
+    const reconcileImage = useCallback((node: HTMLImageElement | null) => {
+        // Hydration may attach after the native load/error event already fired.
+        if (!node?.complete) return;
+        if (node.naturalWidth > 0) setIsLoaded(true);
+        else handleImageError();
+    }, [handleImageError]);
 
     return (
         <div className="relative size-full overflow-hidden">
@@ -131,40 +111,29 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                 {avifSrcSet && <source type="image/avif" srcSet={avifSrcSet} sizes={sizes} />}
                 {webpSrcSet && <source type="image/webp" srcSet={webpSrcSet} sizes={sizes} />}
                 <img
-                    ref={(node) => {
-                        // The image can finish loading before hydration attaches
-                        // the onLoad handler (warm CDN cache), so the event never
-                        // fires and the image stays at opacity-0 with only the
-                        // blurhash showing. Reconcile from the DOM on mount: if
-                        // it is already complete, reveal it; if it already failed,
-                        // fall back.
-                        if (!node) return;
-                        if (node.complete) {
-                            if (node.naturalWidth > 0) setIsLoaded(true);
-                            else { setHasError(true); onError?.(); }
-                        }
-                    }}
+                    key={attempt}
+                    ref={reconcileImage}
                     src={resolvedSrc}
                     srcSet={imgSrcSet || undefined}
                     sizes={sizes}
                     alt={alt}
                     loading={loading}
                     decoding="async"
-                    {...fetchPriorityAttr}
+                    fetchPriority={fetchPriority}
                     width={resolvedWidth}
                     height={resolvedHeight}
                     className={cn(
                         className || 'size-full object-cover',
                         'outline outline-1 -outline-offset-1 outline-black/10 transition-opacity duration-300 motion-reduce:transition-none dark:outline-white/10',
-                        isLoaded || skipFade ? 'opacity-100' : 'opacity-0',
+                        !hydrated || isLoaded || skipFade ? 'opacity-100' : 'opacity-0',
                     )}
                     onLoad={() => setIsLoaded(true)}
-                    onError={() => {
-                        setHasError(true);
-                        onError?.();
-                    }}
+                    onError={handleImageError}
                 />
             </picture>
         </div>
     );
 };
+
+/** A different resource gets a fresh load/error lifecycle. */
+export const ProgressiveImage: React.FC<ProgressiveImageProps> = props => <ProgressiveImageContent key={props.src} {...props} />;

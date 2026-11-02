@@ -5,6 +5,10 @@ This repo standardizes Google Maps integration on `@vis.gl/react-google-maps`.
 ## Scope
 Use this guide whenever you add or change maps in planner, profile/admin cards, marketing/blog, or shared routes.
 
+The planner also has a Mapbox basemap runtime (`components/MapRuntimeProvider.tsx`,
+`components/maps/*`). Read the runtime through `useMapRuntime()` rather than assuming
+Google; the rules below cover the Google side and the shared preview pipeline.
+
 ## Required architecture
 1. Wrap map surfaces under `GoogleMapsLoader` and use `useGoogleMaps()` for load state.
 2. Render map canvases with `Map` from `@vis.gl/react-google-maps`.
@@ -51,6 +55,22 @@ Use this guide whenever you add or change maps in planner, profile/admin cards, 
 1. Reuse `buildRouteCacheKey(...)` for leg-level cache identity.
 2. Keep cache usage mode-aware and coordinate-aware.
 3. Avoid unnecessary recomputation by preserving no-op guards in update handlers.
+4. `/api/trip-map-preview` returns the rendered image itself, never a redirect to the provider. See `docs/TRIP_MAP_PREVIEW_CACHING.md` before touching that endpoint or the URL builder that feeds it.
+5. A preview URL is a cache key. Never add a parameter to it that does not change the picture — one wasted parameter multiplies the number of renders we pay for by the number of values it takes.
+
+## Committed static previews
+1. Homepage example trip cards (`pnpm maps:generate`) and featured country route cards (`pnpm maps:routes:generate`) ship pre-rendered PNGs under `public/images/trip-maps/`. The build must never call the Static Maps API.
+2. Both generators share `scripts/lib/staticMapPreview.ts`; change style tokens, dimensions or marker treatment there so both surfaces stay identical.
+3. Both support `--dry-run` to inspect URLs without spending quota.
+4. Never draw a route with partially resolved coordinates — skip it and let the card fall back to its decorative header.
+
+## Standalone Mapbox preset (`mapbox_all`)
+1. `mapbox_all` runs maps with no Google script and no Google request: renderer, location search and static maps use Mapbox, and `routes` is `'none'`.
+2. `usesGoogle(selection)` in `shared/mapRuntime.ts` is true when any subsystem selects Google. `MapRuntimeProvider` mounts the Google loader only when it is true, so never read `window.google` or call `maps.googleapis.com` on a path that can run under this preset.
+3. With routes `'none'`, the itinerary map draws straight legs. The activity and hotel place search shows a paused notice rather than a spinner whenever `locationSearch` is not `'google'` (it follows that setting, not the routes value). City lookup (add-city) goes through `shared/mapboxCityLookup.ts`.
+4. `presetSettled` from the runtime context turns true when the stored preset has been read, the load fails, or the 3 s timeout (`MAP_PRESET_SETTLE_TIMEOUT_MS`) passes. Gate any Google-dependent start-up on it, so the first render never starts Google before the preset is known.
+5. `isRendererLockedByPreset` pins the renderer to Mapbox under this preset; a traveller's stored renderer choice cannot pull Google back in, and the customize sheet says the renderer is locked. The lock applies only while Mapbox is the effective renderer; without a token the runtime falls back to Google and the choice stays open.
+6. To switch back, configure a Google key, then pick "Google for everything" or "Mapbox visuals, Google services" in the admin map settings. An admin's preset change applies without a reload in the admin's own tab; travellers get it on their next page load. The preset still needs a Mapbox token; without one the runtime falls back to Google with a warning.
 
 ## Blog and marketing usage
 1. For static visual previews, prefer `/api/trip-map-preview` over direct external Static Maps URLs.

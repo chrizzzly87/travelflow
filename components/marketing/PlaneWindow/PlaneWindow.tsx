@@ -1,0 +1,205 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { buildImageCdnUrl } from '../../../utils/imageDelivery';
+import { useWindowShade, SHADE_REST_TRANSFORM, FRAME_REST_FILTER } from './useWindowShade';
+import type { CloudSceneHandle } from './cloudScene';
+
+const PLANE_WINDOW_SRC = '/images/plane-window.png';
+// Match the lg breakpoint that reveals this desktop-only decoration. Native
+// picture selection avoids downloading its frame on hidden mobile layouts.
+const DESKTOP_MEDIA = '(min-width: 64rem)';
+const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+const PLANE_WINDOW_IMAGE_WIDTH = 640;
+const PLANE_WINDOW_IMAGE_HEIGHT = 938;
+
+const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softwarepipe|basic render|generic renderer/i;
+
+/**
+ * Whether it is worth spending a WebGL context and a render loop here.
+ *
+ * A full-bleed WebGL hero was removed from this app once already for
+ * performance (see HeroWebGLBackground). This one is a 320px box on desktop
+ * only, but the same caution applies: anything that says "do not animate" or
+ * "this machine has no GPU" gets the static layer instead.
+ */
+const shouldRenderScene = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    if (!window.matchMedia(DESKTOP_MEDIA).matches) return false;
+
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (connection?.saveData) return false;
+
+    try {
+        const probe = document.createElement('canvas');
+        const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+        if (!gl) return false;
+        const info = gl.getExtension('WEBGL_debug_renderer_info');
+        if (info) {
+            const renderer = String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) || '');
+            if (SOFTWARE_RENDERER.test(renderer)) return false;
+        }
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+export const PlaneWindow: React.FC = () => {
+    const { t } = useTranslation('home');
+    const { shade, dragging, isDark, handlers, shadeElRef, frameElRef } = useWindowShade();
+    // State wakes the external WebGL effect when its real host attaches.
+    const [hostNode, setHostNode] = useState<HTMLDivElement | null>(null);
+    const sceneRef = useRef<CloudSceneHandle | null>(null);
+    const [sceneReady, setSceneReady] = useState(false);
+    const [useOriginalFrame, setUseOriginalFrame] = useState(false);
+
+    const planeWindowSrc = buildImageCdnUrl(PLANE_WINDOW_SRC, {
+        width: PLANE_WINDOW_IMAGE_WIDTH,
+        format: 'webp',
+        quality: 68,
+    });
+
+    const retryFrame = useCallback(() => {
+        if (planeWindowSrc !== PLANE_WINDOW_SRC) setUseOriginalFrame(true);
+    }, [planeWindowSrc]);
+    const attachFrame = useCallback((node: HTMLImageElement | null) => {
+        frameElRef.current = node;
+        // A prerendered picture may fail before React attaches onError. Retry
+        // through the media-gated source, keeping the transparent mobile src.
+        if (!useOriginalFrame && node?.currentSrc && node.complete && node.naturalWidth === 0) retryFrame();
+    }, [frameElRef, retryFrame, useOriginalFrame]);
+
+    // Mount the cloud scene. This owns a WebGL context and a rAF loop, which is
+    // exactly the kind of external resource an effect is for.
+    //
+    // Deliberately not gated on IntersectionObserver: the window sits in the
+    // hero, above the fold, so an observer buys nothing and adds a real failure
+    // mode — browsers do not deliver IO callbacks to a hidden document, so a page
+    // restored in a background tab would sit on the static layer forever. The
+    // render loop is paused on visibilitychange instead, which gives the same
+    // saving without the way to get stuck.
+    useEffect(() => {
+        if (!hostNode || !shouldRenderScene()) return;
+
+        let cancelled = false;
+        let handle: CloudSceneHandle | null = null;
+
+        void import('./cloudScene')
+            .then(({ createCloudScene }) => {
+                if (cancelled || !hostNode.isConnected) return;
+                const rect = hostNode.getBoundingClientRect();
+                handle = createCloudScene(Math.max(rect.width, 1), Math.max(rect.height, 1));
+                sceneRef.current = handle;
+                handle.canvas.style.cssText = 'display:block;width:100%;height:100%';
+                hostNode.appendChild(handle.canvas);
+                handle.setPaused(document.hidden);
+                setSceneReady(true);
+            })
+            .catch((error) => {
+                // Warn in production too. The static layer stays either way, so
+                // this is never fatal — but gating the warning on DEV meant a
+                // silent failure on a deployed build looked identical to the
+                // scene simply being declined, and cost real debugging time.
+                console.warn('[PlaneWindow] cloud scene failed to load', error);
+            });
+
+        const onResize = () => {
+            const rect = hostNode.getBoundingClientRect();
+            if (handle) handle.resize(Math.max(rect.width, 1), Math.max(rect.height, 1));
+        };
+        const onVisibility = () => handle?.setPaused(document.hidden);
+
+        window.addEventListener('resize', onResize);
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener('resize', onResize);
+            document.removeEventListener('visibilitychange', onVisibility);
+            handle?.dispose();
+            sceneRef.current = null;
+        };
+    }, [hostNode]);
+
+    // Nothing to animate behind a closed shade, or in a tab nobody is looking at.
+    useEffect(() => {
+        sceneRef.current?.setPaused(shade > 0.92 || document.hidden);
+    }, [shade]);
+
+    const label = isDark ? t('hero.window.open', 'Open the window shade') : t('hero.window.close', 'Close the window shade');
+
+    // Native route composition owns where this hero appears. The static frame
+    // can render on the server; only the optional WebGL scene needs a browser.
+    return (
+        <div
+            className="plane-window-wrapper relative select-none"
+            style={{ aspectRatio: '580 / 850' }}
+            onContextMenu={(event) => event.preventDefault()}
+            onDragStart={(event) => event.preventDefault()}
+        >
+            {/* Sky + clouds, clipped to the glass. The static gradient is always
+                painted; the canvas lays over it when and if the scene mounts, so
+                the window never looks empty while the chunk loads. */}
+            <div className="plane-window-clouds-mask absolute overflow-hidden">
+                <div
+                    className="absolute inset-0"
+                    style={{ background: 'linear-gradient(to bottom, #5CADF4 0%, #94CCFB 33%, #C8E6FB 45%, #FFFFFF 62%)' }}
+                />
+                {!sceneReady && <div className="plane-window-static-clouds absolute inset-0" aria-hidden="true" />}
+                <div ref={setHostNode} className="absolute inset-0" aria-hidden="true" />
+
+                {/* The shade itself. There is no shutter artwork for this window,
+                    so it is drawn: a panel the colour of the cabin interior that
+                    slides down over the glass. */}
+                <div
+                    ref={(node) => { shadeElRef.current = node; }}
+                    className="plane-window-shade absolute inset-0"
+                    aria-hidden="true"
+                    style={{
+                        transform: SHADE_REST_TRANSFORM,
+                        // No transition while dragging: the shade must track the
+                        // finger exactly, not chase it. On release the transition
+                        // comes back and eases it home from wherever it was left.
+                        transition: dragging ? 'none' : 'transform 460ms cubic-bezier(.22,1,.36,1)',
+                    }}
+                />
+            </div>
+
+            {/* Frame on top, dimming as the cabin darkens. */}
+            <picture className="contents">
+                <source media={DESKTOP_MEDIA} srcSet={useOriginalFrame ? PLANE_WINDOW_SRC : planeWindowSrc} />
+                <img
+                    key={useOriginalFrame ? 'original' : 'cdn'}
+                    src={TRANSPARENT_PIXEL}
+                    alt={t('hero.window.alt', 'Airplane window')}
+                    width={PLANE_WINDOW_IMAGE_WIDTH}
+                    height={PLANE_WINDOW_IMAGE_HEIGHT}
+                    draggable={false}
+                    ref={attachFrame}
+                    onError={useOriginalFrame ? undefined : retryFrame}
+                    className="relative z-10 size-full object-contain drop-shadow-xl"
+                    decoding="async"
+                    fetchPriority="high"
+                    style={{
+                        filter: FRAME_REST_FILTER,
+                        transition: dragging ? 'none' : 'filter 460ms cubic-bezier(.22,1,.36,1)',
+                    }}
+                />
+            </picture>
+
+            {/* The grab target, shaped to the glass. A button so it is reachable
+                and announceable; arrow keys move the shade for keyboard users. */}
+            <button
+                type="button"
+                {...handlers}
+                aria-pressed={shade > 0.5}
+                aria-label={label}
+                title={label}
+                className="plane-window-grip absolute z-20"
+                style={{ cursor: dragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+            />
+        </div>
+    );
+};

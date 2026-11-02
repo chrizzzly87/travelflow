@@ -23,7 +23,8 @@ describe('components/maps/googleBasemapOverlayMode', () => {
       draw = () => {};
 
       getPanes() {
-        return { mapPane } as google.maps.MapPanes;
+        // Only the pane the controller mounts into.
+        return { mapPane } as unknown as google.maps.MapPanes;
       }
 
       setMap(map: unknown) {
@@ -41,9 +42,10 @@ describe('components/maps/googleBasemapOverlayMode', () => {
       },
     } as typeof window.google;
 
+    // The controller only reads the map's container element.
     const controller = createGoogleBasemapOverlayController({
       getDiv: () => mapDiv,
-    } as google.maps.Map);
+    } as unknown as google.maps.Map);
 
     expect(controller).not.toBeNull();
 

@@ -28,6 +28,15 @@ const isFocusableAndVisible = (element: HTMLElement): boolean => {
     return true;
 };
 
+// A modal layered above this trap (a confirm opened from inside it, a Radix
+// dialog in a portal) owns focus while it is open; pulling focus back would
+// make it unusable from the keyboard.
+const isInsideOtherModal = (node: Node | null, container: HTMLElement): boolean => {
+    const element = node instanceof Element ? node : node?.parentElement ?? null;
+    const modal = element?.closest('[aria-modal="true"], [role="alertdialog"]');
+    return Boolean(modal && modal !== container && !container.contains(modal));
+};
+
 const getFocusableElements = (container: HTMLElement): HTMLElement[] => {
     const nodes = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
     return nodes.filter((node) => isFocusableAndVisible(node));
@@ -88,6 +97,8 @@ export const useFocusTrap = ({
             const activeContainer = containerRef.current;
             if (!activeContainer) return;
 
+            if (isInsideOtherModal(document.activeElement, activeContainer)) return;
+
             const focusables = getFocusableElements(activeContainer);
             if (focusables.length === 0) {
                 event.preventDefault();
@@ -121,6 +132,7 @@ export const useFocusTrap = ({
 
             const target = event.target;
             if (target instanceof Node && activeContainer.contains(target)) return;
+            if (target instanceof Node && isInsideOtherModal(target, activeContainer)) return;
 
             const focusables = getFocusableElements(activeContainer);
             if (focusables.length > 0) {

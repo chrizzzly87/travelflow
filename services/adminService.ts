@@ -19,6 +19,9 @@ import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
+import { AdminUserFacingError } from './adminErrorMessages';
+import type { RecommendationRow } from '../shared/recommendationRows';
+import type { RecommendationStatus } from '../shared/recommendations';
 
 type AdminTripGenerationState = 'failed' | 'running' | 'queued' | 'succeeded';
 
@@ -225,6 +228,51 @@ export interface AdminAirportBulkUpdatePatch {
     timezone?: string | null;
 }
 
+export type AdminDestinationTargetKind = 'guide' | 'country_profile';
+export type AdminDestinationOverrideStatus = 'draft' | 'published';
+
+export interface AdminDestinationGuideRow {
+    id: string;
+    slug: string;
+    kind: 'country' | 'city' | 'island';
+    country_code: string;
+    parent_id: string | null;
+    name: string;
+    region: string;
+    priority_rank: number | null;
+    source_updated_at: string;
+    reviewed_at: string;
+    payload: Record<string, unknown>;
+}
+
+export interface AdminDestinationProfileRow extends Record<string, unknown> {
+    country_code: string;
+    name: string;
+    slug: string;
+    region: string;
+    source_provider: string;
+    origin_url: string;
+}
+
+export interface AdminDestinationOverrideRow {
+    id: string;
+    target_kind: AdminDestinationTargetKind;
+    target_id: string;
+    status: AdminDestinationOverrideStatus;
+    patch: Record<string, unknown>;
+    note: string | null;
+    updated_at: string;
+    updated_by: string | null;
+}
+
+export interface AdminDestinationCatalogResponse {
+    guides: AdminDestinationGuideRow[];
+    profiles: AdminDestinationProfileRow[];
+    overrides: AdminDestinationOverrideRow[];
+    importRuns: Array<Record<string, unknown>>;
+    referralCount: number;
+}
+
 const normalizeAirportIdentList = (value: unknown): string[] => (
     Array.isArray(value)
         ? value
@@ -320,22 +368,22 @@ const requireSupabase = () => {
     return supabase;
 };
 
-const mapTermsRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+// A missing or outdated migration is the one RPC failure an admin can fix
+// themselves, so that hint is user-facing; any other raw RPC text is not.
+const toTermsRpcError = (rawMessage: string | null | undefined, fallbackMessage: string): Error => {
     const message = (rawMessage || '').trim();
-    if (!message) return fallbackMessage;
     if (/column reference "is_current" is ambiguous/i.test(message)) {
-        return `${message}. Please re-run the latest /docs/supabase.sql migration for Terms admin functions.`;
+        return new AdminUserFacingError('Terms admin functions are outdated. Re-run the latest /docs/supabase.sql migration.');
     }
-    return message;
+    return new Error(message || fallbackMessage);
 };
 
-const mapBillingRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+const toBillingRpcError = (rawMessage: string | null | undefined, fallbackMessage: string): Error => {
     const message = (rawMessage || '').trim();
-    if (!message) return fallbackMessage;
     if (/admin_(list_billing_(subscriptions|webhook_events)|get_billing_dashboard)/i.test(message) || /billing\.read/i.test(message)) {
-        return `${message}. Please re-run the latest /docs/supabase.sql migration for billing admin functions.`;
+        return new AdminUserFacingError('Billing admin functions are missing or outdated. Re-run the latest /docs/supabase.sql migration.');
     }
-    return message;
+    return new Error(message || fallbackMessage);
 };
 
 const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
@@ -457,7 +505,7 @@ export const adminUpdateUserProfile = async (
         ? normalizeProfileCountryCode(payload.country)
         : '';
     if (typeof payload.country === 'string' && payload.country.trim() && !normalizedCountry) {
-        throw new Error('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
+        throw new AdminUserFacingError('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
     }
     const client = requireSupabase();
     const rpcPayload = {
@@ -672,7 +720,7 @@ export const adminListBillingSubscriptions = async (
         p_search: options.search ?? null,
     });
     if (error) {
-        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing subscriptions.'));
+        throw toBillingRpcError(error.message, 'Could not load billing subscriptions.');
     }
     return (Array.isArray(data) ? data : []) as AdminBillingSubscriptionRecord[];
 };
@@ -723,7 +771,7 @@ export const adminListBillingWebhookEvents = async (
         p_search: options.search ?? null,
     });
     if (error) {
-        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing webhook events.'));
+        throw toBillingRpcError(error.message, 'Could not load billing webhook events.');
     }
     return (Array.isArray(data) ? data : []) as AdminBillingWebhookEventRecord[];
 };
@@ -765,7 +813,7 @@ export const adminGetBillingDashboard = async (): Promise<AdminBillingDashboardR
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_get_billing_dashboard');
     if (error) {
-        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing dashboard.'));
+        throw toBillingRpcError(error.message, 'Could not load billing dashboard.');
     }
 
     const row = Array.isArray(data) ? data[0] : data;
@@ -1142,10 +1190,10 @@ export const adminPublishTermsVersion = async (
     const bindingLocale = (payload.bindingLocale || 'de').trim() || 'de';
     const summary = typeof payload.summary === 'string' ? payload.summary.trim() : '';
 
-    if (!version) throw new Error('Version is required.');
-    if (!title) throw new Error('Title is required.');
-    if (!lastUpdated) throw new Error('Last updated date is required.');
-    if (!contentDe || !contentEn) throw new Error('Both DE and EN terms content are required.');
+    if (!version) throw new AdminUserFacingError('Version is required.');
+    if (!title) throw new AdminUserFacingError('Title is required.');
+    if (!lastUpdated) throw new AdminUserFacingError('Last updated date is required.');
+    if (!contentDe || !contentEn) throw new AdminUserFacingError('Both DE and EN terms content are required.');
 
     if (shouldUseAdminMockData()) {
         const now = new Date().toISOString();
@@ -1179,7 +1227,7 @@ export const adminPublishTermsVersion = async (
         p_make_current: payload.makeCurrent ?? true,
     });
 
-    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not publish terms version.'));
+    if (error) throw toTermsRpcError(error.message, 'Could not publish terms version.');
     const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
     if (!row) throw new Error('Terms publish RPC returned no version payload.');
     return row;
@@ -1190,7 +1238,7 @@ export const adminSetCurrentTermsVersion = async (
     options?: { requiresReaccept?: boolean | null; effectiveAt?: string | null }
 ): Promise<LegalTermsVersionRecord> => {
     const normalizedVersion = version.trim();
-    if (!normalizedVersion) throw new Error('Version is required.');
+    if (!normalizedVersion) throw new AdminUserFacingError('Version is required.');
 
     if (shouldUseAdminMockData()) {
         const now = new Date().toISOString();
@@ -1219,7 +1267,7 @@ export const adminSetCurrentTermsVersion = async (
             : null,
     });
 
-    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not switch current terms version.'));
+    if (error) throw toTermsRpcError(error.message, 'Could not switch current terms version.');
     const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
     if (!row) throw new Error('Terms version switch RPC returned no payload.');
     return row;
@@ -1254,6 +1302,18 @@ const resolveInternalApiDevMessages = (path: string): { notFound: string; proxyF
         return {
             notFound: 'Admin airports routes are unavailable in Vite-only dev. Run `pnpm dev:netlify` (or keep it running alongside `pnpm dev`) to test airport sync and edit actions.',
             proxyFailure: 'Vite could not reach Netlify dev for admin airport requests (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing airport sync and editing.',
+        };
+    }
+    if (path.startsWith('/api/internal/admin/destinations')) {
+        return {
+            notFound: 'Admin destination routes are unavailable in Vite-only dev. Run `pnpm dev:netlify` alongside `pnpm dev` to browse and edit destination content.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin destination requests. Start `pnpm dev:netlify` before testing destination editing.',
+        };
+    }
+    if (path.startsWith('/api/internal/admin/recommendations')) {
+        return {
+            notFound: 'Admin recommendation routes are unavailable in Vite-only dev. Run `pnpm dev:netlify` alongside `pnpm dev` to browse and edit the idea library.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin recommendation requests. Start `pnpm dev:netlify` before testing the idea library.',
         };
     }
     return null;
@@ -1703,4 +1763,291 @@ export const adminDeleteAirportCatalogRecords = async (idents: string[]): Promis
         idents,
     });
     return normalizeAirportIdentList(payload.deletedIdents);
+};
+
+const isAdminDestinationGuideRow = (value: unknown): value is AdminDestinationGuideRow => {
+    if (!value || typeof value !== 'object') return false;
+    const row = value as Record<string, unknown>;
+    return typeof row.id === 'string' && typeof row.slug === 'string' && typeof row.name === 'string'
+        && (row.kind === 'country' || row.kind === 'city' || row.kind === 'island')
+        && Boolean(row.payload) && typeof row.payload === 'object' && !Array.isArray(row.payload);
+};
+
+const isAdminDestinationProfileRow = (value: unknown): value is AdminDestinationProfileRow => {
+    if (!value || typeof value !== 'object') return false;
+    const row = value as Record<string, unknown>;
+    return typeof row.country_code === 'string' && typeof row.name === 'string' && typeof row.slug === 'string';
+};
+
+const isAdminDestinationOverrideRow = (value: unknown): value is AdminDestinationOverrideRow => {
+    if (!value || typeof value !== 'object') return false;
+    const row = value as Record<string, unknown>;
+    return typeof row.id === 'string' && typeof row.target_id === 'string'
+        && (row.target_kind === 'guide' || row.target_kind === 'country_profile')
+        && (row.status === 'draft' || row.status === 'published')
+        && Boolean(row.patch) && typeof row.patch === 'object' && !Array.isArray(row.patch);
+};
+
+const normalizeAdminDestinationCatalog = (payload: Record<string, unknown>): AdminDestinationCatalogResponse => ({
+    guides: Array.isArray(payload.guides) ? payload.guides.filter(isAdminDestinationGuideRow) : [],
+    profiles: Array.isArray(payload.profiles) ? payload.profiles.filter(isAdminDestinationProfileRow) : [],
+    overrides: Array.isArray(payload.overrides) ? payload.overrides.filter(isAdminDestinationOverrideRow) : [],
+    importRuns: Array.isArray(payload.importRuns)
+        ? payload.importRuns.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry))
+        : [],
+    referralCount: typeof payload.referralCount === 'number' ? payload.referralCount : 0,
+});
+
+export const adminGetDestinationCatalog = async (): Promise<AdminDestinationCatalogResponse> => {
+    const payload = await callAdminInternalApiGet<Record<string, unknown>>('/api/internal/admin/destinations');
+    return normalizeAdminDestinationCatalog(payload);
+};
+
+export const adminSaveDestinationOverride = async (input: {
+    targetKind: AdminDestinationTargetKind;
+    targetId: string;
+    status: AdminDestinationOverrideStatus;
+    patch: Record<string, unknown>;
+    note?: string | null;
+}): Promise<AdminDestinationOverrideRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/destinations', {
+        action: 'saveOverride',
+        ...input,
+    });
+    if (!isAdminDestinationOverrideRow(payload.override)) throw new Error('Destination override response was invalid.');
+    return payload.override;
+};
+
+export const adminDeleteDestinationOverride = async (
+    targetKind: AdminDestinationTargetKind,
+    targetId: string,
+): Promise<void> => {
+    await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/destinations', {
+        action: 'deleteOverride',
+        targetKind,
+        targetId,
+    });
+};
+
+
+// ---------------------------------------------------------------------------
+// Recommendations library
+// ---------------------------------------------------------------------------
+
+/**
+ * A row exactly as the table stores it, plus the timestamps the list sorts by.
+ * The admin edits rows rather than the app's camelCase shape, so that what is
+ * saved is visibly the same thing that is stored.
+ */
+export interface AdminRecommendationRow extends RecommendationRow {
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
+export interface AdminRecommendationCatalog {
+    rows: AdminRecommendationRow[];
+    countries: string[];
+}
+
+export const adminGetRecommendationCatalog = async (
+    countryCode?: string,
+): Promise<AdminRecommendationCatalog> => {
+    const query = countryCode ? `?country=${encodeURIComponent(countryCode)}` : '';
+    const payload = await callAdminInternalApiGet<Record<string, unknown>>(
+        `/api/internal/admin/recommendations${query}`,
+    );
+    return {
+        rows: Array.isArray(payload.rows) ? payload.rows as AdminRecommendationRow[] : [],
+        countries: Array.isArray(payload.countries) ? payload.countries as string[] : [],
+    };
+};
+
+export const adminSaveRecommendation = async (
+    recommendation: Record<string, unknown>,
+): Promise<AdminRecommendationRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'save',
+        recommendation,
+    });
+    if (!payload.recommendation || typeof payload.recommendation !== 'object') {
+        throw new Error('The saved recommendation was not returned.');
+    }
+    return payload.recommendation as AdminRecommendationRow;
+};
+
+export const adminSetRecommendationStatus = async (
+    id: string,
+    status: RecommendationStatus,
+): Promise<AdminRecommendationRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'setStatus',
+        id,
+        status,
+    });
+    if (!payload.recommendation || typeof payload.recommendation !== 'object') {
+        throw new Error('The updated recommendation was not returned.');
+    }
+    return payload.recommendation as AdminRecommendationRow;
+};
+
+export const adminDeleteRecommendation = async (id: string): Promise<void> => {
+    await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'delete',
+        id,
+    });
+};
+
+/** Seeds a country from the bundled dataset, in chunks the gateway accepts. */
+export const adminImportRecommendations = async (
+    recommendations: Record<string, unknown>[],
+): Promise<number> => {
+    let imported = 0;
+    const CHUNK = 200;
+    for (let index = 0; index < recommendations.length; index += CHUNK) {
+        const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+            action: 'import',
+            recommendations: recommendations.slice(index, index + CHUNK),
+        });
+        imported += typeof payload.imported === 'number' ? payload.imported : 0;
+    }
+    return imported;
+};
+
+export type AdminTripDraftStatus = 'draft' | 'claimed' | 'expired';
+
+export interface AdminTripDraftRecord {
+    id: string;
+    title: string;
+    start_date: string | null;
+    source: string;
+    client_name: string | null;
+    client_model: string | null;
+    city_count: number;
+    activity_count: number;
+    country_codes: string[];
+    status: AdminTripDraftStatus;
+    view_count: number;
+    last_viewed_at: string | null;
+    claim_count: number;
+    first_claimed_at: string | null;
+    first_claimed_by: string | null;
+    first_claimed_by_email: string | null;
+    first_claimed_trip_id: string | null;
+    expires_at: string | null;
+    created_at: string;
+}
+
+export interface AdminTripDraftBreakdownEntry {
+    created: number;
+    claimed: number;
+}
+
+export interface AdminTripDraftStats {
+    created_count: number;
+    claimed_count: number;
+    claim_total: number;
+    view_total: number;
+    expired_count: number;
+    by_source: Record<string, AdminTripDraftBreakdownEntry>;
+    by_client: Record<string, AdminTripDraftBreakdownEntry>;
+}
+
+const toTripDraftRpcError = (rawMessage: string | null | undefined, fallbackMessage: string): Error => {
+    const message = (rawMessage || '').trim();
+    if (/admin_(list_trip_drafts|get_trip_draft_stats)/i.test(message) || /trip_drafts/i.test(message)) {
+        return new AdminUserFacingError('Trip draft admin functions are missing. Apply supabase/migrations/20261031120000_trip_drafts.sql.');
+    }
+    return new Error(message || fallbackMessage);
+};
+
+const buildMockTripDrafts = (): AdminTripDraftRecord[] => {
+    const now = Date.now();
+    const clients = ['chatgpt', 'claude', 'gemini', null];
+    const sources = ['mcp', 'webmcp', 'api', 'paste'];
+    return Array.from({ length: 18 }).map((_, i) => {
+        const claimed = i % 3 === 0;
+        const createdAt = new Date(now - i * 86400000 * 0.8).toISOString();
+        return {
+            id: `drf_mock${String(i).padStart(20, '0')}`,
+            title: ['Portugal: Lisbon to Porto', 'Japan in two weeks', 'Iceland ring road'][i % 3],
+            start_date: null,
+            source: sources[i % sources.length],
+            client_name: clients[i % clients.length],
+            client_model: null,
+            city_count: 2 + (i % 5),
+            activity_count: 6 + i,
+            country_codes: [['PT'], ['JP'], ['IS']][i % 3],
+            status: claimed ? 'claimed' : i % 7 === 6 ? 'expired' : 'draft',
+            view_count: i % 4,
+            last_viewed_at: createdAt,
+            claim_count: claimed ? 1 : 0,
+            first_claimed_at: claimed ? createdAt : null,
+            first_claimed_by: claimed ? `mock-user-${i}` : null,
+            first_claimed_by_email: claimed ? `user${i}@example.com` : null,
+            first_claimed_trip_id: claimed ? `mock-trip-${i}` : null,
+            expires_at: claimed ? null : new Date(now + 86400000 * 20).toISOString(),
+            created_at: createdAt,
+        };
+    });
+};
+
+export const summarizeAdminTripDrafts = (drafts: readonly AdminTripDraftRecord[]): AdminTripDraftStats => {
+    const bump = (bucket: Record<string, AdminTripDraftBreakdownEntry>, key: string, claimed: boolean) => {
+        const entry = bucket[key] ?? { created: 0, claimed: 0 };
+        entry.created += 1;
+        if (claimed) entry.claimed += 1;
+        bucket[key] = entry;
+    };
+    const stats: AdminTripDraftStats = {
+        created_count: drafts.length,
+        claimed_count: 0,
+        claim_total: 0,
+        view_total: 0,
+        expired_count: 0,
+        by_source: {},
+        by_client: {},
+    };
+    for (const draft of drafts) {
+        const claimed = draft.claim_count > 0;
+        if (claimed) stats.claimed_count += 1;
+        if (draft.status === 'expired') stats.expired_count += 1;
+        stats.claim_total += draft.claim_count;
+        stats.view_total += draft.view_count;
+        bump(stats.by_source, draft.source, claimed);
+        bump(stats.by_client, (draft.client_name || 'unknown').toLowerCase(), claimed);
+    }
+    return stats;
+};
+
+export const adminListTripDrafts = async (
+    options: { limit?: number; offset?: number; status?: AdminTripDraftStatus | 'all'; search?: string; since?: string | null } = {}
+): Promise<AdminTripDraftRecord[]> => {
+    if (shouldUseAdminMockData()) return buildMockTripDrafts();
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_trip_drafts', {
+        p_limit: options.limit ?? 300,
+        p_offset: options.offset ?? 0,
+        p_status: options.status && options.status !== 'all' ? options.status : null,
+        p_search: options.search?.trim() || null,
+        p_since: options.since ?? null,
+    });
+    if (error) throw toTripDraftRpcError(error.message, 'Could not load trip drafts.');
+    return (Array.isArray(data) ? data : []) as AdminTripDraftRecord[];
+};
+
+export const adminGetTripDraftStats = async (since: string | null = null): Promise<AdminTripDraftStats> => {
+    if (shouldUseAdminMockData()) return summarizeAdminTripDrafts(buildMockTripDrafts());
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_trip_draft_stats', { p_since: since });
+    if (error) throw toTripDraftRpcError(error.message, 'Could not load trip draft statistics.');
+    const row = (Array.isArray(data) ? data[0] : data) as Partial<AdminTripDraftStats> | undefined;
+    return {
+        created_count: Number(row?.created_count) || 0,
+        claimed_count: Number(row?.claimed_count) || 0,
+        claim_total: Number(row?.claim_total) || 0,
+        view_total: Number(row?.view_total) || 0,
+        expired_count: Number(row?.expired_count) || 0,
+        by_source: row?.by_source ?? {},
+        by_client: row?.by_client ?? {},
+    };
 };

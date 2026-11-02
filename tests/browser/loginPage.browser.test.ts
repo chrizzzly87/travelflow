@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
@@ -22,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     loginWithOAuth: vi.fn().mockResolvedValue({ error: null }),
     sendPasswordResetEmail: vi.fn().mockResolvedValue({ error: null }),
   },
+  rememberedNextPath: null as string | null,
   rememberLoginEnabled: true,
   setRememberLoginEnabled: vi.fn(),
   runOpportunisticTripQueueCleanup: vi.fn().mockResolvedValue(undefined),
@@ -36,7 +38,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),
@@ -111,11 +113,12 @@ vi.mock('../../services/anonymousAssetClaimService', () => ({
 vi.mock('../../services/authNavigationService', () => ({
   buildPasswordResetRedirectUrl: () => 'https://example.com/auth/reset-password',
   clearRememberedAuthReturnPath: vi.fn(),
-  getRememberedAuthReturnPath: () => null,
+  getRememberedAuthReturnPath: () => mocks.rememberedNextPath,
+  resolveAccountLoginNextPath: (parts: { pathname: string }) => /^\/(trip|create-trip)(\/|$)/.test(parts.pathname) ? parts.pathname : '/profile',
   rememberAuthReturnPath: vi.fn(),
   resolvePreferredNextPath: (...args: unknown[]) => {
     const candidate = args.find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined;
-    return candidate || '/create-trip';
+    return candidate || '/profile';
   },
 }));
 
@@ -164,6 +167,7 @@ describe('pages/LoginPage auth flows', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.searchParams = new URLSearchParams();
+    mocks.rememberedNextPath = null;
     mocks.location.state = null;
     mocks.auth.isLoading = false;
     mocks.auth.isAuthenticated = false;
@@ -175,9 +179,29 @@ describe('pages/LoginPage auth flows', () => {
     });
   });
 
+  it('lands on the profile after successful login without an explicit return intent', async () => {
+    mocks.auth.isAuthenticated = true;
+    await render(React.createElement(LoginPage));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/profile', { replace: true }));
+  });
+
+  it('does not resume a stale marketing return URL after general sign-in', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.rememberedNextPath = '/de/features?old=1';
+    await render(React.createElement(LoginPage));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/profile', { replace: true }));
+  });
+
+  it('preserves an explicit creation return intent after successful login', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.searchParams = new URLSearchParams({ next: '/create-trip/wizard?prefill=draft' });
+    await render(React.createElement(LoginPage));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/create-trip/wizard?prefill=draft', { replace: true }));
+  });
+
   it('submits credentials when Enter is pressed in the password field', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123{enter}');
@@ -191,7 +215,7 @@ describe('pages/LoginPage auth flows', () => {
 
   it('switches to session-only persistence when remember login is unchecked', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.click(screen.getByRole('checkbox', { name: 'labels.rememberLogin' }));
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
@@ -223,7 +247,7 @@ describe('pages/LoginPage auth flows', () => {
     });
     mocks.processQueuedTripGenerationAfterAuth.mockResolvedValue({ tripId: 'trip-123' });
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await waitFor(() => {
       expect(mocks.processAnonymousAssetClaimAfterAuth).toHaveBeenCalledWith('8d4d4796-5fe3-4e5d-856d-2c6d6a0138d6');
@@ -247,7 +271,7 @@ describe('pages/LoginPage auth flows', () => {
       new QueuedTripGenerationError('Queued trip generation failed.', { tripId: 'trip-failed-77' }),
     );
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await waitFor(() => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-2');
@@ -268,7 +292,7 @@ describe('pages/LoginPage auth flows', () => {
       }),
     );
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await waitFor(() => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-9');
@@ -278,7 +302,7 @@ describe('pages/LoginPage auth flows', () => {
 
   it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     const emailInput = screen.getByLabelText('labels.email') as HTMLInputElement;
     const passwordInput = screen.getByLabelText('labels.password') as HTMLInputElement;
@@ -294,7 +318,7 @@ describe('pages/LoginPage auth flows', () => {
 
   it('blocks register submit until terms consent checkbox is checked', async () => {
     const user = userEvent.setup();
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.click(screen.getByRole('button', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'new-user@example.com');
@@ -319,7 +343,7 @@ describe('pages/LoginPage auth flows', () => {
       data: { session: { access_token: 'session-token' } },
     });
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.click(screen.getByRole('button', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'accepted@example.com');
@@ -339,7 +363,7 @@ describe('pages/LoginPage auth flows', () => {
     const user = userEvent.setup();
     mocks.auth.loginWithPassword.mockRejectedValueOnce(new Error('Supabase auth is not configured.'));
 
-    render(React.createElement(LoginPage));
+    await render(React.createElement(LoginPage));
 
     await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123');

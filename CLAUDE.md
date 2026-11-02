@@ -1,61 +1,11 @@
-# CLAUDE.md
+@AGENTS.md
 
-## Startup checklist
-1. Read `docs/UPDATE_FORMAT.md` before making product changes.
-2. Follow existing project conventions and keep routes/components non-breaking.
-3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
-4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
-5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
-6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
-7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
-
-## Skill usage policy
-- Use `vercel-react-best-practices` for React performance/refactor tasks; apply only relevant high-impact guidance for the active change.
-- Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React edits, fix errors before merge, and triage warnings pragmatically.
-- Avoid adding `useEffect` unless the component must synchronize with an external system such as network state, browser APIs, timers, subscriptions, or imperative third-party widgets. Prefer render-time derivation, event handlers, `useMemo` for expensive pure calculations, `useSyncExternalStore` for external stores, and `key`-based resets; every remaining effect should have tight dependencies and cleanup when it owns external resources.
-- Use `find-skills` only when a task requires discovery of capabilities not already covered by current skills/workflows.
-- Avoid unnecessary skill runs for straightforward changes.
-
-## Mandatory release note rule
-When a user-facing feature, fix, or behavior change is completed, you must update release notes in `content/updates/*.md` before finishing the task.
-
-- Use the exact markdown format in `docs/UPDATE_FORMAT.md`.
-- Keep one release note file per worktree/feature. Do not create multiple step-by-step files for the same feature.
-- Keep that single release note as `status: draft` while the feature PR is open.
-- After merge to `main`, publish metadata in a follow-up update (`status: published`, next version, and `published_at` equal to the post-merge deploy/merge timestamp before 23:00 UTC).
-- Add user-facing items as `- [x] [Type] ...`.
-- Add internal/non-marketing items as `- [ ] [Internal] ...`.
-- Each change line must start with a **content-matching emoji** — pick an emoji that hints at what the specific change is about. Do NOT use a fixed emoji per type (no 🚀 for every feature, no ✨ for every improvement).
-- Only mark items `[x]` (visible) when they describe a **clear user benefit**. Hide technical details, dependency changes, refactors, and implementation specifics as `[ ]`.
-- Keep technical identifiers out of visible items (no route paths, code symbols, endpoints, or environment keys in `[x]` lines).
-- Write visible items from the user's perspective — focus on what changed for them, not how it was built.
-- Keep the most important user-facing items first, and fixes after primary highlights.
-- Bump the release `version` whenever publishing a new release entry.
-- Set `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise main merge timestamp), but **always before 23:00 UTC**. Timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
-
-## Completion gate
-Before finalizing, ensure all applicable code changes are represented in release markdown and versioning is updated.
-- For localization changes, run `pnpm i18n:validate` and fix any locale parity/placeholder failures.
-- For behavioral code changes, add/update Vitest tests in the same PR and run `pnpm test:core` whenever feasible.
-- For bug fixes, add a regression test proving the previous failure mode is covered.
-- Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.
-- For PRs adding files under `services/` or `config/`, include corresponding `tests/**` entries in the PR checklist/description.
-- For TripView/route-loader orchestration changes, follow `docs/TESTING_PHASE2_SCOPE.md` for phase-2 regression coverage.
-
-## Direction-Safety Requirement
-- For any new or modified component, evaluate whether CSS logical properties should be used for direction-aware layouts.
-- If usage is ambiguous, ask for clarification before shipping.
-
-## Copy Approval Requirement
-- For user-facing copy changes, ask for style approval in English and German before finalizing unless the user explicitly says to skip approval.
-- Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not ask for bilingual approval for release notes unless explicitly requested.
-
-## Analytics Requirement
-- For clickable marketing/planner UI changes, instrument events using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.
-- Use the existing event naming/payload convention; avoid ad-hoc query param tracking when Umami events are available.
-
-## Development Command Runtimes (for setting timers)
-- `pnpm test:core`: Takes ~50 seconds to complete. Set a 60-second timer.
-- `pnpm run build`: Takes ~85 seconds (runs test:core, generates assets, validates config, and builds). Set a 90-100 second timer.
-- `node scripts/run-lighthouse-audits.mjs`: Takes ~90 seconds (runs 5 sequential audits). Set a 100-second timer.
-
+## Claude Code notes
+- Run long commands in the background or with a timeout that fits them:
+  - `pnpm test:core` takes about 1.5 min;
+  - `pnpm typecheck` takes about 1 min;
+  - `pnpm ci:local` takes 3–4 min (`--fast` about 70 s);
+  - a GitHub PR Quality run takes about 5–6 min (checks and build run in parallel; docs-only PRs skip it).
+- Prefix Node commands with Node 22 when the shell default differs (for example `~/.nvm/versions/node/v22.20.0/bin`).
+- Use the preview tooling (`.claude/launch.json`) for the dev server, not Bash.
+- The dev server serves the client-only shell for many routes. Check server rendering with `curl` against a production build (`node scripts/serve-built-site.mjs`) or a deploy preview.

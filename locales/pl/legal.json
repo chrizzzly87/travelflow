@@ -36,7 +36,10 @@
       "Jakie dane osobowe są zbierane i dlaczego.",
       "Jak długo dane są przechowywane i gdzie.",
       "Podstawa prawna przetwarzania i prawa użytkownika.",
-      "Dane kontaktowe do żądań dotyczących prywatności i usunięcia danych."
+      "Dane kontaktowe do żądań dotyczących prywatności i usunięcia danych.",
+      "Podczas korzystania z Trip Agent Twoje zapytanie, treść podróży, wybrany kontekst planu i wyniki narzędzi są przetwarzane przez naszą bramę AI i zatwierdzonych dostawców modeli. Google Maps może też przetwarzać oparte na źródłach zapytania o miejsca i trasy.",
+      "Upoważnieni administratorzy mogą uzyskiwać dostęp do wspólnych czatów, źródeł, aktywności narzędzi, propozycji i danych użycia w celu wsparcia, bezpieczeństwa i ulepszania usługi.",
+      "Czaty Trip Agent i historia zmian są przechowywane z podróżą do czasu usunięcia podróży lub konta. Archiwizacja czatu nie usuwa tego zapisu."
     ]
   },
   "terms": {

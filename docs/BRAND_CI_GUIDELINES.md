@@ -23,11 +23,15 @@ Use this file as the source of truth for new UI components, banners, and marketi
 - Button radius: `rounded-md` for CTA controls unless an existing component already defines another radius.
 - Banner cards: subtle border, soft blur background, clear visual hierarchy (eyebrow, headline, support text, CTA row).
 - In floating banners and cards with multiple CTAs, right-align actions (`justify-end`) unless a page pattern explicitly differs.
-- Admin UI component inventory source of truth is `/admin/design-system-playground`; when introducing a new shared component or major variant, add it to the playground in the same PR.
+- Admin UI component inventory source of truth is `/admin/design-system-playground` (sidebar: Tools › Design system); when introducing a new shared component or major variant, add it to the playground in the same PR. Admin-only pieces (`AdminStatCard`, `AdminDetailSheet`, `AdminSelectionBar`, `AdminPagination`, `AdminBarChart`, `AdminBarList`, …) belong on its "Admin workspace" tab.
+- Public-site sections and cards (globe, CTA, trip/blog/stamp/feature cards) are tuned in the unlisted `/admin/component-playground`, which copies their settings back into code. It stays noindex and out of the admin navigation.
 - Prefer reusing component patterns already represented in the playground instead of introducing parallel one-off variants.
+- The admin visual contract (radii, density, sentence case, one primary action per surface, errors through `toAdminErrorMessage`) lives in `docs/DESIGN.md` and the "Admin workspace" section of `docs/DESIGN_SYSTEM_COMPONENTS.md`; the accent-button and banner rules above are for product and marketing surfaces, not admin.
 
 ## Admin Data Tables
 - Use shared table primitives from `components/ui/table.tsx`; do not introduce one-off wrappers.
+- First column is the record's identity (name plus a muted secondary line), status is an `AdminStatusBadge` column, and row actions sit in a trailing `…` `DropdownMenu`. Dates show relative time with the absolute time in `data-tooltip`.
+- Selection checkboxes only where bulk actions exist; the bulk actions live in `AdminSelectionBar`, which appears only while rows are selected. Client-paged tables use `AdminPagination`.
 - Table scroll wrappers must keep `overscroll-behavior: none` to avoid bounce-back horizontal snapping.
 - For large admin grids, use content-aware column sizing for non-sticky columns plus explicit sticky key-column widths (checkbox + primary entity columns).
 - Keep table width at least the design minimum while still filling the container (`max(100%, <min-width>)`) so columns stay readable and avoid overlap on sort/filter reordering.

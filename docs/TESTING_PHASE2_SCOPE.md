@@ -4,18 +4,22 @@
 Expand coverage beyond pure/service modules to the highest-risk React orchestration layer so route hydration, auth/paywall transitions, and view-state synchronization regressions are caught before deploy.
 
 ## In Scope
-- `/Users/chrizzzly/.codex/worktrees/47a9/travelflow-codex/components/TripView.tsx`
-- `/Users/chrizzzly/.codex/worktrees/47a9/travelflow-codex/components/tripview/*.tsx`
-- `/Users/chrizzzly/.codex/worktrees/47a9/travelflow-codex/components/tripview/*.ts`
-- `/Users/chrizzzly/.codex/worktrees/47a9/travelflow-codex/routes/TripLoaderRoute.tsx`
-- `/Users/chrizzzly/.codex/worktrees/47a9/travelflow-codex/routes/ExampleTripLoaderRoute.tsx`
-- `/Users/chrizzzly/.codex/worktrees/47a9/travelflow-codex/routes/SharedTripLoaderRoute.tsx`
+- `components/TripView.tsx`
+- `components/tripview/*.tsx`
+- `components/tripview/*.ts`
+- `src/routes/trips/*.tsx` (native loaders, pending/error/head boundaries)
+- `features/trips/load*.ts` (cancellable data resolution)
+- `features/trips/TripWorkspaceLayout.tsx` (visited session and owner-only offline cache)
+- `features/trips/useRouteViewSettings.ts` (version-scoped view overrides)
+- `routes/TripLoaderRoute.tsx`
+- `routes/ExampleTripLoaderRoute.tsx`
+- `routes/SharedTripLoaderRoute.tsx`
 
 ## Test Strategy
 1. Route-loader integration tests
-- Render each loader route with controlled params and mocked service dependencies.
+- Test pure route resolvers with controlled services, then exercise native router fixtures for intent preload, version navigation, cancellation and pending/redirect/not-found behavior. Mount presenters with resolved data for copy/edit/view interactions; do not keep fetch effects to satisfy legacy test fixtures.
 - Verify success, missing-resource, malformed-data, and permission-denied flows.
-- Assert redirect/fallback behavior cannot create open-redirect-style paths.
+- Assert redirect/fallback behavior cannot create open redirects. Reading a historical/read-only snapshot must never overwrite the current owned cache; cache only a visited current owner snapshot after the native loader commits.
 
 2. TripView orchestration tests
 - Validate URL/view-settings sync and persisted state hydration behavior.

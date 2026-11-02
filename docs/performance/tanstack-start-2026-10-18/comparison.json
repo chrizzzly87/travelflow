@@ -1,0 +1,284 @@
+[
+  {
+    "route": "/",
+    "metrics": {
+      "fcp": {
+        "before": 936,
+        "after": 832,
+        "delta": -104,
+        "percent": -11.11111111111111
+      },
+      "lcp": {
+        "before": 1836,
+        "after": 1008,
+        "delta": -828,
+        "percent": -45.09803921568628
+      },
+      "cls": {
+        "before": 0.005849209592246585,
+        "after": 0,
+        "delta": -0.005849209592246585,
+        "percent": -100
+      },
+      "blocking": {
+        "before": 101,
+        "after": 43,
+        "delta": -58,
+        "percent": -57.42574257425742
+      },
+      "readyMs": {
+        "before": 1922.800000011921,
+        "after": 1778.199999988079,
+        "delta": -144.60000002384186,
+        "percent": -7.520282921933917
+      },
+      "jsRawBytes": {
+        "before": 1165591,
+        "after": 1112164,
+        "delta": -53427,
+        "percent": -4.58368329885869
+      },
+      "jsGzipBytes": {
+        "before": 372188,
+        "after": 357208,
+        "delta": -14980,
+        "percent": -4.024847657635389
+      }
+    }
+  },
+  {
+    "route": "/features",
+    "metrics": {
+      "fcp": {
+        "before": 844,
+        "after": 796,
+        "delta": -48,
+        "percent": -5.687203791469194
+      },
+      "lcp": {
+        "before": 844,
+        "after": 1028,
+        "delta": 184,
+        "percent": 21.80094786729858
+      },
+      "cls": {
+        "before": 0.005849209592246585,
+        "after": 0.0010299069873177106,
+        "delta": -0.0048193026049288745,
+        "percent": -82.3923733442053
+      },
+      "blocking": {
+        "before": 94,
+        "after": 4,
+        "delta": -90,
+        "percent": -95.74468085106383
+      },
+      "readyMs": {
+        "before": 1680.199999988079,
+        "after": 1649.0999999642372,
+        "delta": -31.100000023841858,
+        "percent": -1.8509701240365737
+      },
+      "jsRawBytes": {
+        "before": 2742986,
+        "after": 1024087,
+        "delta": -1718899,
+        "percent": -62.665248747168235
+      },
+      "jsGzipBytes": {
+        "before": 763887,
+        "after": 326874,
+        "delta": -437013,
+        "percent": -57.209116007995945
+      }
+    }
+  },
+  {
+    "route": "/pricing",
+    "metrics": {
+      "fcp": {
+        "before": 800,
+        "after": 808,
+        "delta": 8,
+        "percent": 1
+      },
+      "lcp": {
+        "before": 800,
+        "after": 808,
+        "delta": 8,
+        "percent": 1
+      },
+      "cls": {
+        "before": 0.005849209592246585,
+        "after": 0.00007329903538030743,
+        "delta": -0.0057759105568662775,
+        "percent": -98.74685572085724
+      },
+      "blocking": {
+        "before": 26,
+        "after": 0,
+        "delta": -26,
+        "percent": -100
+      },
+      "readyMs": {
+        "before": 1249.4000000357628,
+        "after": 1474.699999988079,
+        "delta": 225.29999995231628,
+        "percent": 18.032655670391172
+      },
+      "jsRawBytes": {
+        "before": 2753896,
+        "after": 1087967,
+        "delta": -1665929,
+        "percent": -60.493533524868035
+      },
+      "jsGzipBytes": {
+        "before": 768350,
+        "after": 347217,
+        "delta": -421133,
+        "percent": -54.810047504392536
+      }
+    }
+  },
+  {
+    "route": "/create-trip",
+    "metrics": {
+      "fcp": {
+        "before": 572,
+        "after": 784,
+        "delta": 212,
+        "percent": 37.06293706293706
+      },
+      "lcp": {
+        "before": 1840,
+        "after": 2164,
+        "delta": 324,
+        "percent": 17.608695652173914
+      },
+      "cls": {
+        "before": 0,
+        "after": 0,
+        "delta": 0,
+        "percent": null
+      },
+      "blocking": {
+        "before": 77,
+        "after": 131,
+        "delta": 54,
+        "percent": 70.12987012987013
+      },
+      "readyMs": {
+        "before": 2184.800000011921,
+        "after": 2166.800000011921,
+        "delta": -18,
+        "percent": -0.823874038809126
+      },
+      "jsRawBytes": {
+        "before": 1686777,
+        "after": 1856851,
+        "delta": 170074,
+        "percent": 10.082779169979197
+      },
+      "jsGzipBytes": {
+        "before": 438022,
+        "after": 505554,
+        "delta": 67532,
+        "percent": 15.417490445685377
+      }
+    }
+  },
+  {
+    "route": "/create-trip/wizard",
+    "metrics": {
+      "fcp": {
+        "before": 568,
+        "after": 784,
+        "delta": 216,
+        "percent": 38.028169014084504
+      },
+      "lcp": {
+        "before": 2424,
+        "after": 2020,
+        "delta": -404,
+        "percent": -16.666666666666664
+      },
+      "cls": {
+        "before": 0,
+        "after": 0,
+        "delta": 0,
+        "percent": null
+      },
+      "blocking": {
+        "before": 80,
+        "after": 61,
+        "delta": -19,
+        "percent": -23.75
+      },
+      "readyMs": {
+        "before": 2804,
+        "after": 2024.800000011921,
+        "delta": -779.1999999880791,
+        "percent": -27.788873038091268
+      },
+      "jsRawBytes": {
+        "before": 2510695,
+        "after": 1780672,
+        "delta": -730023,
+        "percent": -29.076530602084283
+      },
+      "jsGzipBytes": {
+        "before": 690112,
+        "after": 482266,
+        "delta": -207846,
+        "percent": -30.117720022257256
+      }
+    }
+  },
+  {
+    "route": "/example/thailand-islands",
+    "metrics": {
+      "fcp": {
+        "before": 564,
+        "after": 784,
+        "delta": 220,
+        "percent": 39.00709219858156
+      },
+      "lcp": {
+        "before": 3936,
+        "after": 4032,
+        "delta": 96,
+        "percent": 2.4390243902439024
+      },
+      "cls": {
+        "before": 0,
+        "after": 0,
+        "delta": 0,
+        "percent": null
+      },
+      "blocking": {
+        "before": 234,
+        "after": 87,
+        "delta": -147,
+        "percent": -62.82051282051282
+      },
+      "readyMs": {
+        "before": 2747.199999988079,
+        "after": 3011.7000000476837,
+        "delta": 264.50000005960464,
+        "percent": 9.62798485952069
+      },
+      "jsRawBytes": {
+        "before": 2498382,
+        "after": 2690463,
+        "delta": 192081,
+        "percent": 7.688215813274351
+      },
+      "jsGzipBytes": {
+        "before": 691816,
+        "after": 772338,
+        "delta": 80522,
+        "percent": 11.63922198966199
+      }
+    }
+  }
+]

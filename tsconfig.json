@@ -10,8 +10,11 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
+    "strictNullChecks": true,
     "types": [
-      "node"
+      "node",
+      "google.maps",
+      "vite/client"
     ],
     "moduleResolution": "bundler",
     "resolveJsonModule": true,

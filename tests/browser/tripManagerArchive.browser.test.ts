@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeTrip } from '../helpers/tripFixtures';
+import type { showAppToast } from '../../components/ui/appToast';
 
 const mocks = vi.hoisted(() => ({
   readLocalStorageItem: vi.fn(),
@@ -19,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   enqueueTripCommitAndSync: vi.fn(),
   confirmDialog: vi.fn(),
   trackEvent: vi.fn(),
-  showAppToast: vi.fn(() => 'toast-id'),
+  showAppToast: vi.fn<typeof showAppToast>(() => 'toast-id'),
 }));
 
 vi.mock('../../services/browserStorageService', () => ({
@@ -155,7 +156,7 @@ describe('components/TripManager archive flow', () => {
       expect(mocks.deleteTrip).toHaveBeenCalledWith('trip-1');
     });
 
-    const toastPayloads = mocks.showAppToast.mock.calls.map((call) => call[0] as Record<string, unknown>);
+    const toastPayloads = mocks.showAppToast.mock.calls.map((call) => call[0]);
     const archiveToast = toastPayloads.find((payload) => payload.tone === 'remove' && typeof payload.action === 'object') as {
       action?: { onClick?: () => void };
     } | undefined;

@@ -41,7 +41,11 @@ export interface TripMapProviderTuning {
   };
   selection: {
     activityFocusZoom: number;
+    /** Fallback only: a city with no pinned places of its own has nothing to fit. */
     cityFocusZoom: number;
+    /** Band a city `fitBounds` is clamped into, so neither a sprawling nor a tiny city breaks the frame. */
+    cityFitMinZoom: number;
+    cityFitMaxZoom: number;
     queryFocusZoom: number;
     safeInsetRatio: number;
     floatingSafeInsetRatio: number;
@@ -137,8 +141,11 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
     },
   },
   selection: {
-    activityFocusZoom: 13,
-    cityFocusZoom: 10,
+    activityFocusZoom: 15.4,
+    // Only reached when the city holds no pinned activity to frame.
+    cityFocusZoom: 12.6,
+    cityFitMinZoom: 9.6,
+    cityFitMaxZoom: 14.6,
     queryFocusZoom: 5,
     safeInsetRatio: 0.28,
     floatingSafeInsetRatio: 0.24,
@@ -163,10 +170,10 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
       nearCircleMaxZoom: 10.1,
       compactPinMaxZoom: 10.9,
       scaleBands: [
-        { minZoom: 13, scale: 1.2 },
-        { minZoom: 12, scale: 1.14 },
-        { minZoom: 11, scale: 1.1 },
-        { minZoom: 10.9, scale: 1.06 },
+        { minZoom: 13, scale: 0.92 },
+        { minZoom: 12, scale: 0.96 },
+        { minZoom: 11, scale: 1 },
+        { minZoom: 10.9, scale: 1.02 },
       ],
     },
     crowding: {
@@ -239,8 +246,10 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
     },
   },
   selection: {
-    activityFocusZoom: 12.6,
-    cityFocusZoom: 9.6,
+    activityFocusZoom: 15.2,
+    cityFocusZoom: 12.4,
+    cityFitMinZoom: 9.4,
+    cityFitMaxZoom: 14.4,
     queryFocusZoom: 4.7,
     safeInsetRatio: 0.24,
     floatingSafeInsetRatio: 0.16,
@@ -265,10 +274,10 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
       nearCircleMaxZoom: 10.5,
       compactPinMaxZoom: 11.2,
       scaleBands: [
-        { minZoom: 12.6, scale: 1.22 },
-        { minZoom: 11.8, scale: 1.16 },
-        { minZoom: 11.0, scale: 1.1 },
-        { minZoom: 10.2, scale: 1.05 },
+        { minZoom: 12.6, scale: 0.92 },
+        { minZoom: 11.8, scale: 0.96 },
+        { minZoom: 11.0, scale: 1 },
+        { minZoom: 10.2, scale: 1.02 },
       ],
     },
     crowding: {
@@ -314,6 +323,44 @@ export const getTripMapProviderTuning = (
   provider: MapImplementation,
 ): TripMapProviderTuning => (provider === 'mapbox' ? MAPBOX_TRIP_MAP_TUNING : GOOGLE_TRIP_MAP_TUNING);
 
+// Desktop-sized padding is larger than a phone map pane is tall, and both
+// Google `fitBounds` and Mapbox `fitBounds` degrade badly when padding eats the
+// viewport: the camera stops framing the route and lands on an arbitrary zoom.
+// Cap each axis so a pane always keeps a usable strip of map, which leaves the
+// roomy desktop padding untouched and only bites on small panes.
+const MAX_FIT_PADDING_VIEWPORT_SHARE = 0.64;
+const MIN_USABLE_MAP_EXTENT_PX = 120;
+const MIN_FIT_PADDING_PX = 8;
+
+export const clampTripMapViewportPaddingToViewport = (
+  padding: TripMapViewportPadding,
+  mapViewportSize: { width: number; height: number } | null,
+): TripMapViewportPadding => {
+  const clampAxis = (start: number, end: number, extent: number): [number, number] => {
+    if (!Number.isFinite(extent) || extent <= 0) return [start, end];
+    const budget = Math.min(
+      extent * MAX_FIT_PADDING_VIEWPORT_SHARE,
+      Math.max(0, extent - MIN_USABLE_MAP_EXTENT_PX),
+    );
+    const total = start + end;
+    if (total <= budget) return [start, end];
+    if (budget <= MIN_FIT_PADDING_PX * 2) {
+      const even = Math.max(0, Math.floor(budget / 2));
+      return [even, even];
+    }
+    const scale = budget / total;
+    return [
+      Math.max(MIN_FIT_PADDING_PX, Math.floor(start * scale)),
+      Math.max(MIN_FIT_PADDING_PX, Math.floor(end * scale)),
+    ];
+  };
+
+  const [top, bottom] = clampAxis(padding.top, padding.bottom, mapViewportSize?.height ?? 0);
+  const [left, right] = clampAxis(padding.left, padding.right, mapViewportSize?.width ?? 0);
+
+  return { top, right, bottom, left };
+};
+
 export const resolveTripMapViewportPadding = ({
   provider,
   mapDockMode,
@@ -339,12 +386,15 @@ export const resolveTripMapViewportPadding = ({
     Math.min(modeTuning.horizontalMax, basePadding + modeTuning.horizontalBoost),
   );
 
-  return {
-    top: verticalPadding + modeTuning.extraTop,
-    right: horizontalPadding + modeTuning.extraRight,
-    bottom: verticalPadding + modeTuning.extraBottom,
-    left: horizontalPadding + modeTuning.extraLeft,
-  };
+  return clampTripMapViewportPaddingToViewport(
+    {
+      top: verticalPadding + modeTuning.extraTop,
+      right: horizontalPadding + modeTuning.extraRight,
+      bottom: verticalPadding + modeTuning.extraBottom,
+      left: horizontalPadding + modeTuning.extraLeft,
+    },
+    mapViewportSize,
+  );
 };
 
 export const resolveTripMapSelectionSafeInsetRatio = ({

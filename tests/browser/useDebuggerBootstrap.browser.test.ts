@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   applyConnectivityOverrideFromSearch: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   useLocation: () => ({
     search: mocks.locationSearch,
   }),

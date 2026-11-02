@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { screen } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { ProfileHero } from '../../components/profile/ProfileHero';
 
-const renderProfileHero = (greeting: string) => render(
+const renderProfileHero = async (greeting: string) => await render(
   React.createElement(
     MemoryRouter,
     null,
@@ -24,8 +25,8 @@ const renderProfileHero = (greeting: string) => render(
 );
 
 describe('components/profile/ProfileHero', () => {
-  it('stagger-animates visible greeting glyphs without consuming delay on spaces', () => {
-    renderProfileHero('Hi Ya');
+  it('stagger-animates visible greeting glyphs without consuming delay on spaces', async () => {
+    await renderProfileHero('Hi Ya');
 
     const heading = screen.getByRole('heading', { level: 1 });
     const greeting = heading.children[0] as HTMLSpanElement;

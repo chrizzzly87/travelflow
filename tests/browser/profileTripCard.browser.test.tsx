@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { ProfileTripCard } from '../../components/profile/ProfileTripCard';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
@@ -27,7 +28,7 @@ describe('components/profile/ProfileTripCard', () => {
     const user = userEvent.setup();
     const onCreatorClick = vi.fn();
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         null,
@@ -58,8 +59,8 @@ describe('components/profile/ProfileTripCard', () => {
     expect(onCreatorClick).toHaveBeenCalledTimes(1);
   });
 
-  it('hides favorite and pin actions when disabled', () => {
-    render(
+  it('hides favorite and pin actions when disabled', async () => {
+    await render(
       React.createElement(
         MemoryRouter,
         null,
@@ -86,8 +87,10 @@ describe('components/profile/ProfileTripCard', () => {
     expect(screen.queryByRole('button', { name: 'Pin' })).not.toBeInTheDocument();
   });
 
-  it('renders an expired badge and fallback title for expired generation drafts', () => {
-    render(
+  // The card used to swap in `expiredFallbackTitle` here; 688ecb2fe dropped that
+  // on purpose and shows the trip's own title next to the expired badge.
+  it('renders an expired badge and keeps the trip title for expired generation drafts', async () => {
+    await render(
       React.createElement(
         MemoryRouter,
         null,
@@ -120,12 +123,12 @@ describe('components/profile/ProfileTripCard', () => {
     );
 
     expect(screen.getByText('Expired')).toBeInTheDocument();
-    expect(screen.getByText('Expired trip draft')).toBeInTheDocument();
-    expect(screen.queryByText('Trip generation failed. Please try again.')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Trip generation failed. Please try again.' })).toBeInTheDocument();
+    expect(screen.queryByText('Expired trip draft')).toBeNull();
   });
 
-  it('dims private trips and shows a hidden state badge', () => {
-    render(
+  it('dims private trips and shows a hidden state badge', async () => {
+    await render(
       React.createElement(
         MemoryRouter,
         null,

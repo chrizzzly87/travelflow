@@ -61,8 +61,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
           dockedMapAnchorRef,
           dockedGeometryKey: 'floating',
           tripId: 'trip-layering',
+          children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         },
-        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
       ),
     );
 
@@ -85,8 +85,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
           dockedMapAnchorRef,
           dockedGeometryKey: 'horizontal:420',
           tripId: 'trip-1',
+          children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         },
-        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
       ),
     );
 
@@ -106,8 +106,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
             dockedMapAnchorRef,
             dockedGeometryKey: 'vertical:680',
             tripId: 'trip-1',
+            children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           },
-          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         ),
       );
     });
@@ -140,8 +140,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
           dockedMapAnchorRef,
           dockedGeometryKey: 'floating',
           tripId: 'trip-dock-retry',
+          children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         },
-        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
       ),
     );
 
@@ -161,8 +161,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
             dockedMapAnchorRef,
             dockedGeometryKey: 'horizontal:docked',
             tripId: 'trip-dock-retry',
+            children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           },
-          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         ),
       );
     });
@@ -188,8 +188,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
           dockedMapAnchorRef,
           dockedGeometryKey: 'floating',
           tripId: 'trip-anchoring',
+          children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         },
-        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
       ),
     );
 
@@ -230,8 +230,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
             dockedMapAnchorRef,
             dockedGeometryKey: 'floating',
             tripId: 'trip-resize-anchor',
+            children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           },
-          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         ),
       );
 
@@ -294,8 +294,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
             dockedMapAnchorRef,
             dockedGeometryKey: 'floating',
             tripId: 'trip-bottom-center-anchor',
+            children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           },
-          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         ),
       );
 
@@ -365,8 +365,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
             dockedGeometryKey: 'floating',
             reservedRightInset: initialReservedRightInset,
             tripId: 'trip-reserved-inset',
+            children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           },
-          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         ),
       );
 
@@ -381,8 +381,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
               dockedGeometryKey: 'floating',
               reservedRightInset: nextReservedRightInset,
               tripId: 'trip-reserved-inset',
+              children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
             },
-            React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           ),
         );
       });
@@ -439,8 +439,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
           dockedGeometryKey: 'floating',
           reservedRightInset: initialReservedRightInset,
           tripId: 'trip-reserved-inset-no-resize',
+          children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         },
-        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
       ),
     );
 
@@ -455,8 +455,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
             dockedGeometryKey: 'floating',
             reservedRightInset: nextReservedRightInset,
             tripId: 'trip-reserved-inset-no-resize',
+            children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           },
-          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         ),
       );
     });
@@ -489,8 +489,8 @@ describe('components/tripview/TripFloatingMapPreview', () => {
             dockedMapAnchorRef,
             dockedGeometryKey: 'floating',
             tripId: 'trip-resize-debounce',
+            children: React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
           },
-          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
         ),
       );
 

@@ -6,42 +6,8 @@ import NumberFlow, {
 import * as React from 'react';
 
 import { cn } from '../../lib/utils';
-
-type ReactModuleLike = {
-    createElement?: (type: unknown, props?: unknown, ...children: unknown[]) => unknown;
-};
-
-export interface AnimatedNumberTextOptions {
-    locales?: Intl.LocalesArgument;
-    format?: NumberFlowProps['format'];
-    prefix?: string;
-    suffix?: string;
-}
-
-export const isPreactCompatReactModule = (reactModule: ReactModuleLike): boolean => {
-    try {
-        const element = reactModule.createElement?.('span', null);
-        return Boolean(
-            element
-            && typeof element === 'object'
-            && (
-                '__k' in element
-                || '__v' in element
-                || '__e' in element
-            ),
-        );
-    } catch {
-        return false;
-    }
-};
-
-export const formatAnimatedNumberText = (
-    value: number,
-    { locales, format, prefix, suffix }: AnimatedNumberTextOptions = {},
-): string => {
-    const formatter = new Intl.NumberFormat(locales, format);
-    return `${prefix ?? ''}${formatter.format(value)}${suffix ?? ''}`;
-};
+import { formatAnimatedNumberText } from './animatedNumberFormat';
+import { useHydrated } from '../../hooks/useHydrated';
 
 export interface AnimatedNumberProps extends Omit<NumberFlowProps, 'value' | 'format' | 'locales'> {
     value: number | null | undefined;
@@ -50,13 +16,10 @@ export interface AnimatedNumberProps extends Omit<NumberFlowProps, 'value' | 'fo
     fallback?: React.ReactNode;
 }
 
-const shouldRenderStaticNumber = (): boolean => (
-    isPreactCompatReactModule(React)
-    || (typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent))
-);
-
 export const AnimatedNumber = React.forwardRef<NumberFlowElement, AnimatedNumberProps>(
     ({ className, value, fallback = null, format, locales, prefix, suffix, ...props }, ref) => {
+        const hydrated = useHydrated();
+        const canAnimate = hydrated && typeof customElements !== 'undefined' && Boolean(customElements.get('number-flow-react'));
         if (value === null || value === undefined || !Number.isFinite(value)) {
             if (fallback === null) return null;
             return (
@@ -66,13 +29,12 @@ export const AnimatedNumber = React.forwardRef<NumberFlowElement, AnimatedNumber
             );
         }
 
-        if (shouldRenderStaticNumber()) {
-            return (
-                <span className={cn('tabular-nums [font-variant-numeric:tabular-nums]', className)}>
-                    {formatAnimatedNumberText(value, { locales, format, prefix, suffix })}
-                </span>
-            );
-        }
+        // SSR and the hydration render share readable text. Enhance only when
+        // the platform has registered the animation element; unsupported hosts
+        // keep fully functional number updates without a runtime-specific branch.
+        if (!canAnimate) return <span className={cn('tabular-nums [font-variant-numeric:tabular-nums]', className)}>
+            {formatAnimatedNumberText(value, { locales, format, prefix, suffix })}
+        </span>;
 
         return (
             <NumberFlow

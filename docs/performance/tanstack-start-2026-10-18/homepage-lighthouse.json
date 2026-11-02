@@ -1,0 +1,355 @@
+{
+  "tool": "Lighthouse 13.5.0",
+  "chrome": "Playwright Chromium 1208, headless Chrome for Testing",
+  "method": "Three isolated mobile runs per hosted revision; default simulated slow 4G and 4x CPU; no parallel local browser/test workload; fresh profile per run. Component medians are independent, not a synthetic run.",
+  "groups": {
+    "before": {
+      "revision": "363d233b88266ab6e9eb3726e29024b8974577eb",
+      "url": "https://deploy-preview-560--travelflowapp.netlify.app/",
+      "runs": [
+        {
+          "fetchTime": "2026-10-18T15:16:56.462Z",
+          "categories": {
+            "performance": 74,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": {
+              "value": 2071.7960000000003,
+              "unit": "millisecond"
+            },
+            "largest-contentful-paint": {
+              "value": 7232.788000000001,
+              "unit": "millisecond"
+            },
+            "speed-index": {
+              "value": 2284.6303679784783,
+              "unit": "millisecond"
+            },
+            "total-blocking-time": {
+              "value": 3,
+              "unit": "millisecond"
+            },
+            "cumulative-layout-shift": {
+              "value": 0,
+              "unit": "unitless"
+            }
+          },
+          "lcpElement": "Diese Seite ist auch auf Deutsch verf\u00fcgbar.",
+          "settings": {
+            "formFactor": "mobile",
+            "screenEmulation": {
+              "mobile": true,
+              "width": 412,
+              "height": 823,
+              "deviceScaleFactor": 1.75,
+              "disabled": false
+            },
+            "throttlingMethod": "simulate",
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            }
+          }
+        },
+        {
+          "fetchTime": "2026-10-18T15:58:42.400Z",
+          "categories": {
+            "performance": 71,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": {
+              "value": 2731.260999999999,
+              "unit": "millisecond"
+            },
+            "largest-contentful-paint": {
+              "value": 7005.843499999999,
+              "unit": "millisecond"
+            },
+            "speed-index": {
+              "value": 3508.381752002262,
+              "unit": "millisecond"
+            },
+            "total-blocking-time": {
+              "value": 7,
+              "unit": "millisecond"
+            },
+            "cumulative-layout-shift": {
+              "value": 0,
+              "unit": "unitless"
+            }
+          },
+          "lcpElement": "Diese Seite ist auch auf Deutsch verf\u00fcgbar.",
+          "settings": {
+            "formFactor": "mobile",
+            "screenEmulation": {
+              "mobile": true,
+              "width": 412,
+              "height": 823,
+              "deviceScaleFactor": 1.75,
+              "disabled": false
+            },
+            "throttlingMethod": "simulate",
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            }
+          }
+        },
+        {
+          "fetchTime": "2026-10-18T15:59:02.364Z",
+          "categories": {
+            "performance": 72,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": {
+              "value": 2718.037999999999,
+              "unit": "millisecond"
+            },
+            "largest-contentful-paint": {
+              "value": 7102.109,
+              "unit": "millisecond"
+            },
+            "speed-index": {
+              "value": 2718.037999999999,
+              "unit": "millisecond"
+            },
+            "total-blocking-time": {
+              "value": 2,
+              "unit": "millisecond"
+            },
+            "cumulative-layout-shift": {
+              "value": 0,
+              "unit": "unitless"
+            }
+          },
+          "lcpElement": "Diese Seite ist auch auf Deutsch verf\u00fcgbar.",
+          "settings": {
+            "formFactor": "mobile",
+            "screenEmulation": {
+              "mobile": true,
+              "width": 412,
+              "height": 823,
+              "deviceScaleFactor": 1.75,
+              "disabled": false
+            },
+            "throttlingMethod": "simulate",
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            }
+          }
+        }
+      ],
+      "median": {
+        "categories": {
+          "performance": 72,
+          "accessibility": 100,
+          "best-practices": 96,
+          "seo": 69
+        },
+        "metrics": {
+          "first-contentful-paint": 2718.037999999999,
+          "largest-contentful-paint": 7102.109,
+          "speed-index": 2718.037999999999,
+          "total-blocking-time": 3,
+          "cumulative-layout-shift": 0
+        }
+      }
+    },
+    "after": {
+      "revision": "3f8fa31c0ef4ce0b4eefea1782abaf11b59b1bf7",
+      "url": "https://deploy-preview-563--travelflowapp.netlify.app/",
+      "runs": [
+        {
+          "fetchTime": "2026-10-18T16:00:21.584Z",
+          "categories": {
+            "performance": 89,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": {
+              "value": 2646.0004999999996,
+              "unit": "millisecond"
+            },
+            "largest-contentful-paint": {
+              "value": 3197.8349999999996,
+              "unit": "millisecond"
+            },
+            "speed-index": {
+              "value": 2646.0004999999996,
+              "unit": "millisecond"
+            },
+            "total-blocking-time": {
+              "value": 0,
+              "unit": "millisecond"
+            },
+            "cumulative-layout-shift": {
+              "value": 0,
+              "unit": "unitless"
+            }
+          },
+          "lcpElement": "Tell us where you want to go and when \u2014 our AI builds a complete, day-by-day it\u2026",
+          "settings": {
+            "formFactor": "mobile",
+            "screenEmulation": {
+              "mobile": true,
+              "width": 412,
+              "height": 823,
+              "deviceScaleFactor": 1.75,
+              "disabled": false
+            },
+            "throttlingMethod": "simulate",
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            }
+          }
+        },
+        {
+          "fetchTime": "2026-10-18T16:00:41.090Z",
+          "categories": {
+            "performance": 88,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": {
+              "value": 2718.485999999999,
+              "unit": "millisecond"
+            },
+            "largest-contentful-paint": {
+              "value": 3291.771999999999,
+              "unit": "millisecond"
+            },
+            "speed-index": {
+              "value": 3030.6968519935854,
+              "unit": "millisecond"
+            },
+            "total-blocking-time": {
+              "value": 0,
+              "unit": "millisecond"
+            },
+            "cumulative-layout-shift": {
+              "value": 0,
+              "unit": "unitless"
+            }
+          },
+          "lcpElement": "Tell us where you want to go and when \u2014 our AI builds a complete, day-by-day it\u2026",
+          "settings": {
+            "formFactor": "mobile",
+            "screenEmulation": {
+              "mobile": true,
+              "width": 412,
+              "height": 823,
+              "deviceScaleFactor": 1.75,
+              "disabled": false
+            },
+            "throttlingMethod": "simulate",
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            }
+          }
+        },
+        {
+          "fetchTime": "2026-10-18T16:01:00.713Z",
+          "categories": {
+            "performance": 88,
+            "accessibility": 100,
+            "best-practices": 96,
+            "seo": 69
+          },
+          "metrics": {
+            "first-contentful-paint": {
+              "value": 2732.058,
+              "unit": "millisecond"
+            },
+            "largest-contentful-paint": {
+              "value": 3306.3625,
+              "unit": "millisecond"
+            },
+            "speed-index": {
+              "value": 2921.2718079967017,
+              "unit": "millisecond"
+            },
+            "total-blocking-time": {
+              "value": 0,
+              "unit": "millisecond"
+            },
+            "cumulative-layout-shift": {
+              "value": 0,
+              "unit": "unitless"
+            }
+          },
+          "lcpElement": "Tell us where you want to go and when \u2014 our AI builds a complete, day-by-day it\u2026",
+          "settings": {
+            "formFactor": "mobile",
+            "screenEmulation": {
+              "mobile": true,
+              "width": 412,
+              "height": 823,
+              "deviceScaleFactor": 1.75,
+              "disabled": false
+            },
+            "throttlingMethod": "simulate",
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            }
+          }
+        }
+      ],
+      "median": {
+        "categories": {
+          "performance": 88,
+          "accessibility": 100,
+          "best-practices": 96,
+          "seo": 69
+        },
+        "metrics": {
+          "first-contentful-paint": 2718.485999999999,
+          "largest-contentful-paint": 3291.771999999999,
+          "speed-index": 2921.2718079967017,
+          "total-blocking-time": 0,
+          "cumulative-layout-shift": 0
+        }
+      }
+    }
+  }
+}

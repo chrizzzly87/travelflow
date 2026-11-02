@@ -1,4 +1,4 @@
-import { useLocation, type Location } from 'react-router-dom';
+import { useLocation, type Location } from '@/app/navigation';
 
 const DEFAULT_ROUTE_LOCATION: Location = {
     pathname: '/',

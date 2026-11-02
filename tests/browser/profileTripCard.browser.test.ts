@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { ProfileTripCard } from '../../components/profile/ProfileTripCard';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
@@ -31,7 +32,7 @@ describe('components/profile/ProfileTripCard', () => {
     });
     const onOpen = vi.fn();
 
-    render(
+    await render(
       React.createElement(
         MemoryRouter,
         null,
@@ -79,7 +80,7 @@ describe('components/profile/ProfileTripCard', () => {
       })
     );
 
-    const { rerender } = render(renderCard('map-trip-1', 'Alpine Loop'));
+    const { rerender } = await render(renderCard('map-trip-1', 'Alpine Loop'));
 
     const firstMap = await screen.findByAltText('Map preview for Alpine Loop');
     fireEvent.error(firstMap);

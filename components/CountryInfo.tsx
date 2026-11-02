@@ -75,21 +75,21 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
             : amount / exchangeRate;
 
     return (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Globe size={16} className="text-accent-600"/> Destination Info
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm dark:bg-card dark:shadow-none">
+            <div className="bg-secondary px-4 py-3 border-b border-border flex items-center justify-between">
+                <h3 className="font-semibold text-foreground text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Globe size={16} className="text-accent-600 dark:text-accent-300"/> Destination Info
                 </h3>
             </div>
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {/* Currency Converter */}
                 <div className="space-y-2 min-w-0">
-                    <label htmlFor={amountInputId} className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <label htmlFor={amountInputId} className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                         <Banknote size={12} /> Currency Converter
                     </label>
-                    <div className={`flex items-center gap-2 p-2 rounded-lg border ${converterEnabled ? 'bg-gray-50 border-gray-200' : 'bg-gray-50/60 border-gray-200 opacity-70'}`}>
+                    <div className={`flex items-center gap-2 p-2 rounded-lg border ${converterEnabled ? 'bg-secondary border-border' : 'bg-secondary/60 border-border opacity-70'}`}>
                         <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                                 <span>{direction === 'eurToLocal' ? 'EUR' : currencyCode}</span>
                             </div>
                             <NumberInput
@@ -97,7 +97,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                                 value={amount}
                                 onChange={(e) => setAmount(Number(e.target.value))}
                                 disabled={!converterEnabled}
-                                className={`w-full min-w-0 border-none bg-transparent p-0 font-bold shadow-none ring-0 ${converterEnabled ? 'text-gray-800' : 'text-gray-400 cursor-not-allowed'}`}
+                                className={`w-full min-w-0 border-none bg-transparent p-0 font-bold shadow-none ring-0 ${converterEnabled ? 'text-foreground' : 'text-muted-foreground cursor-not-allowed'}`}
                                 overlayClassName="px-0 font-bold"
                                 format={{ maximumFractionDigits: 2 }}
                             />
@@ -105,15 +105,15 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         <button type="button"
                             onClick={() => setDirection(direction === 'eurToLocal' ? 'localToEur' : 'eurToLocal')}
                             disabled={!converterEnabled}
-                            className={`p-1.5 bg-white shadow-sm border border-gray-200 rounded-full flex-shrink-0 ${converterEnabled ? 'hover:bg-gray-100 text-accent-600' : 'text-gray-400 cursor-not-allowed'}`} aria-label="Swap conversion direction"
+                            className={`p-1.5 bg-card shadow-sm border border-border rounded-full flex-shrink-0 ${converterEnabled ? 'hover:bg-secondary text-accent-600 dark:text-accent-300' : 'text-muted-foreground cursor-not-allowed'}`} aria-label="Swap conversion direction"
                         >
                             <ArrowRightLeft size={14} />
                         </button>
                         <div className="flex-1 text-right min-w-0">
-                            <div className="text-xs text-gray-500 mb-1">
+                            <div className="text-xs text-muted-foreground mb-1">
                                 <span>{direction === 'eurToLocal' ? currencyCode : 'EUR'}</span>
                             </div>
-                            <div className="font-bold text-gray-800 truncate">
+                            <div className="font-bold text-foreground truncate">
                                 <AnimatedNumber
                                     value={convertedValue}
                                     format={{ maximumFractionDigits: 2 }}
@@ -122,7 +122,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                             </div>
                         </div>
                     </div>
-                    <div className="text-[10px] text-gray-400 text-center truncate">
+                    <div className="text-[10px] text-muted-foreground text-center truncate">
                         {!converterEnabled
                             ? `Rate unavailable for ${currencyCode}`
                             : `Rate: 1 EUR ≈ ${exchangeRate.toFixed(2)} ${currencyCode}`}
@@ -131,49 +131,49 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
 
                 {/* Languages */}
                 <div className="space-y-2 min-w-0">
-                    <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                         <Globe size={12} /> Languages
                     </p>
                     <div className="flex flex-wrap gap-1">
                         {languages.map((lang) => (
-                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap">
+                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/25">
                                 {lang}
                             </span>
                         ))}
                         {languages.length === 0 && (
-                            <span className="text-xs text-gray-400 italic">No language data available</span>
+                            <span className="text-xs text-muted-foreground italic">No language data available</span>
                         )}
                     </div>
                 </div>
 
                 {/* Sockets */}
                 <div className="space-y-2 min-w-0">
-                    <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                         <Zap size={12} /> Electric Sockets
                     </p>
-                    <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-800 break-words">
+                    <div className="p-2 bg-secondary rounded-lg border border-border text-sm text-foreground break-words">
                         {electricSockets}
                     </div>
                 </div>
 
                 {/* Links */}
                 <div className="space-y-2 min-w-0">
-                    <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                         <FileText size={12} /> Important Links
                     </p>
                     <div className="flex flex-col gap-2">
                         {visaInfoUrl && (
-                            <a href={visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
+                            <a href={visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate dark:text-accent-300">
                                 <ExternalLink size={10} className="flex-shrink-0" /> Visa Information
                             </a>
                         )}
                         {auswaertigesAmtUrl && (
-                            <a href={auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
+                            <a href={auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate dark:text-accent-300">
                                 <ExternalLink size={10} className="flex-shrink-0" /> Auswärtiges Amt (DE)
                             </a>
                         )}
                         {!visaInfoUrl && !auswaertigesAmtUrl && (
-                            <span className="text-xs text-gray-400 italic">No specific links available</span>
+                            <span className="text-xs text-muted-foreground italic">No specific links available</span>
                         )}
                     </div>
                 </div>

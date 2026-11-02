@@ -318,4 +318,12 @@ describe('blog OG source asset budget', () => {
       expect(height).toBeLessThanOrEqual(BLOG_OG_JPEG_MAX_HEIGHT);
     }
   });
+
+  it('names each admin screen in the document title and keeps admin out of search', () => {
+    expect(getMetadata('/admin/users').pageTitle).toMatch(/^Users · Admin/);
+    expect(getMetadata('/admin/ai-benchmark/telemetry').pageTitle).toMatch(/^AI telemetry · Admin/);
+    expect(getMetadata('/admin/tiers').pageTitle).toMatch(/^Plans · Admin/);
+    expect(getMetadata('/admin/not-a-screen').pageTitle).toMatch(/^Admin\b/);
+    expect(getMetadata('/admin/users').robots).toContain('noindex');
+  });
 });

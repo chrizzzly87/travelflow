@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePageTitle, type PageTitleLabels } from '../../services/pageTitleService';
+import { ADMIN_SCREEN_TITLES, resolvePageTitle, type PageTitleLabels } from '../../services/pageTitleService';
+import { ADMIN_NAV_ITEMS } from '../../components/admin/adminNavConfig';
 
 const APP_NAME = 'TravelFlow';
 
@@ -21,6 +22,7 @@ const LABELS: PageTitleLabels = {
   shareUnavailable: 'This shared trip is no longer available',
   createTrip: 'Create Trip',
   createTripLab: 'Create Trip Labs',
+  trips: 'My trips',
   profile: 'Profile',
   profileSettings: 'Profile settings',
   profileOnboarding: 'Complete profile',
@@ -29,6 +31,23 @@ const LABELS: PageTitleLabels = {
 };
 
 describe('services/pageTitleService', () => {
+  it('titles the /trips start page, and keeps it distinct from /trip/:id', () => {
+    // Regression: /trips fell through to the 404 label, so the installed app's
+    // own start page opened with "404 · TravelFlow" in the tab.
+    expect(resolvePageTitle({ pathname: '/trips', appName: APP_NAME, labels: LABELS }))
+      .toBe('My trips · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/de/trips', appName: APP_NAME, labels: LABELS }))
+      .toBe('My trips · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/trips/', appName: APP_NAME, labels: LABELS }))
+      .toBe('My trips · TravelFlow');
+    expect(resolvePageTitle({
+      pathname: '/trip/abc-123',
+      appName: APP_NAME,
+      labels: LABELS,
+      tripTitle: 'Taiwan Loop',
+    })).toBe('Taiwan Loop · TravelFlow');
+  });
+
   it('resolves homepage and static marketing routes', () => {
     expect(resolvePageTitle({ pathname: '/', appName: APP_NAME, labels: LABELS })).toBe('TravelFlow');
     expect(resolvePageTitle({ pathname: '/features', appName: APP_NAME, labels: LABELS })).toBe('Features · TravelFlow');
@@ -57,6 +76,14 @@ describe('services/pageTitleService', () => {
     expect(resolvePageTitle({ pathname: '/u/traveler', appName: APP_NAME, labels: LABELS })).toBe('Profile · TravelFlow');
     expect(resolvePageTitle({ pathname: '/admin/users', appName: APP_NAME, labels: LABELS })).toBe('Admin · Users · TravelFlow');
     expect(resolvePageTitle({ pathname: '/admin/billing', appName: APP_NAME, labels: LABELS })).toBe('Admin · Billing · TravelFlow');
+  });
+
+  it('titles every admin screen with its navigation label', () => {
+    for (const item of ADMIN_NAV_ITEMS) {
+      expect(ADMIN_SCREEN_TITLES[item.path], item.path).toBe(item.label);
+    }
+    expect(resolvePageTitle({ pathname: '/admin/tiers', appName: APP_NAME, labels: LABELS })).toBe('Admin · Plans · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/admin/unknown', appName: APP_NAME, labels: LABELS })).toBe('Admin · TravelFlow');
   });
 
   it('falls back to not-found title for unknown routes', () => {

@@ -7,7 +7,7 @@ This guide is a practical checklist for setting up social login in Supabase for 
 This app currently supports:
 
 1. Email + password login
-2. OAuth login with Google, Facebook, Kakao
+2. OAuth login with Google and Facebook. Kakao is switched off (`KAKAO_SIGN_IN_ENABLED` in `components/auth/SocialLoginButton.tsx`) until its app credentials exist; see #585.
 
 Apple note:
 - Apple OAuth remains documented here for future enablement.
@@ -204,7 +204,7 @@ On `Authentication` -> `Providers` make sure these are enabled:
 1. Open `https://travelflowapp.netlify.app/login`.
 2. Test Google login.
 3. Test Facebook login.
-4. Test Kakao login (only appears when active language is Korean).
+4. Kakao login is switched off. After setting `KAKAO_SIGN_IN_ENABLED` to `true`, it appears only when the active language is Korean; test it then.
 5. Test Apple login only if Apple provider/UI is enabled.
 6. Test local login flow at `http://localhost:5173/login`.
 7. Verify user appears in Supabase users page:

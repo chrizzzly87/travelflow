@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const JAPAN_TEMPLATE: Partial<ITrip> = {
     title: "Cherry Blossom Trail",
@@ -20,7 +20,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             title: "Tokyo",
             startDateOffset: 0,
             duration: 3,
-            color: "bg-rose-200 border-rose-400 text-rose-900",
+            color: "bg-rose-200 border-rose-400 text-rose-900 dark:text-rose-200",
             location: "Tokyo, Japan",
             coordinates: { lat: 35.6762, lng: 139.6503 },
             description: `The electrifying capital where ancient temples stand beside neon-lit skyscrapers. Tokyo is a sensory overload of culture, cuisine, and creativity.\n\n### Must See\n- [ ] Senso-ji Temple in Asakusa\n- [ ] Meiji Shrine & Harajuku\n- [ ] Shibuya Crossing\n- [ ] Tokyo Skytree or Tokyo Tower\n- [ ] Imperial Palace East Gardens\n\n### Must Try\n- [ ] Fresh sushi at Tsukiji Outer Market\n- [ ] Ramen in a local yokocho alley\n- [ ] Matcha desserts in Uji-inspired cafes\n- [ ] Yakitori under the train tracks at Yurakucho\n\n### Must Do\n- [ ] Stroll through Shinjuku Gyoen during cherry blossom season\n- [ ] Experience a traditional onsen (public bath)\n- [ ] Explore Akihabara's electric town\n- [ ] Visit teamLab Borderless digital art museum`,
@@ -42,7 +42,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             title: "Tsukiji Outer Market Tour",
             startDateOffset: 0.3,
             duration: 0.25,
-            color: "bg-orange-100 border-orange-300 text-orange-900",
+            color: "bg-orange-100 border-orange-300 text-orange-900 dark:bg-orange-400/12 dark:text-orange-200 dark:border-orange-400/30",
             location: "Tsukiji Outer Market, Tokyo",
             coordinates: { lat: 35.6654, lng: 139.7707 },
             activityType: ["food", "culture"],
@@ -74,7 +74,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             title: "Hakone",
             startDateOffset: 3,
             duration: 2,
-            color: "bg-pink-200 border-pink-400 text-pink-900",
+            color: "bg-pink-200 border-pink-400 text-pink-900 dark:text-pink-200",
             location: "Hakone, Kanagawa, Japan",
             coordinates: { lat: 35.2326, lng: 139.1070 },
             description: `A hot spring resort town nestled in the mountains with stunning views of Mount Fuji. Hakone is the perfect escape from Tokyo's urban intensity.\n\n### Must See\n- [ ] Mount Fuji views from Lake Ashi\n- [ ] Hakone Shrine (lakeside torii gate)\n- [ ] Owakudani volcanic valley\n- [ ] Hakone Open-Air Museum\n\n### Must Try\n- [ ] Black eggs (kuro-tamago) boiled in volcanic springs\n- [ ] Traditional kaiseki dinner at a ryokan\n- [ ] Local craft beer at Hakone Beer\n\n### Must Do\n- [ ] Soak in an outdoor onsen with mountain views\n- [ ] Take the Hakone Ropeway over Owakudani\n- [ ] Cruise across Lake Ashi on a pirate ship`
@@ -101,7 +101,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             title: "Kyoto",
             startDateOffset: 5,
             duration: 4,
-            color: "bg-rose-300 border-rose-500 text-rose-950",
+            color: "bg-rose-300 border-rose-500 text-rose-950 dark:text-rose-200",
             location: "Kyoto, Japan",
             coordinates: { lat: 35.0116, lng: 135.7681 },
             description: `The cultural heart of Japan with over 2,000 temples, stunning bamboo groves, and geisha districts. Kyoto during cherry blossom season is unforgettable.\n\n### Must See\n- [ ] Fushimi Inari Shrine (10,000 torii gates)\n- [ ] Kinkaku-ji (Golden Pavilion)\n- [ ] Arashiyama Bamboo Grove\n- [ ] Kiyomizu-dera Temple\n- [ ] Philosopher's Path (sakura lined)\n\n### Must Try\n- [ ] Traditional matcha tea ceremony\n- [ ] Yudofu (tofu hot pot) in Nanzen-ji area\n- [ ] Kyoto-style kaiseki multi-course dinner\n- [ ] Wagashi (traditional sweets) with tea\n\n### Must Do\n- [ ] Rent a kimono and stroll through Higashiyama\n- [ ] Visit Nishiki Market ("Kyoto's Kitchen")\n- [ ] Watch a geisha performance in Gion\n- [ ] Early morning visit to Fushimi Inari (avoid crowds)`,
@@ -123,7 +123,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             title: "Traditional Tea Ceremony",
             startDateOffset: 6,
             duration: 0.15,
-            color: "bg-emerald-100 border-emerald-300 text-emerald-900",
+            color: "bg-emerald-100 border-emerald-300 text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30",
             location: "Camellia Garden, Kyoto",
             coordinates: { lat: 35.0036, lng: 135.7785 },
             activityType: ["culture"],
@@ -141,7 +141,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             title: "Fushimi Inari Shrine Hike",
             startDateOffset: 7,
             duration: 0.25,
-            color: "bg-red-100 border-red-300 text-red-900",
+            color: "bg-red-100 border-red-300 text-red-900 dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30",
             location: "Fushimi Inari-taisha, Kyoto",
             coordinates: { lat: 34.9671, lng: 135.7727 },
             activityType: ["sightseeing", "hiking"],
@@ -166,17 +166,59 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             routeDurationHours: 0.5
         },
 
-        // ── Osaka (Days 9–12) ─────────────────────────────────────
+        // ── Osaka (Days 9–14), base for the Nara and Kobe day trips ─
         {
             id: "jp-city-osaka",
             type: "city",
             title: "Osaka",
             startDateOffset: 9,
-            duration: 3,
-            color: "bg-pink-100 border-pink-300 text-pink-900",
+            duration: 5,
+            color: "bg-pink-100 border-pink-300 text-pink-900 dark:bg-pink-400/12 dark:text-pink-200 dark:border-pink-400/30",
             location: "Osaka, Japan",
             coordinates: { lat: 34.6937, lng: 135.5023 },
-            description: `Japan's kitchen and comedy capital. Osaka is all about street food, vibrant nightlife, and a laid-back attitude that contrasts with Tokyo's formality.\n\n### Must See\n- [ ] Osaka Castle and its park\n- [ ] Dotonbori neon-lit canal district\n- [ ] Shinsekai retro neighborhood\n- [ ] Sumiyoshi Taisha shrine\n\n### Must Try\n- [ ] Takoyaki (octopus balls) from a street stall\n- [ ] Okonomiyaki (savory pancake) at a local joint\n- [ ] Kushikatsu (deep-fried skewers) in Shinsekai\n- [ ] Cheesecake from Rikuro Ojisan\n\n### Must Do\n- [ ] Evening walk along Dotonbori canal\n- [ ] Explore Kuromon Ichiba Market\n- [ ] Visit Umeda Sky Building for sunset views\n- [ ] Bar-hop through Ura-Namba's hidden alleys`
+            description: `Japan's kitchen and comedy capital. Osaka is all about street food, vibrant nightlife, and a laid-back attitude that contrasts with Tokyo's formality.\n\n### Must See\n- [ ] Osaka Castle and its park\n- [ ] Dotonbori neon-lit canal district\n- [ ] Shinsekai retro neighborhood\n- [ ] Sumiyoshi Taisha shrine\n\n### Must Try\n- [ ] Takoyaki (octopus balls) from a street stall\n- [ ] Okonomiyaki (savory pancake) at a local joint\n- [ ] Kushikatsu (deep-fried skewers) in Shinsekai\n- [ ] Cheesecake from Rikuro Ojisan\n\n### Must Do\n- [ ] Evening walk along Dotonbori canal\n- [ ] Explore Kuromon Ichiba Market\n- [ ] Visit Umeda Sky Building for sunset views\n- [ ] Bar-hop through Ura-Namba's hidden alleys\n\n### Day Trips\n- [ ] Nara: giant Buddha, Nara Park deer and Kasuga Taisha (~40 min by Kintetsu train)\n- [ ] Kobe: Kitano, Kobe beef and the harbourfront at dusk (~25 min by JR Special Rapid)`
+        },
+
+        // Day trip: Nara
+        {
+            id: "jp-act-nara",
+            type: "activity",
+            title: "Nara Day Trip",
+            startDateOffset: 10.35,
+            duration: 0.4,
+            activityKind: 'day-trip',
+            stayCityId: 'jp-city-osaka',
+            color: "bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30",
+            location: "Nara, Japan",
+            coordinates: { lat: 34.6851, lng: 135.8430 },
+            activityType: ["culture", "sightseeing", "nature"],
+            description: `Japan's first permanent capital, an easy hop from Osaka. Temples, gardens and over a thousand free-roaming deer fit into a relaxed day on foot.\n\n### Must See\n- [ ] Todai-ji and its 15-metre bronze Great Buddha\n- [ ] Kasuga Taisha's lantern-lined approach\n- [ ] Nara Park and the bowing sika deer\n- [ ] Isuien Garden with Mount Wakakusa as its backdrop\n\n### Must Try\n- [ ] Kakinoha-zushi (sushi wrapped in persimmon leaves)\n- [ ] Mochi pounded at high speed at Nakatanidou\n\n### Getting There\n- [ ] Kintetsu Nara Line from Osaka-Namba to Kintetsu-Nara (~40 min); the park starts at the station`,
+            aiInsights: {
+                cost: "~1,300 JPY return by Kintetsu; Todai-ji hall ~800 JPY; deer crackers ~200 JPY",
+                bestTime: "Arrive by 9 AM to see Todai-ji before the tour groups; cherry blossoms peak in early April",
+                tips: "Bow to the deer and they often bow back, but put your crackers away once they are gone. Everything is walkable, so skip the buses and follow the park paths between sights."
+            }
+        },
+
+        // Day trip: Kobe
+        {
+            id: "jp-act-kobe",
+            type: "activity",
+            title: "Kobe Day Trip",
+            startDateOffset: 12.4,
+            duration: 0.45,
+            activityKind: 'day-trip',
+            stayCityId: 'jp-city-osaka',
+            color: "bg-teal-100 border-teal-300 text-teal-900 dark:bg-teal-400/12 dark:text-teal-200 dark:border-teal-400/30",
+            location: "Kobe, Hyogo, Japan",
+            coordinates: { lat: 34.6901, lng: 135.1955 },
+            activityType: ["food", "sightseeing", "culture"],
+            description: `A port city squeezed between the Rokko mountains and the sea, known for its cosmopolitan past and its beef. Hills in the morning, harbour at night.\n\n### Must See\n- [ ] Kitano-cho's 19th-century foreign merchant houses\n- [ ] Nunobiki Herb Gardens by ropeway, with views over the bay\n- [ ] Meriken Park, Port Tower and the earthquake memorial\n- [ ] Nankinmachi, Kobe's compact Chinatown\n\n### Must Try\n- [ ] Kobe beef teppanyaki (book lunch; it is cheaper than dinner)\n- [ ] Pork buns from Roshoki in Nankinmachi\n- [ ] A sake tasting in the Nada brewery district\n\n### Getting There\n- [ ] JR Special Rapid from Osaka Station to Sannomiya (~25 min)`,
+            aiInsights: {
+                cost: "~820 JPY return by JR; Kobe beef lunch sets from ~6,000 JPY; ropeway ~1,800 JPY return",
+                bestTime: "Kitano and the ropeway in the morning, then stay for the harbour lights after sunset",
+                tips: "Look for the bronze certificate or the chrysanthemum seal to be sure it is real Kobe beef. Harborland is a pleasant place to wait for the evening illuminations before the train back."
+            }
         },
 
         // ── Travel: Osaka → Hiroshima ────────────────────────────
@@ -184,7 +226,7 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             id: "jp-travel-osaka-hiroshima",
             type: "travel",
             title: "Osaka → Hiroshima",
-            startDateOffset: 12,
+            startDateOffset: 14,
             duration: 0.15,
             color: "bg-stone-800 border-stone-600 text-stone-100",
             transportMode: "train",
@@ -193,14 +235,14 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             routeDurationHours: 1.5
         },
 
-        // ── Hiroshima (Days 12–14) ────────────────────────────────
+        // ── Hiroshima (Days 14–16) ────────────────────────────────
         {
             id: "jp-city-hiroshima",
             type: "city",
             title: "Hiroshima",
-            startDateOffset: 12,
+            startDateOffset: 14,
             duration: 2,
-            color: "bg-rose-100 border-rose-300 text-rose-900",
+            color: "bg-rose-100 border-rose-300 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30",
             location: "Hiroshima, Japan",
             coordinates: { lat: 34.3853, lng: 132.4553 },
             description: `A city of resilience and peace. Hiroshima's moving memorial sites and nearby Miyajima Island make it an essential stop on any Japan itinerary.\n\n### Must See\n- [ ] Hiroshima Peace Memorial (A-Bomb Dome)\n- [ ] Peace Memorial Museum\n- [ ] Miyajima Island & floating torii gate\n- [ ] Shukkeien Garden\n\n### Must Try\n- [ ] Hiroshima-style okonomiyaki (layered, with noodles)\n- [ ] Fresh oysters from Miyajima\n- [ ] Momiji manju (maple leaf cakes)\n\n### Must Do\n- [ ] Walk through Peace Memorial Park at sunset\n- [ ] Take the ferry to Miyajima Island\n- [ ] Hike Mount Misen for panoramic views\n- [ ] Ring the Peace Bell at the memorial`
@@ -211,9 +253,11 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             id: "jp-act-miyajima",
             type: "activity",
             title: "Miyajima Island Day Trip",
-            startDateOffset: 13,
+            startDateOffset: 15,
             duration: 0.4,
-            color: "bg-sky-100 border-sky-300 text-sky-900",
+            activityKind: 'day-trip',
+            stayCityId: 'jp-city-hiroshima',
+            color: "bg-sky-100 border-sky-300 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30",
             location: "Miyajima Island, Hiroshima",
             coordinates: { lat: 34.2960, lng: 132.3198 },
             activityType: ["sightseeing", "nature", "culture"],
@@ -232,11 +276,7 @@ export const createJapanTrip = (startDateStr: string): ITrip => {
     if (!validation.isValid) {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
-    const items = JAPAN_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map(h => ({ ...h, id: `${h.id}-${uniqueSuffix}` }))
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(JAPAN_TEMPLATE.items!, uniqueSuffix);
     return {
         id: `trip-japan-${uniqueSuffix}`,
         title: JAPAN_TEMPLATE.title!,

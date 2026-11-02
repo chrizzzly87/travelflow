@@ -64,7 +64,7 @@ Define and implement a safe strategy for linking multiple auth identities (email
 - How should we handle localization/account preferences when both accounts differ?
 
 ## Suggested Future Deliverables
-- `docs/IDENTITY_LINKING_POLICY.md`
+- An identity-linking policy document (not written yet)
 - SQL/RPC migrations for merge/link workflows
 - Admin UI flow: duplicate review + merge preview + merge commit
 - Runbook for support/admin operations

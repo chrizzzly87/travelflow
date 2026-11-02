@@ -7,7 +7,7 @@ import {
 export type AdminDateRange = '7d' | '30d' | '90d' | 'all';
 
 const SIDEBAR_COLLAPSE_PERSIST_KEY = 'tf_admin_sidebar_collapsed_v1';
-const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
+export const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
 
 export const getStoredSidebarCollapseState = (): boolean => {
     return readLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';

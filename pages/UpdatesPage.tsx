@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ReleasePill } from '../components/marketing/ReleasePill';
 import { useAuth } from '../hooks/useAuth';
-import { getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
+import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
+import { formatReleaseDate, getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { readLocalStorageItem } from '../services/browserStorageService';
 
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
@@ -55,17 +56,6 @@ const updatesDebugVisibilityReducer = (
     }
 };
 
-const formatReleaseDate = (dateLike: string) => {
-    const parsed = new Date(dateLike);
-    if (Number.isNaN(parsed.getTime())) return dateLike;
-
-    return parsed.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
-
 const readStoredBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
     if (typeof window === 'undefined') return fallbackValue;
     try {
@@ -94,7 +84,8 @@ const readInitialSimulatedLogin = (): boolean => {
 };
 
 export const UpdatesPage: React.FC = () => {
-    const { t } = useTranslation('pages');
+    const { t, i18n } = useTranslation('pages');
+    const locale = normalizeLocale(i18n.resolvedLanguage || i18n.language || DEFAULT_LOCALE);
     const { isAdmin } = useAuth();
     const releases = useMemo(() => getPublishedReleaseNotes(), []);
     const [debugVisibility, dispatchDebugVisibility] = useReducer(updatesDebugVisibilityReducer, undefined, () => ({
@@ -150,19 +141,19 @@ export const UpdatesPage: React.FC = () => {
     return (
         <MarketingLayout>
             <section className="pt-5 pb-10 text-center md:pb-12">
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('updates.title')}</h1>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('updates.title')}</h1>
             </section>
 
             <section className="mt-2 space-y-4">
                 {showInternalNews && (
-                    <article className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 shadow-sm">
-                        <p className="text-sm font-medium text-rose-800">Internal view enabled. Hidden release items are visible.</p>
+                    <article className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 shadow-sm dark:bg-rose-400/12 dark:border-rose-400/30">
+                        <p className="text-sm font-medium text-rose-800 dark:text-rose-200">Internal view enabled. Hidden release items are visible.</p>
                     </article>
                 )}
 
                 {releaseEntries.length === 0 && (
-                    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <p className="text-sm text-slate-600">No published updates yet.</p>
+                    <article className="rounded-2xl border border-border bg-card p-6 shadow-sm dark:shadow-none">
+                        <p className="text-sm text-muted-foreground">No published updates yet.</p>
                     </article>
                 )}
 
@@ -174,39 +165,39 @@ export const UpdatesPage: React.FC = () => {
                             key={release.id}
                             className={
                                 isTopNews
-                                    ? 'rounded-2xl border border-accent-200/80 bg-gradient-to-b from-accent-50/40 to-white p-6 shadow-accent-glow-md'
-                                    : 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm'
+                                    ? 'rounded-2xl border border-accent-200/80 bg-card p-6 shadow-accent-glow-md dark:border-accent-400/30 dark:shadow-none'
+                                    : 'rounded-2xl border border-border bg-card p-6 shadow-sm dark:shadow-none'
                             }
                         >
                             <div className="flex flex-wrap items-start justify-between gap-3">
-                                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{release.title}</h2>
+                                <h2 className="text-xl font-semibold tracking-tight text-foreground">{release.title}</h2>
                                 <div className="text-right">
                                     <span
                                         className={
                                             isTopNews
-                                                ? 'inline-flex rounded-full border border-accent-300 bg-accent-100 px-2.5 py-0.5 text-[11px] font-semibold text-accent-800 shadow-accent-glow-sm'
-                                                : 'inline-flex rounded-full border border-slate-300 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700'
+                                                ? 'inline-flex rounded-full border border-accent-300 bg-accent-100 px-2.5 py-0.5 text-[11px] font-semibold text-accent-800 shadow-accent-glow-sm dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
+                                                : 'inline-flex rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-foreground'
                                         }
                                     >
                                         {release.version}
                                     </span>
-                                    <p className="mt-1 text-xs font-medium text-slate-500">
-                                        {formatReleaseDate(release.publishedAt || release.date)}
+                                    <p className="mt-1 text-xs font-medium text-muted-foreground">
+                                        {formatReleaseDate(release.publishedAt || release.date, locale)}
                                     </p>
                                 </div>
                             </div>
 
                             {release.summary && (
-                                <div className="mt-3 max-w-[62ch] text-base leading-7 text-slate-600">
+                                <div className="mt-3 max-w-[62ch] text-base leading-7 text-muted-foreground">
                                     <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
                                         components={{
                                             p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                             a: ({ node, children, ...props }) => (
-                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                             ),
                                             code: ({ node, ...props }) => (
-                                                <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                                <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
                                             ),
                                         }}
                                     >
@@ -219,14 +210,12 @@ export const UpdatesPage: React.FC = () => {
                                 {groupedItems.map((group, groupIndex) => (
                                     <div key={`${release.id}-${group.typeKey}-${group.typeLabel}-${groupIndex}`}>
                                         <ReleasePill item={group.items[0]} />
-                                        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-slate-400">
+                                        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-foreground marker:text-muted-foreground">
                                             {group.items.map((item, itemIndex) => (
                                                 <li key={`${release.id}-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
                                                     <div className="flex flex-wrap items-start gap-2">
                                                         {item.typeKey === 'internal' && (
-                                                            <span className="mt-0.5 inline-flex shrink-0 rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">
-                                                                Internal
-                                                            </span>
+                                                            <ReleasePill typeKey="internal" label="Internal" className="mt-0.5" />
                                                         )}
                                                         <div className="min-w-0 flex-1">
                                                             <ReactMarkdown
@@ -234,10 +223,10 @@ export const UpdatesPage: React.FC = () => {
                                                                 components={{
                                                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                                                     a: ({ node, children, ...props }) => (
-                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                                                     ),
                                                                     code: ({ node, ...props }) => (
-                                                                        <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                                                        <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
                                                                     ),
                                                                 }}
                                                             >

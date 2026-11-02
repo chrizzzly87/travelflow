@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(() => new Promise(() => {})),
@@ -43,6 +44,8 @@ vi.mock('../../../services/authService', () => ({
 vi.mock('../../../services/profileService', () => ({
   getCurrentUserProfile: vi.fn().mockResolvedValue(null),
 }));
+
+vi.mock('../../../hooks/useSafeRouteLocation', () => ({ useSafeRouteLocation: () => ({ pathname: '/blog', search: '', hash: '', state: null, key: 'default' }) }));
 
 vi.mock('../../../hooks/useHasSavedTrips', () => ({
   useHasSavedTrips: () => false,
@@ -88,6 +91,7 @@ vi.mock('react-i18next', async (importOriginal) => {
           'nav.blog': 'Blog',
           'nav.pricing': 'Pricing',
           'nav.login': 'Login',
+          'nav.account': 'Account',
           'nav.createTrip': 'Create Trip',
           'nav.openMenu': 'Open menu',
           'language.label': 'Language',
@@ -103,7 +107,7 @@ vi.mock('react-i18next', async (importOriginal) => {
   };
 });
 
-import { AuthProvider } from '../../../contexts/AuthContext';
+import { AuthProvider, useAuthContext } from '../../../contexts/AuthContext';
 import { SiteHeader } from '../../../components/navigation/SiteHeader';
 
 describe('components/navigation/SiteHeader auth bootstrap hint', () => {
@@ -125,7 +129,27 @@ describe('components/navigation/SiteHeader auth bootstrap hint', () => {
     }));
   });
 
-  it('does not render the Login CTA on marketing routes while auth bootstrap is still pending', () => {
+  it('keeps stored session hints out of the initial server-rendered auth state', () => {
+    const Probe = () => React.createElement('output', null, useAuthContext().isAuthenticated ? 'account' : 'public');
+    const html = renderToString(React.createElement(AuthProvider, null, React.createElement(Probe)));
+    expect(html).toContain('public');
+    expect(html).not.toContain('account');
+  });
+
+  it('does not grant session, access or authenticated authority from a stored hint after mount', () => {
+    const Probe = () => {
+      const auth = useAuthContext();
+      return React.createElement('output', { 'data-testid': 'authority' }, JSON.stringify({
+        session: auth.session, access: auth.access, authenticated: auth.isAuthenticated, loading: auth.isLoading,
+      }));
+    };
+    render(React.createElement(AuthProvider, null, React.createElement(Probe)));
+    expect(JSON.parse(screen.getByTestId('authority').textContent!)).toEqual({
+      session: null, access: null, authenticated: false, loading: true,
+    });
+  });
+
+  it('renders the permanent Account entry while auth bootstrap is pending', async () => {
     render(
       React.createElement(
         MemoryRouter,
@@ -138,7 +162,18 @@ describe('components/navigation/SiteHeader auth bootstrap hint', () => {
       )
     );
 
-    expect(screen.queryByText('Login')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Create Trip' })).toHaveAttribute('href', '/create-trip');
+    expect(await screen.findByRole('button', { name: 'Account' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Login' })).toBeNull();
+    expect(await screen.findByRole('link', { name: 'Create Trip' })).toHaveAttribute('href', '/create-trip');
   });
+  it('focuses the menu opener before mounting its dialog on a pointer-only activation', async () => {
+    render(React.createElement(MemoryRouter, { initialEntries: ['/blog'] },
+      React.createElement(AuthProvider, null, React.createElement(SiteHeader))));
+    await screen.findByRole('button', { name: 'Account' });
+    const trigger = document.querySelector<HTMLButtonElement>('[data-tf-boot-intent="mobile-menu"]')!;
+    expect(document.activeElement).not.toBe(trigger);
+    fireEvent.click(trigger);
+    expect(document.activeElement).toBe(trigger);
+  });
+
 });

@@ -6,7 +6,7 @@ import { computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../../services/ro
 describe('services/routeService', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    delete (window as typeof window & { google?: unknown }).google;
+    delete (window as { google?: unknown }).google;
   });
 
   it('loads the Google routes runtime from importLibrary', async () => {
@@ -20,7 +20,7 @@ describe('services/routeService', () => {
       },
     });
 
-    (window as typeof window & { google?: unknown }).google = {
+    (window as { google?: unknown }).google = {
       maps: {
         importLibrary,
       },

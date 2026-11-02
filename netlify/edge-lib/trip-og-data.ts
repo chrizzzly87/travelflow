@@ -1,3 +1,11 @@
+import { buildFlightPreviewCurvePath } from "../../shared/flightRouteCurve.ts";
+import { normalizeTransportMode } from "../../shared/transportModes.ts";
+import {
+  buildGoogleDayTripParams,
+  buildMapboxDayTripOverlays,
+  buildMapPreviewDayTrips,
+  resolvePreviewDayTrips,
+} from "../../shared/dayTripPreview.ts";
 import { APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
 import {
   MAP_RUNTIME_CACHE_KEY_QUERY_PARAM,
@@ -11,7 +19,7 @@ const TRIP_VERSION_REGEX =
 const DEFAULT_SUMMARY_TITLE = "Shared Trip";
 const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const DEFAULT_MAP_LANGUAGE = "en";
-const DEFAULT_OG_MAP_STYLE: OgMapStyle = "clean";
+const DEFAULT_OG_MAP_STYLE: OgMapStyle = "standard";
 const DEFAULT_OG_ROUTE_MODE: OgRouteMode = "simple";
 const DEFAULT_OG_MAP_COLOR_MODE: MapColorMode = "trip";
 const DEFAULT_OG_SHOW_STOPS = true;
@@ -116,9 +124,12 @@ interface TimelineItem {
   coordinates?: Coordinates | null;
   transportMode?: string;
   routeDistanceKm?: number;
+  activityKind?: string;
+  stayCityId?: string;
+  dayTripReturnCityId?: string;
 }
 
-interface TripPayload {
+export interface TripPayload {
   id?: string;
   title?: string;
   startDate?: string;
@@ -174,6 +185,8 @@ export interface TripOgSummary {
   weeksLabel: string;
   monthsLabel: string;
   distanceLabel: string | null;
+  /** "2 day trips · Nara, Kobe", or null when the trip has none. */
+  dayTripsLabel: string | null;
   description: string;
   updatedAt: number | null;
   mapImageUrl: string | null;
@@ -201,6 +214,10 @@ export const isOgRouteMode = (value?: string | null): value is OgRouteMode =>
 
 export const isMapColorMode = (value?: string | null): value is MapColorMode =>
   Boolean(value && MAP_COLOR_MODE_VALUES.includes(value as MapColorMode));
+
+/** A stored trip's colour mode is unvalidated JSON; only a known mode counts. */
+export const readTripMapColorMode = (trip: Pick<TripPayload, "mapColorMode"> | null | undefined): MapColorMode | undefined =>
+  isMapColorMode(trip?.mapColorMode) ? trip.mapColorMode : undefined;
 
 const normalizeOgMapStyle = (value?: string | null): OgMapStyle =>
   isOgMapStyle(value) ? value : DEFAULT_OG_MAP_STYLE;
@@ -448,6 +465,20 @@ const getTripDistanceKm = (trip: TripPayload): number | null => {
   }
 
   return hasAnyDistance ? total : null;
+};
+
+const MAX_DAY_TRIP_NAMES_IN_LABEL = 3;
+
+/** "1 day trip · Sintra", "3 day trips · Nara, Kobe, Himeji", "5 day trips · Nara, Kobe, Himeji +2". */
+export const formatDayTripsLabel = (trip: TripPayload): string | null => {
+  const dayTrips = resolvePreviewDayTrips(getTripItems(trip));
+  if (dayTrips.length === 0) return null;
+  const names = [...new Set(dayTrips.map((dayTrip) => dayTrip.destinationLabel).filter(Boolean))];
+  const shown = names.slice(0, MAX_DAY_TRIP_NAMES_IN_LABEL).join(", ");
+  const rest = names.length - MAX_DAY_TRIP_NAMES_IN_LABEL;
+  const count = `${dayTrips.length} ${dayTrips.length === 1 ? "day trip" : "day trips"}`;
+  if (!shown) return count;
+  return `${count} · ${shown}${rest > 0 ? ` +${rest}` : ""}`;
 };
 
 const formatDistance = (distanceKm: number | null): string | null => {
@@ -856,9 +887,19 @@ const buildRealisticPathParams = async (
     const toCoord = toCity.coordinates;
     if (!fromCoord || !toCoord) continue;
 
+    const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+    const legColor = trip.mapColorMode === "brand" ? color : resolveColorHex(fromCity.color) || color;
+
+    // Directions have no route for a flight, so the leg used to degrade to a
+    // straight line. Draw the same arc the planner map draws.
+    if (normalizeTransportMode(travelItem?.transportMode) === "plane") {
+      const curve = encodePolyline(buildFlightPreviewCurvePath(fromCoord, toCoord));
+      pathParams.push(`path=${encodeURIComponent(`color:0x${legColor}|weight:${weight}|enc:${curve}`)}`);
+      continue;
+    }
+
     let encodedPolyline: string | null = null;
     if (directionsCalls < MAX_REALISTIC_DIRECTION_LEGS) {
-      const travelItem = findTravelBetweenCities(items, fromCity, toCity);
       encodedPolyline = await fetchDirectionsPolyline(
         fromCoord,
         toCoord,
@@ -869,11 +910,11 @@ const buildRealisticPathParams = async (
     }
 
     if (encodedPolyline) {
-      pathParams.push(`path=${encodeURIComponent(`color:0x${color}|weight:${weight}|enc:${encodedPolyline}`)}`);
+      pathParams.push(`path=${encodeURIComponent(`color:0x${legColor}|weight:${weight}|enc:${encodedPolyline}`)}`);
       continue;
     }
 
-    const fallbackDirectPath = buildSimplePathParam([fromCoord, toCoord], color, weight);
+    const fallbackDirectPath = buildSimplePathParam([fromCoord, toCoord], legColor, weight);
     if (fallbackDirectPath) pathParams.push(fallbackDirectPath);
   }
 
@@ -900,9 +941,18 @@ const buildMapboxRealisticPathOverlays = async (
     const toCoord = toCity.coordinates;
     if (!fromCoord || !toCoord) continue;
 
+    const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+    const legColor = trip.mapColorMode === "brand" ? color : resolveColorHex(fromCity.color) || color;
+
+    if (normalizeTransportMode(travelItem?.transportMode) === "plane") {
+      overlays.push(
+        buildMapboxPathOverlay(encodePolyline(buildFlightPreviewCurvePath(fromCoord, toCoord)), legColor, weight),
+      );
+      continue;
+    }
+
     let encodedPolyline: string | null = null;
     if (directionsCalls < MAX_REALISTIC_DIRECTION_LEGS) {
-      const travelItem = findTravelBetweenCities(items, fromCity, toCity);
       encodedPolyline = await fetchDirectionsPolyline(
         fromCoord,
         toCoord,
@@ -913,7 +963,7 @@ const buildMapboxRealisticPathOverlays = async (
     }
 
     overlays.push(
-      buildMapboxPathOverlay(encodedPolyline || encodePolyline([fromCoord, toCoord]), color, weight),
+      buildMapboxPathOverlay(encodedPolyline || encodePolyline([fromCoord, toCoord]), legColor, weight),
     );
   }
 
@@ -921,6 +971,7 @@ const buildMapboxRealisticPathOverlays = async (
 };
 
 export interface MapPreviewPreferences {
+  hideRoutes?: boolean;
   mapStyle?: OgMapStyle;
   routeMode?: OgRouteMode;
   mapColorMode?: MapColorMode;
@@ -975,7 +1026,18 @@ const buildMapPreviewUrl = async (
     : typeof preferences?.showCityNames === "boolean"
     ? preferences.showCityNames
     : DEFAULT_OG_SHOW_CITIES;
-  const viewport = computeMapViewport(routeCoordinates);
+  const dayTrips = buildMapPreviewDayTrips(
+    getTripItems(trip),
+    routeCities,
+    (stay) => (mapColorMode === "trip" ? resolveColorHex(stay.color || null) || routeColor : BRAND_ROUTE_COLOR_HEX),
+  );
+  // Day-trip destinations widen the frame, as they do on the planner map.
+  const viewport = computeMapViewport([
+    ...routeCoordinates,
+    ...dayTrips.map((dayTrip) => dayTrip.destination),
+  ]);
+  const googleDayTrips = buildGoogleDayTripParams(dayTrips, routeCoordinates, routeColor);
+  const mapboxDayTrips = buildMapboxDayTripOverlays(dayTrips, routeCoordinates, routeColor);
 
   const start = routeCoordinates[0];
   const end = routeCoordinates[routeCoordinates.length - 1];
@@ -1000,24 +1062,38 @@ const buildMapPreviewUrl = async (
       );
     }
 
+    googleDayTrips.markers.forEach((marker) => {
+      markerParams.push(`markers=${encodeURIComponent(marker)}`);
+    });
   }
 
   let pathParams: string[] = [];
   let mapboxPathOverlays: string[] = [];
-  if (routeMode === "realistic") {
-    if (mapsApiKey) {
-      pathParams = await buildRealisticPathParams(trip, mapsApiKey, routeColor);
-      mapboxPathOverlays = await buildMapboxRealisticPathOverlays(trip, mapsApiKey, routeColor);
-    }
+  const routeTrip = { ...trip, mapColorMode };
+  const legColor = (index: number) => mapColorMode === "brand" ? routeColor : resolveColorHex(routeCities[index]?.color) || routeColor;
+  // Google Directions are off-limits when the runtime routes elsewhere: the
+  // realistic path then degrades to straight lines instead of calling Google.
+  const routesKey = preferences?.mapRuntimeSelection && preferences.mapRuntimeSelection.routes !== "google"
+    ? ""
+    : mapsApiKey;
+  if (!preferences?.hideRoutes && routeMode === "realistic" && routesKey) {
+    if (staticMapImplementation === "google") pathParams = await buildRealisticPathParams(routeTrip, routesKey, routeColor);
+    else mapboxPathOverlays = await buildMapboxRealisticPathOverlays(routeTrip, routesKey, routeColor);
   }
-
   if (pathParams.length === 0) {
-    const simplePath = buildSimplePathParam(routeCoordinates, routeColor);
-    if (simplePath) pathParams = [simplePath];
+    pathParams = routeCoordinates.slice(1).map((coord, index) => buildSimplePathParam([routeCoordinates[index], coord], legColor(index))).filter((value): value is string => Boolean(value));
   }
   if (mapboxPathOverlays.length === 0) {
-    const simpleOverlay = buildMapboxSimplePathOverlay(routeCoordinates, routeColor);
-    if (simpleOverlay) mapboxPathOverlays = [simpleOverlay];
+    mapboxPathOverlays = routeCoordinates.slice(1).map((coord, index) => buildMapboxSimplePathOverlay([routeCoordinates[index], coord], legColor(index))).filter((value): value is string => Boolean(value));
+  }
+  googleDayTrips.paths.forEach((path) => {
+    pathParams.push(`path=${encodeURIComponent(path)}`);
+  });
+  mapboxPathOverlays = [...mapboxPathOverlays, ...mapboxDayTrips.paths];
+
+  if (preferences?.hideRoutes) {
+    pathParams = [];
+    mapboxPathOverlays = [];
   }
 
   const mapUrl = staticMapImplementation === "mapbox"
@@ -1042,6 +1118,7 @@ const buildMapPreviewUrl = async (
             }),
           );
         }
+        markerOverlays.push(...mapboxDayTrips.pins);
       }
 
       const overlays = [...mapboxPathOverlays, ...markerOverlays];
@@ -1104,7 +1181,8 @@ export const parseRouteTarget = (url: URL): RouteTarget | null => {
 
 const readEnv = (name: string): string => {
   try {
-    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) || "";
+    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) ||
+      (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[name] || "";
   } catch {
     return "";
   }
@@ -1127,6 +1205,7 @@ const fetchSupabaseRpc = async (
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) {
@@ -1156,6 +1235,7 @@ export const fetchActiveTripShareToken = async (tripId: string): Promise<string 
     endpoint.searchParams.set("limit", "8");
 
     const response = await fetch(endpoint.toString(), {
+      signal: AbortSignal.timeout(3000),
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -1279,6 +1359,9 @@ export const buildTripOgSummary = async (
     ? `${weeksLabel} • ${monthsLabel} • ${distanceLabel}`
     : `${weeksLabel} • ${monthsLabel}`;
 
+  const dayTripsLabel = formatDayTripsLabel(trip);
+  const descriptionWithDayTrips = dayTripsLabel ? `${description} • ${dayTripsLabel}` : description;
+
   const updatedAt = isFiniteNumber(trip?.updatedAt) ? trip.updatedAt : null;
   const mapPreview = options?.includeMapImage === false
     ? { mapUrl: null, mapLabels: [] as TripOgMapLabel[] }
@@ -1303,7 +1386,8 @@ export const buildTripOgSummary = async (
     weeksLabel,
     monthsLabel,
     distanceLabel,
-    description,
+    dayTripsLabel,
+    description: descriptionWithDayTrips,
     updatedAt,
     mapImageUrl: mapPreview.mapUrl,
     mapLabels: mapPreview.mapLabels,
@@ -1340,14 +1424,15 @@ export const buildOgImageUrl = (
       buildMapRuntimeSelectionCacheKey(payload.mapRuntimeSelection),
     );
   }
-  if (isOgMapStyle(payload.mapStyle ?? null)) {
-    url.searchParams.set("mapStyle", payload.mapStyle);
+  const { mapStyle, routeMode, mapColorMode } = payload;
+  if (isOgMapStyle(mapStyle)) {
+    url.searchParams.set("mapStyle", mapStyle);
   }
-  if (isOgRouteMode(payload.routeMode ?? null)) {
-    url.searchParams.set("routeMode", payload.routeMode);
+  if (isOgRouteMode(routeMode)) {
+    url.searchParams.set("routeMode", routeMode);
   }
-  if (isMapColorMode(payload.mapColorMode ?? null)) {
-    url.searchParams.set("mapColorMode", payload.mapColorMode);
+  if (isMapColorMode(mapColorMode)) {
+    url.searchParams.set("mapColorMode", mapColorMode);
   }
   const showStops = typeof payload.showStops === "boolean" ? payload.showStops : null;
   const showCities = typeof payload.showCities === "boolean"
@@ -1420,8 +1505,13 @@ export const fallbackSummary = (): TripOgSummary => ({
   weeksLabel: "1 week",
   monthsLabel: "Any month",
   distanceLabel: null,
+  dayTripsLabel: null,
   description: DEFAULT_DESCRIPTION,
   updatedAt: null,
   mapImageUrl: null,
   mapLabels: [],
 });
+
+// Reused by the bounded video renderer; coordinates stay geographic, not direction-aware UI.
+export { computeMapViewport, getWorldPixel, getTripPrimaryCityColorHex, findTravelBetweenCities, resolveColorHex };
+export { buildTripVideoMap } from '../lib/trip-video-map.ts';

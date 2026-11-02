@@ -1,5 +1,7 @@
 import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 
+import { parseRouteSearch, stringifyRouteSearch } from '../../app/routing/search';
+import { useRouteSearchWriter } from '../../app/routing/useRouteSearchWriter';
 import { writeLocalStorageItem } from '../../services/browserStorageService';
 import type { IViewSettings, MapStyle, RouteMode } from '../../types';
 import { applyViewSettingsToSearchParams } from '../../utils';
@@ -91,6 +93,7 @@ export const useTripViewSettingsSync = ({
     prevViewRef,
 }: UseTripViewSettingsSyncOptions) => {
     const lastEmittedSettingsKeyRef = useRef<string | null>(null);
+    const writeRouteSearch = useRouteSearchWriter();
 
     useEffect(() => {
         writeLocalStorageItem('tf_map_style', mapStyle);
@@ -148,11 +151,15 @@ export const useTripViewSettingsSync = ({
                 return;
             }
 
-            const url = new URL(window.location.href);
-            applyViewSettingsToSearchParams(url.searchParams, settings);
-            if (viewMode === 'print') url.searchParams.set('mode', 'print');
-            else url.searchParams.delete('mode');
-            window.history.replaceState({}, '', url.toString());
+            // Through the router, so its location stays current, history state
+            // survives and a page that is being left writes nothing (#586).
+            writeRouteSearch((previous) => {
+                const params = new URLSearchParams(stringifyRouteSearch(previous));
+                applyViewSettingsToSearchParams(params, settings);
+                if (viewMode === 'print') params.set('mode', 'print');
+                else params.delete('mode');
+                return parseRouteSearch(params.toString());
+            });
         }, 500);
 
         return () => window.clearTimeout(timeoutId);
@@ -171,6 +178,7 @@ export const useTripViewSettingsSync = ({
         timelineHeight,
         showCityNames,
         onViewSettingsChange,
+        writeRouteSearch,
     ]);
 
     useEffect(() => {

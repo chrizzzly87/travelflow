@@ -1,3 +1,5 @@
+export { canTriggerTripGenerationRetry, canTriggerTripGenerationAbortAndRetry } from './tripGenerationRetryCapability';
+export type { TripGenerationRetryCapabilityOptions } from './tripGenerationRetryCapability';
 import { getAiModelById, getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import type {
     GenerateOptions,
@@ -21,7 +23,7 @@ import {
     markTripGenerationRunning,
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
-import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot, TripGenerationState } from '../types';
+import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 import {
     dbAdminOverrideTripCommit,
@@ -50,47 +52,9 @@ export interface RetryTripGenerationResult {
     error?: unknown;
 }
 
-export interface TripGenerationRetryCapabilityOptions {
-    canEdit: boolean;
-    isAdminFallbackView?: boolean;
-    adminOverrideEnabled?: boolean;
-    canAdminWrite?: boolean;
-    hasInputSnapshot?: boolean;
-    generationState?: TripGenerationState | null;
-    latestAttemptOrchestration?: string | null;
-    isRetryingGeneration?: boolean;
-    pendingAuthQueueRequestId?: string | null;
-}
-
 // Keep this aligned with the async worker's default provider timeout so the UI
 // does not treat still-valid GPT-5.4 jobs as hard-stalled too early.
 const ASYNC_WORKER_HARD_STALL_MS = 120_000;
-
-const canUseAdminGenerationOverride = (options: TripGenerationRetryCapabilityOptions): boolean => (
-    Boolean(options.isAdminFallbackView && options.adminOverrideEnabled && options.canAdminWrite)
-);
-
-export const canTriggerTripGenerationRetry = (options: TripGenerationRetryCapabilityOptions): boolean => {
-    const hasWriteAccess = options.canEdit || canUseAdminGenerationOverride(options);
-    if (!hasWriteAccess) return false;
-    if (options.isRetryingGeneration) return false;
-    if (options.pendingAuthQueueRequestId) return false;
-    if (!options.hasInputSnapshot) return false;
-    return options.generationState !== 'running' && options.generationState !== 'queued';
-};
-
-export const canTriggerTripGenerationAbortAndRetry = (options: TripGenerationRetryCapabilityOptions): boolean => {
-    const hasWriteAccess = options.canEdit || canUseAdminGenerationOverride(options);
-    if (!hasWriteAccess) return false;
-    if (options.isRetryingGeneration) return false;
-    if (
-        (options.generationState === 'queued' || options.generationState === 'running')
-        && options.latestAttemptOrchestration === 'async_worker'
-    ) {
-        return false;
-    }
-    return Boolean(options.hasInputSnapshot);
-};
 
 const resolveRetryModelTarget = (modelId?: string | null) => {
     if (modelId) {
@@ -205,7 +169,7 @@ export const retryTripGenerationWithDefaultModel = async (
             const remoteLatestAttemptId = remoteLatestAttempt?.id?.trim() || null;
             let shouldReuseExistingInFlight = remoteState === 'queued' || remoteState === 'running';
 
-            if (shouldReuseExistingInFlight && remoteLatestAttemptId) {
+            if (shouldReuseExistingInFlight && remoteLatestAttempt && remoteLatestAttemptId) {
                 try {
                     const [attemptLogs, jobs] = await Promise.all([
                         listOwnerTripGenerationAttempts(remoteTrip.id, 8),

@@ -55,10 +55,10 @@ export const FeatureShowcase: React.FC = () => {
     return (
         <section className="py-16 md:py-24 lazy-feature-showcase">
             <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl dark:text-foreground">
                     {t('featureShowcase.title')}
                 </h2>
-                <p className="mt-3 max-w-xl text-base text-slate-600">
+                <p className="mt-3 max-w-xl text-base text-muted-foreground dark:text-muted-foreground">
                     {t('featureShowcase.subtitle')}
                 </p>
             </div>
@@ -78,15 +78,15 @@ export const FeatureShowcase: React.FC = () => {
                                 !isEven ? 'md:flex-row-reverse' : ''
                             }`}
                         >
-                            <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:size-24">
+                            <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:size-24 dark:bg-accent-400/12 dark:shadow-none dark:hover:shadow-none dark:ring-0 dark:text-accent-300">
                                 <IconComponent size={40} weight="duotone" />
                             </div>
 
                             <div className="max-w-lg">
-                                <h3 className="text-xl font-semibold text-slate-900">
+                                <h3 className="text-xl font-semibold text-foreground dark:text-foreground">
                                     {feature.title}
                                 </h3>
-                                <p className="mt-2 text-base leading-relaxed text-slate-600">
+                                <p className="mt-2 text-base leading-relaxed text-muted-foreground dark:text-muted-foreground">
                                     {feature.description}
                                 </p>
                             </div>

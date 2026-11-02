@@ -49,6 +49,7 @@ const buildTrip = (id: string): ITrip => ({
             title: 'Berlin',
             startDateOffset: 0,
             duration: 3,
+            color: '#4f46e5',
             location: 'Berlin',
             loading: true,
         },
@@ -100,6 +101,7 @@ describe('startClientAsyncTripGeneration', () => {
                         countries: ['Germany'],
                     },
                 },
+                createdAt: '2026-01-01T00:00:00.000Z',
             },
             buildOptimisticTrip: (tripId) => buildTrip(tripId),
             onTripUpdate: (trip) => {
@@ -152,6 +154,7 @@ describe('startClientAsyncTripGeneration', () => {
                     destinationPrompt: 'Japan',
                     options: {},
                 },
+                createdAt: '2026-01-01T00:00:00.000Z',
             },
             buildOptimisticTrip: (tripId) => buildTrip(tripId),
             onTripUpdate: (trip) => {
@@ -188,6 +191,7 @@ describe('startClientAsyncTripGeneration', () => {
                     destinationPrompt: 'Japan',
                     options: {},
                 },
+                createdAt: '2026-01-01T00:00:00.000Z',
             },
             buildOptimisticTrip: (tripId) => buildTrip(tripId),
             onTripUpdate: (trip) => {
@@ -225,6 +229,7 @@ describe('startClientAsyncTripGeneration', () => {
                     destinationPrompt: 'Japan',
                     options: {},
                 },
+                createdAt: '2026-01-01T00:00:00.000Z',
             },
             buildOptimisticTrip: (tripId) => buildTrip(tripId),
             onTripUpdate: (trip) => {
@@ -263,6 +268,7 @@ describe('startClientAsyncTripGeneration', () => {
                     destinationPrompt: 'Japan',
                     options: {},
                 },
+                createdAt: '2026-01-01T00:00:00.000Z',
             },
             buildOptimisticTrip: (tripId) => buildTrip(tripId),
             onTripUpdate: (trip) => {

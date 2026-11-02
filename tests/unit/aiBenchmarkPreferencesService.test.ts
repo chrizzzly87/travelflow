@@ -9,21 +9,16 @@ import {
 
 describe('services/aiBenchmarkPreferencesService', () => {
   it('includes the latest OpenRouter models in the default benchmark target pool', () => {
-    expect(BENCHMARK_DEFAULT_MODEL_IDS).toEqual(expect.arrayContaining([
-      'openrouter:openai/gpt-5.5',
-      'openrouter:openai/gpt-5.6-sol',
-      'openrouter:openai/gpt-5.6-luna-pro',
-      'openrouter:openai/gpt-5.6-terra-pro',
-      'openrouter:openai/gpt-5.6-sol-pro',
-      'openrouter:anthropic/claude-opus-4.8',
-      'openrouter:openai/gpt-chat-latest',
-      'openrouter:x-ai/grok-4.5',
-      'openrouter:z-ai/glm-5.2',
-      'openrouter:google/gemini-3.5-flash',
-      'openrouter:google/gemini-3.1-flash-lite',
-      'openrouter:x-ai/grok-4.3',
-      'openrouter:qwen/qwen3.5-plus-20260420',
-    ]));
+    expect(BENCHMARK_DEFAULT_MODEL_IDS).toEqual([
+      'openrouter:openai/gpt-6-luna',
+      'openrouter:anthropic/claude-haiku-5.5',
+      'openrouter:x-ai/grok-4.7',
+      'openrouter:google/gemini-3.8-flash',
+      'openrouter:deepseek/deepseek-v4.1-flash',
+      'openrouter:z-ai/glm-5.3-flash',
+      'openrouter:qwen/qwen3.8-max-prime',
+      'openrouter:moonshotai/kimi-k3',
+    ]);
     expect(new Set(BENCHMARK_DEFAULT_MODEL_IDS).size).toBe(BENCHMARK_DEFAULT_MODEL_IDS.length);
   });
 
@@ -110,45 +105,99 @@ describe('services/aiBenchmarkPreferencesService', () => {
 
     const payload = normalizeBenchmarkPreferencesPayload(
       {
-        modelTargets: ['openai:gpt-5.2-pro', 'invalid:model'],
+        modelTargets: ['openrouter:openai/gpt-6-luna', 'invalid:model'],
         presets: fallbackPresets,
         selectedPresetId: 'unknown-id',
       },
       {
         fallbackPresets,
-        fallbackModelIds: ['gemini:gemini-3.1-pro-preview'],
+        fallbackModelIds: ['openrouter:anthropic/claude-haiku-5.5'],
         allowedModelIds: allowed,
       },
     );
 
-    expect(payload.modelTargets).toEqual(['openai:gpt-5.2-pro']);
+    expect(payload.modelTargets).toEqual(['openrouter:openai/gpt-6-luna']);
     expect(payload.selectedPresetId).toBe(fallbackPresets[0]?.id);
     expect(payload.presets).toEqual(fallbackPresets);
   });
 
+  it('preserves an explicit empty target list for the remove-all action', () => {
+    const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
+    const payload = normalizeBenchmarkPreferencesPayload(
+      { modelTargets: [], presets: fallbackPresets, selectedPresetId: fallbackPresets[0]?.id },
+      { fallbackPresets, fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS },
+    );
+
+    expect(payload.modelTargets).toEqual([]);
+  });
+
   it('can merge newly added default targets into an existing saved default preference payload', () => {
     const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
-    const newDefaultTargets = [
+    const legacyDefaultTargets = [
+      'openai:gpt-5.4',
+      'gemini:gemini-3.1-pro-preview',
+      'gemini:gemini-3-pro-preview',
+      'openai:gpt-5.2-pro',
+      'anthropic:claude-sonnet-4.6',
+      'perplexity:perplexity/sonar',
+      'qwen:qwen/qwen3.5-plus-02-15',
+    ];
+    const allowed = new Set(BENCHMARK_DEFAULT_MODEL_IDS);
+
+    const payload = normalizeBenchmarkPreferencesPayload(
+      {
+        modelTargets: legacyDefaultTargets,
+        presets: fallbackPresets,
+        selectedPresetId: fallbackPresets[0]?.id,
+      },
+      {
+        fallbackPresets,
+        fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS,
+        allowedModelIds: allowed,
+        mergeFallbackModelIds: true,
+      },
+    );
+
+    expect(payload.modelTargets).toEqual(BENCHMARK_DEFAULT_MODEL_IDS);
+  });
+
+  it('replaces the immediately previous default selection with the time-focused set', () => {
+    const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
+    const previousDefaultTargets = [
+      'openai:gpt-5.4',
+      'openrouter:anthropic/claude-opus-5',
+      'openrouter:anthropic/claude-sonnet-5',
+      'openrouter:x-ai/grok-4.6',
+      'openrouter:deepseek/deepseek-v4-pro-0813',
+      'openrouter:deepseek/deepseek-v4-flash-0731',
+      'openrouter:google/gemini-3.7-flash',
+      'openrouter:google/gemini-3.5-flash-lite',
+      'openrouter:moonshotai/kimi-k3',
       'openrouter:openai/gpt-5.6-luna-pro',
       'openrouter:openai/gpt-5.6-terra-pro',
       'openrouter:openai/gpt-5.6-sol-pro',
+      'openrouter:openai/gpt-5.6-sol',
       'openrouter:anthropic/claude-opus-4.8',
       'openrouter:openai/gpt-chat-latest',
-      'openrouter:openai/gpt-5.6-sol',
       'openrouter:x-ai/grok-4.5',
       'openrouter:z-ai/glm-5.2',
       'openrouter:openai/gpt-5.5',
       'openrouter:google/gemini-3.5-flash',
       'openrouter:google/gemini-3.1-flash-lite',
       'openrouter:x-ai/grok-4.3',
+      'gemini:gemini-3.1-pro-preview',
+      'gemini:gemini-3-pro-preview',
+      'openai:gpt-5.2-pro',
+      'anthropic:claude-sonnet-4.6',
+      'perplexity:perplexity/sonar',
       'openrouter:qwen/qwen3.5-plus-20260420',
+      'qwen:qwen/qwen3.5-plus-02-15',
     ];
-    const legacyDefaultTargets = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) => !newDefaultTargets.includes(modelId));
-    const allowed = new Set(BENCHMARK_DEFAULT_MODEL_IDS);
+    const allowed = new Set([...previousDefaultTargets, ...BENCHMARK_DEFAULT_MODEL_IDS]);
 
     const payload = normalizeBenchmarkPreferencesPayload(
       {
-        modelTargets: legacyDefaultTargets,
+        modelTargets: previousDefaultTargets,
         presets: fallbackPresets,
         selectedPresetId: fallbackPresets[0]?.id,
       },

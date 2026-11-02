@@ -29,6 +29,10 @@ interface HarnessRefs {
   pendingHistoryLabelRef: MutableRefObject<string | null>;
 }
 
+// DOM and Node typings disagree on the timer handle; the hook only hands it back to clearTimeout.
+const scheduleDebouncedCommit = (callback: () => void) =>
+  setTimeout(callback, 700) as unknown as ReturnType<typeof setTimeout>;
+
 const makeRefs = (): HarnessRefs => ({
   commitTimerRef: { current: null },
   pendingCommitRef: { current: null },
@@ -63,7 +67,7 @@ describe('components/tripview/useTripCommitFlush', () => {
 
     refs.pendingCommitRef.current = { trip, view: VIEW_SETTINGS };
     refs.pendingHistoryLabelRef.current = 'Data: Renamed activity';
-    refs.commitTimerRef.current = setTimeout(debouncedCommit, 700);
+    refs.commitTimerRef.current = scheduleDebouncedCommit(debouncedCommit);
 
     unmount();
 
@@ -93,7 +97,7 @@ describe('components/tripview/useTripCommitFlush', () => {
 
     refs.pendingCommitRef.current = { trip, view: VIEW_SETTINGS };
     refs.pendingHistoryLabelRef.current = 'Visual: Moved map';
-    refs.commitTimerRef.current = setTimeout(debouncedCommit, 700);
+    refs.commitTimerRef.current = scheduleDebouncedCommit(debouncedCommit);
 
     window.dispatchEvent(new Event('pagehide'));
 

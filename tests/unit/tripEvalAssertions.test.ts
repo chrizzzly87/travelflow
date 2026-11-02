@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   assertForbiddenCitiesAbsent,
   assertForbiddenPhrasesAbsent,
+  assertRoundTripReturnsToOrigin,
   buildTripEvalAssertions,
   buildTripSecurityAssertions,
 } from '../../promptfoo/tripEvalAssertions.ts';
-import { TRIP_ITINERARY_JSON_SCHEMA } from '../../shared/aiTripItinerarySchema.ts';
+import { TRIP_ITINERARY_COMPACT_JSON_SCHEMA } from '../../shared/aiTripItinerarySchema.ts';
 
 describe('promptfoo trip eval assertions', () => {
   it('starts with the shared itinerary json schema assertion', () => {
@@ -13,7 +14,7 @@ describe('promptfoo trip eval assertions', () => {
 
     expect(assertions[0]).toEqual({
       type: 'is-json',
-      value: TRIP_ITINERARY_JSON_SCHEMA,
+      value: TRIP_ITINERARY_COMPACT_JSON_SCHEMA,
     });
     expect(assertions[1]?.type).toBe('javascript');
   });
@@ -99,5 +100,29 @@ describe('promptfoo trip eval assertions', () => {
 
     expect(phraseResult.pass).toBe(false);
     expect(cityResult.pass).toBe(false);
+  });
+
+  it('checks round trips after the compiler derives the return marker', () => {
+    const draft = {
+      tripTitle: 'Japan loop',
+      countryInfo: {
+        currencyCode: 'JPY', currencyName: 'Yen', exchangeRate: 165, languages: ['Japanese'],
+        electricSockets: 'Type A', visaInfoUrl: 'https://example.com', auswaertigesAmtUrl: 'https://example.com',
+      },
+      cities: [{
+        name: 'Tokyo', days: 2, countryCode: 'JP', lat: 35.67, lng: 139.65,
+        recommendations: { mustSee: ['Shrine'], mustTry: ['Sushi'], mustDo: ['Walk'], headsUp: [] },
+      }, {
+        name: 'Kyoto', days: 2, countryCode: 'JP', lat: 35.01, lng: 135.76,
+        recommendations: { mustSee: ['Temple'], mustTry: ['Tofu'], mustDo: ['Cycle'], headsUp: [] },
+      }],
+      travelSegments: [
+        { transportMode: 'train', duration: 2.25 },
+        { transportMode: 'train', duration: 2.5 },
+      ],
+      activities: [],
+    };
+
+    expect(assertRoundTripReturnsToOrigin(JSON.stringify(draft), { vars: { roundTrip: true } }).pass).toBe(true);
   });
 });

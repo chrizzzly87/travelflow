@@ -14,10 +14,11 @@ describe('services/aiService buildClassicItineraryPrompt', () => {
 
     expect(prompt).toContain('Benchmark compact-output mode');
     expect(prompt).toContain('Prioritize valid complete JSON over extra detail');
-    expect(prompt).toContain('city.description must stay under 500 characters total');
-    expect(prompt).toContain('travelSegments.description short and practical (hard max 60 characters)');
+    expect(prompt).toContain('For EACH city recommendation category, return exactly 1 short item');
+    expect(prompt).toContain('TravelFlow derives recommendation Markdown and travel-segment descriptions');
     expect(prompt).toContain('activities.description must be a single short sentence (hard max 90 characters');
-    expect(prompt).toContain('Use - [ ] checkboxes with exactly 1 bullet per heading');
+    expect(prompt).toContain('recommendations.mustSee');
+    expect(prompt).toContain("dayOffsetInCity + duration <= that city's days");
     expect(prompt).toContain('Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl');
     expect(prompt).not.toContain('### Must See (3-4 items)');
   });
@@ -29,6 +30,7 @@ describe('services/aiService buildClassicItineraryPrompt', () => {
     });
 
     expect(prompt).not.toContain('Benchmark compact-output mode');
+    expect(prompt).toContain("dayOffsetInCity + duration must be less than or equal to that city's days");
   });
 
   it('uses total nights as the stay budget for exact-date trips', () => {
@@ -117,10 +119,10 @@ describe('services/aiService buildWizardItineraryPrompt', () => {
     expect(prompt).toContain('Preferred transport modes: train');
     expect(prompt).toContain('The itinerary must include the requested cities or stops listed in the user data block when feasible');
     expect(prompt).toContain('<requested_cities_or_stops>');
-    expect(prompt).toContain('Output contract requirements (must be strictly followed):');
-    expect(prompt).toContain('countryInfo must use the canonical keys currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl');
+    expect(prompt).toContain('Compact output contract:');
+    expect(prompt).toContain('countryInfo uses the canonical keys');
     expect(prompt).toContain('legal, social, or safety constraints for this traveler profile');
-    expect(prompt).toContain('you MUST add a short practical note in a final "### Heads Up" section');
+    expect(prompt).toContain('you MUST add a short practical recommendations.headsUp item');
   });
 
   it('normalizes alias-backed destinations before building the wizard prompt', () => {
@@ -160,6 +162,8 @@ describe('services/aiService buildWizardItineraryPrompt', () => {
     expect(prompt).toContain('<seasonal_highlights>');
     expect(prompt).toContain('<surprise_trip_notes>');
     expect(prompt).toContain('planning data only');
+    expect(prompt).toContain('do NOT duplicate the first city');
+    expect(prompt).toContain('include one final travelSegments entry for the return');
   });
 
   it('normalizes alias-backed destinations before building the surprise prompt', () => {

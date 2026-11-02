@@ -152,6 +152,9 @@ export default async (request: Request, context: { next: () => Promise<Response>
     });
   }
 
+  // Start owns the streamed document and head. Rewriting its HTML breaks hydration.
+  if (baseResponse.headers.get("x-tf-renderer") === "tanstack-start") return baseResponse;
+
   const contentType = baseResponse.headers.get("content-type") || "";
   if (!contentType.includes("text/html")) return baseResponse;
 

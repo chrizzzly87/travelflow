@@ -1,3 +1,4 @@
+import { buildTripVideoMetaTags, resolveReadyTripVideoMedia } from "../edge-lib/trip-og-video-meta.ts";
 import {
   buildCanonicalUrl,
   buildOgImageUrl,
@@ -9,6 +10,7 @@ import {
   getMapboxAccessTokenFromEnv,
   getMapsApiKeyFromEnv,
   isMapColorMode,
+  readTripMapColorMode,
   isOgMapStyle,
   isOgRouteMode,
   type MapColorMode,
@@ -16,7 +18,7 @@ import {
   type OgRouteMode,
   parseRouteTarget,
 } from "../edge-lib/trip-og-data.ts";
-import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
+import { resolveEdgeMapRuntimeAsync } from "../edge-lib/map-runtime.ts";
 import { APP_NAME, APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
 
 const SITE_NAME = APP_NAME;
@@ -29,6 +31,10 @@ interface Metadata {
   description: string;
   canonicalUrl: string;
   ogImageUrl: string;
+  ogVideoUrl?: string;
+  videoDimensions?: { width: number; height: number };
+  imageDimensions?: { width: number; height: number };
+  tripCacheId?: string;
   robots: string;
 }
 
@@ -82,9 +88,10 @@ const buildMetaTags = (meta: Metadata): string => {
     `<meta property="og:description" content="${description}" />`,
     `<meta property="og:url" content="${canonicalUrl}" />`,
     `<meta property="og:image" content="${ogImageUrl}" />`,
-    `<meta property="og:image:width" content="1200" />`,
-    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:image:width" content="${meta.imageDimensions?.width || 1200}" />`,
+    `<meta property="og:image:height" content="${meta.imageDimensions?.height || 630}" />`,
     `<meta property="og:image:alt" content="${title}" />`,
+    ...buildTripVideoMetaTags(meta.ogVideoUrl, meta.videoDimensions),
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${description}" />`,
@@ -107,7 +114,7 @@ const buildFallbackMetadata = (
   routeTarget: NonNullable<ReturnType<typeof parseRouteTarget>>,
   pathname: string,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Metadata => {
   const pageTitle = `${SITE_NAME} Trip Planner`;
   const description = DEFAULT_DESCRIPTION;
@@ -136,7 +143,7 @@ const buildShareMetadata = async (
   origin: string,
   routeTarget: ParsedRouteTarget,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Promise<Metadata> => {
   if (!routeTarget.token) {
     return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
@@ -158,7 +165,7 @@ const buildShareBackedMetadata = async (
   token: string,
   sharedTrip: Awaited<ReturnType<typeof fetchSharedTrip>>,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Promise<Metadata> => {
   const mapsApiKey = getMapsApiKeyFromEnv();
   const mapboxAccessToken = getMapboxAccessTokenFromEnv();
@@ -168,7 +175,7 @@ const buildShareBackedMetadata = async (
       mapboxAccessToken,
       mapStyle: overrides.mapStyle ?? sharedTrip.viewSettings?.mapStyle,
       routeMode: overrides.routeMode ?? sharedTrip.viewSettings?.routeMode,
-      mapColorMode: overrides.mapColorMode ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+      mapColorMode: overrides.mapColorMode ?? sharedTrip.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip.trip),
       mapRuntimeSelection,
       showStops: overrides.showStops ?? sharedTrip.viewSettings?.showStops,
       showCities: overrides.showCities ??
@@ -191,7 +198,7 @@ const buildShareBackedMetadata = async (
     mapRuntimeSelection,
     mapStyle: overrides.mapStyle ?? sharedTrip?.viewSettings?.mapStyle ?? null,
     routeMode: overrides.routeMode ?? sharedTrip?.viewSettings?.routeMode ?? null,
-    mapColorMode: overrides.mapColorMode ?? sharedTrip?.viewSettings?.mapColorMode ?? sharedTrip?.trip.mapColorMode ?? null,
+    mapColorMode: overrides.mapColorMode ?? sharedTrip?.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip?.trip) ?? null,
     showStops: overrides.showStops ?? sharedTrip?.viewSettings?.showStops ?? null,
     showCities: overrides.showCities ??
       sharedTrip?.viewSettings?.showCities ??
@@ -199,11 +206,16 @@ const buildShareBackedMetadata = async (
       null,
   });
 
+  const videoMedia = sharedTrip ? await resolveReadyTripVideoMedia(origin, routeTarget) : undefined;
   return {
     pageTitle: title,
+    ogVideoUrl: videoMedia?.videoUrl,
+    videoDimensions: videoMedia?.dimensions,
+    imageDimensions: videoMedia?.posterUrl ? videoMedia.dimensions : undefined,
+    tripCacheId: sharedTrip?.trip.id || routeTarget.tripId,
     description: summary.description,
     canonicalUrl,
-    ogImageUrl,
+    ogImageUrl: videoMedia?.posterUrl || ogImageUrl,
     robots: "noindex,nofollow,max-image-preview:large",
   };
 };
@@ -212,7 +224,7 @@ const buildTripRouteMetadata = async (
   origin: string,
   routeTarget: ParsedRouteTarget,
   overrides: OgPreferenceOverrides,
-  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
+  mapRuntimeSelection: Awaited<ReturnType<typeof resolveEdgeMapRuntimeAsync>>["effectiveSelection"],
 ): Promise<Metadata> => {
   if (!routeTarget.tripId) {
     return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
@@ -233,10 +245,10 @@ const buildTripRouteMetadata = async (
   return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
 };
 
-export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
+export const resolveTripDocumentMetadata = async (request: Request): Promise<Metadata | null> => {
   const url = new URL(request.url);
   const routeTarget = parseRouteTarget(url);
-  const mapRuntime = resolveEdgeMapRuntime(request);
+  const mapRuntime = await resolveEdgeMapRuntimeAsync(request);
   const mapStyleQuery = url.searchParams.get("mapStyle")?.trim() || "";
   const routeModeQuery = url.searchParams.get("routeMode")?.trim() || "";
   const mapColorModeQuery = url.searchParams.get("mapColorMode")?.trim() || "";
@@ -250,6 +262,15 @@ export default async (request: Request, context: { next: () => Promise<Response>
       parseBooleanOverride(url.searchParams.get("cityNames")),
   };
 
+  if (!routeTarget) return null;
+  return routeTarget.token
+      ? buildShareMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection)
+      : buildTripRouteMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection);
+};
+
+export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
+  const url = new URL(request.url);
+  const routeTarget = parseRouteTarget(url);
   const baseResponse = await context.next();
   const fallbackResponse = baseResponse.clone();
   const contentType = baseResponse.headers.get("content-type") || "";
@@ -263,10 +284,8 @@ export default async (request: Request, context: { next: () => Promise<Response>
   }
 
   try {
-    const metadata = routeTarget.token
-      ? await buildShareMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection)
-      : await buildTripRouteMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection);
-
+    const metadata = await resolveTripDocumentMetadata(request);
+    if (!metadata) return baseResponse;
     const html = await baseResponse.text();
     const rewrittenHtml = injectMetaTags(html, metadata);
     const headers = new Headers(baseResponse.headers);
@@ -275,6 +294,10 @@ export default async (request: Request, context: { next: () => Promise<Response>
       "cache-control",
       routeTarget.token ? SHARE_CACHE_CONTROL : TRIP_CACHE_CONTROL,
     );
+    // The underlying prerendered shell may carry a one-year CDN policy. Dynamic
+    // sharing metadata must use its own short lifetime, including on purge failure.
+    headers.set("Netlify-CDN-Cache-Control", routeTarget.token ? SHARE_CACHE_CONTROL : TRIP_CACHE_CONTROL);
+    if (metadata.tripCacheId) headers.set("Netlify-Cache-Tag", `trip-og-${metadata.tripCacheId}`);
     headers.delete("content-length");
     headers.delete("etag");
 

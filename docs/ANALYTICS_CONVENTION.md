@@ -65,10 +65,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `navigation__{target}` | target = `brand`, `features`, `inspirations`, `updates`, `blog`, `pricing`, `login`, `logout`, `admin`, `create_trip`, `my_trips` | — | `SiteHeader.tsx` |
 | `mobile_nav__menu--open` | — | — | `MobileMenu.tsx` |
 | `mobile_nav__{target}` | same targets as above | — | `MobileMenu.tsx` |
-| `navigation__account_menu--public_profile` | — | — | `AccountMenu.tsx` |
-| `navigation__account_menu--public_profile_setup` | — | — | `AccountMenu.tsx` |
-| `mobile_nav__public_profile` | — | — | `MobileMenu.tsx` |
-| `mobile_nav__public_profile_setup` | — | — | `MobileMenu.tsx` |
 
 ### Home
 | Event | Detail | Payload | File |
@@ -81,9 +77,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Example Trips
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `example_trip__open` | — | `{ template, country_count }` | `App.tsx` |
-| `example_trip__banner--copy_trip` | — | `{ template, country_count }` | `App.tsx` |
-| `example_trip__banner--create_similar` | — | `{ template, country_count }` | `App.tsx` |
+| `example_trip__open` | — | `{ template, country_count }` | `routes/ExampleTripLoaderRoute.tsx` |
+| `example_trip__banner--copy_trip` | — | `{ template, country_count }` | `routes/ExampleTripLoaderRoute.tsx` |
+| `example_trip__banner--create_similar` | — | `{ template, country_count }` | `routes/ExampleTripLoaderRoute.tsx` |
 
 ### Trip Paywall
 | Event | Detail | Payload | File |
@@ -104,7 +100,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
 | `footer__{target}` | `imprint`, `privacy`, `terms`, `cookies` | — | `SiteFooter.tsx` |
-| `banner__early_access--dismiss` | — | — | `EarlyAccessBanner.tsx` |
 
 ### Features & Pricing
 | Event | Detail | Payload | File |
@@ -140,14 +135,43 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `auth__{step}--{result}` | runtime auth steps (password, oauth, upgrade, logout) | `{ flow_id, attempt_id, provider, error_code }` | `authService.ts` |
 
 ### Admin
-| Event | Detail | Payload | File |
+Every admin screen uses `admin__<screen>--<action>` (or `admin__<screen>_<area>--<action>` for a
+sub-surface such as a row menu or a sheet). One row per surface; the actions are listed.
+
+| Event prefix | Actions | Payload | File |
 |-------|--------|---------|------|
-| `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
-| `admin__menu--brand` | — | — | `AdminMenu.tsx` |
-| `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
-| `admin__design_playground--open` | — | — | `AdminDesignSystemPlaygroundPage.tsx` |
-| `admin__design_playground_component_group--view` | — | `{ group_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
-| `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__menu--` | `{nav item id}` (e.g. `users`, `ai_telemetry`), `brand`, `search`, `collapse_toggle` | `{ collapsed }` on `collapse_toggle` | `components/admin/AdminShell.tsx` |
+| `admin__account--` | `open`, `profile`, `settings`, `app_home`, `create_trip`, `logout` | — | `components/admin/AdminAccountMenu.tsx` |
+| `admin__command--` | `{nav item id}`, `theme`, `app_home` | — | `components/admin/AdminCommandMenu.tsx` |
+| `admin__theme--toggle` | — | `{ to }` | `components/ui/ThemeToggle.tsx` (surface `admin`) |
+| `admin__dashboard--` | `all_users`, `recent_user`, `failed_generations`, `expiring_trips` | — | `pages/AdminDashboardPage.tsx` |
+| `admin__users--` | `create_user`, `export_csv`, `more_filters`, `reset_filters` | — | `pages/AdminUsersPage.tsx`, `components/admin/users/UsersFilterBar.tsx`, `components/admin/users/useAdminUsersActions.ts` |
+| `admin__users_queue--` | `awaiting_activation`, `subscriptions_at_risk`, `empty_accounts` | — | `components/admin/users/UsersQueueTiles.tsx` |
+| `admin__users_row--` | `copy_id`, `view_trips` | — | `components/admin/users/UsersTableRow.tsx`, `components/admin/users/useAdminUsersActions.ts` |
+| `admin__users_detail--tab` | — | `{ tab }` | `components/admin/users/UserDetailSheet.tsx` |
+| `admin__trips_kpi--filter` | — | `{ kpi }` | `pages/AdminTripsPage.tsx` |
+| `admin__trips_bulk--` | `archive`, `delete` | `{ count }` | `pages/AdminTripsPage.tsx` |
+| `admin__trips_selection--select_all_matching` | — | `{ count }` | `pages/AdminTripsPage.tsx` |
+| `admin__trips_owner--open_user`, `admin__trips_sheet--open_owner` | — | — | `pages/AdminTripsPage.tsx` |
+| `admin__tiers--` | `save`, `reapply` | `{ tier_key }` | `pages/AdminTiersPage.tsx` (Plans screen) |
+| `admin__billing--` | `reconcile`, `review_failed`, `review_unlinked` | — | `pages/AdminBillingPage.tsx` |
+| `admin__billing_view--switch` | — | `{ view }` | `pages/AdminBillingPage.tsx` |
+| `admin__billing_subscription--`, `admin__billing_event--` | `details`, `open_user`, `reconcile` | — | `components/admin/AdminBillingSheets.tsx` |
+| `admin__audit--` | `export_replay`, `export_selected`, `export_entry`, `reset_filters`, `open_entry`, `open_actor`, `open_target`, `show_diff`, `undo`, `copy_action_code`, `open_in_users`, `open_in_trips`, `open_trip`, `open_owner`, `restore_user` | — | `pages/AdminAuditPage.tsx` |
+| `admin__airports--` | `tab`, `new_airport`, `open_airport`, `save_airport`, `create_airport`, `delete_airport`, `sync`, `bulk_edit`, `bulk_apply`, `bulk_delete`, `select_all_matching`, `reset_filters` | `{ tab }` on `tab` | `pages/AdminAirportsPage.tsx` |
+| `admin__destinations--` | `select`, `save`, `reset_override`, `view`, `reset_filters`, `open_page` | — | `pages/AdminDestinationsPage.tsx` |
+| `admin__recommendations--` | `select`, `new`, `save`, `publish_now`, `delete`, `import_bundled`, `reset_filters`, `country` | — | `pages/AdminRecommendationsPage.tsx` |
+| `admin__legal_terms--` | `publish`, `set_current`, `use_as_basis`, `discard_draft` | `{ rollout }` on `publish`/`set_current` | `pages/AdminLegalTermsPage.tsx` |
+| `admin__settings--` | `save`, `discard` | — | `pages/AdminGlobalSettingsPage.tsx` |
+| `admin__ai_benchmark--` | `run`, `stop`, `export`, `new_session`, `delete_session`, `open_run`, `reset_filters`, `show_unrated`, `add_models`, `run_single`, `app_default_model`, `open_telemetry` | `{ source }`, `{ include_logs }` | `pages/AdminAiBenchmarkPage.tsx` |
+| `admin__ai_benchmark_run--` | `rate`, `rerun`, `download`, `abort`, `open_trip`, `save_note` | `{ rating }` on `rate` | `components/admin/AiBenchmarkRunSheet.tsx` |
+| `admin__ai_telemetry--` | `worker_health`, `reset_filters`, `trend_tab`, `breakdown_tab`, `leader`, `focus_provider` | — | `pages/AdminAiTelemetryPage.tsx` |
+| `admin__worker_health--` | `ai_telemetry`, `reset_filters` | — | `pages/AdminAiWorkerHealthPage.tsx` |
+| `admin__og_tools--` | `tab`, `inspect`, `copy_command`, `load_trip` | `{ tab }`, `{ source }`, `{ command }` | `pages/AdminOgToolsPage.tsx` |
+| `admin__design_playground--open` | — | — | `pages/AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_component_group--view` | — | `{ group_id }` | `pages/AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `pages/AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__component_playground--open` | — | — | `pages/AdminComponentPlaygroundPage.tsx` |
 
 ### Trip View
 | Event | Detail | Payload | File |
@@ -171,6 +195,29 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__calendar_export--activities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--all` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__my_maps_export` | — | `{ trip_id, place_count, skipped_count }` | `useGoogleMyMapsActions.ts` |
+| `trip_view__my_maps_import--load` | — | `{ trip_id, origin, place_count }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--add` | — | `{ trip_id, origin, place_count, added_count, unlocated_count }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--error` | — | `{ trip_id, origin, code }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__my_maps_import--open_ideas` | — | `{ trip_id }` | `GoogleMyMapsPanel.tsx` |
+| `trip_view__map_idea_markers--toggle` | — | `{ trip_id, active }` | `TripView.tsx` |
+| `trip_view__idea_review--keep` | — | `{ trip_id, recommendation_id }` | `TripDiscoverOverlay.tsx` |
+| `trip_view__idea_review--skip` | — | `{ trip_id, recommendation_id }` | `TripDiscoverOverlay.tsx` |
+
+### Trip Agent
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_agent__launcher--open` | — | `{ trip_id, locked, context_count }` | `TripView.tsx` |
+| `trip_agent__panel--close` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__prompt--submit` | — | `{ trip_id, thread_id, context_count }` | `TripAgentPanel.tsx` |
+| `trip_agent__thread--create` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__thread--archive` | — | `{ trip_id, thread_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__proposal--apply` | — | `{ trip_id, change_set_id, operation_count }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__proposal--reject` | — | `{ trip_id, change_set_id }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__proposal--revert` | — | `{ trip_id, change_set_id }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__context--add` | — | `{ trip_id, context_kind }` | `TripAgentPanel.tsx` |
+| `trip_agent__preset--select` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__message--retry` | — | `{ trip_id, thread_id, context_count }` | `TripAgentPanel.tsx` |
 
 ### Profile
 | Event | Detail | Payload | File |
@@ -201,9 +248,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `profile_settings__public_url--open` | — | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__country_region--select` | — | `{ country_code }` | `ProfileSettingsPage.tsx` |
 | `profile_settings__billing--{action}` | `manage`, `cancel` | — | `ProfileSettingsPage.tsx` |
-| `profile__passport_cover--select` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
-| `profile__passport_cover--unselect` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
-| `profile__passport_cover--selection_limit` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
 | `public_profile__summary--open_passport` | — | — | `PublicProfilePage.tsx` |
 | `trip_preview_card__creator_handle` | — | `{ creator_handle, trip_id }` | `ProfileTripCard.tsx` |
 | `example_trip__creator_handle` | — | `{ creator_handle }` | `ExampleTripCard.tsx` |
@@ -227,7 +271,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_connectivity__banner--dismiss` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
 | `trip_connectivity__banner--retry_sync` | — | `{ connectivity_state, pending_count, failed_count }` | `ConnectivityStatusBanner.tsx` |
 | `trip_connectivity__banner--contact` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
-| `trip_connectivity__banner--email` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
 | `trip_connectivity__trip_strip--retry_sync` | — | `{ trip_id, connectivity_state, pending_count, failed_count }` | `TripViewStatusBanners.tsx` |
 | `trip_connectivity__trip_strip--restore_backup` | — | `{ trip_id }` | `TripViewStatusBanners.tsx` |
 
@@ -262,8 +305,20 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Inspirations
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `inspirations__destination_card` | — | `{ title, country }` | `InspirationsPage.tsx` |
+| `inspirations__destination_card` | — | `{ title?, country, destination?, kind?, month?, season? }` | `InspirationsPage.tsx`, `CountryExplorerCard.tsx`, `DestinationGuideView.tsx` |
+| `inspirations__country_search` | — | `{ query_length, result_count }` | `CountryExplorerControls.tsx` |
+| `inspirations__country_month` | — | `{ month }` (`0` = any month) | `CountryExplorerControls.tsx` |
+| `inspirations__country_filter` | — | `{ facet, value }` | `CountryExplorerControls.tsx` |
+| `inspirations__country_filter--reset` | — | — | `CountryExplorerControls.tsx` |
+| `inspirations__country_sort` | — | `{ sort }` | `CountryExplorerControls.tsx` |
+| `inspirations__destination_plan` | — | `{ country, destination, kind }` | `DestinationGuideView.tsx` |
+| `inspirations__country_route` | — | `{ route_id, country, style, duration_days, stop_count }` | `CountryRouteCards.tsx` |
 | `inspirations__festival_card` | — | `{ name, country }` | `InspirationsPage.tsx` |
+| `inspirations__festival_card--guide` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_plan` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_source` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_filter--region` | — | `{ region }` | `FestivalsPage.tsx` |
+| `inspirations__festival_filter--month` | — | `{ month }` | `FestivalsPage.tsx` |
 | `inspirations__getaway_card` | — | `{ title, destination }` | `InspirationsPage.tsx` |
 | `inspirations__country_pill` | — | `{ country }` | `InspirationsPage.tsx` |
 | `inspirations__quick_pill` | — | `{ label }` | `InspirationsPage.tsx` |
@@ -273,23 +328,18 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### App
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `app__trip--create` | — | `{ city_count, activity_count, travel_segment_count, total_item_count }` | `App.tsx` |
+| `app__trip--create` | — | `{ city_count, activity_count, travel_segment_count, total_item_count }` | `features/trips/useTripCreation.ts` |
 | `app__trip_history--open` | — | `{ source }` | `TripView.tsx` |
 | `app__chunk_recovery--reload` | — | `{ module_key, reason }` | `services/lazyImportRecovery.ts` |
 
 ### Create Trip
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip, provider, model }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__model--select` | — | `{ provider, model, model_id, is_default }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--prompt` | — | — | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--enable` | — | — | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--not_now` | — | — | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
-| `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip, provider, model }` | `CreateTripClassicPage.tsx` |
+| `create_trip__model--select` | — | `{ provider, model, model_id, is_default }` | `CreateTripClassicPage.tsx` |
+| `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicPage.tsx` |
+| `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicPage.tsx` |
+| `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicPage.tsx` |
 | `create_trip_wizard__branch--select` | — | `{ branch }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__date_mode--select` | — | `{ mode }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__traveler--select` | — | `{ traveler_type }` | `CreateTripV3Page.tsx` |
@@ -309,3 +359,12 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 3. Decide: is the qualifier finite (< ~15 values) and stable? → use `--{detail}`. Otherwise → payload.
 4. Add a `trackEvent(...)` call and update the catalog table above.
 5. Run `pnpm build` — the TypeScript type catches malformed names at compile time.
+
+## Consent during asynchronous loading
+
+Never treat consent at the start of an analytics-script download as permission to
+send later. Recheck consent after every asynchronous boundary before dispatching
+an event/pageview. A pending send must be dropped when optional consent is withdrawn.
+Same-page and cross-tab consent changes use `subscribeToConsentChanges`; unsubscribe
+when the owning UI/runtime unmounts. Existing event names and debug attributes remain
+unchanged when improving the consent controls.

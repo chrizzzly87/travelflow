@@ -1,21 +1,16 @@
-import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, Suspense } from 'react';
+import { Lock, Sparkles } from 'lucide-react';
+import { useLocation, useNavigate } from '@/app/navigation';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState, ITripRecommendationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
-import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
-import { GoogleMapsLoader } from './GoogleMapsLoader';
-import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
+import { GoogleMapsLoader, MapRuntimeProvider } from './GoogleMapsLoader';
+import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, TRAVEL_COLOR, buildShareUrl, getTimelineBounds, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
-import { getTripSpan } from '../shared/tripSpan';
+import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
-import {
-    buildTripCalendarExport,
-    downloadTripCalendarExport,
-    type TripCalendarExportScope,
-} from '../services/tripCalendarExportService';
 import {
     buildDirectReactivatedTrip,
     buildPaywalledTripDisplay,
@@ -30,20 +25,21 @@ import {
     buildPathFromLocationParts,
 } from '../services/authNavigationService';
 import {
-    buildCreateSimilarTripPath,
     buildTripClaimConflictPath,
     buildTripClaimLoginReturnPath,
-    readTripClaimConflictQuery,
     TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED,
-} from '../services/tripClaimConflictService';
+} from '../services/tripClaimNavigation';
 import { useAuth } from '../hooks/useAuth';
+import { useTripActionLifetime } from '../features/trips/useTripActionLifetime';
+import { useTripRouteSearch } from '../features/trips/tripRouteSearch';
+import { useRouteSearchWriter } from '../app/routing/useRouteSearchWriter';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
-import { getLatestConflictBackupForTrip } from '../services/offlineChangeQueue';
-import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import { getLatestConflictBackupForTrip, resolveConflictBackupsForTrip } from '../services/offlineChangeQueue';
+import { useTripAgentAvailability } from '../hooks/useTripAgentAvailability';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useTripCopyNoticeToast } from './tripview/useTripCopyNoticeToast';
+import { TRIP_AGENT_LAUNCHER_POSITION_CLASS } from './tripview/tripBottomDock';
 import { useGenerationProgressMessage } from './tripview/useGenerationProgressMessage';
 import { useReleaseNoticeReady } from './tripview/useReleaseNoticeReady';
 import { useTripExpiryLifecycle } from './tripview/useTripExpiryLifecycle';
@@ -56,8 +52,27 @@ import { useTripViewSettingsSync } from './tripview/useTripViewSettingsSync';
 import { useTripAdminOverrideState } from './tripview/useTripAdminOverrideState';
 import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
+import { useTripMapCustomizationState } from './tripview/useTripMapCustomizationState';
+import { useMapRuntime } from './GoogleMapsLoader';
+import {
+    getClientMapRuntimeResolution,
+    getMapRendererChoice,
+    readMapRuntimeAdminOverride,
+    setMapRendererChoice,
+    subscribeToMapRendererChoice,
+} from '../services/mapRuntimeService';
+import {
+    MAP_ROUTE_THICKNESS_MULTIPLIER,
+    resolveEffectiveLightPreset,
+    resolveMapStyleFromAxes,
+} from '../shared/mapPreferences';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
+import { useGoogleMyMapsActions } from './tripview/useGoogleMyMapsActions';
+import { buildMapIdeaMarkers, setIdeaReview } from '../shared/tripIdeas';
+import type { IdeaMapAction } from './maps/IdeaMapPopup';
+import { readTripIdeaLayerVisible, writeTripIdeaLayerVisible } from '../services/tripIdeaLayerStore';
+import { mergeRecommendationState, readStoredRecommendationState, writeStoredRecommendationState } from '../services/recommendationReactionsStore';
 import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
 import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGenerationRetryToast';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
@@ -85,8 +100,8 @@ import {
 } from './tripview/useTripHistoryPresentation';
 import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
 import { TripViewHeader } from './tripview/TripViewHeader';
-import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
+import { buildMobileDayPlan } from './tripview/mobileDayPlanModel';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
 import { showAppToast } from './ui/appToast';
 import {
@@ -99,35 +114,55 @@ import {
 import {
     canTriggerTripGenerationAbortAndRetry,
     canTriggerTripGenerationRetry,
-    retryTripGenerationWithDefaultModel,
-} from '../services/tripGenerationRetryService';
-import { abortActiveTripGenerationRequest } from '../services/aiService';
+} from '../services/tripGenerationRetryCapability';
+import { abortActiveTripGenerationRequest } from '../services/tripGenerationRuntime';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
 import {
     getAsyncTripGenerationStallRecoveryAction,
     shouldUseRemoteTripForAsyncStallRecovery,
-    shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
 } from '../services/tripGenerationPollingService';
 import {
     isQueuedTripGenerationAlreadyClaimedError,
     isQueuedTripGenerationClaimedByAnotherUserError,
-    processQueuedTripGenerationAfterAuth,
-} from '../services/tripGenerationQueueService';
+} from '../services/tripGenerationQueueErrors';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 import { toggleMarkdownTaskByLine } from './markdownPresentation';
-
-const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
-    moduleKey: string,
-    importer: () => Promise<TModule>
-) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
-
-const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
-    import('./ReleaseNoticeDialog').then((module) => ({ default: module.ReleaseNoticeDialog }))
-);
+import { buildTripAgentContextRefs } from '../shared/tripAgentContextRefs';
+import { lazyWithRecovery } from './tripview/lazyWithRecovery';
+import { TripViewModalLayer, loadTripInfoModalModule } from './tripview/TripViewModalLayer';
+import { useTripCalendarExport } from './tripview/useTripCalendarExport';
+import { useTripGenerationPolling } from './tripview/useTripGenerationPolling';
+import {
+    DEFAULT_DETAILS_WIDTH,
+    GENERATION_PROGRESS_MESSAGES,
+    HARD_MIN_DETAILS_WIDTH,
+    HORIZONTAL_TIMELINE_AUTO_FIT_PADDING,
+    MAX_ZOOM_LEVEL,
+    MIN_BOTTOM_MAP_HEIGHT,
+    MIN_DETAILS_WIDTH,
+    MIN_MAP_WIDTH,
+    MIN_SIDEBAR_WIDTH,
+    MIN_TIMELINE_COLUMN_WIDTH,
+    MIN_TIMELINE_HEIGHT,
+    MIN_ZOOM_LEVEL,
+    MOBILE_VIEWPORT_MAX_WIDTH,
+    RESIZE_KEYBOARD_STEP,
+    RESIZER_WIDTH,
+    TIMELINE_ZOOM_LEVEL_PRESETS,
+    TRIP_AGENT_PANEL_INSET_PX,
+    VERTICAL_TIMELINE_AUTO_FIT_PADDING,
+    VIEW_TRANSITION_DEBUG_EVENT,
+    buildTripMetaSummary,
+    extractTripTravelerWarnings,
+    isPlainLeftClick,
+    normalizeNegativeOffsetsForTrip,
+    runWithOptionalViewTransition,
+    type ViewTransitionDebugDetail,
+} from './tripview/tripViewModel';
 
 const PrintLayout = lazyWithRecovery('PrintLayout', () =>
     import('./PrintLayout').then((module) => ({ default: module.PrintLayout }))
@@ -141,272 +176,35 @@ const SelectedCitiesPanel = lazyWithRecovery('SelectedCitiesPanel', () =>
     import('./SelectedCitiesPanel').then((module) => ({ default: module.SelectedCitiesPanel }))
 );
 
-const TripDetailsDrawer = lazyWithRecovery('TripDetailsDrawer', () =>
-    import('./TripDetailsDrawer').then((module) => ({ default: module.TripDetailsDrawer }))
+const MapCustomizeModal = lazyWithRecovery('MapCustomizeModal', () =>
+    import('./maps/MapCustomizeModal').then((module) => ({ default: module.MapCustomizeModal }))
 );
 
-const AddActivityModal = lazyWithRecovery('AddActivityModal', () =>
-    import('./AddActivityModal').then((module) => ({ default: module.AddActivityModal }))
-);
-
-const AddCityModal = lazyWithRecovery('AddCityModal', () =>
-    import('./AddCityModal').then((module) => ({ default: module.AddCityModal }))
-);
-
-const TripShareModal = lazyWithRecovery('TripShareModal', () =>
-    import('./TripShareModal').then((module) => ({ default: module.TripShareModal }))
-);
-
-const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
-    import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
-);
-
-let tripInfoModalModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
-
-const loadTripInfoModalModule = (): Promise<{ default: React.ComponentType<any> }> => {
-    if (!tripInfoModalModulePromise) {
-        tripInfoModalModulePromise = import('./TripInfoModal').then((module) => ({ default: module.TripInfoModal }));
-    }
-    return tripInfoModalModulePromise;
-};
-
-const TripInfoModal = lazyWithRecovery('TripInfoModal', () => loadTripInfoModalModule());
+import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
+// Eager on purpose: the panel frame is small and must open on the click. The
+// chat inside it is its own chunk, warmed by the launcher.
+import { TripAgentPanel, TripAgentPanelFallback } from './trip-agent/TripAgentPanel';
+import { loadTripAgentChatSessionModule, preloadTripAgentTranslations, prefetchTripAgent } from './trip-agent/tripAgentPrefetch';
 
 const ItineraryMap = lazyWithRecovery('ItineraryMap', () =>
     import('./ItineraryMap').then((module) => ({ default: module.ItineraryMap }))
 );
 
-const MIN_SIDEBAR_WIDTH = 300;
-const MIN_TIMELINE_HEIGHT = 200;
-const MIN_BOTTOM_MAP_HEIGHT = 200;
-const MIN_MAP_WIDTH = 320;
-const MIN_TIMELINE_COLUMN_WIDTH = 420;
-const MIN_DETAILS_WIDTH = 400;
-const HARD_MIN_DETAILS_WIDTH = 300;
-const DEFAULT_DETAILS_WIDTH = 480;
-const RESIZE_KEYBOARD_STEP = 16;
-const RESIZER_WIDTH = 4;
-const MIN_ZOOM_LEVEL = 0.2;
-const MAX_ZOOM_LEVEL = 3;
-const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
-const VERTICAL_TIMELINE_AUTO_FIT_PADDING = 56;
-const TIMELINE_ZOOM_LEVEL_PRESETS = [
-    0.2,
-    0.4,
-    0.6,
-    0.8,
-    1,
-    1.2,
-    1.4,
-    1.6,
-    1.8,
-    2,
-    2.2,
-    2.4,
-    2.6,
-    2.8,
-    3,
-];
-const NEGATIVE_OFFSET_EPSILON = 0.001;
-const MOBILE_VIEWPORT_MAX_WIDTH = 767;
-const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
-const GENERATION_PROGRESS_MESSAGES = [
-    'Analyzing your travel preferences...',
-    'Scouting top-rated cities and stops...',
-    'Calculating optimal travel routes...',
-    'Structuring your daily timeline...',
-    'Finalizing logistics and details...',
-];
-const TRIP_GENERATION_POLL_INTERVAL_MS = 8_000;
-const TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS = 30_000;
-const TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE: Record<
-    TripCalendarExportScope,
-    'trip_view__calendar_export--activity' | 'trip_view__calendar_export--activities' | 'trip_view__calendar_export--cities' | 'trip_view__calendar_export--all'
-> = {
-    activity: 'trip_view__calendar_export--activity',
-    activities: 'trip_view__calendar_export--activities',
-    cities: 'trip_view__calendar_export--cities',
-    all: 'trip_view__calendar_export--all',
-};
-
-interface ViewTransitionDebugDetail {
-    phase: string;
-    templateId?: string;
-    useExampleSharedTransition?: boolean;
-    expectedCityLaneCount?: number;
-    reason?: string;
-}
-
-const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.metaKey &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.shiftKey
-);
-
-type ViewTransitionDocument = Document & {
-    startViewTransition?: (update: () => void | Promise<void>) => unknown;
-};
-
-const runWithOptionalViewTransition = (update: () => void): void => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-        update();
-        return;
-    }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        update();
-        return;
-    }
-    const transitionDocument = document as ViewTransitionDocument;
-    if (typeof transitionDocument.startViewTransition !== 'function') {
-        update();
-        return;
-    }
-    transitionDocument.startViewTransition(() => {
-        update();
-    });
-};
-
-const parseTripStartDate = (value: string): Date => {
-    if (!value) return new Date();
-    const parts = value.split('-').map(Number);
-    if (parts.length === 3 && parts.every(part => Number.isFinite(part))) {
-        return new Date(parts[0], parts[1] - 1, parts[2]);
-    }
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-};
-
-const formatTripDateValue = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
-const normalizeNegativeOffsetsForTrip = (
-    items: ITimelineItem[],
-    startDate: string
-): { items: ITimelineItem[]; startDate: string; shiftedDays: number } => {
-    let minStart = Number.POSITIVE_INFINITY;
-
-    items.forEach(item => {
-        if (!Number.isFinite(item.startDateOffset)) return;
-        minStart = Math.min(minStart, item.startDateOffset);
-    });
-
-    if (!Number.isFinite(minStart) || minStart >= -NEGATIVE_OFFSET_EPSILON) {
-        return { items, startDate, shiftedDays: 0 };
-    }
-
-    const shiftedDays = Math.ceil(-minStart);
-    if (shiftedDays <= 0) {
-        return { items, startDate, shiftedDays: 0 };
-    }
-
-    const shiftedItems = items.map(item => {
-        if (!Number.isFinite(item.startDateOffset)) return item;
-        return { ...item, startDateOffset: item.startDateOffset + shiftedDays };
-    });
-
-    const nextStartDate = parseTripStartDate(startDate);
-    nextStartDate.setDate(nextStartDate.getDate() - shiftedDays);
-
-    return {
-        items: shiftedItems,
-        startDate: formatTripDateValue(nextStartDate),
-        shiftedDays,
-    };
-};
-
-interface TripMetaSummary {
-    dateRange: string;
-    days: number;
-    nights: number;
-    compactSpanLabel: string;
-    cityCount: number;
-    distanceLabel: string | null;
-    summaryLine: string;
-}
-
-interface TripTravelerWarningSummary {
-    cityName: string;
-    notes: string[];
-}
-
-const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
-    const cityItems = trip.items
-        .filter((item) => item.type === 'city')
-        .sort((a, b) => a.startDateOffset - b.startDateOffset);
-    const cityCount = cityItems.length;
-    const tripSpan = getTripSpan(trip);
-    const days = tripSpan.days;
-    const nights = tripSpan.nights;
-    const startDate = tripSpan.startDate;
-    const endDate = tripSpan.endDate;
-
-    const formatDate = (value: Date) => value.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    });
-    const dateRange = startDate.toDateString() === endDate.toDateString()
-        ? formatDate(startDate)
-        : `${formatDate(startDate)} – ${formatDate(endDate)}`;
-
-    const citiesLabel = cityCount === 1 ? '1 city' : `${cityCount} cities`;
-    const totalDistanceKm = getTripDistanceKm(trip.items);
-    const distanceLabel = totalDistanceKm > 0
-        ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
-        : null;
-    const distancePart = distanceLabel ? ` • ${distanceLabel}` : '';
-
-    return {
-        dateRange,
-        days,
-        nights,
-        compactSpanLabel: tripSpan.compactLabel,
-        cityCount,
-        distanceLabel,
-        summaryLine: `${dateRange} • ${tripSpan.compactLabel} • ${citiesLabel}${distancePart}`,
-    };
-};
-
-const HEADS_UP_SECTION_REGEX = /### Heads Up\s*([\s\S]*?)(?=\n###\s|\s*$)/i;
-
-const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
-    items.reduce<TripTravelerWarningSummary[]>((warnings, item) => {
-        if (item.type !== 'city') return warnings;
-        const description = typeof item.description === 'string' ? item.description.trim() : '';
-        if (!description) return warnings;
-
-        const match = description.match(HEADS_UP_SECTION_REGEX);
-        if (!match) return warnings;
-
-        const notes: string[] = [];
-        for (const rawLine of match[1].split('\n')) {
-            const note = rawLine.trim().replace(/^- \[[ xX]\]\s*/, '').replace(/^-+\s*/, '').trim();
-            if (note) {
-                notes.push(note);
-            }
-        }
-        if (notes.length === 0) return warnings;
-
-        warnings.push({
-            cityName: item.title || item.location || 'Stop',
-            notes,
-        });
-        return warnings;
-    }, [])
-);
 
 interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
-    onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
+    onCommitState?: (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
+    onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string; changeSetId?: string }) => void;
+    /** Set while the Trip Agent previews a proposal in the planner. */
+    agentPreviewTrip?: ITrip | null;
+    /** The saved trip, unchanged by an active preview. */
+    agentCanonicalTrip?: ITrip;
+    onAgentPreviewTrip?: (trip: ITrip | null) => void;
+    /** Bumped when the agent replaces the trip, to refresh the planner surface. */
+    agentSurfaceNonce?: number;
+    onAgentTripChanged?: () => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
     initialViewSettings?: IViewSettings;
@@ -430,6 +228,15 @@ interface TripViewProps {
         title: string;
         countries: string[];
         onCreateSimilarTrip?: () => void;
+        /** Replaces the example copy, e.g. for a draft from an AI assistant. */
+        copy?: {
+            eyebrow: string;
+            title: string;
+            body: string;
+            primaryLabel: string;
+            dismissLabel: string;
+        };
+        isPrimaryBusy?: boolean;
     };
 }
 
@@ -442,431 +249,30 @@ interface ExampleTransitionLocationState {
 }
 
 const MapLoadingFallback: React.FC = () => (
-    <div className="size-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex items-center justify-center bg-secondary text-xs text-muted-foreground">
         Loading map…
     </div>
 );
 
 const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
-    <div className="size-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex flex-col items-center justify-center gap-3 bg-secondary text-xs text-muted-foreground">
         <span>Preparing map…</span>
         <button
             type="button"
             onClick={onLoadNow}
-            className="inline-flex min-h-10 items-center rounded-md border border-gray-300 bg-white px-3 text-[11px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-[11px] font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
         >
             Load map now
         </button>
     </div>
 );
 
-const TRIP_INFO_FALLBACK_ROWS = [0, 1, 2];
+const TripDiscoverOverlay = lazyWithRecovery('TripDiscoverOverlay', () =>
+    import('./recommendations/TripDiscoverOverlay').then((module) => ({ default: module.TripDiscoverOverlay }))
+);
 
-const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const dialogRef = useRef<HTMLDivElement | null>(null);
-    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-
-    useFocusTrap({
-        isActive: true,
-        containerRef: dialogRef,
-        initialFocusRef: closeButtonRef,
-    });
-
-    return (
-        <>
-            <button
-                type="button"
-                className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm"
-                onClick={onClose}
-                aria-label="Close"
-            />
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="trip-info-loading-title"
-                className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
-            >
-                <div ref={dialogRef} className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                        <div>
-                            <h3 id="trip-info-loading-title" className="text-lg font-semibold text-gray-900">Trip information</h3>
-                            <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
-                        </div>
-                        <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                            Close
-                        </button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
-                            <div className="h-5 w-44 rounded bg-gray-200" />
-                            <div className="h-3 w-64 rounded bg-gray-100" />
-                        </div>
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-3 animate-pulse">
-                            <div className="h-4 w-28 rounded bg-gray-200" />
-                            <div className="grid grid-cols-2 gap-2">
-                                {TRIP_INFO_FALLBACK_ROWS.map((row) => (
-                                    <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-gray-100 border border-gray-100" />
-                                ))}
-                            </div>
-                        </div>
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
-                            <div className="h-4 w-20 rounded bg-gray-200" />
-                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
-                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-};
-
-interface TripViewModalLayerProps {
-    isMobile: boolean;
-    detailsPanelVisible: boolean;
-    detailsPanelContent: React.ReactNode;
-    onCloseDetailsDrawer: () => void;
-    onOpenDetailsDrawer: () => void;
-    addActivityState: { isOpen: boolean; dayOffset: number; location: string };
-    onCloseAddActivity: () => void;
-    onAddActivity: (...args: any[]) => void;
-    trip: ITrip;
-    isAddCityModalOpen: boolean;
-    onCloseAddCityModal: () => void;
-    onAddCity: (name: string, lat: number, lng: number) => void;
-    isTripInfoOpen: boolean;
-    onCloseTripInfo: () => void;
-    tripTitle: string;
-    isEditingTitle: boolean;
-    editTitleValue: string;
-    onEditTitleValueChange: (value: string) => void;
-    onCommitTitleEdit: () => void;
-    onCancelTitleEdit: () => void;
-    onStartTitleEdit: () => void;
-    canManageTripMetadata: boolean;
-    canEdit: boolean;
-    isFavorite: boolean;
-    onToggleFavorite: () => void;
-    isExamplePreview: boolean;
-    tripMeta: any;
-    ownerSummary: string | null;
-    ownerHint: string | null;
-    adminMeta: {
-        ownerUserId: string | null;
-        ownerUsername: string | null;
-        ownerEmail: string | null;
-        accessSource: string | null;
-    } | null;
-    aiMeta: ITrip['aiMeta'];
-    generationState: TripGenerationState;
-    latestGenerationAttempt: TripGenerationAttemptSummary | null;
-    canRetryGeneration: boolean;
-    retryDisabledReason: string | null;
-    isRetryingGeneration: boolean;
-    retryModelId: string | null;
-    onRetryModelIdChange: (modelId: string) => void;
-    onRetryGeneration: (source: 'trip_info' | 'trip_strip', modelId?: string | null) => void;
-    onOpenBenchmarkWithSnapshot: () => void;
-    canOpenBenchmarkWithSnapshot: boolean;
-    tripInfoRetryAnalyticsAttributes: Record<string, string>;
-    forkMeta: { label: string; url: string | null } | null;
-    showAllHistory: boolean;
-    onToggleShowAllHistory: () => void;
-    onHistoryUndo: () => void;
-    onHistoryRedo: () => void;
-    historyModalItems: any[];
-    onGoToHistoryEntry: (item: any) => void;
-    formatHistoryTime: (value: number) => string;
-    pendingSyncCount: number;
-    failedSyncCount: number;
-    countryInfo: ITrip['countryInfo'];
-    isPaywallLocked: boolean;
-    travelerWarnings: TripTravelerWarningSummary[];
-    onExportActivitiesCalendar: () => void;
-    onExportCitiesCalendar: () => void;
-    onExportAllCalendar: () => void;
-    onOpenPrintLayout: () => void;
-    shouldEnableReleaseNotice: boolean;
-    isShareOpen: boolean;
-    shareMode: ShareMode;
-    onShareModeChange: (mode: ShareMode) => void;
-    activeShareUrl: string | null;
-    onCloseShare: () => void;
-    onCopyShareLink: () => void;
-    onGenerateShare: () => void;
-    isGeneratingShare: boolean;
-    isHistoryOpen: boolean;
-    onCloseHistory: () => void;
-    onHistoryGo: (item: any) => void;
-    shareStatus?: ShareMode;
-    onCopyTrip?: () => void;
-    expirationLabel: string | null;
-    tripId: string;
-    paywallActivationMode: TripPaywallActivationMode;
-    onPaywallActivateClick: (
-        event: React.MouseEvent<HTMLAnchorElement>,
-        analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
-        source: 'trip_paywall_strip' | 'trip_paywall_overlay'
-    ) => void;
-    paywallOverlayUpgradeCheckoutPath: string;
-    showGenerationOverlay: boolean;
-    generationProgressMessage: string;
-    loadingDestinationSummary: string;
-    tripDateRange: string;
-    tripSpanCompactLabel: string;
-    pendingAuthModalStage: 'hidden' | 'loading' | 'locked';
-    onContinuePendingAuth: () => void;
-    isPendingAuthContinueDisabled: boolean;
-    claimConflictModalVisible: boolean;
-    claimConflictShowLoginCta: boolean;
-    claimConflictCreateSimilarPath: string;
-    onClaimConflictLogin: () => void;
-}
-
-const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
-    isMobile,
-    detailsPanelVisible,
-    detailsPanelContent,
-    onCloseDetailsDrawer,
-    onOpenDetailsDrawer,
-    addActivityState,
-    onCloseAddActivity,
-    onAddActivity,
-    trip,
-    isAddCityModalOpen,
-    onCloseAddCityModal,
-    onAddCity,
-    isTripInfoOpen,
-    onCloseTripInfo,
-    tripTitle,
-    isEditingTitle,
-    editTitleValue,
-    onEditTitleValueChange,
-    onCommitTitleEdit,
-    onCancelTitleEdit,
-    onStartTitleEdit,
-    canManageTripMetadata,
-    canEdit,
-    isFavorite,
-    onToggleFavorite,
-    isExamplePreview,
-    tripMeta,
-    ownerSummary,
-    ownerHint,
-    adminMeta,
-    aiMeta,
-    generationState,
-    latestGenerationAttempt,
-    canRetryGeneration,
-    retryDisabledReason,
-    isRetryingGeneration,
-    retryModelId,
-    onRetryModelIdChange,
-    onRetryGeneration,
-    onOpenBenchmarkWithSnapshot,
-    canOpenBenchmarkWithSnapshot,
-    tripInfoRetryAnalyticsAttributes,
-    forkMeta,
-    showAllHistory,
-    onToggleShowAllHistory,
-    onHistoryUndo,
-    onHistoryRedo,
-    historyModalItems,
-    onGoToHistoryEntry,
-    formatHistoryTime,
-    pendingSyncCount,
-    failedSyncCount,
-    countryInfo,
-    isPaywallLocked,
-    travelerWarnings,
-    onExportActivitiesCalendar,
-    onExportCitiesCalendar,
-    onExportAllCalendar,
-    onOpenPrintLayout,
-    shouldEnableReleaseNotice,
-    isShareOpen,
-    shareMode,
-    onShareModeChange,
-    activeShareUrl,
-    onCloseShare,
-    onCopyShareLink,
-    onGenerateShare,
-    isGeneratingShare,
-    isHistoryOpen,
-    onCloseHistory,
-    onHistoryGo,
-    shareStatus,
-    onCopyTrip,
-    expirationLabel,
-    tripId,
-    paywallActivationMode,
-    onPaywallActivateClick,
-    paywallOverlayUpgradeCheckoutPath,
-    showGenerationOverlay,
-    generationProgressMessage,
-    loadingDestinationSummary,
-    tripDateRange,
-    tripSpanCompactLabel,
-    pendingAuthModalStage,
-    onContinuePendingAuth,
-    isPendingAuthContinueDisabled,
-    claimConflictModalVisible,
-    claimConflictShowLoginCta,
-    claimConflictCreateSimilarPath,
-    onClaimConflictLogin,
-}) => (
-    <>
-        {isMobile && detailsPanelVisible && (
-            <Suspense fallback={null}>
-                <TripDetailsDrawer
-                    open={detailsPanelVisible}
-                    expanded={detailsPanelVisible}
-                    onOpenChange={(open) => {
-                        if (!open) onCloseDetailsDrawer();
-                    }}
-                    onExpandedChange={(expanded) => {
-                        if (expanded) {
-                            onOpenDetailsDrawer();
-                            return;
-                        }
-                        onCloseDetailsDrawer();
-                    }}
-                >
-                    {detailsPanelContent}
-                </TripDetailsDrawer>
-            </Suspense>
-        )}
-        {addActivityState.isOpen && (
-            <Suspense fallback={null}>
-                <AddActivityModal
-                    isOpen={addActivityState.isOpen}
-                    onClose={onCloseAddActivity}
-                    dayOffset={addActivityState.dayOffset}
-                    location={addActivityState.location}
-                    onAdd={onAddActivity}
-                    trip={trip}
-                    notes=""
-                />
-            </Suspense>
-        )}
-        {isAddCityModalOpen && (
-            <Suspense fallback={null}>
-                <AddCityModal isOpen={isAddCityModalOpen} onClose={onCloseAddCityModal} onAdd={onAddCity} />
-            </Suspense>
-        )}
-        {isTripInfoOpen && (
-            <Suspense fallback={<TripInfoModalLoadingFallback onClose={onCloseTripInfo} />}>
-                <TripInfoModal
-                    isOpen={isTripInfoOpen}
-                    onClose={onCloseTripInfo}
-                    tripTitle={tripTitle}
-                    isEditingTitle={isEditingTitle}
-                    editTitleValue={editTitleValue}
-                    onEditTitleValueChange={onEditTitleValueChange}
-                    onCommitTitleEdit={onCommitTitleEdit}
-                    onCancelTitleEdit={onCancelTitleEdit}
-                    onStartTitleEdit={onStartTitleEdit}
-                    canManageTripMetadata={canManageTripMetadata}
-                    canEdit={canEdit}
-                    isFavorite={isFavorite}
-                    onToggleFavorite={onToggleFavorite}
-                    isExamplePreview={isExamplePreview}
-                    tripMeta={tripMeta}
-                    ownerSummary={ownerSummary}
-                    ownerHint={ownerHint}
-                    adminMeta={adminMeta}
-                    aiMeta={aiMeta}
-                    generationState={generationState}
-                    latestGenerationAttempt={latestGenerationAttempt}
-                    canRetryGeneration={canRetryGeneration}
-                    retryDisabledReason={retryDisabledReason}
-                    isRetryingGeneration={isRetryingGeneration}
-                    retryModelId={retryModelId}
-                    onRetryModelIdChange={onRetryModelIdChange}
-                    onRetryGeneration={(modelId) => onRetryGeneration('trip_info', modelId)}
-                    onOpenBenchmarkWithSnapshot={onOpenBenchmarkWithSnapshot}
-                    canOpenBenchmarkWithSnapshot={canOpenBenchmarkWithSnapshot}
-                    retryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
-                    forkMeta={forkMeta}
-                    showAllHistory={showAllHistory}
-                    onToggleShowAllHistory={onToggleShowAllHistory}
-                    onHistoryUndo={onHistoryUndo}
-                    onHistoryRedo={onHistoryRedo}
-                    historyItems={historyModalItems}
-                    onGoToHistoryEntry={onGoToHistoryEntry}
-                    formatHistoryTime={formatHistoryTime}
-                    pendingSyncCount={pendingSyncCount}
-                    failedSyncCount={failedSyncCount}
-                    countryInfo={countryInfo}
-                    isPaywallLocked={isPaywallLocked}
-                    travelerWarnings={travelerWarnings}
-                    onExportActivitiesCalendar={onExportActivitiesCalendar}
-                    onExportCitiesCalendar={onExportCitiesCalendar}
-                    onExportAllCalendar={onExportAllCalendar}
-                    onOpenPrintLayout={onOpenPrintLayout}
-                />
-            </Suspense>
-        )}
-        {shouldEnableReleaseNotice && (
-            <Suspense fallback={null}>
-                <ReleaseNoticeDialog enabled={shouldEnableReleaseNotice} />
-            </Suspense>
-        )}
-        {isShareOpen && (
-            <Suspense fallback={null}>
-                <TripShareModal
-                    isOpen={isShareOpen}
-                    shareMode={shareMode}
-                    onShareModeChange={onShareModeChange}
-                    activeShareUrl={activeShareUrl}
-                    onClose={onCloseShare}
-                    onCopyShareLink={onCopyShareLink}
-                    onGenerateShare={onGenerateShare}
-                    isGeneratingShare={isGeneratingShare}
-                />
-            </Suspense>
-        )}
-        {isHistoryOpen && (
-            <Suspense fallback={null}>
-                <TripHistoryModal
-                    isOpen={isHistoryOpen}
-                    isExamplePreview={isExamplePreview}
-                    showAllHistory={showAllHistory}
-                    items={historyModalItems}
-                    pendingSyncCount={pendingSyncCount}
-                    failedSyncCount={failedSyncCount}
-                    onClose={onCloseHistory}
-                    onUndo={onHistoryUndo}
-                    onRedo={onHistoryRedo}
-                    onToggleShowAllHistory={onToggleShowAllHistory}
-                    onGo={onHistoryGo}
-                    formatHistoryTime={formatHistoryTime}
-                />
-            </Suspense>
-        )}
-        <TripViewHudOverlays
-            shareStatus={shareStatus}
-            onCopyTrip={onCopyTrip}
-            isPaywallLocked={isPaywallLocked}
-            expirationLabel={expirationLabel}
-            tripId={tripId}
-            paywallActivationMode={paywallActivationMode}
-            onPaywallActivateClick={onPaywallActivateClick}
-            paywallOverlayUpgradeCheckoutPath={paywallOverlayUpgradeCheckoutPath}
-            showGenerationOverlay={showGenerationOverlay}
-            generationProgressMessage={generationProgressMessage}
-            loadingDestinationSummary={loadingDestinationSummary}
-            tripDateRange={tripDateRange}
-            tripSpanCompactLabel={tripSpanCompactLabel}
-            pendingAuthModalStage={pendingAuthModalStage}
-            onContinuePendingAuth={onContinuePendingAuth}
-            isPendingAuthContinueDisabled={isPendingAuthContinueDisabled}
-            claimConflictModalVisible={claimConflictModalVisible}
-            claimConflictShowLoginCta={claimConflictShowLoginCta}
-            claimConflictCreateSimilarPath={claimConflictCreateSimilarPath}
-            onClaimConflictLogin={onClaimConflictLogin}
-        />
-    </>
+const GoogleMyMapsPanel = lazyWithRecovery('GoogleMyMapsPanel', () =>
+    import('./tripview/GoogleMyMapsPanel').then((module) => ({ default: module.GoogleMyMapsPanel }))
 );
 
 interface RenderDetailsPanelContentOptions {
@@ -919,7 +325,7 @@ const renderDetailsPanelContent = ({
     onExportActivityCalendar,
 }: RenderDetailsPanelContentOptions): React.ReactNode => (
     showSelectedCitiesPanel ? (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel…</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-muted-foreground">Loading selection panel…</div>}>
             <SelectedCitiesPanel
                 selectedCities={selectedCitiesInTimeline}
                 onClose={onCloseSelection}
@@ -930,7 +336,7 @@ const renderDetailsPanelContent = ({
             />
         </Suspense>
     ) : (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details…</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-muted-foreground">Loading details…</div>}>
             <DetailsPanel
                 item={selectedDetailItem}
                 isOpen={!!selectedItemId}
@@ -959,6 +365,12 @@ const useTripViewRender = ({
     trip,
     onUpdateTrip,
     onCommitState,
+    onAdoptAgentTripVersion,
+    agentPreviewTrip,
+    agentCanonicalTrip,
+    onAgentPreviewTrip,
+    agentSurfaceNonce = 0,
+    onAgentTripChanged,
     onOpenManager,
     onOpenSettings,
     initialViewSettings,
@@ -979,6 +391,8 @@ const useTripViewRender = ({
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
+    const tripSearch = useTripRouteSearch();
+    const writeRouteSearch = useRouteSearchWriter();
     const { t } = useTranslation('common');
     const { openLoginModal } = useLoginModal();
     const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
@@ -997,7 +411,10 @@ const useTripViewRender = ({
     const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAtRef = useRef<number>(0);
-    tripRef.current = trip;
+    // Recovery and save paths read this ref. A preview is a rendering state, so
+    // it must never be what those paths write back: that turned an applied
+    // change into a disappearing one.
+    tripRef.current = agentPreviewTrip ? (agentCanonicalTrip ?? trip) : trip;
     onUpdateTripRef.current = onUpdateTrip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
@@ -1029,6 +446,11 @@ const useTripViewRender = ({
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
     const canUseAdminGenerationOverride = isAdminFallbackView && adminOverrideEnabled && Boolean(adminAccess?.canAdminWrite);
+    const captureTripAction = useTripActionLifetime(JSON.stringify([
+        trip.id, location.pathname, tripSearch.v ?? null,
+        access?.userId ?? null, isAuthenticated, isAnonymous, canEdit,
+        isAdminFallbackView, adminOverrideEnabled, adminAccess?.canAdminWrite ?? false,
+    ]));
     const generationState = useMemo<TripGenerationState>(
         () => getTripGenerationState(trip, generationNowMs),
         [generationNowMs, trip]
@@ -1053,33 +475,11 @@ const useTripViewRender = ({
         return pendingAuthValue === true ? queueRequestId : null;
     }, [latestGenerationAttempt?.metadata]);
     const isPendingAuthGeneration = generationState === 'failed' && Boolean(pendingAuthQueueRequestId);
-    const pendingAuthClaimQueryId = useMemo(() => {
-        const claimValue = new URLSearchParams(location.search).get('claim');
-        return typeof claimValue === 'string' && claimValue.trim().length > 0
-            ? claimValue.trim()
-            : null;
-    }, [location.search]);
-    const pendingAuthClaimConflict = useMemo(
-        () => readTripClaimConflictQuery(location.search),
-        [location.search],
-    );
-    const pendingAuthLoginReturnPath = useMemo(() => {
-        const query = new URLSearchParams(location.search);
-        if (pendingAuthQueueRequestId) {
-            query.set('claim', pendingAuthQueueRequestId);
-        } else {
-            query.delete('claim');
-        }
-        query.delete('claim_conflict');
-
-        const nextSearch = query.toString();
-        return buildPathFromLocationParts({
-            pathname: location.pathname,
-            search: nextSearch ? `?${nextSearch}` : '',
-            hash: location.hash,
-        });
-    }, [location.hash, location.pathname, location.search, pendingAuthQueueRequestId]);
-    const pendingAuthClaimConflictLoginReturnPath = useMemo(
+    const pendingAuthClaimQueryId = tripSearch.claim?.trim() || null;
+    const pendingAuthClaimConflict = tripSearch.claim_conflict?.trim() || null;
+    // Both sign-in prompts return to this page with the pending claim set and
+    // any earlier conflict marker cleared.
+    const pendingAuthLoginReturnPath = useMemo(
         () => buildTripClaimLoginReturnPath(buildPathFromLocationParts({
             pathname: location.pathname,
             search: location.search,
@@ -1087,83 +487,17 @@ const useTripViewRender = ({
         }), pendingAuthQueueRequestId),
         [location.hash, location.pathname, location.search, pendingAuthQueueRequestId],
     );
-    const shouldPollGenerationState = shouldPollTripGenerationState(trip, generationNowMs);
-    useEffect(() => {
-        if (!shouldPollGenerationState) return undefined;
-        const timer = window.setInterval(() => {
-            setGenerationNowMs(Date.now());
-        }, 1_000);
-        return () => window.clearInterval(timer);
-    }, [shouldPollGenerationState, trip.id]);
-    useEffect(() => {
-        if (!DB_ENABLED) return undefined;
-        if (!shouldPollGenerationState) return undefined;
-        if (connectivitySnapshot.state === 'offline') return undefined;
-        if (tripAccess?.source === 'public_read') return undefined;
-
-        let cancelled = false;
-        let inFlight = false;
-        const poll = async () => {
-            if (cancelled || inFlight) return;
-            inFlight = true;
-            try {
-                const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
-                if (cancelled || !remote?.trip) return;
-
-                const remoteTrip = remote.trip;
-                const localTrip = tripRef.current;
-                if (shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())) {
-                    onUpdateTripRef.current(remoteTrip, { preserveUpdatedAt: true });
-                }
-            } finally {
-                inFlight = false;
-            }
-        };
-
-        void poll();
-        const timer = window.setInterval(() => {
-            void poll();
-        }, TRIP_GENERATION_POLL_INTERVAL_MS);
-        return () => {
-            cancelled = true;
-            window.clearInterval(timer);
-        };
-    }, [
-        connectivitySnapshot.state,
-        shouldPollGenerationState,
-        trip.id,
-        tripAccess?.source,
-    ]);
-    useEffect(() => {
-        if (!DB_ENABLED) return undefined;
-        if (connectivitySnapshot.state === 'offline') return undefined;
-        if (tripAccess?.source === 'public_read') return undefined;
-        if (generationState !== 'queued') return undefined;
-        if (latestGenerationAttemptOrchestration !== 'async_worker') return undefined;
-
-        let cancelled = false;
-        const kickWorker = () => {
-            if (cancelled) return;
-            void triggerTripGenerationWorker({
-                tripId: trip.id,
-                limit: 1,
-                source: 'trip_view_generation_poll_nudge',
-            });
-        };
-
-        kickWorker();
-        const timer = window.setInterval(kickWorker, TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS);
-        return () => {
-            cancelled = true;
-            window.clearInterval(timer);
-        };
-    }, [
-        connectivitySnapshot.state,
+    useTripGenerationPolling({
+        trip,
+        generationNowMs,
+        setGenerationNowMs,
         generationState,
         latestGenerationAttemptOrchestration,
-        trip.id,
-        tripAccess?.source,
-    ]);
+        connectivityState: connectivitySnapshot.state,
+        tripAccessSource: tripAccess?.source,
+        tripRef,
+        onUpdateTripRef,
+    });
     useEffect(() => () => {
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = null;
@@ -1171,7 +505,7 @@ const useTripViewRender = ({
     }, []);
     const [isResolvingPendingAuthGeneration, setIsResolvingPendingAuthGeneration] = useState(false);
     const [hasSeenPendingAuthLoadingState, setHasSeenPendingAuthLoadingState] = useState(false);
-    const autoClaimedPendingAuthQueueRequestIdRef = useRef<string | null>(null);
+    const autoClaimAttemptRef = useRef<{ requestId: string; isCurrent: () => boolean } | null>(null);
     const generationElapsedMs = useMemo(
         () => getTripGenerationElapsedMs(trip, generationNowMs),
         [generationNowMs, trip]
@@ -1179,7 +513,7 @@ const useTripViewRender = ({
     useEffect(() => {
         if (!isPendingAuthGeneration || !pendingAuthQueueRequestId) {
             setHasSeenPendingAuthLoadingState(false);
-            autoClaimedPendingAuthQueueRequestIdRef.current = null;
+            autoClaimAttemptRef.current = null;
             return;
         }
 
@@ -1367,17 +701,6 @@ const useTripViewRender = ({
         && generationElapsedMs >= TRIP_GENERATION_TIMEOUT_MS
     );
     const isPendingAuthClaimedByAnotherUser = pendingAuthClaimConflict === TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED;
-    const localeAwareCreateTripFallbackPath = useMemo(() => {
-        const locale = extractLocaleFromPath(location.pathname) || 'en';
-        return buildLocalizedCreateTripPath(locale);
-    }, [location.pathname]);
-    const createSimilarTripPath = useMemo(() => (
-        buildCreateSimilarTripPath({
-            trip,
-            pathname: location.pathname,
-            source: 'trip_claim_conflict',
-        }) || localeAwareCreateTripFallbackPath
-    ), [localeAwareCreateTripFallbackPath, location.pathname, trip]);
     const pendingAuthModalStage: 'hidden' | 'loading' | 'locked' = !isPendingAuthGeneration || isPendingAuthClaimedByAnotherUser
         ? 'hidden'
         : (isResolvingPendingAuthGeneration || !hasSeenPendingAuthLoadingState)
@@ -1393,7 +716,7 @@ const useTripViewRender = ({
     );
     const ownerUsersUrl = useMemo(() => {
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
-        return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
+        return `/admin/users?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
     }, [adminAccess?.ownerId, isAdminFallbackView]);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
@@ -1505,8 +828,12 @@ const useTripViewRender = ({
 
         if (isAuthenticated && !isAnonymous) {
             setIsResolvingPendingAuthGeneration(true);
+            const isCurrent = captureTripAction();
             try {
+                const { processQueuedTripGenerationAfterAuth } = await import('../services/tripGenerationQueueService');
+                if (!isCurrent()) return;
                 const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
+                if (!isCurrent()) return;
                 registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_trip_view');
                 if (!isMobileViewport && !suppressToasts) {
                     showAppToast({
@@ -1517,6 +844,7 @@ const useTripViewRender = ({
                 }
                 navigate(`/trip/${result.tripId}`, { replace: true });
             } catch (error) {
+                if (!isCurrent()) return;
                 if (isQueuedTripGenerationClaimedByAnotherUserError(error)) {
                     navigate(buildTripClaimConflictPath(buildPathFromLocationParts({
                         pathname: location.pathname,
@@ -1534,14 +862,7 @@ const useTripViewRender = ({
                     }
 
                     if (pendingAuthClaimQueryId === pendingAuthQueueRequestId) {
-                        const query = new URLSearchParams(location.search);
-                        query.delete('claim');
-                        const nextSearch = query.toString();
-                        navigate(buildPathFromLocationParts({
-                            pathname: location.pathname,
-                            search: nextSearch ? `?${nextSearch}` : '',
-                            hash: location.hash,
-                        }), { replace: true });
+                        writeRouteSearch(previous => ({ ...previous, claim: undefined }));
                     }
                     return;
                 }
@@ -1549,10 +870,10 @@ const useTripViewRender = ({
                     showAppToast({
                         tone: 'warning',
                         title: 'Generation unavailable',
-                        description: error instanceof Error ? error.message : 'Could not start trip generation.',
+                        description: 'Could not start trip generation.',
                     });
                 }
-                autoClaimedPendingAuthQueueRequestIdRef.current = null;
+                autoClaimAttemptRef.current = null;
             } finally {
                 setIsResolvingPendingAuthGeneration(false);
             }
@@ -1565,6 +886,7 @@ const useTripViewRender = ({
             reloadOnSuccess: true,
         });
     }, [
+        captureTripAction,
         isAnonymous,
         isAuthenticated,
         isMobileViewport,
@@ -1586,11 +908,13 @@ const useTripViewRender = ({
         if (!isAuthenticated || isAnonymous) return;
         if (pendingAuthClaimQueryId !== pendingAuthQueueRequestId) return;
         if (isResolvingPendingAuthGeneration) return;
-        if (autoClaimedPendingAuthQueueRequestIdRef.current === pendingAuthQueueRequestId) return;
+        if (autoClaimAttemptRef.current?.requestId === pendingAuthQueueRequestId
+            && autoClaimAttemptRef.current.isCurrent()) return;
 
-        autoClaimedPendingAuthQueueRequestIdRef.current = pendingAuthQueueRequestId;
+        autoClaimAttemptRef.current = { requestId: pendingAuthQueueRequestId, isCurrent: captureTripAction() };
         void handleResolvePendingAuthGeneration();
     }, [
+        captureTripAction,
         handleResolvePendingAuthGeneration,
         isAnonymous,
         isAuthenticated,
@@ -1603,10 +927,10 @@ const useTripViewRender = ({
     const handlePendingAuthClaimConflictLogin = useCallback(() => {
         openLoginModal({
             source: 'trip_generation_claim_conflict_modal',
-            nextPath: pendingAuthClaimConflictLoginReturnPath,
+            nextPath: pendingAuthLoginReturnPath,
             reloadOnSuccess: true,
         });
-    }, [openLoginModal, pendingAuthClaimConflictLoginReturnPath]);
+    }, [openLoginModal, pendingAuthLoginReturnPath]);
 
     const {
         canUseAuthenticatedSession,
@@ -1649,13 +973,17 @@ const useTripViewRender = ({
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+    const [isTripAgentOpen, setIsTripAgentOpen] = useState(() => readTripAgentOpenState());
+    // Hides the recovery banner in this session as soon as the choice is made,
+    // without waiting for the next sync snapshot to report the cleared backup.
+    const [resolvedConflictTripId, setResolvedConflictTripId] = useState<string | null>(null);
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
     const mapColorMode = normalizeMapColorMode(trip.mapColorMode);
     const allowMapColorModeControls = useMemo(
         () => canEdit && isInternalMapColorModeControlEnabled(),
         [canEdit, location.search]
     );
-    const { viewMode, setViewMode } = useTripViewModeState();
+    const { viewMode, setViewMode } = useTripViewModeState(tripSearch.mode === 'print' ? 'print' : 'planner');
     const currentUrl = location.pathname + location.search;
     const {
         isHistoryOpen,
@@ -1704,6 +1032,8 @@ const useTripViewRender = ({
         setTimelineHeight,
         detailsWidth,
         setDetailsWidth,
+        mapCustomization,
+        setMapCustomization,
     } = useTripLayoutControlsState({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
@@ -1849,6 +1179,9 @@ const useTripViewRender = ({
                 { label: 'Data: Restored server backup' }
             );
         }
+        // The decision is made, so the backup — and the banner offering it — goes.
+        resolveConflictBackupsForTrip(trip.id);
+        setResolvedConflictTripId(trip.id);
         showToast(t('connectivity.toast.serverBackupRestored'), {
             tone: 'neutral',
             title: t('connectivity.toast.title'),
@@ -1916,8 +1249,9 @@ const useTripViewRender = ({
         zoomBehavior,
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
-        timelineHeight: Math.round(timelineHeight)
-    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
+        timelineHeight: Math.round(timelineHeight),
+        mapCustomization,
+    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight, mapCustomization]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -1984,6 +1318,7 @@ const useTripViewRender = ({
             return;
         }
 
+        const isCurrent = captureTripAction();
         retryMutationInFlightRef.current = true;
         setIsRetryingGeneration(true);
         retryGenerationTabFeedbackSessionRef.current?.cancel();
@@ -1991,12 +1326,15 @@ const useTripViewRender = ({
         pendingRetryGenerationStateRef.current = true;
         let keepRetryFeedbackActive = false;
         try {
+            const { retryTripGenerationWithDefaultModel } = await import('../services/tripGenerationRetryService');
+            if (!isCurrent()) return;
             const result = await retryTripGenerationWithDefaultModel(baseTrip, {
                 source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
                 contextSource: 'trip_retry',
                 modelId: selectedRetryModelId,
                 adminOverride: isAdminFallbackView && adminOverrideEnabled,
                 onTripUpdate: (updatedTrip) => {
+                    if (!isCurrent()) return;
                     if (shouldPollTripGenerationState(updatedTrip, Date.now())) {
                         pendingRetryGenerationStateRef.current = false;
                     }
@@ -2004,6 +1342,7 @@ const useTripViewRender = ({
                 },
             });
 
+            if (!isCurrent()) return;
             if (onCommitState) {
                 onCommitState(
                     result.trip,
@@ -2025,14 +1364,6 @@ const useTripViewRender = ({
                         t('tripView.generation.retry.queuedTitle'),
                     ),
                 );
-            } else if (result.state === 'succeeded') {
-                retryGenerationTabFeedbackSessionRef.current?.complete('success', {
-                    title: result.trip.title,
-                });
-                showToast(t('tripView.generation.retry.completed'), {
-                    tone: 'add',
-                    title: t('tripView.generation.retry.completedTitle'),
-                });
             } else {
                 pendingRetryGenerationStateRef.current = false;
                 retryGenerationTabFeedbackSessionRef.current?.complete('error');
@@ -2041,14 +1372,16 @@ const useTripViewRender = ({
                     title: t('tripView.generation.retry.failedTitle'),
                 });
             }
-        } catch (error) {
+        } catch {
+            if (!isCurrent()) return;
             pendingRetryGenerationStateRef.current = false;
             retryGenerationTabFeedbackSessionRef.current?.complete('error');
-            showToast(error instanceof Error ? error.message : t('tripView.generation.retry.unexpected'), {
+            showToast(t('tripView.generation.retry.unexpected'), {
                 tone: 'neutral',
                 title: t('tripView.generation.retry.failedTitle'),
             });
         } finally {
+            if (!isCurrent()) retryGenerationTabFeedbackSessionRef.current?.cancel();
             setIsRetryingGeneration(false);
             retryMutationInFlightRef.current = false;
             if (!keepRetryFeedbackActive) {
@@ -2057,6 +1390,7 @@ const useTripViewRender = ({
             }
         }
     }, [
+        captureTripAction,
         adminAccess?.canAdminWrite,
         adminOverrideEnabled,
         canEdit,
@@ -2341,8 +1675,8 @@ const useTripViewRender = ({
     }, [displayTrip.items, displayTrip.title]);
     const effectiveMapFocusQuery = useMemo(() => {
         const queries = buildTripMapLocationContextQueries(trip, initialMapFocusQuery);
-        return queries.join(' || ');
-    }, [initialMapFocusQuery, trip]);
+        return (isGenerationInFlight ? queries.slice(0, 1) : queries).join(' || ');
+    }, [initialMapFocusQuery, isGenerationInFlight, trip]);
     const showGenerationOverlay = isTripDetailRoute
         && isGenerationInFlight
         && !isAdminFallbackView
@@ -2588,7 +1922,10 @@ const useTripViewRender = ({
         isHistoryOpen,
         isTripInfoOpen,
         autoOpenOnSelect: !isMobileViewport,
-        clearSelectionOnClose: isMobileViewport,
+        // The mobile planner renders a day's detail inline, so there is no
+        // drawer to close — and no close that could drop the selected day.
+        detailsPanelEnabled: !isMobileViewport,
+        clearSelectionOnClose: false,
         setPendingLabel,
         handleUpdateItems,
     });
@@ -2599,6 +1936,14 @@ const useTripViewRender = ({
 
     const handleMapActivitySelect = useCallback((activityId: string) => {
         handleTimelineSelect(activityId, { isCity: false });
+    }, [handleTimelineSelect]);
+
+    /**
+     * Letting go of a focused city. Selecting nothing is what brings the other
+     * cities, their labels and the connecting lines back onto the map.
+     */
+    const handleMapClearSelection = useCallback(() => {
+        handleTimelineSelect(null);
     }, [handleTimelineSelect]);
 
     const {
@@ -2634,6 +1979,196 @@ const useTripViewRender = ({
         safeUpdateTrip,
         scheduleCommit,
     });
+
+    // Which basemap is actually drawing, as opposed to which one was asked for:
+    // a missing Mapbox token falls the runtime back to Google, and the sheet
+    // says so rather than offering controls that would do nothing.
+    const { mapboxAccessToken } = useMapRuntime();
+    /**
+     * Resolved from the module store rather than from the context: this
+     * component renders `<GoogleMapsLoader>` inside its own JSX, so its own
+     * `useMapRuntime()` call sits outside the provider and would always read
+     * the fallback.
+     */
+    const activeRendererChoice = useSyncExternalStore(
+        subscribeToMapRendererChoice,
+        getMapRendererChoice,
+        () => 'auto' as const,
+    );
+    const activeMapRenderer = useMemo(() => getClientMapRuntimeResolution(
+        activeRendererChoice === 'auto'
+            ? { override: readMapRuntimeAdminOverride() }
+            : {
+                override: { selection: { renderer: activeRendererChoice } },
+                overrideSource: 'query',
+            },
+    ).effectiveSelection.renderer, [activeRendererChoice]);
+    const isMapboxRendererAvailable = mapboxAccessToken.trim().length > 0;
+
+    const {
+        preferences: mapPreferences,
+        applyPatch: applyMapPreferencePatch,
+        reset: resetMapPreferences,
+        saveAsDefault: saveMapPreferencesAsDefault,
+        applySavedPreset: applySavedMapPreset,
+        hasSavedPreset: hasSavedMapPreset,
+        isSavedPresetActive: isSavedMapPresetActive,
+        isCustomizeOpen: isMapCustomizeOpen,
+        openCustomize: openMapCustomize,
+        closeCustomize: closeMapCustomize,
+    } = useTripMapCustomizationState({
+        initialViewSettings,
+        mapStyle,
+        setMapStyle,
+        routeMode,
+        setRouteMode,
+        showCityNames,
+        setShowCityNames,
+        colorMode: mapColorMode,
+        setColorMode: handleMapColorModeChange,
+        customization: mapCustomization,
+        setCustomization: setMapCustomization,
+    });
+    // The customize panel loads on its first open and then stays mounted, so
+    // its tab and drawer state survive closing exactly as before.
+    const [hasOpenedMapCustomize, setHasOpenedMapCustomize] = useState(isMapCustomizeOpen);
+    if (isMapCustomizeOpen && !hasOpenedMapCustomize) setHasOpenedMapCustomize(true);
+
+    // Every customize change is a deliberate one, so it counts as a manual view
+    // change and is what makes the look stick to the trip.
+    const handleMapPreferenceChange = useCallback((patch: Partial<typeof mapPreferences>) => {
+        markManualViewChange();
+        applyMapPreferencePatch(patch);
+    }, [applyMapPreferencePatch, markManualViewChange]);
+
+    /**
+     * The renderer lives above this component, in the map runtime provider, so
+     * the traveller's stored choice has to be pushed up to it — including on
+     * mount, when a trip opens carrying a basemap it was saved with.
+     */
+    useEffect(() => {
+        setMapRendererChoice(mapPreferences.renderer);
+    }, [mapPreferences.renderer]);
+
+
+    /**
+     * Stable identity: this object reaches a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    /**
+     * The device's own light/dark setting, watched so `auto` follows a theme
+     * change without a reload. An environment without `matchMedia` — an older
+     * embedded webview, or a server render — simply stays light.
+     */
+    const prefersDarkScheme = useSyncExternalStore(
+        useCallback((onChange: () => void) => {
+            if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+            const query = window.matchMedia('(prefers-color-scheme: dark)');
+            query.addEventListener('change', onChange);
+            return () => query.removeEventListener('change', onChange);
+        }, []),
+        () => (typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+            : false),
+        () => false,
+    );
+
+    /**
+     * Google renders from the six named style arrays and has no equivalent of
+     * the axes, so every combination has to land on one of them. Mapbox takes
+     * the axes directly.
+     */
+    const effectiveMapStyle = useMemo(() => resolveMapStyleFromAxes({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: mapPreferences.lightPreset,
+        prefersDarkScheme,
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+    /**
+     * Stable identity: these objects reach a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    const mapLookAxes = useMemo(() => ({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: resolveEffectiveLightPreset(mapPreferences.lightPreset, prefersDarkScheme),
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+/**
+     * The look is edited as axes, but a trip still stores a named `mapStyle`:
+     * it is what Google renders from and what every reader written before the
+     * axes existed understands. Kept in step here rather than in the customize
+     * hook so the flat field keeps its own setter, persistence and sync.
+     */
+    useEffect(() => {
+        if (effectiveMapStyle === mapStyle) return;
+        setMapStyle(effectiveMapStyle);
+    }, [effectiveMapStyle, mapStyle, setMapStyle]);
+
+    const mapBasemapDetail = useMemo(() => ({
+        showPlaceLabels: mapPreferences.showPlaceLabels,
+        showRoadLabels: mapPreferences.showRoadLabels,
+        showTransitLabels: mapPreferences.showTransitLabels,
+        showPoiLabels: mapPreferences.showPoiLabels,
+        showRoadsAndTransit: mapPreferences.showRoadsAndTransit,
+        // Footpaths are a sub-layer of roads: with roads off they would draw a
+        // ghost path network over nothing.
+        showPedestrianRoads: mapPreferences.showRoadsAndTransit && mapPreferences.showPedestrianRoads,
+        showAdminBoundaries: mapPreferences.showAdminBoundaries,
+        show3dObjects: mapPreferences.show3dObjects,
+    }), [
+        mapPreferences.show3dObjects,
+        mapPreferences.showAdminBoundaries,
+        mapPreferences.showPedestrianRoads,
+        mapPreferences.showPlaceLabels,
+        mapPreferences.showPoiLabels,
+        mapPreferences.showRoadLabels,
+        mapPreferences.showRoadsAndTransit,
+        mapPreferences.showTransitLabels,
+    ]);
+
+    /**
+     * Which day of the trip today is. Null outside the trip's own dates: before
+     * it starts nothing is past, and after it ends everything is, either of
+     * which would make "fade past days" fade the whole map or nothing at all.
+     */
+    const todayDayOffset = useMemo<number | null>(() => {
+        const startDate = displayTrip.startDate;
+        if (!startDate) return null;
+        const start = new Date(`${startDate.slice(0, 10)}T00:00:00Z`);
+        if (Number.isNaN(start.getTime())) return null;
+
+        const now = new Date();
+        const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const offset = Math.floor((todayUtc - start.getTime()) / 86400000);
+        if (!Number.isFinite(offset) || offset < 0) return null;
+
+        const lastDay = displayTrip.items.reduce(
+            (latest, item) => Math.max(latest, item.startDateOffset + Math.max(item.duration, 0)),
+            0,
+        );
+        return offset > lastDay ? null : offset;
+    }, [displayTrip.items, displayTrip.startDate]);
+
+    const mapTripOverlay = useMemo(() => ({
+        dimPastDays: mapPreferences.dimPastDays,
+        showRouteArrows: mapPreferences.showRouteArrows,
+        dashedRoutes: mapPreferences.dashedRoutes,
+        showTraffic: mapPreferences.showTraffic,
+        showTransitLines: mapPreferences.showTransitLines,
+    }), [
+        mapPreferences.dashedRoutes,
+        mapPreferences.dimPastDays,
+        mapPreferences.showRouteArrows,
+        mapPreferences.showTraffic,
+        mapPreferences.showTransitLines,
+    ]);
+
+    const handleMapPreferenceReset = useCallback(() => {
+        markManualViewChange();
+        resetMapPreferences();
+    }, [markManualViewChange, resetMapPreferences]);
 
     const {
         handleForceFill,
@@ -2885,8 +2420,9 @@ const useTripViewRender = ({
     const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
     const latestConflictBackupEntry = useMemo(() => {
         if (!showOwnedTripConnectivityStatus) return null;
+        if (resolvedConflictTripId === trip.id) return null;
         return getLatestConflictBackupForTrip(trip.id);
-    }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
+    }, [resolvedConflictTripId, showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
     const isAdminSession = access?.role === 'admin';
     const ownerSummary = useMemo(() => {
         const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
@@ -2948,6 +2484,55 @@ const useTripViewRender = ({
         return null;
     }, [adminOverrideEnabled, tripAccess?.source]);
 
+    /**
+     * Sets how a leg between two stays is travelled, creating the travel item
+     * when the leg has never had one.
+     *
+     * A generated trip can carry stays with no leg between them at all — the
+     * mobile strip still shows the journey, and it has to be possible to give
+     * it a transport from there rather than only being able to edit one that
+     * already exists.
+     */
+    const handleSetLegTransport = useCallback((
+        leg: { fromCityId: string; toCityId: string; travelItemId: string | null },
+        mode: string,
+    ) => {
+        if (!canEdit) return;
+        const nextMode = normalizeTransportMode(mode);
+        const modeTitle = `${nextMode.charAt(0).toUpperCase()}${nextMode.slice(1)} Travel`;
+
+        if (leg.travelItemId) {
+            const existing = trip.items.find((candidate) => candidate.id === leg.travelItemId);
+            if (!existing) return;
+            handleUpdateItem(leg.travelItemId, {
+                type: 'travel',
+                transportMode: nextMode,
+                title: modeTitle,
+                color: TRAVEL_COLOR,
+                duration: Math.max(0.1, existing.duration),
+            });
+            return;
+        }
+
+        const fromCity = trip.items.find((candidate) => candidate.id === leg.fromCityId);
+        const toCity = trip.items.find((candidate) => candidate.id === leg.toCityId);
+        if (!fromCity || !toCity) return;
+
+        const newItem: ITimelineItem = {
+            id: `travel-new-${Date.now()}`,
+            type: 'travel',
+            title: modeTitle,
+            description: `Travel from ${fromCity.title} to ${toCity.title}`,
+            transportMode: nextMode,
+            color: TRAVEL_COLOR,
+            startDateOffset: fromCity.startDateOffset + fromCity.duration,
+            duration: 0.2,
+        };
+        setPendingLabel('Data: Added transport');
+        handleUpdateItems([...trip.items, newItem]);
+        setSelectedItemId(newItem.id);
+    }, [canEdit, handleUpdateItem, handleUpdateItems, setPendingLabel, setSelectedItemId, trip.items]);
+
     const handleTimelineTaskToggle = useCallback((itemId: string, taskLineNumber: number, checked: boolean) => {
         const item = trip.items.find((candidate) => candidate.id === itemId);
         if (!item || typeof item.description !== 'string') return;
@@ -2956,8 +2541,140 @@ const useTripViewRender = ({
         handleUpdateItem(itemId, { description: nextDescription });
     }, [handleUpdateItem, trip.items]);
 
+    // Read once for the deep link, then owned by React.
+    const [isDiscoverOpen, setDiscoverOpen] = useState(() => tripSearch.discover === '1');
+    const [discoverInitialTab, setDiscoverInitialTab] = useState<'discover' | 'saved'>('discover');
+    // Keyed by trip, so switching trips in the same view reads the new trip's choice.
+    const [ideaLayer, setIdeaLayer] = useState(() => ({ tripId: trip.id, visible: readTripIdeaLayerVisible(trip.id) }));
+    const showIdeaMarkers = ideaLayer.tripId === trip.id ? ideaLayer.visible : readTripIdeaLayerVisible(trip.id);
+
+    const discoverCountryCodes = useMemo(() => {
+        const codes = new Set<string>();
+        displayTrip.items.forEach((item) => {
+            if (item.type === 'city' && item.countryCode) codes.add(item.countryCode.toUpperCase());
+        });
+        return Array.from(codes);
+    }, [displayTrip.items]);
+
+    const discoverDays = useMemo(
+        () => buildMobileDayPlan(displayTrip, { locale: appLanguage }),
+        [appLanguage, displayTrip],
+    );
+
+    /**
+     * Saved ideas are trip data: `persist` alone only reaches this browser's
+     * copy, and the next load from the database replaced it without them. The
+     * commit is what writes the database, exactly as for any item edit.
+     * No toast: keep / skip is a stream of small decisions.
+     */
+    const commitRecommendationState = useCallback((
+        next: ITripRecommendationState,
+        label = 'Data: Updated saved ideas',
+    ) => {
+        markUserEdit();
+        setPendingLabel(label);
+        const updatedTrip: ITrip = { ...tripRef.current, recommendationState: next, updatedAt: Date.now() };
+        safeUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings, { skipToast: true });
+    }, [currentViewSettings, markUserEdit, safeUpdateTrip, scheduleCommit, setPendingLabel, tripRef]);
+
+    const handleRecommendationStateChange = useCallback((next: ITripRecommendationState) => {
+        commitRecommendationState(next);
+    }, [commitRecommendationState]);
+
+    /**
+     * What the trip and this device know together, as the ideas deck reads it.
+     * Ideas saved before their commit reached the database live only on the
+     * device, and the map must still show them.
+     */
+    const mergedIdeaState = useMemo(
+        () => mergeRecommendationState(displayTrip.recommendationState, readStoredRecommendationState(trip.id)),
+        [displayTrip.recommendationState, trip.id],
+    );
+
+    // Ideas saved on this device whose commit never reached the database
+    // (the ideas deck and early imports only wrote this browser's copy) are
+    // written back once, when an editable trip opens here.
+    const repairedIdeasTripIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!canEdit || isExamplePreview || agentPreviewTrip) return;
+        if (repairedIdeasTripIdRef.current === trip.id) return;
+        const tripCopyCount = trip.recommendationState?.saved?.length ?? 0;
+        if (mergedIdeaState.saved.length <= tripCopyCount) return;
+        repairedIdeasTripIdRef.current = trip.id;
+        commitRecommendationState(mergedIdeaState, 'Data: Saved ideas kept on this device');
+    }, [agentPreviewTrip, canEdit, commitRecommendationState, isExamplePreview, mergedIdeaState, trip.id, trip.recommendationState]);
+
+    const handleShowIdeaMarkersChange = useCallback((enabled: boolean) => {
+        setIdeaLayer({ tripId: trip.id, visible: enabled });
+        writeTripIdeaLayerVisible(trip.id, enabled);
+        trackEvent('trip_view__map_idea_markers--toggle', { trip_id: trip.id, active: enabled });
+    }, [trip.id]);
+
+    const myMapsActions = useGoogleMyMapsActions({
+        trip,
+        displayTrip,
+        tripRef,
+        appLanguage,
+        ideaState: mergedIdeaState,
+        commitRecommendationState,
+        // Someone who just imported a map wants to see it on the map.
+        onIdeasImported: () => handleShowIdeaMarkersChange(true),
+    });
+    const hasKeptIdeas = myMapsActions.keptIdeaIds.length > 0;
+
+    const ideaMarkers = useMemo(
+        () => buildMapIdeaMarkers(mergedIdeaState.saved),
+        [mergedIdeaState],
+    );
+
+    const openDiscover = useCallback((tab: 'discover' | 'saved') => {
+        setDiscoverInitialTab(tab);
+        setDiscoverOpen(true);
+    }, []);
+
+    const handleIdeaAction = useCallback((ideaId: string, action: IdeaMapAction) => {
+        const review = action === 'save' ? 'saved' : action === 'unsave' ? 'pending' : 'skipped';
+        trackEvent(`trip_view__idea_review--${action === 'save' ? 'keep' : action}`, {
+            trip_id: trip.id,
+            recommendation_id: ideaId,
+            source: 'map_popup',
+        });
+        const next = setIdeaReview(mergedIdeaState, ideaId, review);
+        writeStoredRecommendationState(trip.id, next);
+        commitRecommendationState(next);
+    }, [commitRecommendationState, mergedIdeaState, trip.id]);
+
+    const tripInfoCities = useMemo(
+        () => displayTrip.items.filter((item) => item.type === 'city'),
+        [displayTrip.items],
+    );
+
+    const tripInfoMyMapsPanel = (
+        <Suspense fallback={null}>
+            <GoogleMyMapsPanel
+                tripId={trip.id}
+                canEdit={canEdit}
+                cities={tripInfoCities}
+                language={appLanguage}
+                keptIdeaIds={myMapsActions.keptIdeaIds}
+                activityTitles={myMapsActions.activityTitles}
+                onExport={myMapsActions.exportKml}
+                onImportIdeas={myMapsActions.importIdeas}
+                onOpenIdeas={() => {
+                    closeTripInfoModal();
+                    openDiscover('saved');
+                }}
+            />
+        </Suspense>
+    );
+
     const timelineCanvas = (
         <TripTimelineCanvas
+            // A trip replaced from outside the planner (agent apply, revert, or a
+            // preview toggle) rebuilds the canvas: its day geometry is measured,
+            // and a swapped-in trip alone left the calendar showing the old one.
+            key={`timeline-${agentSurfaceNonce}-${agentPreviewTrip ? 'preview' : 'live'}`}
             timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
@@ -2974,7 +2691,7 @@ const useTripViewRender = ({
             onSwapSelectedCities={handleReverseSelectedCities}
             routeStatusById={routeStatusById}
             pixelsPerDay={pixelsPerDay}
-            enableExampleSharedTransition={useExampleSharedTransition}
+            enableExampleSharedTransition={Boolean(useExampleSharedTransition)}
             selectionVisibilityKey={paneGeometrySyncKey}
             isDetailsPanelVisible={detailsPanelVisible}
             onNavigatePreviousCity={() => handleNavigateSelectedCity('previous')}
@@ -3008,43 +2725,86 @@ const useTripViewRender = ({
         () => (selectedItemId ? routeStatusById[selectedItemId] : undefined),
         [routeStatusById, selectedItemId]
     );
-    const handleTripCalendarExport = useCallback((
-        scope: TripCalendarExportScope,
-        source: 'details_panel' | 'trip_info_modal' | 'print_view',
-        activityId?: string,
-    ) => {
-        const bundle = buildTripCalendarExport({
-            trip: displayTrip,
-            scope,
-            activityId,
+    const tripAgentContextRefs = useMemo(
+        () => buildTripAgentContextRefs(trip, selectedItemId, selectedCityIds),
+        [selectedCityIds, selectedItemId, trip]
+    );
+    // Rollout state, so the launcher never offers a panel the server refuses.
+    const isTripAgentRolledOut = useTripAgentAvailability(access?.role === 'admin');
+    const isTripAgentLocked = !DB_ENABLED
+        || !isAuthenticated
+        || isAnonymous
+        || !canEdit
+        || access?.entitlements.canUseTripAgent === false
+        || !onAdoptAgentTripVersion;
+    // The panel sits at the logical end, which is the left edge in Persian and
+    // Urdu; the floating map reserves that side instead of being switched off.
+    const isRtlAppLanguage = appLanguage === 'fa' || appLanguage === 'ur';
+    /**
+     * Adopts a trip the agent panel produced locally (a revert, a redo, or a
+     * re-apply of a reviewed set) as one new version, and refreshes the planner
+     * surface so the calendar rebuilds its measured geometry.
+     */
+    const adoptAgentTrip = useCallback((nextTrip: ITrip, label: string, changeSetId?: string) => {
+        onAdoptAgentTripVersion?.({
+            trip: { ...nextTrip, updatedAt: Date.now() },
+            versionId: '',
+            label,
+            changeSetId,
         });
-        if (!bundle) return;
-        const downloaded = downloadTripCalendarExport(bundle);
-        if (!downloaded) return;
+        onAgentTripChanged?.();
+    }, [onAdoptAgentTripVersion, onAgentTripChanged]);
 
-        trackEvent(TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE[scope], {
+    const openTripAgent = useCallback(() => {
+        trackEvent('trip_agent__launcher--open', {
             trip_id: trip.id,
-            source,
-            event_count: bundle.eventCount,
-            ...(activityId ? { item_id: activityId } : {}),
+            locked: isTripAgentLocked,
+            context_count: tripAgentContextRefs.length,
         });
-    }, [displayTrip, trip.id]);
-
-    const handleExportSelectedActivityCalendar = useCallback((itemId: string) => {
-        handleTripCalendarExport('activity', 'details_panel', itemId);
-    }, [handleTripCalendarExport]);
-
-    const handleExportActivitiesCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
-        handleTripCalendarExport('activities', source);
-    }, [handleTripCalendarExport]);
-
-    const handleExportCitiesCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
-        handleTripCalendarExport('cities', source);
-    }, [handleTripCalendarExport]);
-
-    const handleExportAllCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
-        handleTripCalendarExport('all', source);
-    }, [handleTripCalendarExport]);
+        if (isTripAgentLocked) {
+            openLoginModal({
+                source: 'trip_agent_launcher',
+                nextPath: buildPathFromLocationParts({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                }),
+                reloadOnSuccess: true,
+            });
+            return;
+        }
+        prefetchTripAgent(trip.id);
+        setIsTripAgentOpen(true);
+        writeTripAgentOpenState(true);
+    }, [isTripAgentLocked, location.hash, location.pathname, location.search, openLoginModal, trip.id, tripAgentContextRefs.length]);
+    // Hover, focus and press all come before the click, so the chat chunk and
+    // the trip's chat are usually on their way by the time the panel opens.
+    const warmTripAgent = useCallback(() => {
+        if (isTripAgentLocked) return;
+        prefetchTripAgent(trip.id);
+    }, [isTripAgentLocked, trip.id]);
+    // Fetch the chat chunk while the page is idle. The chat itself is not
+    // loaded ahead of an intent: that request touches the database.
+    useEffect(() => {
+        if (!isTripAgentRolledOut || isTripAgentLocked || isTripAgentOpen) return;
+        if (typeof window === 'undefined') return;
+        const warm = () => {
+            void loadTripAgentChatSessionModule().catch(() => undefined);
+            preloadTripAgentTranslations();
+        };
+        if (typeof window.requestIdleCallback === 'function') {
+            const handle = window.requestIdleCallback(warm, { timeout: 5000 });
+            return () => window.cancelIdleCallback(handle);
+        }
+        const timer = window.setTimeout(warm, 2500);
+        return () => window.clearTimeout(timer);
+    }, [isTripAgentLocked, isTripAgentOpen, isTripAgentRolledOut]);
+    const {
+        handleExportSelectedActivityCalendar,
+        handleExportActivitiesCalendar,
+        handleExportCitiesCalendar,
+        handleExportAllCalendar,
+    } = useTripCalendarExport({ displayTrip, tripId: trip.id });
 
     const detailsPanelContent = renderDetailsPanelContent({
         showSelectedCitiesPanel,
@@ -3074,7 +2834,7 @@ const useTripViewRender = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-muted-foreground">Preparing print layout…</div>}>
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}
@@ -3089,10 +2849,17 @@ const useTripViewRender = ({
         );
     }
 
+    /*
+     * The runtime provider, not the loader: the planner must never be
+     * re-parented. The Google Maps script is mounted by `GoogleMapsApiGate`
+     * around the map itself, which `isMapBootstrapEnabled` already defers, so
+     * the deferral is unchanged and nothing above the map is remounted when it
+     * finally starts.
+     */
     return (
-        <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
+        <MapRuntimeProvider language={appLanguage}>
             <div
-                className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
+                className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900 dark:selection:bg-accent-400/12 dark:selection:text-accent-200"
                 data-tf-handoff-ready="true"
             >
                 
@@ -3100,7 +2867,7 @@ const useTripViewRender = ({
                     isMobile={isMobile}
                     tripTitle={trip.title}
                     tripSummary={tripSummary}
-                    titleViewTransitionName={titleViewTransitionName}
+                    titleViewTransitionName={titleViewTransitionName ?? null}
                     canManageTripMetadata={canManageTripMetadata}
                     onHeaderAuthAction={() => {
                         void handleHeaderAuthAction();
@@ -3127,8 +2894,8 @@ const useTripViewRender = ({
                     adminOverrideEnabled={adminOverrideEnabled}
                     canEnableAdminOverride={canEnableAdminOverride}
                     ownerUsersUrl={ownerUsersUrl}
-                    ownerEmail={adminAccess?.ownerEmail}
-                    ownerId={adminAccess?.ownerId}
+                    ownerEmail={adminAccess?.ownerEmail ?? undefined}
+                    ownerId={adminAccess?.ownerId ?? undefined}
                     isTripLockedByArchive={isTripLockedByArchive}
                     isTripLockedByExpiry={isTripLockedByExpiry}
                     hasLoadingItems={hasLoadingItems}
@@ -3144,7 +2911,7 @@ const useTripViewRender = ({
                     }}
                     tripExpiresAtMs={tripExpiresAtMs}
                     shouldShowExpirationBanner={shouldShowExpirationBanner}
-                    isExampleTrip={trip.isExample}
+                    isExampleTrip={Boolean(trip.isExample)}
                     isPaywallLocked={isPaywallLocked}
                     expirationLabel={expirationLabel}
                     expirationRelativeLabel={expirationRelativeLabel}
@@ -3191,6 +2958,7 @@ const useTripViewRender = ({
                         void handleRetryGeneration('trip_strip');
                     }}
                     exampleTripBanner={exampleTripBanner}
+                    isAgentLauncherVisible={isTripAgentRolledOut && !isTripAgentOpen}
                 />
 
                 {/* Main Content */}
@@ -3198,9 +2966,13 @@ const useTripViewRender = ({
                     <TripViewPlannerWorkspace
                         isPaywallLocked={isPaywallLocked}
                         isMobile={isMobile}
-                        isMobileMapExpanded={isMobileMapExpanded}
-                        onCloseMobileMap={() => setIsMobileMapExpanded(false)}
-                        onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
+                        trip={displayTrip}
+                        onSelectTimelineItem={handleTimelineSelect}
+                        onUpdateTimelineItem={canEdit ? handleUpdateItem : undefined}
+                        onSetLegTransport={canEdit ? handleSetLegTransport : undefined}
+                        onAddTimelineActivity={canEdit ? handleOpenAddActivity : undefined}
+                        onOpenDiscover={discoverCountryCodes.length > 0 || hasKeptIdeas ? () => openDiscover('discover') : undefined}
+                        appLanguage={appLanguage}
                         timelineCanvas={timelineCanvas}
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
@@ -3271,6 +3043,26 @@ const useTripViewRender = ({
                         selectedItemId={selectedItemId}
                         onMapCitySelect={handleMapCitySelect}
                         onMapActivitySelect={handleMapActivitySelect}
+                        onMapClearSelection={handleMapClearSelection}
+                        cityFocusMode={mapPreferences.cityFocusMode}
+                        onOpenMapCustomize={openMapCustomize}
+                        showActivityMarkers={mapPreferences.showActivityMarkers}
+                        onShowActivityMarkersChange={(enabled) => handleMapPreferenceChange({ showActivityMarkers: enabled })}
+                        ideaMarkers={ideaMarkers}
+                        showIdeaMarkers={showIdeaMarkers}
+                        onShowIdeaMarkersChange={handleShowIdeaMarkersChange}
+                        onIdeaAction={handleIdeaAction}
+                        canEditIdeas={canEdit}
+                        basemapDetail={mapBasemapDetail}
+                        mapLookAxes={mapLookAxes}
+                        tripOverlay={mapTripOverlay}
+                        todayDayOffset={todayDayOffset}
+                        routeLineWeight={MAP_ROUTE_THICKNESS_MULTIPLIER[mapPreferences.routeThickness]}
+                        useGlobeProjection={mapPreferences.useGlobeProjection}
+                        showTerrain={mapPreferences.showTerrain}
+                        mapPitch={mapPreferences.pitch}
+                        isMapCustomizeOpen={isMapCustomizeOpen}
+                        mapCustomizeLabel={t('tripView.mapCustomize.open', 'Customize map')}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {
@@ -3284,7 +3076,7 @@ const useTripViewRender = ({
                             markManualViewChange();
                             setLayoutMode(mode);
                         }}
-                        mapStyle={mapStyle}
+                        mapStyle={effectiveMapStyle}
                         onMapStyleChange={(nextStyle) => {
                             if (nextStyle === mapStyle) return;
                             markManualViewChange();
@@ -3308,7 +3100,7 @@ const useTripViewRender = ({
                         onRouteMetrics={handleRouteMetrics}
                         onRouteStatus={handleRouteStatus}
                         tripId={trip.id}
-                        mapViewTransitionName={mapViewTransitionName}
+                        mapViewTransitionName={mapViewTransitionName ?? null}
                         sidebarWidth={sidebarWidth}
                         detailsWidth={detailsWidth}
                         timelineHeight={timelineHeight}
@@ -3319,13 +3111,109 @@ const useTripViewRender = ({
                         onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
                         onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
+                        floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
+                        floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                     />
+                    {hasOpenedMapCustomize && (
+                        <Suspense fallback={null}>
+                            <MapCustomizeModal
+                                isOpen={isMapCustomizeOpen}
+                                onClose={closeMapCustomize}
+                                preferences={mapPreferences}
+                                onChange={handleMapPreferenceChange}
+                                onReset={handleMapPreferenceReset}
+                                onSaveAsDefault={saveMapPreferencesAsDefault}
+                                hasSavedPreset={hasSavedMapPreset}
+                                onApplySavedPreset={applySavedMapPreset}
+                                isSavedPresetActive={isSavedMapPresetActive}
+                                isMobile={isMobile}
+                                activeRenderer={activeMapRenderer}
+                                isMapboxAvailable={isMapboxRendererAvailable}
+                                tripId={trip.id}
+                            />
+                        </Suspense>
+                    )}
+                    {isTripAgentRolledOut && !isTripAgentOpen && (
+                        <button
+                            type="button"
+                            onClick={openTripAgent}
+                            onPointerEnter={warmTripAgent}
+                            onPointerDown={warmTripAgent}
+                            onFocus={warmTripAgent}
+                            className={`fixed ${TRIP_AGENT_LAUNCHER_POSITION_CLASS} z-[1490] inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none`}
+                            aria-label={t('tripAgent.title')}
+                            {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
+                        >
+                            {isTripAgentLocked
+                                ? <Lock className="size-4 text-muted-foreground" />
+                                : <Sparkles className="size-4 text-accent-600 dark:text-accent-300" />}
+                            <span>{t('tripAgent.title')}</span>
+                        </button>
+                    )}
+                    {agentPreviewTrip && (
+                        <div
+                            role="status"
+                            className="pointer-events-none fixed inset-x-0 top-2 z-[1600] flex justify-center px-3"
+                        >
+                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
+                                {t('tripAgent.previewBanner')}
+                            </p>
+                        </div>
+                    )}
+                    {isTripAgentRolledOut && isTripAgentOpen && onAdoptAgentTripVersion && (
+                        <Suspense fallback={<TripAgentPanelFallback />}>
+                            <TripAgentPanel
+                                trip={agentCanonicalTrip || trip}
+                                contextRefs={tripAgentContextRefs}
+                                isOpen={isTripAgentOpen}
+                                onClose={() => {
+                                    setIsTripAgentOpen(false);
+                                    writeTripAgentOpenState(false);
+                                }}
+                                onAdoptCommittedTripVersion={(input) => {
+                                    onAdoptAgentTripVersion?.(input);
+                                    onAgentTripChanged?.();
+                                }}
+                                onPreviewTrip={onAgentPreviewTrip}
+                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
+                                    // Not an undo: history also holds view changes, so
+                                    // stepping back would revert whatever happened last
+                                    // rather than this change set. The snapshot from
+                                    // before the apply is restored as a new version.
+                                    adoptAgentTrip(previousTrip, label, changeSetId);
+                                    showToast(t('tripAgent.revertToast'), {
+                                        tone: 'neutral',
+                                        title: t('tripAgent.revertToastTitle'),
+                                        iconVariant: 'undo',
+                                        disableDefaultUndo: true,
+                                        action: {
+                                            label: t('tripAgent.redo'),
+                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
+                                        },
+                                    });
+                                }}
+                                onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
+                                    adoptAgentTrip(nextTrip, label, changeSetId);
+                                }}
+                            />
+                        </Suspense>
+                    )}
+                    {isDiscoverOpen && (
+                        <Suspense fallback={null}>
+                            <TripDiscoverOverlay
+                                open={isDiscoverOpen}
+                                onClose={() => setDiscoverOpen(false)}
+                                initialTab={discoverInitialTab}
+                                trip={displayTrip}
+                                countryCodes={discoverCountryCodes}
+                                days={discoverDays}
+                                canEdit={canEdit}
+                                onRecommendationStateChange={handleRecommendationStateChange}
+                                onAddActivity={handleAddActivityItem}
+                            />
+                        </Suspense>
+                    )}
                     <TripViewModalLayer
-                        isMobile={isMobile}
-                        detailsPanelVisible={detailsPanelVisible}
-                        detailsPanelContent={detailsPanelContent}
-                        onCloseDetailsDrawer={closeDetailsPanel}
-                        onOpenDetailsDrawer={openDetailsPanel}
                         addActivityState={addActivityState}
                         onCloseAddActivity={() => setAddActivityState((prev) => ({ ...prev, isOpen: false }))}
                         onAddActivity={handleAddActivityItem}
@@ -3344,7 +3232,7 @@ const useTripViewRender = ({
                         onStartTitleEdit={handleStartTitleEdit}
                         canManageTripMetadata={canManageTripMetadata}
                         canEdit={canEdit}
-                        isFavorite={trip.isFavorite}
+                        isFavorite={Boolean(trip.isFavorite)}
                         onToggleFavorite={handleToggleFavorite}
                         isExamplePreview={isExamplePreview}
                         tripMeta={tripMeta}
@@ -3388,6 +3276,7 @@ const useTripViewRender = ({
                             closeTripInfoModal();
                             setViewMode('print');
                         }}
+                        tripInfoMyMapsPanel={tripInfoMyMapsPanel}
                         shouldEnableReleaseNotice={shouldEnableReleaseNotice}
                         isShareOpen={isShareOpen}
                         shareMode={shareMode}
@@ -3407,6 +3296,7 @@ const useTripViewRender = ({
                         }}
                         shareStatus={shareStatus}
                         onCopyTrip={onCopyTrip}
+                        isAgentLauncherVisible={isTripAgentRolledOut && !isTripAgentOpen}
                         expirationLabel={expirationLabel}
                         tripId={trip.id}
                         paywallActivationMode={paywallActivationMode}
@@ -3424,14 +3314,30 @@ const useTripViewRender = ({
                         isPendingAuthContinueDisabled={isResolvingPendingAuthGeneration}
                         claimConflictModalVisible={isPendingAuthClaimedByAnotherUser}
                         claimConflictShowLoginCta={!isAuthenticated || isAnonymous}
-                        claimConflictCreateSimilarPath={createSimilarTripPath}
+                        claimConflictTrip={isPendingAuthClaimedByAnotherUser ? trip : undefined}
+                        claimConflictPathname={location.pathname}
                         onClaimConflictLogin={handlePendingAuthClaimConflictLogin}
                     />
 
                 </main>
             </div>
-        </GoogleMapsLoader>
+        </MapRuntimeProvider>
     );
 };
 
-export const TripView: React.FC<TripViewProps> = (props) => useTripViewRender(props);
+export const TripView: React.FC<TripViewProps> = (props) => {
+    const [agentPreviewTrip, setAgentPreviewTrip] = useState<ITrip | null>(null);
+    const [agentSurfaceNonce, setAgentSurfaceNonce] = useState(0);
+
+    // The preview swaps the rendered trip, so editing is paused until it ends.
+    return useTripViewRender({
+        ...props,
+        trip: agentPreviewTrip || props.trip,
+        readOnly: props.readOnly || Boolean(agentPreviewTrip),
+        agentPreviewTrip,
+        agentCanonicalTrip: props.trip,
+        onAgentPreviewTrip: setAgentPreviewTrip,
+        agentSurfaceNonce,
+        onAgentTripChanged: () => setAgentSurfaceNonce((current) => current + 1),
+    });
+};

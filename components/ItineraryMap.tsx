@@ -1,33 +1,56 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { buildDayTripMarkerHtml, buildTripMapDayTripDescriptors, collectDayTripMarkerIds, isDayTripRoundTrip } from './maps/tripMapDayTripModel';
+import { Button } from './ui/button';
 import type mapboxgl from 'mapbox-gl';
-import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
-import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
+import {
+    ActivityType,
+    ITimelineItem,
+    MapBaseSurface,
+    MapColorMode,
+    MapColorTheme,
+    MapLightPreset,
+    MapStyle,
+    RouteFailureReason,
+    RouteMode,
+    RouteStatus,
+} from '../types';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Lightbulb, Locate, LocateFixed, LocateOff, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
-import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
-import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
-import { getAnalyticsDebugAttributes } from '../services/analyticsService';
+import { useTranslation } from 'react-i18next';
+import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, pickPrimaryActivityType } from '../utils';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { enableUserLocation } from '../services/userLocationService';
+import { useTripUserLocation } from '../hooks/useTripUserLocation';
+import {
+    USER_LOCATION_MARKER_Z_INDEX,
+    USER_LOCATION_RECENTER_MIN_ZOOM,
+    buildUserLocationMarkerHtml,
+    createGoogleUserLocationOverlay,
+} from './maps/userLocationMarker';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
-import { ActivityTypeIcon } from './ActivityTypeVisuals';
-import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
-import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
+import { ActivityMapPopup } from './maps/ActivityMapPopup';
+import { IdeaMapPopup, type IdeaMapAction } from './maps/IdeaMapPopup';
+import { useMapMarkerAnchor } from './maps/useMapMarkerAnchor';
+import {
+    getMapSurfaceBackgroundColor,
+    GOOGLE_BASEMAP_HIDDEN_STYLES,
+    type MapboxBasemapDetailOverrides,
+} from '../services/mapRendererVisualStyleService';
 import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
+import { createGoogleTripMapCamera, createMapboxTripMapCamera, type TripMapCamera } from './maps/tripMapCamera';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
+import { MARKER_HOVER_Z_INDEX, MARKER_TOOLTIP_HIDDEN_TRANSFORM, MARKER_TOOLTIP_SHOWN_TRANSFORM } from './maps/markerTooltip';
+import { buildMapIdeaSignature, type MapIdeaMarker } from '../shared/tripIdeas';
 import { resolveTripMapCityMarkerImageUrl } from './maps/tripMapCityMarkerMedia';
 import {
     buildTripMapCityLabelOverlayDescriptors,
     buildTripMapCityOverlayDescriptors,
-    buildTripMapCoordinateGroupKey,
-    buildOverlappingMarkerPosition,
-    getMapLabelCityName,
-    offsetLatLngByMeters,
-    resolveTripMapCityLabelName,
 } from './maps/tripMapCityOverlayModel';
 import {
     buildTripMapCityLabelHtml,
@@ -38,10 +61,9 @@ import {
     resolveTripMapProjectedCityLabelLayouts,
     type TripMapProjectedCityLabelLayout,
 } from './maps/tripMapCityLabelLayout';
-import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
+import { createMapboxLineHandle, createMapboxOverlayMarker, type RuntimeMarkerHandle } from './maps/mapboxOverlayRuntime';
 import {
     resolveTripMapCityLabelOffsetPx,
-    resolveTripMapDarkRoutePresentation,
     resolveTripMapFlightCurveOptions,
     resolveTripMapFlightGroundShadowStyle,
     type TripMapCityLabelAnchor,
@@ -50,17 +72,56 @@ import { resolveActiveOverlayMapTarget, shouldHideGoogleMapCanvas } from './maps
 import {
     getTripMapProviderTuning,
     resolveTripMapSelectionSafeInsetRatio,
-    resolveTripMapViewportPadding,
 } from './maps/tripMapProviderTuning';
-import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
+import { computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
 import { isFiniteLatLngLiteral } from '../shared/coordinateUtils';
-import type { MapImplementation } from '../shared/mapRuntime';
+import {
+    clampCityFocusZoom,
+    resolveCityFocusCamera,
+} from './maps/tripMapCityFraming';
+import { MAP_STYLES } from './maps/googleMapStyles';
+import { ROUTE_CACHE, ROUTE_FAILURE_TTL_MS, hydrateRouteCache, persistRouteCache, shouldLogRouteFailureWarning } from './maps/routeCache';
+import { buildRouteAttemptPolicy, classifyRouteComputationError, mapRouteAttemptPolicyReasonToFailureReason } from './maps/routeAttemptPolicy';
+import { estimateGreatCircleDistanceKm, isRoutePathLikelyStraight } from './maps/routePathGeometry';
+import {
+    ACTIVITY_MARKER_SELECTED_Z_INDEX,
+    ACTIVITY_MARKER_Z_INDEX,
+    IDEA_MARKER_Z_INDEX,
+    estimateNearestMarkerGapPx,
+    estimateRoutePixelSpan,
+    resolveCityMarkerZIndex,
+    resolveCrowdedCityMarkerProfile,
+    resolveMarkerRenderProfile,
+    resolveMarkerRenderTier,
+    resolveZoomEnhancedCityMarkerProfile,
+} from './maps/markerRenderProfiles';
+import {
+    CITY_PIN_SELECTED_OUTLINE_FALLBACK,
+    CITY_PIN_SELECTED_RING_FALLBACK,
+    buildActivityMarkerHtml,
+    buildIdeaMarkerHtml,
+    buildTransportMarkerHtml,
+    resolveCssColorVar,
+} from './maps/markerHtml';
+import { buildMapboxRouteLayerConfigs, buildRoutePolylinePairOptions } from './maps/mapboxLayerConfig';
+import { resolveActivityMarkerPositions } from './maps/tripMapActivityMarkerPositions';
+import {
+    isCoordinateWithinSafeBounds,
+    isMapViewportReady,
+    resolveMapViewportPadding,
+    resolveSelectedMapFocusPosition,
+    resolveSelectionViewportActions,
+    shouldDisplayActivityMarkers,
+    shouldSkipRouteFitForSelection,
+} from './maps/tripMapSelectionViewport';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
     selectedItemId?: string | null;
     onCityMarkerSelect?: (cityId: string) => void;
     onActivityMarkerSelect?: (activityId: string) => void;
+    /** Off on small screens, where the details sheet already covers the map. */
+    enableActivityPopup?: boolean;
     layoutMode?: 'horizontal' | 'vertical';
     onLayoutChange?: (mode: 'horizontal' | 'vertical') => void;
     showLayoutControls?: boolean;
@@ -82,162 +143,74 @@ interface ItineraryMapProps {
     onMapColorModeChange?: (mode: MapColorMode) => void;
     isPaywalled?: boolean;
     viewTransitionName?: string;
+    /**
+     * Frame a selected city on its own plan and drop the rest of the journey
+     * while it is selected. Off restores the previous constant-zoom behaviour.
+     */
+    cityFocusMode?: boolean;
+    /** Lets go of the current selection, restoring the whole-journey view. */
+    onClearSelection?: () => void;
+    /** Opens the customize sheet. Absent hides the control entirely. */
+    onOpenCustomize?: () => void;
+    isCustomizeOpen?: boolean;
+    /**
+     * Controlled by the customize sheet when given. Left uncontrolled the map
+     * keeps its own toggle, which is what the standalone print preview uses.
+     */
+    showActivityMarkers?: boolean;
+    onShowActivityMarkersChange?: (enabled: boolean) => void;
+    /**
+     * The trip's saved ideas that have a position. The layer and its toggle
+     * only exist when this is non-empty and `onShowIdeaMarkersChange` is given.
+     */
+    ideaMarkers?: MapIdeaMarker[];
+    showIdeaMarkers?: boolean;
+    onShowIdeaMarkersChange?: (enabled: boolean) => void;
+    /** Save, undo a save, or skip from the pin's card. */
+    onIdeaAction?: (ideaId: string, action: IdeaMapAction) => void;
+    /** Save and Skip need an editable trip; the card still opens without. */
+    canEditIdeas?: boolean;
+    /** What the customize sheet turned on or off on top of the chosen style. */
+    basemapDetail?: MapboxBasemapDetailOverrides;
+    /**
+     * The look as its three axes. Mapbox takes these directly; `activeStyle`
+     * stays the nearest named style, which is all Google can render.
+     */
+    mapLookAxes?: {
+        base: MapBaseSurface;
+        colorTheme: MapColorTheme;
+        lightPreset: Exclude<MapLightPreset, 'auto'>;
+    };
+    /**
+     * Which day of the trip today is, as an offset from its start. Null when
+     * the trip is not running, which is what switches past-day fading off.
+     */
+    todayDayOffset?: number | null;
+    /** What the trip itself draws on top of the basemap. */
+    tripOverlay?: {
+        dimPastDays?: boolean;
+        showRouteArrows?: boolean;
+        dashedRoutes?: boolean;
+        showTraffic?: boolean;
+        showTransitLines?: boolean;
+    };
+    /** Globe instead of the tuning's resting projection. Mapbox only. */
+    useGlobeProjection?: boolean;
+    showTerrain?: boolean;
+    /** Camera tilt in degrees. Mapbox only; Google ignores it. */
+    mapPitch?: number;
+    /** Multiplier on the route stroke, so a busy map can be thinned out. */
+    routeLineWeight?: number;
+    /** Localised by the owner: this component has no translation context. */
+    customizeLabel?: string;
+    /**
+     * Offer the traveller's own position. Still only shown while the trip is
+     * running or the visitor appears to be in one of its countries.
+     */
+    showUserLocation?: boolean;
+    /** Trip id for analytics on the location control. */
+    analyticsTripId?: string;
 }
-
-const MAP_STYLES = {
-    // "Pale Dawn" - Very clean, grayscale, high contrast for overlays
-    minimal: [
-        { "elementType": "geometry", "stylers": [{ "color": "#f5f5f5" }] },
-        { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-        { "elementType": "labels.text.fill", "stylers": [{ "color": "#616161" }] },
-        { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f5f5f5" }] },
-        { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#9aa6b2" }, { "weight": 1.4 }, { "visibility": "on" }] },
-        { "featureType": "administrative.province", "elementType": "geometry.stroke", "stylers": [{ "color": "#d5dce3" }, { "weight": 0.5 }] },
-        { "featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{ "color": "#bdbdbd" }] },
-        { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#eeeeee" }] },
-        { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-        { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#e5e5e5" }] },
-        { "featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] },
-        { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
-        { "featureType": "road.arterial", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-        { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#dadada" }] },
-        { "featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [{ "color": "#616161" }] },
-        { "featureType": "road.local", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] },
-        { "featureType": "transit.line", "elementType": "geometry", "stylers": [{ "color": "#e5e5e5" }] },
-        { "featureType": "transit.station", "elementType": "geometry", "stylers": [{ "color": "#eeeeee" }] },
-        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#c9c9c9" }] },
-        { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] }
-    ],
-    standard: [], 
-    dark: [
-        { "elementType": "geometry", "stylers": [{ "color": "#1b2230" }] },
-        { "elementType": "labels.text.stroke", "stylers": [{ "color": "#1b2230" }] },
-        { "elementType": "labels.text.fill", "stylers": [{ "color": "#d0d8e2" }] },
-        {
-            "featureType": "administrative.locality",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#f3c98b" }]
-        },
-        {
-            "featureType": "administrative.country",
-            "elementType": "geometry.stroke",
-            "stylers": [{ "color": "#9fb3c8" }, { "weight": 1.2 }, { "visibility": "on" }]
-        },
-        {
-            "featureType": "poi",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#8fb3c0" }]
-        },
-        {
-            "featureType": "poi.park",
-            "elementType": "geometry",
-            "stylers": [{ "color": "#1a3b3a" }]
-        },
-        {
-            "featureType": "poi.park",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#8bc2b3" }]
-        },
-        {
-            "featureType": "road",
-            "elementType": "geometry",
-            "stylers": [{ "color": "#3a4558" }]
-        },
-        {
-            "featureType": "road",
-            "elementType": "geometry.stroke",
-            "stylers": [{ "color": "#243246" }]
-        },
-        {
-            "featureType": "road",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#d5dde8" }]
-        },
-        {
-            "featureType": "road.highway",
-            "elementType": "geometry",
-            "stylers": [{ "color": "#566579" }]
-        },
-        {
-            "featureType": "road.highway",
-            "elementType": "geometry.stroke",
-            "stylers": [{ "color": "#2f3c4f" }]
-        },
-        {
-            "featureType": "road.highway",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#f7ddb0" }]
-        },
-        {
-            "featureType": "transit",
-            "elementType": "geometry",
-            "stylers": [{ "color": "#34506b" }]
-        },
-        {
-            "featureType": "transit.station",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#9fc6e5" }]
-        },
-        {
-            "featureType": "water",
-            "elementType": "geometry",
-            "stylers": [{ "color": "#0b3f5f" }]
-        },
-        {
-            "featureType": "water",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#b7d5ea" }]
-        },
-        {
-            "featureType": "water",
-            "elementType": "labels.text.stroke",
-            "stylers": [{ "color": "#0b3f5f" }]
-        }
-    ],
-    clean: [
-        { "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
-        { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-        { "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-        { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f9f9f9" }, { "weight": 2 }] },
-        { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#a8a8a8" }, { "weight": 1 }, { "visibility": "on" }] },
-        { "featureType": "administrative.province", "elementType": "geometry", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "administrative.province", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{ "color": "#bdbdbd" }] },
-        { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "road", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#dcefff" }] }, // Higher-contrast water fill
-        { "featureType": "landscape.natural", "elementType": "geometry.stroke", "stylers": [{ "color": "#a7c9e6" }, { "weight": 1.4 }, { "visibility": "on" }] },
-        { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] }
-    ],
-    cleanDark: [
-        { "elementType": "geometry", "stylers": [{ "color": "#1b2230" }] },
-        { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-        { "elementType": "labels.text.fill", "stylers": [{ "visibility": "off" }] },
-        { "elementType": "labels.text.stroke", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#8ea3b7" }, { "weight": 1.2 }, { "visibility": "on" }] },
-        { "featureType": "administrative.country", "elementType": "labels.text.fill", "stylers": [{ "visibility": "on" }, { "color": "#6f8193" }] },
-        { "featureType": "administrative.country", "elementType": "labels.text.stroke", "stylers": [{ "visibility": "on" }, { "color": "#1b2230" }, { "weight": 1.25 }] },
-        { "featureType": "administrative.province", "elementType": "geometry.stroke", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "road", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0b3f5f" }] },
-        { "featureType": "landscape.natural", "elementType": "geometry.stroke", "stylers": [{ "color": "#2d3f52" }, { "weight": 1.25 }, { "visibility": "on" }] },
-        { "featureType": "water", "elementType": "labels", "stylers": [{ "visibility": "off" }] }
-    ]
-};
-
-type RouteCacheEntry = {
-    status: 'ok' | 'failed';
-    updatedAt: number;
-    path?: google.maps.LatLngLiteral[];
-    distanceKm?: number;
-    durationHours?: number;
-    reason?: RouteFailureReason;
-};
 
 type OverlayMarkerUpdate = {
     html?: string;
@@ -250,1145 +223,27 @@ type OverlayMarkerHandle = {
     update: (updates: OverlayMarkerUpdate) => void;
 };
 
-const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
-const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
-const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
-const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
-const ROUTE_FAILURE_WARNING_TTL_MS = 2 * 60 * 1000;
-const RECENT_ROUTE_FAILURE_WARNINGS = new Map<string, number>();
-let routeCacheHydrated = false;
-
-const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
-const ROUTE_MINIMAL_GAP_COLOR = '#f5f5f5';
-const ROUTE_CLEAN_GAP_COLOR = '#ffffff';
-const ROUTE_STANDARD_GAP_COLOR = '#eef2f7';
-const ROUTE_DARK_GAP_COLOR = '#1b2230';
-const ROUTE_CLEAN_DARK_GAP_COLOR = '#1b2230';
-const EARTH_RADIUS_KM = 6371;
-const ACTIVITY_MARKER_OVERLAP_RADIUS_METERS = 260;
-const ACTIVITY_CITY_FALLBACK_MIN_SLOTS = 4;
-const MARKER_COORDINATE_GROUP_PRECISION = 5;
-const MARKER_TIER_ROUTE_REFERENCE_ZOOM = 10;
-const MARKER_GAP_DEDUPE_PRECISION = 6;
-const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
-const MAX_WALK_ROUTE_CHECK_KM = 60;
-const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
-const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
-const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
-const TRANSIT_SECOND_PASS_MAX_KM = 320;
-const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
-const ROUTES_COMPUTE_FIELDS = GOOGLE_ROUTES_COMPUTE_FIELDS;
-type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
-type RouteAttemptPolicy = {
-    shouldAttempt: boolean;
-    modes: RouteApiMode[];
-    reason?: 'unsupported_mode' | 'invalid_distance' | 'distance_cap_exceeded';
-};
-
-const TRANSPORT_ICON_PATHS: Record<string, string> = {
-    plane: 'M240,136v32a8,8,0,0,1-8,8,7.61,7.61,0,0,1-1.57-.16L156,161v23.73l17.66,17.65A8,8,0,0,1,176,208v24a8,8,0,0,1-11,7.43l-37-14.81L91,239.43A8,8,0,0,1,80,232V208a8,8,0,0,1,2.34-5.66L100,184.69V161L25.57,175.84A7.61,7.61,0,0,1,24,176a8,8,0,0,1-8-8V136a8,8,0,0,1,4.42-7.16L100,89.06V44a28,28,0,0,1,56,0V89.06l79.58,39.78A8,8,0,0,1,240,136Z',
-    bus: 'M254.07,106.79,208.53,53.73A16,16,0,0,0,196.26,48H32A16,16,0,0,0,16,64V176a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V112A8,8,0,0,0,254.07,106.79ZM32,104V64H88v40Zm48,96a16,16,0,1,1,16-16A16,16,0,0,1,80,200Zm80-96H104V64h56Zm32,96a16,16,0,1,1,16-16A16,16,0,0,1,192,200Zm-16-96V64h20.26l34.33,40Z',
-    car: 'M240,112H211.31L168,68.69A15.86,15.86,0,0,0,156.69,64H44.28A16,16,0,0,0,31,71.12L1.34,115.56A8.07,8.07,0,0,0,0,120v48a16,16,0,0,0,16,16H33a32,32,0,0,0,62,0h66a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V128A16,16,0,0,0,240,112ZM44.28,80H156.69l32,32H23ZM64,192a16,16,0,1,1,16-16A16,16,0,0,1,64,192Zm128,0a16,16,0,1,1,16-16A16,16,0,0,1,192,192Z',
-    motorcycle: 'M216,120a41,41,0,0,0-6.6.55l-5.82-15.14A55.64,55.64,0,0,1,216,104a8,8,0,0,0,0-16H196.88L183.47,53.13A8,8,0,0,0,176,48H144a8,8,0,0,0,0,16h26.51l9.23,24H152c-18.5,0-33.5,4.31-43.37,12.46a16,16,0,0,1-16.76,2.07c-10.58-4.81-73.29-30.12-73.8-30.26a8,8,0,0,0-5,15.19S68.57,109.4,79.6,120.4A55.67,55.67,0,0,1,95.43,152H79.2a40,40,0,1,0,0,16h52.12a31.91,31.91,0,0,0,30.74-23.1,56,56,0,0,1,26.59-33.72l5.82,15.13A40,40,0,1,0,216,120ZM40,168H62.62a24,24,0,1,1,0-16H40a8,8,0,0,0,0,16Zm176,16a24,24,0,0,1-15.58-42.23l8.11,21.1a8,8,0,1,0,14.94-5.74L215.35,136l.65,0a24,24,0,0,1,0,48Z',
-    train: 'M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM84,184a12,12,0,1,1,12-12A12,12,0,0,1,84,184Zm36-64H56V80h64Zm52,64a12,12,0,1,1,12-12A12,12,0,0,1,172,184Zm28-64H136V80h64Z',
-    bicycle: 'M136,52a28,28,0,1,1,28,28A28,28,0,0,1,136,52ZM240,176a40,40,0,1,1-40-40A40,40,0,0,1,240,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,224,176Zm-24-64a8,8,0,0,0-8-8H155.31L125.66,74.34a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,0,11.32L120,155.31V200a8,8,0,0,0,16,0V152a8,8,0,0,0-2.34-5.66L99.31,112,120,91.31l26.34,26.35A8,8,0,0,0,152,120h40A8,8,0,0,0,200,112ZM96,176a40,40,0,1,1-40-40A40,40,0,0,1,96,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,80,176Z',
-    boat: 'M160,140V72.85a4,4,0,0,1,7-2.69l55,60.46a8,8,0,0,1,.43,10.26,8.24,8.24,0,0,1-6.58,3.12H164A4,4,0,0,1,160,140Zm87.21,32.53A8,8,0,0,0,240,168H144V8a8,8,0,0,0-14.21-5l-104,128A8,8,0,0,0,32,144h96v24H16a8,8,0,0,0-6.25,13l29.6,37a15.93,15.93,0,0,0,12.49,6H204.16a15.93,15.93,0,0,0,12.49-6l29.6-37A8,8,0,0,0,247.21,172.53Z',
-    walk: 'M216.06,192v12A36,36,0,0,1,144,204V192a8,8,0,0,1,8-8h56A8,8,0,0,1,216.06,192ZM104,160h-56a8,8,0,0,0-8,8v12A36,36,0,0,0,112,180V168A8,8,0,0,0,104,160ZM76,16C64.36,16,53.07,26.31,44.2,45c-13.93,29.38-18.56,73,.29,96a8,8,0,0,0,6.2,2.93h50.55a8,8,0,0,0,6.2-2.93c18.85-23,14.22-66.65.29-96C98.85,26.31,87.57,16,76,16Zm78.8,152h50.55a8,8,0,0,0,6.2-2.93c18.85-23,14.22-66.65.29-96C202.93,50.31,191.64,40,180,40s-22.89,10.31-31.77,29c-13.93,29.38-18.56,73,.29,96A8,8,0,0,0,154.76,168Z',
-};
-
-const resolveTransportIconPath = (mode?: string): string => {
-    const normalized = normalizeTransportMode(mode);
-    if (normalized === 'na' || !normalized) return TRANSPORT_ICON_PATHS.walk;
-    if (normalized === 'bike') return TRANSPORT_ICON_PATHS.bicycle;
-    if (normalized === 'motorcycle') return TRANSPORT_ICON_PATHS.motorcycle;
-    if (normalized in TRANSPORT_ICON_PATHS) {
-        return TRANSPORT_ICON_PATHS[normalized as keyof typeof TRANSPORT_ICON_PATHS];
-    }
-    return TRANSPORT_ICON_PATHS.walk;
-};
-
-const CITY_PIN_SELECTED_OUTLINE_FALLBACK = '#3b82f6';
-const CITY_PIN_SELECTED_RING_FALLBACK = '#bfdbfe';
-const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
-const CITY_MARKER_Z_INDEX = 320;
-const CITY_MARKER_SELECTED_Z_INDEX = 340;
-const ACTIVITY_MARKER_Z_INDEX = 240;
-const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
-const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
-
-const resolveCityMarkerZIndex = (
-    isSelected: boolean,
-    profile: MarkerRenderProfile,
-): number => {
-    const base = isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX;
-    const size = isSelected ? profile.city.selectedSize : profile.city.size;
-    return base + Math.max(0, Math.round(size / 2));
-};
-
-type MarkerRenderProfile = {
-    city: {
-        shape: 'pin' | 'circle';
-        size: number;
-        selectedSize: number;
-        fontSize: number;
-        selectedFontSize: number;
-        showInnerDot: boolean;
-        numberColor: string;
-    };
-    activity: {
-        size: number;
-        selectedBoost: number;
-        iconSize: number;
-        tooltipFontSize: number;
-        tooltipPaddingX: number;
-        tooltipPaddingY: number;
-    };
-    transport: {
-        show: boolean;
-        size: number;
-        iconScale: number;
-    };
-    routeStrokeScale: number;
-};
-
-type MarkerRenderTier = 'default' | 'compact' | 'micro';
-type CityMarkerRenderProfile = MarkerRenderProfile['city'];
-
-const DOCKED_DEFAULT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
-    city: {
-        shape: 'pin',
-        size: 44,
-        selectedSize: 54,
-        fontSize: 12,
-        selectedFontSize: 13,
-        showInnerDot: true,
-        numberColor: '#0f172a',
-    },
-    activity: {
-        size: 34,
-        selectedBoost: 4,
-        iconSize: 15,
-        tooltipFontSize: 11,
-        tooltipPaddingX: 10,
-        tooltipPaddingY: 6,
-    },
-    transport: {
-        show: true,
-        size: 40,
-        iconScale: 0.46,
-    },
-    routeStrokeScale: 1,
-};
-
-const FLOATING_DEFAULT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
-    city: {
-        shape: 'circle',
-        size: 30,
-        selectedSize: 34,
-        fontSize: 11,
-        selectedFontSize: 12,
-        showInnerDot: true,
-        numberColor: '#0f172a',
-    },
-    activity: {
-        size: 28,
-        selectedBoost: 3,
-        iconSize: 12,
-        tooltipFontSize: 10,
-        tooltipPaddingX: 8,
-        tooltipPaddingY: 5,
-    },
-    transport: {
-        show: true,
-        size: 30,
-        iconScale: 0.42,
-    },
-    routeStrokeScale: 0.9,
-};
-
-const COMPACT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
-    city: {
-        shape: 'circle',
-        size: 22,
-        selectedSize: 26,
-        fontSize: 10,
-        selectedFontSize: 10,
-        showInnerDot: true,
-        numberColor: '#0f172a',
-    },
-    activity: {
-        size: 20,
-        selectedBoost: 2,
-        iconSize: 9,
-        tooltipFontSize: 9,
-        tooltipPaddingX: 7,
-        tooltipPaddingY: 4,
-    },
-    transport: {
-        show: true,
-        size: 24,
-        iconScale: 0.36,
-    },
-    routeStrokeScale: 0.82,
-};
-
-const MICRO_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
-    city: {
-        shape: 'circle',
-        size: 18,
-        selectedSize: 21,
-        fontSize: 9,
-        selectedFontSize: 9,
-        showInnerDot: false,
-        numberColor: '#ffffff',
-    },
-    activity: {
-        size: 16,
-        selectedBoost: 2,
-        iconSize: 8,
-        tooltipFontSize: 9,
-        tooltipPaddingX: 6,
-        tooltipPaddingY: 3,
-    },
-    transport: {
-        show: false,
-        size: 26,
-        iconScale: 0.34,
-    },
-    routeStrokeScale: 0.64,
-};
-
-const resolveMarkerRenderProfile = (
-    options?: {
-        mapDockMode?: 'docked' | 'floating';
-        markerTier?: MarkerRenderTier;
-    },
-): MarkerRenderProfile => {
-    const mapDockMode = options?.mapDockMode;
-    const markerTier = options?.markerTier ?? 'default';
-    if (markerTier === 'micro') return MICRO_MARKER_RENDER_PROFILE;
-    if (markerTier === 'compact') return COMPACT_MARKER_RENDER_PROFILE;
-    return mapDockMode === 'floating'
-        ? FLOATING_DEFAULT_MARKER_RENDER_PROFILE
-        : DOCKED_DEFAULT_MARKER_RENDER_PROFILE;
-};
-
-const toWebMercatorPixel = (
-    coordinates: google.maps.LatLngLiteral,
-    zoom: number,
-): { x: number; y: number } => {
-    const scale = 256 * (2 ** zoom);
-    const clampedLat = Math.max(-85.05112878, Math.min(85.05112878, coordinates.lat));
-    const latRad = (clampedLat * Math.PI) / 180;
-    const x = ((coordinates.lng + 180) / 360) * scale;
-    const y = (0.5 - (Math.log((1 + Math.sin(latRad)) / (1 - Math.sin(latRad))) / (4 * Math.PI))) * scale;
-    return { x, y };
-};
-
-const estimateRoutePixelSpan = (
-    coordinates: google.maps.LatLngLiteral[],
-    zoom: number | null,
-): number => {
-    if (!Number.isFinite(zoom)) return 0;
-    if (coordinates.length < 2) return 0;
-    const projected = coordinates.map((coordinate) => toWebMercatorPixel(coordinate, Number(zoom)));
-    const xs = projected.map((point) => point.x);
-    const ys = projected.map((point) => point.y);
-    const width = Math.max(...xs) - Math.min(...xs);
-    const height = Math.max(...ys) - Math.min(...ys);
-    return Math.hypot(width, height);
-};
-
-const estimateNearestMarkerGapPx = (
-    coordinates: google.maps.LatLngLiteral[],
-    zoom: number | null,
-): number => {
-    if (!Number.isFinite(zoom)) return Number.POSITIVE_INFINITY;
-    const finiteCoordinates = coordinates.filter(isFiniteLatLngLiteral);
-    if (finiteCoordinates.length < 2) return Number.POSITIVE_INFINITY;
-
-    const uniqueCoordinates: google.maps.LatLngLiteral[] = [];
-    const seenCoordinateKeys = new Set<string>();
-    finiteCoordinates.forEach((coordinate) => {
-        const key = `${coordinate.lat.toFixed(MARKER_GAP_DEDUPE_PRECISION)},${coordinate.lng.toFixed(MARKER_GAP_DEDUPE_PRECISION)}`;
-        if (seenCoordinateKeys.has(key)) return;
-        seenCoordinateKeys.add(key);
-        uniqueCoordinates.push(coordinate);
-    });
-
-    if (uniqueCoordinates.length < 2) return Number.POSITIVE_INFINITY;
-    const projected = uniqueCoordinates.map((coordinate) => toWebMercatorPixel(coordinate, Number(zoom)));
-    let minDistance = Number.POSITIVE_INFINITY;
-    for (let i = 0; i < projected.length; i += 1) {
-        for (let j = i + 1; j < projected.length; j += 1) {
-            const distance = Math.hypot(projected[i].x - projected[j].x, projected[i].y - projected[j].y);
-            if (distance < minDistance) {
-                minDistance = distance;
-            }
-            if (minDistance <= 10) return minDistance;
-        }
-    }
-    return minDistance;
-};
-
-const resolveMarkerRenderTier = ({
-    provider = 'google',
-    viewportWidth,
-    viewportHeight,
-    zoom,
-    routePixelSpan,
-    nearestMarkerGapPx,
-}: {
-    provider?: MapImplementation;
-    viewportWidth: number;
-    viewportHeight: number;
-    zoom: number | null;
-    routePixelSpan: number;
-    nearestMarkerGapPx: number;
-}): MarkerRenderTier => {
-    const tuning = getTripMapProviderTuning(provider);
-    const markerTierTuning = tuning.markers.tier;
-    const shortEdge = Math.min(viewportWidth, viewportHeight);
-    if (!Number.isFinite(shortEdge) || shortEdge <= 0) return 'default';
-    const effectiveZoom = Number.isFinite(zoom) ? Number(zoom) : 11;
-    const zoomNormalizedRouteSpan = Number.isFinite(routePixelSpan)
-        ? routePixelSpan / (2 ** (effectiveZoom - MARKER_TIER_ROUTE_REFERENCE_ZOOM))
-        : 0;
-    const routeCoverage = shortEdge > 0 ? zoomNormalizedRouteSpan / shortEdge : 0;
-    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > markerTierTuning.denseRouteCoverage;
-    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > markerTierTuning.extremeDenseRouteCoverage;
-    const lowZoom = effectiveZoom <= markerTierTuning.lowZoom;
-    const veryLowZoom = effectiveZoom <= markerTierTuning.veryLowZoom;
-
-    if (shortEdge <= markerTierTuning.microShortEdge) return 'micro';
-    if (veryLowZoom && shortEdge <= markerTierTuning.microVeryLowZoomMaxShortEdge) return 'micro';
-    if (shortEdge <= markerTierTuning.microVeryLowZoomMaxShortEdge && extremeDenseRoute) return 'micro';
-    if (shortEdge <= markerTierTuning.compactVeryLowZoomDenseMaxShortEdge && veryLowZoom && veryDenseRoute) return 'micro';
-
-    if (shortEdge <= markerTierTuning.compactShortEdge) return 'compact';
-    if (lowZoom) return 'compact';
-    if (shortEdge <= markerTierTuning.compactDenseMaxShortEdge && veryDenseRoute && effectiveZoom <= markerTierTuning.compactDenseZoomCutoff) return 'compact';
-    return 'default';
-};
-
-const resolveZoomEnhancedCityMarkerProfile = ({
-    provider = 'google',
-    baseProfile,
-    markerTier,
-    zoom,
-}: {
-    provider?: MapImplementation;
-    baseProfile: CityMarkerRenderProfile;
-    markerTier: MarkerRenderTier;
-    zoom: number | null;
-}): CityMarkerRenderProfile => {
-    const tuning = getTripMapProviderTuning(provider);
-    const cityZoomTuning = tuning.markers.cityZoomProfile;
-    if (markerTier !== 'default') return baseProfile;
-    if (!Number.isFinite(zoom)) return baseProfile;
-    const effectiveZoom = Number(zoom);
-    if (effectiveZoom < cityZoomTuning.farCircleMaxZoom) {
-        return {
-            ...baseProfile,
-            shape: 'circle',
-            size: Math.max(16, Math.round(baseProfile.size * 0.64)),
-            selectedSize: Math.max(20, Math.round(baseProfile.selectedSize * 0.68)),
-            fontSize: Math.max(9, baseProfile.fontSize - 2),
-            selectedFontSize: Math.max(10, baseProfile.selectedFontSize - 2),
-            showInnerDot: false,
-            numberColor: '#ffffff',
-        };
-    }
-    if (effectiveZoom < cityZoomTuning.mediumCircleMaxZoom) {
-        return {
-            ...baseProfile,
-            shape: 'circle',
-            size: Math.max(20, Math.round(baseProfile.size * 0.8)),
-            selectedSize: Math.max(24, Math.round(baseProfile.selectedSize * 0.82)),
-            fontSize: Math.max(10, baseProfile.fontSize - 1),
-            selectedFontSize: Math.max(11, baseProfile.selectedFontSize - 1),
-            showInnerDot: false,
-        };
-    }
-    if (effectiveZoom < cityZoomTuning.nearCircleMaxZoom) {
-        return {
-            ...baseProfile,
-            shape: 'circle',
-            size: Math.max(22, Math.round(baseProfile.size * 0.9)),
-            selectedSize: Math.max(26, Math.round(baseProfile.selectedSize * 0.92)),
-        };
-    }
-    if (effectiveZoom < cityZoomTuning.compactPinMaxZoom) {
-        return {
-            ...baseProfile,
-            shape: 'pin',
-            size: Math.max(24, Math.round(baseProfile.size * 0.96)),
-            selectedSize: Math.max(28, Math.round(baseProfile.selectedSize * 0.98)),
-            fontSize: Math.max(11, baseProfile.fontSize),
-            selectedFontSize: Math.max(12, baseProfile.selectedFontSize),
-        };
-    }
-
-    const scaleBand = cityZoomTuning.scaleBands.find((entry) => effectiveZoom >= entry.minZoom);
-    const scale = scaleBand?.scale ?? 1.03;
-
-    return {
-        ...baseProfile,
-        shape: 'pin',
-        size: Math.round(baseProfile.size * scale),
-        selectedSize: Math.round(baseProfile.selectedSize * scale),
-        fontSize: Math.min(baseProfile.fontSize + 1, 15),
-        selectedFontSize: Math.min(baseProfile.selectedFontSize + 1, 16),
-    };
-};
-
-const resolveCrowdedCityMarkerProfile = ({
-    provider = 'google',
-    baseProfile,
-    markerTier,
-    zoom,
-    nearestMarkerGapPx,
-}: {
-    provider?: MapImplementation;
-    baseProfile: CityMarkerRenderProfile;
-    markerTier: MarkerRenderTier;
-    zoom: number | null;
-    nearestMarkerGapPx: number;
-}): CityMarkerRenderProfile => {
-    const tuning = getTripMapProviderTuning(provider);
-    const crowdingTuning = tuning.markers.crowding;
-    if (markerTier === 'micro') return baseProfile;
-    if (!Number.isFinite(nearestMarkerGapPx)) return baseProfile;
-    if (Number.isFinite(zoom) && Number(zoom) >= crowdingTuning.disableCrowdingAtZoom) return baseProfile;
-
-    const veryCrowded = nearestMarkerGapPx < crowdingTuning.veryCrowdedGapPx;
-    const crowded = nearestMarkerGapPx < crowdingTuning.crowdedGapPx;
-    if (!crowded) return baseProfile;
-
-    const scale = veryCrowded ? 0.8 : 0.9;
-    const compactSize = Math.max(17, Math.round(baseProfile.size * scale));
-    const compactSelectedSize = Math.max(compactSize + 2, Math.round(baseProfile.selectedSize * scale));
-    const compactFontSize = Math.max(8, baseProfile.fontSize - 1);
-    const compactSelectedFontSize = Math.max(compactFontSize, baseProfile.selectedFontSize - 1);
-
-    return {
-        ...baseProfile,
-        shape: 'circle',
-        size: compactSize,
-        selectedSize: compactSelectedSize,
-        fontSize: compactFontSize,
-        selectedFontSize: compactSelectedFontSize,
-        showInnerDot: veryCrowded ? false : baseProfile.showInnerDot,
-        numberColor: veryCrowded ? '#ffffff' : baseProfile.numberColor,
-    };
-};
-
-const resolveCssColorVar = (name: string, fallback: string): string => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
-    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return value || fallback;
-};
-
-const normalizeRotationDegrees = (value?: number): number => {
-    if (!Number.isFinite(value)) return 0;
-    const normalized = (value as number) % 360;
-    return normalized < 0 ? normalized + 360 : normalized;
-};
-
-const mapRouteAttemptPolicyReasonToFailureReason = (
-    reason?: RouteAttemptPolicy['reason'],
-): RouteFailureReason => {
-    if (reason === 'unsupported_mode') return 'unsupported_mode';
-    if (reason === 'distance_cap_exceeded') return 'distance_cap_exceeded';
-    if (reason === 'invalid_distance') return 'invalid_distance';
-    return 'request_error';
-};
-
-const classifyRouteComputationError = (error: unknown): RouteFailureReason => {
-    const message = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-            ? error
-            : '';
-    const normalized = message.toUpperCase();
-
-    if (normalized.includes('ZERO_RESULTS') || normalized.includes('NO ROUTE COULD BE FOUND')) {
-        return 'zero_results';
-    }
-    if (normalized.includes('NO ROUTE PATH RETURNED')) {
-        return 'no_route_path';
-    }
-    if (normalized.includes('ROUTE PATH IS STRAIGHT')) {
-        return 'straight_path';
-    }
-    if (normalized.includes('ROUTES API UNAVAILABLE')) {
-        return 'api_unavailable';
-    }
-    return 'request_error';
-};
-
-const shouldLogRouteFailureWarning = ({
-    routeKey,
-    mode,
-    reason,
-    nowMs = Date.now(),
-}: {
-    routeKey: string;
-    mode: string;
-    reason: RouteFailureReason;
-    nowMs?: number;
-}): boolean => {
-    const warningKey = `${routeKey}::${mode}::${reason}`;
-    const previous = RECENT_ROUTE_FAILURE_WARNINGS.get(warningKey);
-    if (typeof previous === 'number' && nowMs - previous < ROUTE_FAILURE_WARNING_TTL_MS) {
-        return false;
-    }
-    RECENT_ROUTE_FAILURE_WARNINGS.set(warningKey, nowMs);
-    return true;
-};
-
-const buildTransportMarkerHtml = (
-    mode: string | undefined,
-    color: string | undefined,
-    rotationDegrees: number | undefined,
-    profile: MarkerRenderProfile,
-): string => {
-    const size = profile.transport.size;
-    const badgeColor = color || '#1f2937';
-    const iconPath = resolveTransportIconPath(mode);
-    const rotation = mode === 'plane' ? normalizeRotationDegrees(rotationDegrees) : 0;
-    const iconInset = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - profile.transport.iconScale)) / 2;
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${TRANSPORT_MARKER_VIEWBOX_SIZE} ${TRANSPORT_MARKER_VIEWBOX_SIZE}">
-            <circle cx="128" cy="128" r="112" fill="${badgeColor}" />
-            <g transform="rotate(${rotation} 128 128)">
-                <g transform="translate(${iconInset} ${iconInset}) scale(${profile.transport.iconScale})">
-                    <path d="${iconPath}" fill="#ffffff" />
-                </g>
-            </g>
-        </svg>
-    `;
-    const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-    return `
-        <div style="width:${size}px;height:${size}px;line-height:1;user-select:none;">
-            <img src="${url}" alt="" draggable="false" style="display:block;width:${size}px;height:${size}px;pointer-events:none;" />
-        </div>
-    `;
-};
-
-const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
-    if (_style === 'minimal') return ROUTE_MINIMAL_GAP_COLOR;
-    if (_style === 'clean') return ROUTE_CLEAN_GAP_COLOR;
-    if (_style === 'standard') return ROUTE_STANDARD_GAP_COLOR;
-    if (_style === 'dark') return ROUTE_DARK_GAP_COLOR;
-    if (_style === 'cleanDark') return ROUTE_CLEAN_DARK_GAP_COLOR;
-    return '#0f172a';
-};
-
-const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
-    return ROUTE_OUTER_OUTLINE_COLOR;
-};
-
-const isDarkMapStyle = (style: MapStyle): boolean =>
-    style === 'dark' || style === 'cleanDark';
-
-const estimateGreatCircleDistanceKm = (
-    start: google.maps.LatLngLiteral,
-    end: google.maps.LatLngLiteral,
-): number => {
-    const toRadians = (value: number) => value * (Math.PI / 180);
-    const dLat = toRadians(end.lat - start.lat);
-    const dLng = toRadians(end.lng - start.lng);
-    const startLat = toRadians(start.lat);
-    const endLat = toRadians(end.lat);
-
-    const haversine = (
-        Math.sin(dLat / 2) * Math.sin(dLat / 2)
-        + Math.cos(startLat) * Math.cos(endLat) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-    );
-    const angularDistance = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
-    return EARTH_RADIUS_KM * angularDistance;
-};
-
-const computeMaxPathDeviationMeters = (
-    path: google.maps.LatLngLiteral[],
-    start: google.maps.LatLngLiteral,
-    end: google.maps.LatLngLiteral,
-): number => {
-    if (path.length < 3) return 0;
-
-    const meanLatRadians = ((start.lat + end.lat) / 2) * (Math.PI / 180);
-    const metersPerDegreeLat = 111_320;
-    const metersPerDegreeLng = metersPerDegreeLat * Math.max(0.01, Math.cos(meanLatRadians));
-    const toProjected = (point: google.maps.LatLngLiteral) => ({
-        x: point.lng * metersPerDegreeLng,
-        y: point.lat * metersPerDegreeLat,
-    });
-
-    const startProjected = toProjected(start);
-    const endProjected = toProjected(end);
-    const dx = endProjected.x - startProjected.x;
-    const dy = endProjected.y - startProjected.y;
-    const denominator = (dx * dx) + (dy * dy);
-    if (denominator <= 0) return 0;
-
-    let maxDeviation = 0;
-    for (let index = 1; index < path.length - 1; index += 1) {
-        const point = toProjected(path[index]);
-        const projectionFactor = ((point.x - startProjected.x) * dx + (point.y - startProjected.y) * dy) / denominator;
-        const clampedFactor = Math.max(0, Math.min(1, projectionFactor));
-        const projectedX = startProjected.x + (clampedFactor * dx);
-        const projectedY = startProjected.y + (clampedFactor * dy);
-        const deviation = Math.hypot(point.x - projectedX, point.y - projectedY);
-        if (deviation > maxDeviation) {
-            maxDeviation = deviation;
-        }
-    }
-
-    return maxDeviation;
-};
-
-const isRoutePathLikelyStraight = (
-    path: google.maps.LatLngLiteral[],
-    start: google.maps.LatLngLiteral,
-    end: google.maps.LatLngLiteral,
-    mode: string,
-): boolean => {
-    const modeRequiresHigherShapeFidelity = mode === 'bus' || mode === 'train';
-    const minimumPathPointCount = modeRequiresHigherShapeFidelity ? 4 : 3;
-    if (path.length < minimumPathPointCount) return true;
-
-    const straightMeters = estimateGreatCircleDistanceKm(start, end) * 1000;
-    if (!Number.isFinite(straightMeters) || straightMeters <= 0) return true;
-
-    let pathMeters = 0;
-    for (let idx = 1; idx < path.length; idx++) {
-        pathMeters += estimateGreatCircleDistanceKm(path[idx - 1], path[idx]) * 1000;
-    }
-
-    const ratio = pathMeters / straightMeters;
-    const minimumDetourRatio = modeRequiresHigherShapeFidelity ? 1.05 : 1.015;
-    const minimumDeviationMeters = Math.max(
-        modeRequiresHigherShapeFidelity ? 550 : 450,
-        Math.min(modeRequiresHigherShapeFidelity ? 8_500 : 3_500, straightMeters * (modeRequiresHigherShapeFidelity ? 0.022 : 0.015)),
-    );
-    const maxDeviationMeters = computeMaxPathDeviationMeters(path, start, end);
-
-    const hasStraightLikeDetour = ratio > 0 && ratio < minimumDetourRatio;
-    const hasStraightLikeShape = maxDeviationMeters < minimumDeviationMeters;
-    return hasStraightLikeDetour || hasStraightLikeShape;
-};
-
-const ACTIVITY_ICON_MARKUP_CACHE = new Map<string, string>();
-
-const escapeHtml = (value: string): string => (
-    value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;')
-);
-
-const buildActivityIconMarkup = (type: ActivityType, iconSize: number): string => {
-    const cacheKey = `${type}:${iconSize}`;
-    const cached = ACTIVITY_ICON_MARKUP_CACHE.get(cacheKey);
-    if (cached) return cached;
-    const markup = renderToStaticMarkup(
-        <ActivityTypeIcon type={type} size={iconSize} />
-    );
-    const styled = markup.replace(
-        '<svg',
-        `<svg style="width:${iconSize}px;height:${iconSize}px;display:block;stroke:currentColor;stroke-width:2.3;color:currentColor;fill:none;"`,
-    );
-    ACTIVITY_ICON_MARKUP_CACHE.set(cacheKey, styled);
-    return styled;
-};
-
-const buildActivityMarkerHtml = (
-    type: ActivityType,
-    isSelected: boolean,
-    title: string | undefined,
-    profile: MarkerRenderProfile,
-): string => {
-    const size = isSelected
-        ? profile.activity.size + profile.activity.selectedBoost
-        : profile.activity.size;
-    const palette = getActivityTypePaletteParts(type);
-    const selectedOutlineColor = resolveCssColorVar('--tf-accent-500', '#2563eb');
-    const iconMarkup = buildActivityIconMarkup(type, profile.activity.iconSize);
-    const tooltipLabel = typeof title === 'string' && title.trim().length > 0
-        ? escapeHtml(title.trim())
-        : '';
-    const tooltipMarkup = tooltipLabel
-        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:translate(-50%, calc(-100% - 8px));pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:${profile.activity.tooltipPaddingY}px ${profile.activity.tooltipPaddingX}px;font-size:${profile.activity.tooltipFontSize}px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
-        : '';
-
-    return `
-        <div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none;">
-            <div class="${palette.bg} ${palette.border}" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:9999px;border-width:2px;border-style:solid;box-shadow:${isSelected ? `0 0 0 2px ${selectedOutlineColor}` : 'none'};">
-                <div class="${palette.text}" style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;">${iconMarkup}</div>
-            </div>
-            ${tooltipMarkup}
-        </div>
-    `;
-};
-
-type ResolvedActivityMarker = {
-    id: string;
-    title: string;
-    type: ActivityType;
-    baseCoordinates: google.maps.LatLngLiteral;
-    position: google.maps.LatLngLiteral;
-    coordinateSource: 'activity' | 'city';
-};
-
-const resolveActivityOwnerCity = (
-    activity: ITimelineItem,
-    cityItems: ITimelineItem[],
-): ITimelineItem | null => {
-    const directOwner = cityItems.find((city) => (
-        activity.startDateOffset >= city.startDateOffset
-        && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
-    ));
-    if (directOwner) return directOwner;
-
-    const previousCity = [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset);
-    if (previousCity) return previousCity;
-    return cityItems[0] || null;
-};
-
-const resolveActivityMarkerPositions = (
-    items: ITimelineItem[],
-): ResolvedActivityMarker[] => {
-    const cityItems = items
-        .filter((item): item is ITimelineItem => item.type === 'city' && isFiniteLatLngLiteral(item.coordinates))
-        .sort((left, right) => left.startDateOffset - right.startDateOffset);
-    const activities = items
-        .filter((item): item is ITimelineItem => item.type === 'activity')
-        .sort((left, right) => {
-            if (left.startDateOffset !== right.startDateOffset) return left.startDateOffset - right.startDateOffset;
-            return left.title.localeCompare(right.title);
-        });
-
-    const candidates: Array<{
-        id: string;
-        title: string;
-        type: ActivityType;
-        baseCoordinates: google.maps.LatLngLiteral;
-        coordinateSource: 'activity' | 'city';
-    }> = [];
-    for (const activity of activities) {
-        const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
-        const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
-        const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
-        if (!isFiniteLatLngLiteral(baseCoordinates)) continue;
-        const primaryType = pickPrimaryActivityType(activity.activityType);
-        candidates.push({
-            id: activity.id,
-            title: activity.title,
-            type: primaryType,
-            baseCoordinates,
-            coordinateSource: activityCoordinates ? 'activity' : 'city',
-        });
-    }
-
-    const groupedByCoordinates = new Map<string, number[]>();
-    candidates.forEach((candidate, index) => {
-        const key = buildTripMapCoordinateGroupKey(candidate.baseCoordinates, MARKER_COORDINATE_GROUP_PRECISION);
-        if (!key) return;
-        const grouped = groupedByCoordinates.get(key) ?? [];
-        grouped.push(index);
-        groupedByCoordinates.set(key, grouped);
-    });
-
-    return candidates.map((candidate, index) => {
-        const key = buildTripMapCoordinateGroupKey(candidate.baseCoordinates, MARKER_COORDINATE_GROUP_PRECISION);
-        const grouped = key ? (groupedByCoordinates.get(key) ?? []) : [];
-        const overlapIndex = Math.max(0, grouped.indexOf(index));
-        const overlapCount = candidate.coordinateSource === 'city'
-            ? Math.max(ACTIVITY_CITY_FALLBACK_MIN_SLOTS, grouped.length)
-            : grouped.length;
-        const position = buildOverlappingMarkerPosition(
-            candidate.baseCoordinates,
-            overlapIndex,
-            overlapCount,
-            ACTIVITY_MARKER_OVERLAP_RADIUS_METERS,
-        );
-        return {
-            ...candidate,
-            position,
-        };
-    });
-};
-
-const resolveSelectedMapFocusPosition = ({
-    provider = 'google',
-    selectedActivityId,
-    selectedCityId,
-    activityMarkerPositions,
-    cities,
-}: {
-    provider?: MapImplementation;
-    selectedActivityId?: string | null;
-    selectedCityId?: string | null;
-    activityMarkerPositions: Map<string, google.maps.LatLngLiteral>;
-    cities: ITimelineItem[];
-}): { position: google.maps.LatLngLiteral; zoom: number } | null => {
-    const selectionTuning = getTripMapProviderTuning(provider).selection;
-    if (selectedActivityId) {
-        const activityPosition = activityMarkerPositions.get(selectedActivityId);
-        if (activityPosition) {
-            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom };
-        }
-    }
-    if (selectedCityId) {
-        const selectedCity = cities.find((item) => item.id === selectedCityId);
-        if (selectedCity?.coordinates) {
-            return {
-                position: { lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng },
-                zoom: selectionTuning.cityFocusZoom,
-            };
-        }
-    }
-    return null;
-};
-
-const shouldSkipRouteFitForSelection = ({
-    respectSelection,
-    selectionVersionAtSchedule,
-    currentSelectionVersion,
-    selectedItemId,
-    selectedActivityId,
-    selectedCityId,
-}: {
-    respectSelection: boolean;
-    selectionVersionAtSchedule: number;
-    currentSelectionVersion: number;
-    selectedItemId?: string | null;
-    selectedActivityId?: string | null;
-    selectedCityId?: string | null;
-}): boolean => {
-    if (!respectSelection) return false;
-    if (selectionVersionAtSchedule !== currentSelectionVersion) return true;
-    return Boolean(selectedItemId || selectedActivityId || selectedCityId);
-};
-
-const resolveSelectionViewportActions = ({
-    isTargetVisible,
-    isTargetWithinSafeZone,
-    currentZoom,
-    targetZoom,
-}: {
-    isTargetVisible: boolean;
-    isTargetWithinSafeZone?: boolean;
-    currentZoom: number | null;
-    targetZoom: number;
-}): { shouldPan: boolean; shouldZoom: boolean } => {
-    const isTargetComfortablyVisible = isTargetWithinSafeZone ?? isTargetVisible;
-    const shouldZoom = currentZoom === null || currentZoom < targetZoom;
-    const shouldPan = !isTargetComfortablyVisible || shouldZoom;
-    return { shouldPan, shouldZoom };
-};
-
-const resolveMapViewportPadding = ({
-    provider = 'google',
-    mapDockMode,
-    mapViewportSize,
-}: {
-    provider?: MapImplementation;
-    mapDockMode: 'docked' | 'floating';
-    mapViewportSize: { width: number; height: number } | null;
-}): google.maps.Padding => {
-    return resolveTripMapViewportPadding({
-        provider,
-        mapDockMode,
-        mapViewportSize,
-    });
-};
-
-const isCoordinateWithinSafeBounds = ({
-    bounds,
-    point,
-    insetRatio = 0.22,
-}: {
-    bounds: google.maps.LatLngBounds;
-    point: google.maps.LatLngLiteral;
-    insetRatio?: number;
-}): boolean => {
-    const northEast = bounds.getNorthEast();
-    const southWest = bounds.getSouthWest();
-    const latSpan = northEast.lat() - southWest.lat();
-    const lngSpan = northEast.lng() - southWest.lng();
-    if (!Number.isFinite(latSpan) || !Number.isFinite(lngSpan)) return false;
-    if (latSpan <= 0 || lngSpan <= 0) return false;
-
-    const clampedInsetRatio = Math.max(0, Math.min(0.45, insetRatio));
-    const latInset = latSpan * clampedInsetRatio;
-    const lngInset = lngSpan * clampedInsetRatio;
-
-    return point.lat >= southWest.lat() + latInset
-        && point.lat <= northEast.lat() - latInset
-        && point.lng >= southWest.lng() + lngInset
-        && point.lng <= northEast.lng() - lngInset;
-};
-
-const shouldDisplayActivityMarkers = ({
-    provider = 'google',
-    isEnabled,
-    zoom,
-}: {
-    provider?: MapImplementation;
-    isEnabled: boolean;
-    zoom: number | null | undefined;
-}): boolean => {
-    if (!isEnabled) return false;
-    if (!Number.isFinite(zoom)) return false;
-    return Number(zoom) >= getTripMapProviderTuning(provider).markers.activityMinZoom;
-};
-
-const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
-    if (!rect) return false;
-    return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
-};
+const EMPTY_IDEA_MARKERS: MapIdeaMarker[] = [];
 
 type CityLabelAnchor = TripMapCityLabelAnchor;
 const resolveCityLabelPlacement = resolveTripMapCityLabelPlacement;
 const resolveCityLabelTheme = resolveTripMapCityLabelTheme;
 
-const resolveCityLabelAnchor = (
-    _city: google.maps.LatLngLiteral,
-    _previous?: google.maps.LatLngLiteral | null,
-    _next?: google.maps.LatLngLiteral | null,
-): CityLabelAnchor => {
-    return 'above';
-};
-
-const buildRouteAttemptPolicy = (
-    mode: string,
-    straightDistanceKm: number,
-): RouteAttemptPolicy => {
-    if (!Number.isFinite(straightDistanceKm) || straightDistanceKm <= 0) {
-        return { shouldAttempt: false, modes: [], reason: 'invalid_distance' };
-    }
-
-    switch (mode) {
-        case 'walk':
-            return straightDistanceKm <= MAX_WALK_ROUTE_CHECK_KM
-                ? { shouldAttempt: true, modes: ['WALKING'] }
-                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
-        case 'bicycle':
-            return straightDistanceKm <= MAX_BICYCLE_ROUTE_CHECK_KM
-                ? { shouldAttempt: true, modes: ['BICYCLING'] }
-                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
-        case 'train':
-        case 'bus':
-            if (straightDistanceKm > MAX_TRANSIT_ROUTE_CHECK_KM) {
-                return { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
-            }
-            if (straightDistanceKm <= TRANSIT_SECOND_PASS_MAX_KM) {
-                // Second pass stays in TRANSIT mode but drops strict train/bus submode filters.
-                return { shouldAttempt: true, modes: ['TRANSIT', 'TRANSIT'] };
-            }
-            return { shouldAttempt: true, modes: ['TRANSIT'] };
-        case 'car':
-        case 'motorcycle':
-            return straightDistanceKm <= MAX_DRIVING_ROUTE_CHECK_KM
-                ? { shouldAttempt: true, modes: ['DRIVING'] }
-                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
-        default:
-            return { shouldAttempt: false, modes: [], reason: 'unsupported_mode' };
-    }
-};
-
-const buildRoutePolylinePairOptions = (
-    options: google.maps.PolylineOptions,
-    style: MapStyle = 'standard',
-): {
-    outerOutlineOptions: google.maps.PolylineOptions;
-    outlineOptions: google.maps.PolylineOptions;
-    mainOptions: google.maps.PolylineOptions;
-} => {
-    const baseWeight = options.strokeWeight ?? 3;
-    const baseOpacity = options.strokeOpacity ?? 0.7;
-    const baseZIndex = options.zIndex ?? 30;
-    const mainStrokeWeight = baseWeight + 1;
-    const innerOutlineColor = getRouteOutlineColor(style);
-    const isDarkFamilyStyle = isDarkMapStyle(style);
-    const isIconOnlyRoute = baseOpacity <= 0 && (options.icons?.length ?? 0) > 0;
-    const outerOutlineColor = isDarkFamilyStyle
-        ? (options.strokeColor ?? getRouteOuterOutlineColor(style))
-        : getRouteOuterOutlineColor(style);
-    const shouldApplyDarkRouteBorders = isDarkFamilyStyle;
-    const shouldApplyDarkOuterRouteBorder = shouldApplyDarkRouteBorders && !isIconOnlyRoute;
-
-    const outerOutlineOptions: google.maps.PolylineOptions = {
-        ...options,
-        strokeColor: outerOutlineColor,
-        strokeOpacity: shouldApplyDarkOuterRouteBorder ? 0.5 : 0,
-        strokeWeight: shouldApplyDarkOuterRouteBorder ? mainStrokeWeight + 5 : mainStrokeWeight,
-        icons: undefined,
-        zIndex: baseZIndex - 2,
-    };
-
-    const outlineOptions: google.maps.PolylineOptions = {
-        ...options,
-        strokeColor: innerOutlineColor,
-        strokeOpacity: shouldApplyDarkRouteBorders ? 1 : 0,
-        strokeWeight: shouldApplyDarkRouteBorders ? mainStrokeWeight + 3 : mainStrokeWeight,
-        icons: undefined,
-        zIndex: baseZIndex - 1,
-    };
-
-    const mainOptions: google.maps.PolylineOptions = {
-        ...options,
-        strokeOpacity: baseOpacity,
-        strokeWeight: mainStrokeWeight,
-        zIndex: baseZIndex,
-    };
-
-    return { outerOutlineOptions, outlineOptions, mainOptions };
-};
-
-const buildMapboxRouteLayerConfigs = ({
-    routeId,
-    options,
-    style,
-    provider = 'mapbox',
-}: {
-    routeId: string;
-    options: google.maps.PolylineOptions;
-    style: MapStyle;
-    provider?: MapImplementation;
-}): MapboxLineLayerConfig[] => {
-    const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, style);
-    const isDarkStyle = isDarkMapStyle(style);
-    const toLayerConfig = (
-        suffix: 'outer' | 'outline' | 'main',
-        layerOptions: google.maps.PolylineOptions,
-    ): MapboxLineLayerConfig | null => {
-        const dasharray = buildMapboxDashedRouteDasharray(
-            (layerOptions.icons as Array<{ repeat?: string }> | undefined),
-        );
-        const resolvedOpacity = (layerOptions.strokeOpacity ?? 0) > 0
-            ? Number(layerOptions.strokeOpacity)
-            : (dasharray ? 0.92 : 0);
-        if (resolvedOpacity <= 0) return null;
-        return {
-            id: `${routeId}-${suffix}`,
-            color: String(layerOptions.strokeColor ?? '#0f172a'),
-            opacity: resolvedOpacity,
-            width: Number(layerOptions.strokeWeight ?? 1),
-            dasharray,
-        };
-    };
-
-    if (isDarkStyle) {
-        const mainLayer = toLayerConfig('main', mainOptions);
-        if (!mainLayer) return [];
-        const darkRoutePresentation = resolveTripMapDarkRoutePresentation(provider, style);
-        const darkRouteLayers: MapboxLineLayerConfig[] = [];
-        darkRouteLayers.push({
-            id: `${routeId}-shadow`,
-            color: darkRoutePresentation.shadowColor,
-            opacity: darkRoutePresentation.shadowOpacity,
-            width: Math.max(1.5, mainLayer.width + darkRoutePresentation.shadowWidthBoost),
-            emissiveStrength: darkRoutePresentation.shadowEmissiveStrength,
-        });
-        if (!mainLayer.dasharray) {
-            darkRouteLayers.push({
-                id: `${routeId}-glow`,
-                color: mainLayer.color,
-                opacity: darkRoutePresentation.glowOpacity,
-                width: Math.max(1.3, mainLayer.width + darkRoutePresentation.glowWidthBoost),
-                emissiveStrength: darkRoutePresentation.glowEmissiveStrength,
-            });
-        }
-        darkRouteLayers.push({
-            ...mainLayer,
-            opacity: Math.max(mainLayer.opacity, darkRoutePresentation.mainOpacity),
-            emissiveStrength: darkRoutePresentation.mainEmissiveStrength,
-        });
-        return darkRouteLayers;
-    }
-
-    return [
-        toLayerConfig('outer', outerOutlineOptions),
-        toLayerConfig('outline', outlineOptions),
-        toLayerConfig('main', mainOptions),
-    ].filter((layer): layer is MapboxLineLayerConfig => Boolean(layer));
-};
-
-const filterHydratedRouteCacheEntries = (
-    parsed: unknown,
-    now: number,
-): Array<[string, RouteCacheEntry]> => {
-    if (!parsed || typeof parsed !== 'object') return [];
-    const entries = parsed as Record<string, RouteCacheEntry>;
-    return Object.entries(entries).filter(([, entry]) => {
-        if (!entry || !entry.updatedAt || !entry.status) return false;
-        if (entry.status === 'failed' && now - entry.updatedAt > ROUTE_FAILURE_TTL_MS) return false;
-        if (now - entry.updatedAt > ROUTE_PERSIST_TTL_MS) return false;
-        return true;
-    });
-};
-
-const buildPersistedRouteCachePayload = (
-    routeCache: Map<string, RouteCacheEntry>,
-    now: number,
-): Record<string, RouteCacheEntry> => {
-    const payload: Record<string, RouteCacheEntry> = {};
-    routeCache.forEach((entry, key) => {
-        if (!entry || !entry.updatedAt || !entry.status) return;
-        if (entry.status === 'failed') {
-            if (now - entry.updatedAt <= ROUTE_FAILURE_TTL_MS) {
-                payload[key] = {
-                    status: 'failed',
-                    updatedAt: entry.updatedAt,
-                    reason: entry.reason,
-                };
-            }
-            return;
-        }
-        if (now - entry.updatedAt <= ROUTE_PERSIST_TTL_MS) {
-            payload[key] = entry;
-        }
-    });
-    return payload;
-};
-
-const hydrateRouteCache = () => {
-    if (routeCacheHydrated) return;
-    if (typeof window === 'undefined') return;
-    routeCacheHydrated = true;
-    try {
-        const raw = readLocalStorageItem(ROUTE_STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        const now = Date.now();
-        filterHydratedRouteCacheEntries(parsed, now).forEach(([key, entry]) => {
-            ROUTE_CACHE.set(key, entry);
-        });
-    } catch (e) {
-        console.warn('Failed to hydrate route cache', e);
-    }
-};
-
-const persistRouteCache = () => {
-    if (typeof window === 'undefined') return;
-    try {
-        const now = Date.now();
-        const payload = buildPersistedRouteCachePayload(ROUTE_CACHE, now);
-        writeLocalStorageItem(ROUTE_STORAGE_KEY, JSON.stringify(payload));
-    } catch (e) {
-        console.warn('Failed to persist route cache', e);
-    }
-};
-
 interface ItineraryMapInstanceBridgeProps {
     mapId: string;
     onMapInstanceChange: (map: google.maps.Map | null) => void;
 }
+
+/** Google's own arrow symbol. Only call it on the Google branch: it reads `window.google`. */
+const buildGoogleRouteArrowIcon = (color: string, routeScale: number): google.maps.Symbol => ({
+    path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+    fillColor: color,
+    fillOpacity: 1,
+    strokeColor: color,
+    strokeOpacity: 1,
+    strokeWeight: 0.1,
+    scale: 3.2 * Math.max(0.72, routeScale),
+});
 
 const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({ mapId, onMapInstanceChange }) => {
     const map = useMap(mapId);
@@ -1406,14 +261,38 @@ const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({
     return null;
 };
 
+/** How long the Google map may take to start before the surface says it failed. */
+export const MAP_INIT_TIMEOUT_MS = 15000;
+
 export const ItineraryMap: React.FC<ItineraryMapProps> = ({ 
     items, 
     selectedItemId, 
     onCityMarkerSelect,
     onActivityMarkerSelect,
+    enableActivityPopup = false,
     layoutMode, 
     onLayoutChange, 
     showLayoutControls = true,
+    cityFocusMode = true,
+    onClearSelection,
+    onOpenCustomize,
+    isCustomizeOpen = false,
+    customizeLabel: customizeLabelProp,
+    showActivityMarkers,
+    onShowActivityMarkersChange,
+    ideaMarkers = EMPTY_IDEA_MARKERS,
+    showIdeaMarkers = false,
+    onShowIdeaMarkersChange,
+    onIdeaAction,
+    canEditIdeas = false,
+    basemapDetail,
+    mapLookAxes,
+    tripOverlay,
+    todayDayOffset = null,
+    useGlobeProjection = false,
+    showTerrain = false,
+    mapPitch = 0,
+    routeLineWeight = 1,
     activeStyle = 'standard',
     onStyleChange,
     routeMode = 'simple',
@@ -1431,8 +310,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     mapColorMode = DEFAULT_MAP_COLOR_MODE,
     onMapColorModeChange,
     isPaywalled = false,
-    viewTransitionName
+    viewTransitionName,
+    showUserLocation = false,
+    analyticsTripId,
 }) => {
+    const { t } = useTranslation('common');
+    const customizeLabel = customizeLabelProp ?? t('tripView.mapCustomize.open');
     const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
     const mapInstanceId = mapInstanceIdRef.current;
     const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -1458,37 +341,100 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
     const onActivityMarkerSelectRef = useRef<typeof onActivityMarkerSelect>(onActivityMarkerSelect);
     const googleMixedSurfaceControllerRef = useRef<GoogleMixedSurfaceController | null>(null);
+    /**
+     * Every camera move goes through this: the Mapbox map in standalone mode,
+     * the Google map otherwise (where Mapbox, if shown, follows Google).
+     */
+    const cameraRef = useRef<TripMapCamera | null>(null);
     
-    const { isLoaded, loadError } = useGoogleMaps();
-    const { runtime, mapboxAccessToken } = useMapRuntime();
+    const { isLoaded, loadError: googleLoadError, disabled: googleMapsDisabled } = useGoogleMaps();
+    const { runtime, mapboxAccessToken, presetSettled } = useMapRuntime();
+    /**
+     * Mapbox with no Google underneath (`mapbox_all`). Decided only once the
+     * admin preset has settled; until then the map shows "Loading map…".
+     */
+    const isStandaloneMapbox = Boolean(presetSettled)
+        && runtime.effectiveSelection.renderer === 'mapbox'
+        && googleMapsDisabled;
+    const isStandaloneMapboxRef = useRef(isStandaloneMapbox);
+    isStandaloneMapboxRef.current = isStandaloneMapbox;
+    const [standaloneMapboxLoadError, setStandaloneMapboxLoadError] = useState<Error | null>(null);
+    const [googleInitTimeoutError, setGoogleInitTimeoutError] = useState<Error | null>(null);
+    // Blocking errors only: the Google canvas stays mounted through a mere timeout.
+    const blockingLoadError = googleLoadError ?? (isStandaloneMapbox ? standaloneMapboxLoadError : null);
+    const routesImplementation = runtime.effectiveSelection.routes;
+    const locationSearchImplementation = runtime.effectiveSelection.locationSearch;
     const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
     const [mapInitialized, setMapInitialized] = useState(false);
     const [mapboxBasemapFailureKey, setMapboxBasemapFailureKey] = useState<string | null>(null);
     const [isMapboxSurfaceReady, setIsMapboxSurfaceReady] = useState(false);
     const [mapboxStyleReloadNonce, setMapboxStyleReloadNonce] = useState(0);
-    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false);
+    // On by default: the zoom gate in `shouldDisplayActivityMarkers` keeps them
+    // out of a country-wide view, so they only appear once the map is close
+    // enough for them to mean something.
+    const [uncontrolledActivityMarkersEnabled, setUncontrolledActivityMarkersEnabled] = useState(true);
+    const activityMarkersEnabled = showActivityMarkers ?? uncontrolledActivityMarkersEnabled;
+    const toggleActivityMarkers = useCallback(() => {
+        const next = !activityMarkersEnabled;
+        if (onShowActivityMarkersChange) {
+            onShowActivityMarkersChange(next);
+            return;
+        }
+        setUncontrolledActivityMarkersEnabled(next);
+    }, [activityMarkersEnabled, onShowActivityMarkersChange]);
+    const ideaLayerAvailable = Boolean(onShowIdeaMarkersChange) && ideaMarkers.length > 0;
+    const ideaMarkersVisible = ideaLayerAvailable && showIdeaMarkers;
+    const ideaMarkersRef = useRef(ideaMarkers);
+    const ideaMarkersVisibleRef = useRef(ideaMarkersVisible);
+    const ideaMarkerHandlesRef = useRef<OverlayMarkerHandle[]>([]);
+    const [popupIdeaId, setPopupIdeaId] = useState<string | null>(null);
+    const [popupActivityId, setPopupActivityId] = useState<string | null>(null);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
     const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
+    // A map that started late clears the timeout error; adjusted during render, not in an effect.
+    if (mapInitialized && googleInitTimeoutError) setGoogleInitTimeoutError(null);
+    const loadError = blockingLoadError ?? (mapInitialized ? null : googleInitTimeoutError);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
+    const userLocation = useTripUserLocation({
+        enabled: showUserLocation && !isPaywalled,
+        items,
+        todayDayOffset,
+    });
+    const userLocationFix = userLocation.isOffered ? userLocation.fix : null;
+    const userLocationFixRef = useRef(userLocationFix);
+    userLocationFixRef.current = userLocationFix;
+    const userLocationMarkerRef = useRef<RuntimeMarkerHandle | null>(null);
+    const pendingUserLocationRecenterRef = useRef(false);
+    const [isUserLocationInView, setIsUserLocationInView] = useState(true);
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
-    const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
     const mapboxBasemapAvailabilityKey = `${mapboxAccessToken}::${runtime.activeSelectionKey}`;
     const mapboxBasemapAvailable = mapboxBasemapFailureKey !== mapboxBasemapAvailabilityKey;
     const shouldUseRequestedMapboxBasemap = runtime.effectiveSelection.renderer === 'mapbox' && mapboxAccessToken.length > 0;
-    const isMapboxBasemapEnabled = shouldUseRequestedMapboxBasemap && mapboxBasemapAvailable;
+    // Standalone has no Google map to fall back to, so a Mapbox failure is an error, not a switch.
+    const isMapboxBasemapEnabled = shouldUseRequestedMapboxBasemap && (mapboxBasemapAvailable || isStandaloneMapbox);
     const tripMapProvider = runtime.effectiveSelection.renderer;
     const tripMapTuning = useMemo(() => getTripMapProviderTuning(tripMapProvider), [tripMapProvider]);
     const mapSurfaceBackgroundColor = useMemo(() => getMapSurfaceBackgroundColor(activeStyle), [activeStyle]);
     const shouldHideGoogleCanvasInMixedMode = shouldHideGoogleMapCanvas({
         isMapboxEnabled: isMapboxBasemapEnabled,
     });
-    const shouldRenderMapCanvas = isLoaded && !loadError;
+    // Waiting on Google: the preset is settled, Google is the one to start, and it has not.
+    const isWaitingForGoogleMap = Boolean(presetSettled) && !isStandaloneMapbox && !googleLoadError && !mapInitialized;
+    useEffect(() => {
+        if (!isWaitingForGoogleMap) return;
+        const timer = window.setTimeout(() => {
+            setGoogleInitTimeoutError(new Error('Google Maps did not start (check the API key)'));
+        }, MAP_INIT_TIMEOUT_MS);
+        return () => window.clearTimeout(timer);
+    }, [isWaitingForGoogleMap]);
+    const shouldRenderMapCanvas = Boolean(presetSettled) && isLoaded && !blockingLoadError && !isStandaloneMapbox;
     const shouldShowMapLoadingOverlay = !loadError && (
-        (!isMapboxBasemapEnabled && !mapInitialized)
+        !presetSettled
+        || (!isMapboxBasemapEnabled && !mapInitialized)
         || (isMapboxBasemapEnabled && !isMapboxSurfaceReady)
     );
     const cities = useMemo(() => 
@@ -1509,6 +455,25 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         [items, selectedItemId]
     );
     const selectedItemIdRef = useRef<string | null>(selectedItemId ?? null);
+    /**
+     * Looking at one city. The rest of the journey — every other city marker,
+     * its label and all the connecting lines — is noise on top of the one place
+     * being read, so it comes off the map until the selection is let go.
+     */
+    const isCityFocusMode = cityFocusMode && Boolean(selectedCityId) && !selectedActivityId;
+    const showRouteArrows = tripOverlay?.showRouteArrows ?? true;
+    const dashedRoutes = tripOverlay?.dashedRoutes ?? false;
+
+    const showTrafficLayer = tripOverlay?.showTraffic ?? false;
+    /**
+     * Fading days already behind you. Only meaningful while the trip is
+     * actually running — before it starts nothing is past, and afterwards
+     * everything is, which would fade the whole map to nothing.
+     */
+    const shouldDimPastDays = Boolean(tripOverlay?.dimPastDays)
+        && typeof todayDayOffset === 'number'
+        && Number.isFinite(todayDayOffset);
+    const showTransitLinesLayer = tripOverlay?.showTransitLines ?? false;
     const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
     const selectedCityIdRef = useRef<string | null>(selectedCityId);
     const selectionVersionRef = useRef(0);
@@ -1586,13 +551,35 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }),
         [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx, tripMapProvider],
     );
-    const effectiveMarkerRenderProfile = useMemo(() => {
+    const rawMarkerRenderProfile = useMemo(() => {
         if (crowdedCityProfile === markerRenderProfile.city) return markerRenderProfile;
         return {
             ...markerRenderProfile,
             city: crowdedCityProfile,
         };
     }, [crowdedCityProfile, markerRenderProfile]);
+
+    /**
+     * Stabilised by value, not by identity.
+     *
+     * The profile is derived from the live zoom and from the gap between the
+     * nearest markers on screen, so panning and zooming produced a brand new
+     * object on almost every frame. That object is a dependency of the marker
+     * and route rebuild, which therefore tore every marker and polyline off the
+     * map and built them again — and re-ran the async route draw — while the
+     * traveller was still moving. That is the flicker where routes vanish and
+     * come back a moment later.
+     *
+     * The underlying numbers only change at the tier and zoom-band boundaries,
+     * so keying on the serialised value collapses the churn to the handful of
+     * genuine transitions.
+     */
+    const markerRenderProfileKey = JSON.stringify(rawMarkerRenderProfile);
+    const effectiveMarkerRenderProfile = useMemo(
+        () => rawMarkerRenderProfile,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by value on purpose
+        [markerRenderProfileKey],
+    );
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
         items.forEach((item) => {
@@ -1623,26 +610,33 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         dockModeRefitTimerRef.current = null;
     }, []);
 
-    const runFitBounds = useCallback(() => {
-        if (!googleMapRef.current || cities.length === 0) return;
+    const fitBoundsPoints = useMemo(() => collectTripMapFitBoundsCoordinates({
+        cities,
+        items,
+        provider: tripMapProvider,
+    }), [cities, items, tripMapProvider]);
 
-        const bounds = new window.google.maps.LatLngBounds();
-        collectTripMapFitBoundsCoordinates({
-            cities,
-            items,
-            provider: tripMapProvider,
-        }).forEach((point) => {
-            bounds.extend(point);
-        });
-        googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
+    const runFitBounds = useCallback(() => {
+        const camera = cameraRef.current;
+        if (!camera || cities.length === 0) return;
+
+        // Measure the container here rather than trusting the observed size:
+        // the pane can change without a resize observation (a sheet sliding over
+        // a full-bleed map), and a stale size produces padding that no longer
+        // fits, which is how "fit to itinerary" ended up framing nothing.
+        const liveRect = mapContainerRef.current?.getBoundingClientRect();
+        const fitViewportSize = liveRect && liveRect.width > 0 && liveRect.height > 0
+            ? { width: liveRect.width, height: liveRect.height }
+            : mapViewportSize;
+        camera.fitBounds(fitBoundsPoints, resolveMapViewportPadding({
             provider: tripMapProvider,
             mapDockMode,
-            mapViewportSize,
+            mapViewportSize: fitViewportSize,
         }));
-    }, [cities, items, mapDockMode, mapViewportSize, tripMapProvider]);
+    }, [cities.length, fitBoundsPoints, mapDockMode, mapViewportSize, tripMapProvider]);
 
     const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
-        if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
+        if (!cameraRef.current || cities.length === 0 || typeof window === 'undefined') return;
         const respectSelection = options?.respectSelection ?? false;
         const selectionVersionAtSchedule = selectionVersionRef.current;
         cancelScheduledFit();
@@ -1650,7 +644,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         let attemptCount = 0;
         const tryFit = () => {
             fitRafRef.current = null;
-            if (!googleMapRef.current || cities.length === 0) return;
+            const camera = cameraRef.current;
+            if (!camera || cities.length === 0) return;
 
             const rect = mapContainerRef.current?.getBoundingClientRect();
             if (!isMapViewportReady(rect) && attemptCount < maxAttempts) {
@@ -1659,9 +654,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return;
             }
 
-            if (window.google?.maps?.event?.trigger) {
-                window.google.maps.event.trigger(googleMapRef.current, 'resize');
-            }
+            camera.resize();
             if (shouldSkipRouteFitForSelection({
                 respectSelection,
                 selectionVersionAtSchedule,
@@ -1702,6 +695,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         activityMarkersEnabledRef.current = activityMarkersEnabled;
     }, [activityMarkersEnabled]);
 
+    // Declared before the drawing pass, so it reads this render's ideas.
+    useEffect(() => {
+        ideaMarkersRef.current = ideaMarkers;
+        ideaMarkersVisibleRef.current = ideaMarkersVisible;
+    }, [ideaMarkers, ideaMarkersVisible]);
+
     useEffect(() => {
         mapZoomLevelRef.current = mapZoomLevel;
     }, [mapZoomLevel]);
@@ -1719,6 +718,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
         if (googleMapRef.current === map) return;
         googleMapRef.current = map;
+        cameraRef.current = map ? createGoogleTripMapCamera(map) : null;
         setMapInstance(map);
         setMapInitialized(Boolean(map));
         if (!map) {
@@ -1739,8 +739,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     const handleMapboxMapReadyChange = useCallback((map: mapboxgl.Map | null) => {
         mapboxMapRef.current = map;
+        // Mixed mode keeps the Google camera; only a standalone map owns it.
+        if (isStandaloneMapboxRef.current && map) {
+            cameraRef.current = createMapboxTripMapCamera(map);
+        }
         if (!map) {
             setIsMapboxSurfaceReady(false);
+            if (!googleMapRef.current) {
+                cameraRef.current = null;
+                setMapInitialized(false);
+                setMapZoomLevel(null);
+            }
         }
     }, []);
 
@@ -1750,6 +759,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     const handleMapboxSurfaceReadyChange = useCallback((isReady: boolean) => {
         setIsMapboxSurfaceReady(isReady);
+        // Standalone: the map is usable once its first style is in. A later
+        // style switch reports not-ready briefly, which must not tear down the
+        // camera or re-run everything keyed on `mapInitialized`.
+        if (!isReady || !isStandaloneMapboxRef.current || !cameraRef.current) return;
+        setMapInitialized(true);
+        const containerRect = mapContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+            setMapViewportSize({
+                width: Math.round(containerRect.width),
+                height: Math.round(containerRect.height),
+            });
+        }
     }, []);
 
     const handleMapboxStyleReload = useCallback(() => {
@@ -1779,37 +800,30 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [shouldHideGoogleCanvasInMixedMode]);
 
     useEffect(() => {
-        if (!mapActionsDisabled) return;
-        setIsStyleMenuOpen(false);
-    }, [mapActionsDisabled]);
-
-    useEffect(() => {
         if (isMapboxBasemapEnabled) return;
         setIsMapboxSurfaceReady(false);
     }, [isMapboxBasemapEnabled]);
 
     const handleMapboxBasemapError = useCallback((error: { message: string; status: number | null }) => {
+        if (isStandaloneMapboxRef.current) {
+            console.warn('Mapbox map failed in standalone mode', error);
+            setIsMapboxSurfaceReady(false);
+            setStandaloneMapboxLoadError(new Error(error.message));
+            return;
+        }
         console.warn('Mapbox basemap failed inside itinerary map; falling back to Google', error);
         setIsMapboxSurfaceReady(false);
         setMapboxBasemapFailureKey(mapboxBasemapAvailabilityKey);
     }, [mapboxBasemapAvailabilityKey]);
 
     useEffect(() => {
-        let listener: google.maps.MapsEventListener | null = null;
-        if (mapInitialized && googleMapRef.current) {
-            const mapInstance = googleMapRef.current as google.maps.Map;
-            const syncZoom = () => {
-                const nextZoom = mapInstance.getZoom?.();
-                setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
-            };
-            syncZoom();
-            listener = mapInstance.addListener('zoom_changed', syncZoom);
-        }
-        return () => {
-            if (listener) {
-                window.google?.maps?.event?.removeListener(listener);
-            }
+        const camera = cameraRef.current;
+        if (!mapInitialized || !camera) return;
+        const setZoom = (zoom: number | null) => {
+            setMapZoomLevel(Number.isFinite(zoom) ? Number(zoom) : null);
         };
+        setZoom(camera.getZoom());
+        return camera.onZoom(setZoom);
     }, [mapInitialized]);
 
     // Handle Style Change
@@ -1844,7 +858,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             .join('||');
         const activitySignature = items.reduce<string[]>((parts, item) => {
             if (item.type === 'activity') {
-                parts.push(`${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`);
+                parts.push(`${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}|${item.activityKind ?? ''}|${item.stayCityId ?? ''}|${item.dayTripReturnCityId ?? ''}|${item.activityKind === 'day-trip' ? (item.location ?? '') : ''}`);
             }
             return parts;
         }, []).join('||');
@@ -1857,8 +871,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return `${city.id}->${nextCity.id}:${mode}`;
             })
             .join('||');
-        return `${citySignature}__${activitySignature}__${routeSignature}__${mapColorMode}`;
-    }, [cities, items, mapColorMode]);
+        return `${citySignature}__${activitySignature}__${routeSignature}__${mapColorMode}__${buildMapIdeaSignature(ideaMarkers)}`;
+    }, [cities, ideaMarkers, items, mapColorMode]);
 
     // Update Markers & Routes
     useEffect(() => {
@@ -1867,8 +881,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const mapboxModule = isMapboxBasemapEnabled ? mapboxModuleRef.current : null;
         const canRenderMapVisuals = Boolean(
             mapInitialized
-            && googleMapRef.current
-            && window.google?.maps
+            // Standalone Mapbox draws everything itself; `window.google` does not exist there.
+            && (isStandaloneMapbox || (googleMapRef.current && window.google?.maps))
             && (!isMapboxBasemapEnabled || mapboxMap)
             && (!isMapboxBasemapEnabled || mapboxModule)
             && (!isMapboxBasemapEnabled || (
@@ -1876,14 +890,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 && mapboxMap
                 && isMapboxStyleReadyForRuntimeMutations(mapboxMap)
             ))
-            && (isMapboxBasemapEnabled || window.google.maps.OverlayView)
+            && (isMapboxBasemapEnabled || window.google?.maps?.OverlayView)
         );
+        /** Google's geometry library, never read on the standalone Mapbox path. */
+        const readGoogleSpherical = () => (isStandaloneMapbox ? undefined : window.google?.maps?.geometry?.spherical);
 
         const clearRenderedMapVisuals = () => {
             markersRef.current.forEach((marker) => marker.setMap(null));
             markersRef.current = [];
             activityMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
             activityMarkerMetaRef.current = [];
+            ideaMarkerHandlesRef.current.forEach((marker) => marker.setMap(null));
+            ideaMarkerHandlesRef.current = [];
             activityMarkerPositionByIdRef.current = new Map();
             routesRef.current.forEach((route) => route.setMap(null));
             routesRef.current = [];
@@ -1923,6 +941,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 entry.target.removeEventListener(entry.type, entry.listener);
                 return false;
             });
+        };
+
+        /**
+         * Wraps a marker's markup so a day already behind the traveller reads as
+         * background. Done on a wrapper rather than inside each marker builder
+         * so the builders stay pure string functions with no notion of "today",
+         * and so it applies identically on both renderers.
+         */
+        const dimIfPast = (html: string, endDayOffset: number): string => {
+            if (!shouldDimPastDays || endDayOffset > (todayDayOffset as number)) return html;
+            return `<div style="opacity:0.34;filter:saturate(0.55);">${html}</div>`;
         };
 
         const createOverlayMarker = ({
@@ -1969,17 +998,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 onClick?.();
             };
             const showTooltipHandler: EventListener = () => {
+                if (markerDiv) markerDiv.style.zIndex = `${MARKER_HOVER_Z_INDEX}`;
                 if (!tooltipNode) return;
                 Object.assign(tooltipNode.style, {
                     opacity: '1',
-                    transform: 'translate(-50%, calc(-100% - 14px))',
+                    transform: MARKER_TOOLTIP_SHOWN_TRANSFORM,
                 });
             };
             const hideTooltipHandler: EventListener = () => {
+                if (markerDiv) markerDiv.style.zIndex = `${currentZIndex}`;
                 if (!tooltipNode) return;
                 Object.assign(tooltipNode.style, {
                     opacity: '0',
-                    transform: 'translate(-50%, calc(-100% - 8px))',
+                    transform: MARKER_TOOLTIP_HIDDEN_TRANSFORM,
                 });
             };
 
@@ -2070,7 +1101,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             to: google.maps.LatLngLiteral,
         ): number | undefined => {
             if (from.lat === to.lat && from.lng === to.lng) return undefined;
-            const geometry = window.google?.maps?.geometry?.spherical;
+            const geometry = readGoogleSpherical();
             if (geometry) {
                 return geometry.computeHeading(
                     new window.google.maps.LatLng(from.lat, from.lng),
@@ -2088,8 +1119,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             if (path.length === 0) return null;
             if (path.length === 1) return path[0];
             const clampedFraction = Math.max(0, Math.min(1, fraction));
-            const geometry = window.google?.maps?.geometry?.spherical;
+            const geometry = readGoogleSpherical();
             if (!geometry) {
+                // A straight two-point leg (standalone Mapbox) has no vertex in
+                // the middle, so interpolate instead of snapping to an end.
+                if (path.length === 2) {
+                    return {
+                        lat: path[0].lat + (path[1].lat - path[0].lat) * clampedFraction,
+                        lng: path[0].lng + (path[1].lng - path[0].lng) * clampedFraction,
+                    };
+                }
                 const fallbackIndex = Math.round((path.length - 1) * clampedFraction);
                 return path[Math.max(0, Math.min(path.length - 1, fallbackIndex))];
             }
@@ -2187,29 +1226,51 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             return { outerOutline, outline, main };
         };
 
-        const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
+        const drawRoutePath = (
+            path: google.maps.LatLngLiteral[],
+            color: string,
+            weight = 3,
+            options?: { dashed?: boolean; arrows?: boolean },
+        ) => {
             if (!isEffectActive()) return null;
-            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
-            const arrowIcon = {
-                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                fillColor: color,
-                fillOpacity: 1,
+            // The traveller's thickness multiplier rides on top of the render
+            // profile's own scale rather than replacing it, so a dense map still
+            // thins its routes down at both ends of the slider.
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale)
+                * Math.max(0.5, Math.min(2, routeLineWeight));
+            // Google symbols only exist on the Google branch: Mapbox line layers
+            // ignore polyline icons apart from the dash repeat.
+            const arrowIcon = mapboxMap ? null : buildGoogleRouteArrowIcon(color, routeScale);
+            // A dashed line is drawn as repeated dot symbols with the stroke
+            // turned off, which is the only way Google renders a dash pattern.
+            const dashSymbol = {
+                path: 'M 0,-1 0,1',
+                strokeOpacity: 0.85,
                 strokeColor: color,
-                strokeOpacity: 1,
-                strokeWeight: 0.1,
-                scale: 3.2 * Math.max(0.72, routeScale),
+                strokeWeight: Math.max(1.2, weight * routeScale),
+                scale: 2.2,
             };
+            const isDashed = options?.dashed ?? dashedRoutes;
+            const withArrows = options?.arrows ?? showRouteArrows;
+            const routeIcons: google.maps.IconSequence[] = [];
+            if (isDashed) {
+                routeIcons.push({ icon: dashSymbol as any, offset: '0', repeat: '14px' });
+            }
+            if (withArrows && arrowIcon) {
+                routeIcons.push(
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' },
+                );
+            }
+
             return createRoutePolylinePair({
                 path,
                 geodesic: true,
                 strokeColor: color,
-                strokeOpacity: 0.7,
+                strokeOpacity: isDashed ? 0 : 0.7,
                 strokeWeight: Math.max(1.2, weight * routeScale),
                 clickable: false,
-                icons: [
-                    { icon: arrowIcon, offset: '25%' },
-                    { icon: arrowIcon, offset: '75%' }
-                ],
+                icons: routeIcons.length > 0 ? routeIcons : undefined,
                 zIndex: 40,
             });
         };
@@ -2272,15 +1333,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const fallbackGroundPath = flightRouteVisualPaths?.groundPath ?? fallbackAirPath;
             const isDashedFallback = mode !== 'plane';
             const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
-            const arrowIcon = {
-                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                fillColor: color,
-                fillOpacity: 1,
-                strokeColor: color,
-                strokeOpacity: 1,
-                strokeWeight: 0.1,
-                scale: 3.2 * Math.max(0.72, routeScale),
-            };
+            const arrowIcon = mapboxMap ? null : buildGoogleRouteArrowIcon(color, routeScale);
+            const arrowIcons: google.maps.IconSequence[] = arrowIcon
+                ? [
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' },
+                ]
+                : [];
             const icons = isDashedFallback
                 ? [
                     {
@@ -2293,13 +1352,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         offset: '0',
                         repeat: '12px'
                     },
-                    { icon: arrowIcon, offset: '25%' },
-                    { icon: arrowIcon, offset: '75%' }
+                    ...arrowIcons,
                 ]
-                : [
-                    { icon: arrowIcon, offset: '25%' },
-                    { icon: arrowIcon, offset: '75%' },
-                ];
+                : arrowIcons;
 
             const groundShadowHandle = isFlightFallback
                 ? drawGroundShadowPath(fallbackGroundPath, 2.35)
@@ -2345,7 +1400,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
-        const cityOverlayDescriptors = buildTripMapCityOverlayDescriptors(cities);
+        const cityOverlayDescriptors = isCityFocusMode
+            ? []
+            : buildTripMapCityOverlayDescriptors(cities);
 
         if (!isPaywalled) {
             // 2. Add Markers
@@ -2356,7 +1413,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const cityMarkerImageUrl = resolveTripMapCityMarkerImageUrl(city);
                 const marker = createOverlayMarker({
                     position: markerPosition,
-                    html: buildTripMapCityMarkerHtml({
+                    html: dimIfPast(buildTripMapCityMarkerHtml({
                         provider: tripMapProvider,
                         index: cityIndex,
                         color: cityMarkerColor,
@@ -2365,7 +1422,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         profile: effectiveMarkerRenderProfile.city,
                         selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
                         selectedRingColor: resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK),
-                    }),
+                    }), city.startDateOffset + Math.max(city.duration, 0)),
                     zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
@@ -2382,7 +1439,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 markersRef.current.push(marker);
             });
 
-            const currentZoomValue = googleMapRef.current?.getZoom?.();
+            const currentZoomValue = cameraRef.current?.getZoom();
             const resolvedZoomLevel = Number.isFinite(currentZoomValue)
                 ? Number(currentZoomValue)
                 : mapZoomLevelRef.current;
@@ -2391,21 +1448,31 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 isEnabled: activityMarkersEnabledRef.current,
                 zoom: resolvedZoomLevel,
             });
-            const activityMarkers = resolveActivityMarkerPositions(items);
+            const dayTripDescriptors = buildTripMapDayTripDescriptors(items);
+            const activityMarkers = resolveActivityMarkerPositions(items, collectDayTripMarkerIds(dayTripDescriptors));
             activityMarkers.forEach((activityMarker) => {
                 if (!isEffectActive()) return;
                 const isSelected = activityMarker.id === selectedActivityId;
                 const marker = createOverlayMarker({
                     position: activityMarker.position,
-                    html: buildActivityMarkerHtml(
-                        activityMarker.type,
-                        isSelected,
-                        activityMarker.title,
-                        effectiveMarkerRenderProfile,
+                    html: dimIfPast(
+                        buildActivityMarkerHtml(
+                            activityMarker.type,
+                            isSelected,
+                            activityMarker.title,
+                            effectiveMarkerRenderProfile,
+                        ),
+                        activityMarker.endDayOffset,
                     ),
                     zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
                     clickable: true,
-                    onClick: () => onActivityMarkerSelectRef.current?.(activityMarker.id),
+                    onClick: () => {
+                        // Selection still fires, so the timeline stays in sync
+                        // exactly as it did before the callout existed.
+                        onActivityMarkerSelectRef.current?.(activityMarker.id);
+                        setPopupIdeaId(null);
+                        setPopupActivityId(activityMarker.id);
+                    },
                     tooltipText: activityMarker.title,
                     markerDomId: `activity:${activityMarker.id}`,
                 });
@@ -2422,9 +1489,68 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 });
                 activityMarkerPositionByIdRef.current.set(activityMarker.id, activityMarker.position);
             });
+
+            // Day trips: a dashed loop from the stay to the destination and
+            // back, plus a pin that stays visible at every zoom level. Drawn
+            // straight (no directions lookup) — it shows where the day goes,
+            // not the road there.
+            dayTripDescriptors.forEach((dayTrip) => {
+                if (!isEffectActive()) return;
+                const color = resolveMapColor(dayTrip.stayColor);
+                drawRoutePath(dayTrip.outboundPath, color, 2.4, { dashed: true, arrows: false });
+                if (!isDayTripRoundTrip(dayTrip)) {
+                    drawRoutePath(dayTrip.returnPath, color, 2.4, { dashed: true, arrows: false });
+                }
+                const isSelected = dayTrip.id === selectedActivityId;
+                const marker = createOverlayMarker({
+                    position: dayTrip.destination,
+                    html: dimIfPast(
+                        buildDayTripMarkerHtml({
+                            label: dayTrip.destinationLabel,
+                            color,
+                            size: effectiveMarkerRenderProfile.activity.size + 6,
+                            isSelected,
+                            selectedOutlineColor: resolveCssColorVar('--tf-accent-500', '#2563eb'),
+                            showLabel: showCityNames,
+                        }),
+                        dayTrip.endDayOffset,
+                    ),
+                    zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
+                    clickable: true,
+                    onClick: () => {
+                        onActivityMarkerSelectRef.current?.(dayTrip.id);
+                        setPopupActivityId(dayTrip.id);
+                    },
+                    tooltipText: dayTrip.title,
+                    markerDomId: `activity:${dayTrip.id}`,
+                });
+                markersRef.current.push(marker);
+                activityMarkerPositionByIdRef.current.set(dayTrip.id, dayTrip.destination);
+            });
+
+            // Saved ideas: built with everything else so they share the
+            // renderer, attached only while the traveller has the layer on.
+            ideaMarkersRef.current.forEach((idea) => {
+                if (!isEffectActive()) return;
+                const marker = createOverlayMarker({
+                    position: { lat: idea.lat, lng: idea.lng },
+                    html: buildIdeaMarkerHtml(idea.type, idea.pending, idea.title, effectiveMarkerRenderProfile),
+                    zIndex: IDEA_MARKER_Z_INDEX,
+                    clickable: true,
+                    onClick: () => {
+                        // One card at a time: an idea card replaces an activity one.
+                        setPopupActivityId(null);
+                        setPopupIdeaId(idea.id);
+                    },
+                    tooltipText: idea.title,
+                    markerDomId: `idea:${idea.id}`,
+                });
+                if (!ideaMarkersVisibleRef.current) marker.setMap(null);
+                ideaMarkerHandlesRef.current.push(marker);
+            });
         }
 
-        if (!isPaywalled && showCityNames && googleMapRef.current) {
+        if (!isPaywalled && showCityNames && (mapboxMap || googleMapRef.current)) {
             const baseLabelOffsetPx = resolveTripMapCityLabelOffsetPx({
                 provider: tripMapProvider,
                 markerSize: effectiveMarkerRenderProfile.city.size,
@@ -2602,9 +1728,34 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         }
 
+        /**
+         * No routing service (`mapbox_all`): every leg is the straight or
+         * flight-arc line the Google path falls back to. Nothing is requested,
+         * logged or cached, because nothing failed.
+         */
+        const drawStraightRoutes = () => {
+            for (let i = 0; i < cities.length - 1; i++) {
+                if (!isEffectActive()) return;
+                const start = cities[i];
+                const end = cities[i + 1];
+                if (!start.coordinates || !end.coordinates) continue;
+                drawFallbackLegVisual({
+                    startCoordinates: start.coordinates,
+                    endCoordinates: end.coordinates,
+                    mode: normalizeTransportMode(findTravelBetweenCities(items, start, end)?.transportMode),
+                    color: resolveMapColor(start.color),
+                    includeTransportMarker: true,
+                });
+            }
+        };
+
         // 3. Draw Routes
         const drawRoutes = async () => {
              if (!isEffectActive()) return;
+             if (routesImplementation === 'none') {
+                 drawStraightRoutes();
+                 return;
+             }
              hydrateRouteCache();
              const googleRouteRuntime = await loadGoogleRouteRuntime();
              if (!isEffectActive()) return;
@@ -2614,6 +1765,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  const start = cities[i];
                  const end = cities[i+1];
                  if (!start.coordinates || !end.coordinates) continue;
+                 const startCoordinates = start.coordinates;
+                 const endCoordinates = end.coordinates;
 
                  const travelItem = findTravelBetweenCities(items, start, end);
                  const mode = normalizeTransportMode(travelItem?.transportMode);
@@ -2626,12 +1779,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  let routingAttempted = false;
                  let routingFailed = false;
 
-                 const travelModes = window.google.maps.TravelMode;
-
                  const wantsRealRoute = routeMode === 'realistic';
-                 const routeAttemptModes = routeAttemptPolicy.modes.map((modeKey) =>
-                     (travelModes[modeKey] ?? modeKey) as google.maps.TravelMode
-                 );
+                 // The policy's mode names are Google's TravelMode values verbatim.
+                 const routeAttemptModes = routeAttemptPolicy.modes as readonly string[] as google.maps.TravelMode[];
                  const useRealRoute = wantsRealRoute && routeAttemptModes.length > 0;
                  let provisionalRouteHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
                  let provisionalGroundShadowHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
@@ -2743,8 +1893,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              if (!isEffectActive()) {
                                  throw new Error('Route draw cancelled');
                              }
-                             const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
-                             const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
+                             const origin = { lat: startCoordinates.lat, lng: startCoordinates.lng };
+                             const destination = { lat: endCoordinates.lat, lng: endCoordinates.lng };
                              const { path, distanceKm, durationHours } = await computeGoogleRouteLeg({
                                  origin,
                                  destination,
@@ -2863,7 +2013,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
              }
         };
 
-        if (!isPaywalled) {
+        if (!isPaywalled && !isCityFocusMode) {
             void drawRoutes();
         }
         return () => {
@@ -2875,7 +2025,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clearRenderedMapVisuals();
         };
 
-    }, [activeStyle, effectiveMarkerRenderProfile, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 
+    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, isStandaloneMapbox, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, dashedRoutes, showRouteArrows, routeLineWeight, routeMode, routesImplementation, showCityNames]); 
 
     useEffect(() => {
         if (!mapInitialized) return;
@@ -2946,6 +2096,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
     }, [activityMarkersEnabled, isMapboxBasemapEnabled, mapInitialized, mapZoomLevel]);
 
+    useEffect(() => {
+        if (!mapInitialized) return;
+        const activeOverlayTarget = resolveActiveOverlayMapTarget({
+            isMapboxEnabled: isMapboxBasemapEnabled,
+            googleMap: googleMapRef.current,
+            mapboxMap: mapboxMapRef.current,
+        });
+        ideaMarkerHandlesRef.current.forEach((marker) => {
+            marker.setMap(ideaMarkersVisible ? activeOverlayTarget : null);
+        });
+    }, [ideaMarkersVisible, isMapboxBasemapEnabled, mapInitialized]);
+
     // Pan to selected
     useLayoutEffect(() => {
         if (!selectedItemIdRef.current) return;
@@ -2953,11 +2115,94 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cancelScheduledFit();
     }, [cancelResizeAutoFitTimer, cancelScheduledFit, selectedItemId]);
 
+    /**
+     * Framing a city is a fit, not a zoom, so it must not re-run on every
+     * incidental dependency change — refitting under the traveller while they
+     * pan around inside a city is the behaviour this replaces.
+     */
+    const lastCityFrameKeyRef = useRef<string | null>(null);
+
     useEffect(() => {
-        if (!googleMapRef.current || !window.google?.maps) return;
-        
+        if (!selectedCityId || selectedActivityId) {
+            lastCityFrameKeyRef.current = null;
+            return;
+        }
+        const tripCamera = cameraRef.current;
+        if (!mapInitialized || !tripCamera) return;
+
+        const frameKey = `${selectedCityId}|${mapDockMode}|${tripMapProvider}`;
+        if (lastCityFrameKeyRef.current === frameKey) return;
+
+        const city = cities.find((item) => item.id === selectedCityId);
+        if (!city) return;
+
+        const camera = resolveCityFocusCamera({
+            city,
+            items,
+            cities,
+            provider: tripMapProvider,
+        });
+        if (!camera) return;
+        lastCityFrameKeyRef.current = frameKey;
+
+        if (camera.kind === 'center') {
+            tripCamera.panTo(camera.center, { zoom: camera.zoom });
+            return;
+        }
+
+        const liveRect = mapContainerRef.current?.getBoundingClientRect();
+        const cityPadding = resolveMapViewportPadding({
+            provider: tripMapProvider,
+            mapDockMode,
+            mapViewportSize: liveRect && liveRect.width > 0 && liveRect.height > 0
+                ? { width: liveRect.width, height: liveRect.height }
+                : mapViewportSize,
+        });
+        const googleMap = isStandaloneMapbox ? null : googleMapRef.current as google.maps.Map | null;
+        if (googleMap) {
+            // Google keeps its own corner-to-corner bounds; the antimeridian arc
+            // in the camera adapter is a Mapbox concern.
+            googleMap.fitBounds(new window.google.maps.LatLngBounds(
+                { lat: camera.bounds.south, lng: camera.bounds.west },
+                { lat: camera.bounds.north, lng: camera.bounds.east },
+            ), cityPadding);
+        } else {
+            tripCamera.fitBounds([
+                { lat: camera.bounds.south, lng: camera.bounds.west },
+                { lat: camera.bounds.north, lng: camera.bounds.east },
+            ], cityPadding);
+        }
+
+        // `fitBounds` is free to land anywhere, and a compact city will happily
+        // take it to street level. The clamp runs once the fit has settled, and
+        // is owned by this effect: a re-run or an unmount before the fit settles
+        // must not zoom a camera this effect no longer controls.
+        const stopListeningForIdle = tripCamera.onIdle(() => {
+            stopListeningForIdle();
+            const clamped = clampCityFocusZoom(tripCamera.getZoom(), camera);
+            if (clamped !== null) tripCamera.setZoom(clamped);
+        });
+        return stopListeningForIdle;
+    }, [
+        cities,
+        isStandaloneMapbox,
+        items,
+        mapDockMode,
+        mapInitialized,
+        mapViewportSize,
+        selectedActivityId,
+        selectedCityId,
+        tripMapProvider,
+    ]);
+
+    useEffect(() => {
+        if (!cameraRef.current) return;
+        // Cities are framed by the effect above; this one only chases activities.
+        if (!selectedActivityId) return;
+
         const t = setTimeout(() => {
-            if (!googleMapRef.current) return;
+            const tripCamera = cameraRef.current;
+            if (!tripCamera) return;
             const focusTarget = resolveSelectedMapFocusPosition({
                 provider: tripMapProvider,
                 selectedActivityId,
@@ -2967,16 +2212,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
             if (!focusTarget) return;
 
-            const mapInstance = googleMapRef.current;
-            const currentBounds = mapInstance.getBounds?.();
-            const currentZoomValue = mapInstance.getZoom?.();
+            const currentZoomValue = tripCamera.getZoom();
             const currentZoom = Number.isFinite(currentZoomValue) ? Number(currentZoomValue) : null;
-            const targetLatLng = new window.google.maps.LatLng(
-                focusTarget.position.lat,
-                focusTarget.position.lng,
-            );
-            const isTargetVisible = Boolean(currentBounds?.contains?.(targetLatLng));
-            const isTargetWithinSafeZone = currentBounds
+            const isTargetVisible = tripCamera.containsPoint(focusTarget.position);
+            // The inset check needs Google's bounds object; standalone Mapbox
+            // leaves it out and goes by plain visibility.
+            const isStandalone = isStandaloneMapboxRef.current;
+            const currentBounds = isStandalone
+                ? undefined
+                : (googleMapRef.current as google.maps.Map | null)?.getBounds?.();
+            const isTargetWithinSafeZone = isStandalone ? undefined : currentBounds
                 ? isCoordinateWithinSafeBounds({
                     bounds: currentBounds,
                     point: focusTarget.position,
@@ -2991,21 +2236,192 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 isTargetWithinSafeZone,
                 currentZoom,
                 targetZoom: focusTarget.zoom,
+                alwaysCenter: focusTarget.kind === 'activity',
             });
 
             if (!shouldPan && !shouldZoom) return;
+            const targetZoom = Math.max(currentZoom ?? focusTarget.zoom, focusTarget.zoom);
             if (shouldPan) {
-                mapInstance.panTo({
-                    lat: focusTarget.position.lat,
-                    lng: focusTarget.position.lng,
-                });
-            }
-            if (shouldZoom) {
-                mapInstance.setZoom(Math.max(currentZoom ?? focusTarget.zoom, focusTarget.zoom));
+                tripCamera.panTo(
+                    { lat: focusTarget.position.lat, lng: focusTarget.position.lng },
+                    shouldZoom ? { zoom: targetZoom } : undefined,
+                );
+            } else {
+                tripCamera.setZoom(targetZoom);
             }
         }, 100);
         return () => clearTimeout(t);
     }, [cityMapSignature, mapDockMode, mapInitialized, resolvedActivityMarkerPositionById, selectedActivityId, selectedCityId, tripMapProvider]);
+
+    /**
+     * Tapping empty map lets go too, which is the gesture people try first.
+     * Markers sit in `floatPane`/`overlayMouseTarget`, above the basemap, so
+     * they swallow their own clicks and this only ever fires on bare map.
+     *
+     * Both renderers need wiring: with Mapbox active the Google canvas carries
+     * `pointer-events-none`, so its click never fires and the Mapbox canvas is
+     * the one receiving the gesture.
+     */
+    useEffect(() => {
+        if (!isCityFocusMode || !onClearSelection || !mapInitialized) return;
+        const googleMap = googleMapRef.current;
+        if (!googleMap) return;
+        const mapsEvent = window.google?.maps?.event;
+        if (!mapsEvent) return;
+
+        const listener = googleMap.addListener('click', () => onClearSelection());
+        return () => mapsEvent.removeListener(listener);
+    }, [isCityFocusMode, mapInitialized, onClearSelection]);
+
+    useEffect(() => {
+        if (!isCityFocusMode || !onClearSelection || !mapInitialized) return;
+        if (!isMapboxBasemapEnabled) return;
+        const mapboxMap = mapboxMapRef.current;
+        if (!mapboxMap) return;
+
+        const handleMapboxClick = () => onClearSelection();
+        mapboxMap.on('click', handleMapboxClick);
+        return () => {
+            mapboxMap.off('click', handleMapboxClick);
+        };
+    }, [isCityFocusMode, isMapboxBasemapEnabled, mapInitialized, onClearSelection]);
+
+    /**
+     * Google's own traffic and transit layers.
+     *
+     * Both are Google-only and both are attached to the Google map instance, so
+     * they are detached while Mapbox is drawing — the Google tile pane is hidden
+     * then, and a layer painted onto it would simply be invisible while still
+     * costing tiles.
+     */
+    useEffect(() => {
+        // Google is checked last: it does not exist on the standalone Mapbox path.
+        if (!mapInitialized || !showTrafficLayer || isMapboxBasemapEnabled) return;
+        const googleMap = googleMapRef.current;
+        if (!googleMap || !window.google?.maps?.TrafficLayer) return;
+
+        const layer = new window.google.maps.TrafficLayer();
+        layer.setMap(googleMap);
+        return () => layer.setMap(null);
+    }, [isMapboxBasemapEnabled, mapInitialized, showTrafficLayer]);
+
+    useEffect(() => {
+        if (!mapInitialized || !showTransitLinesLayer || isMapboxBasemapEnabled) return;
+        const googleMap = googleMapRef.current;
+        if (!googleMap || !window.google?.maps?.TransitLayer) return;
+
+        const layer = new window.google.maps.TransitLayer();
+        layer.setMap(googleMap);
+        return () => layer.setMap(null);
+    }, [isMapboxBasemapEnabled, mapInitialized, showTransitLinesLayer]);
+
+    /**
+     * The traveller's own dot. Owned by its own effect rather than the marker
+     * rebuild above: that one tears everything down whenever the route changes,
+     * while this dot only ever moves. Mapbox draws markers on its own canvas, so
+     * the dot follows whichever surface is showing.
+     */
+    const hasUserLocationFix = Boolean(userLocationFix);
+    useEffect(() => {
+        if (!hasUserLocationFix || !mapInitialized) return;
+        const fix = userLocationFixRef.current;
+        if (!fix) return;
+        const position = { lat: fix.lat, lng: fix.lng };
+        const html = buildUserLocationMarkerHtml({ isLive: fix.isLive });
+        let handle: RuntimeMarkerHandle | null = null;
+        if (isMapboxBasemapEnabled) {
+            const mapboxMap = mapboxMapRef.current;
+            const mapboxModule = mapboxModuleRef.current;
+            if (!isMapboxSurfaceReady || !mapboxMap || !mapboxModule) return;
+            handle = createMapboxOverlayMarker({
+                map: mapboxMap,
+                mapboxModule,
+                position,
+                html,
+                zIndex: USER_LOCATION_MARKER_Z_INDEX,
+                centerAnchor: true,
+            });
+        } else {
+            const googleMap = googleMapRef.current as google.maps.Map | null;
+            if (!googleMap || !window.google?.maps?.OverlayView) return;
+            handle = createGoogleUserLocationOverlay({ map: googleMap, position, html });
+        }
+        userLocationMarkerRef.current = handle;
+        return () => {
+            handle?.setMap(null);
+            if (userLocationMarkerRef.current === handle) userLocationMarkerRef.current = null;
+        };
+    }, [hasUserLocationFix, isMapboxBasemapEnabled, isMapboxSurfaceReady, mapInitialized]);
+
+    const userLocationLat = userLocationFix?.lat;
+    const userLocationLng = userLocationFix?.lng;
+    const userLocationIsLive = userLocationFix?.isLive ?? false;
+
+    const recenterOnUserLocation = useCallback((position: { lat: number; lng: number }) => {
+        const camera = cameraRef.current;
+        if (!camera) return;
+        const zoom = camera.getZoom();
+        const needsZoom = !Number.isFinite(zoom) || Number(zoom) < USER_LOCATION_RECENTER_MIN_ZOOM;
+        camera.panTo(position, needsZoom ? { zoom: USER_LOCATION_RECENTER_MIN_ZOOM } : undefined);
+    }, []);
+
+    useEffect(() => {
+        if (typeof userLocationLat !== 'number' || typeof userLocationLng !== 'number') return;
+        const position = { lat: userLocationLat, lng: userLocationLng };
+        userLocationMarkerRef.current?.update({
+            position,
+            html: buildUserLocationMarkerHtml({ isLive: userLocationIsLive }),
+        });
+        // A tap on the control before the first fix arrived: take the traveller
+        // there as soon as a live position exists.
+        if (userLocationIsLive && pendingUserLocationRecenterRef.current) {
+            pendingUserLocationRecenterRef.current = false;
+            recenterOnUserLocation(position);
+        }
+    }, [recenterOnUserLocation, userLocationIsLive, userLocationLat, userLocationLng]);
+
+    /** Whether the dot is on screen, so the control can call attention to itself when it is not. */
+    useEffect(() => {
+        if (typeof userLocationLat !== 'number' || typeof userLocationLng !== 'number' || !mapInitialized) return;
+        const camera = cameraRef.current;
+        if (!camera) return;
+        const position = { lat: userLocationLat, lng: userLocationLng };
+        const check = () => {
+            // Google has no bounds before its first render: unknown is not "out of view".
+            const googleMap = isStandaloneMapboxRef.current ? null : googleMapRef.current as google.maps.Map | null;
+            if (googleMap && !googleMap.getBounds?.()) return;
+            setIsUserLocationInView(camera.containsPoint(position));
+        };
+        check();
+        return camera.onIdle(check);
+    }, [mapInitialized, userLocationLat, userLocationLng]);
+
+    const handleUserLocationControl = () => {
+        const fix = userLocationFixRef.current;
+        if (userLocation.enabled !== true || userLocation.status === 'denied' || !fix) {
+            pendingUserLocationRecenterRef.current = true;
+            trackEvent('trip_view__map_user_location--enable', {
+                trip_id: analyticsTripId,
+                surface: 'map_controls',
+            });
+            enableUserLocation();
+            return;
+        }
+        trackEvent('trip_view__map_user_location--recenter', {
+            trip_id: analyticsTripId,
+            surface: 'map_controls',
+            in_view: isUserLocationInView,
+        });
+        recenterOnUserLocation({ lat: fix.lat, lng: fix.lng });
+    };
+    const isUserLocationOutOfView = Boolean(userLocationFix) && !isUserLocationInView;
+    const userLocationControlLabel = userLocation.status === 'denied'
+        ? t('tripView.mapControls.myLocationBlocked')
+        : userLocation.status === 'locating' && !userLocationFix
+            ? t('tripView.mapControls.myLocationLocating')
+            : userLocationFix
+                ? t('tripView.mapControls.centerOnMyLocation')
+                : t('tripView.mapControls.showMyLocation');
 
     // Fit Bounds
     const handleFit = () => {
@@ -3058,7 +2474,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cancelScheduledFit, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.dockModeRefitDelayMs]);
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
+        if (!mapInitialized || !cameraRef.current || typeof ResizeObserver === 'undefined') return;
         const container = mapContainerRef.current;
         if (!container) return;
 
@@ -3070,13 +2486,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
         let resizeRafId: number | null = null;
         const observer = new ResizeObserver(() => {
-            if (resizeRafId !== null || !googleMapRef.current) return;
+            if (resizeRafId !== null || !cameraRef.current) return;
             resizeRafId = window.requestAnimationFrame(() => {
                 resizeRafId = null;
-                if (!googleMapRef.current) return;
-                if (window.google?.maps?.event?.trigger) {
-                    window.google.maps.event.trigger(googleMapRef.current, 'resize');
-                }
+                const camera = cameraRef.current;
+                if (!camera) return;
+                camera.resize();
                 if (selectedActivityIdRef.current || selectedCityIdRef.current || cities.length === 0) {
                     const currentViewportSize = container.getBoundingClientRect();
                     previousViewportSize = currentViewportSize;
@@ -3136,6 +2551,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 queries.push(query);
             }
         }
+        // Geocoding a focus query is a Google service; Mapbox city search does not cover it.
+        if (locationSearchImplementation !== 'google') return;
         if (queries.length === 0 || !mapInitialized || !googleMapRef.current || cities.length > 0) return;
         if (!window.google?.maps?.Geocoder) return;
         const focusKey = queries.join('||');
@@ -3190,7 +2607,58 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [cities.length, focusLocationQuery, mapDockMode, mapInitialized, mapViewportSize, tripMapProvider, tripMapTuning.selection.queryFocusZoom]);
+    }, [cities.length, focusLocationQuery, locationSearchImplementation, mapDockMode, mapInitialized, mapViewportSize, tripMapProvider, tripMapTuning.selection.queryFocusZoom]);
+
+    const activityMarkerSourceById = useMemo(() => {
+        const sources = new Map<string, 'activity' | 'city'>();
+        resolveActivityMarkerPositions(items).forEach((marker) => {
+            sources.set(marker.id, marker.coordinateSource);
+        });
+        return sources;
+    }, [items]);
+
+    const popupActivity = useMemo(() => (
+        popupActivityId
+            ? items.find((item) => item.id === popupActivityId && item.type === 'activity') || null
+            : null
+    ), [items, popupActivityId]);
+
+    // The callout belongs to a pin, so it only exists while that pin is drawn.
+    const isActivityPopupOpen = Boolean(
+        enableActivityPopup && popupActivity && !isPaywalled && activityMarkersEnabled,
+    );
+
+    const { anchor: activityPopupAnchor, containerSize: activityPopupContainerSize } = useMapMarkerAnchor(
+        mapContainerRef,
+        isActivityPopupOpen && popupActivityId ? `activity:${popupActivityId}` : null,
+    );
+
+    const handleCloseActivityPopup = useCallback(() => {
+        setPopupActivityId(null);
+    }, []);
+
+    // The card belongs to a drawn pin: a skipped idea or a hidden layer takes it away.
+    const popupIdea = useMemo(
+        () => (popupIdeaId && ideaMarkersVisible ? ideaMarkers.find((idea) => idea.id === popupIdeaId) ?? null : null),
+        [ideaMarkers, ideaMarkersVisible, popupIdeaId],
+    );
+    const { anchor: ideaPopupAnchor, containerSize: ideaPopupContainerSize } = useMapMarkerAnchor(
+        mapContainerRef,
+        popupIdea ? `idea:${popupIdea.id}` : null,
+    );
+    const handleCloseIdeaPopup = useCallback(() => {
+        setPopupIdeaId(null);
+    }, []);
+    const handleIdeaAction = useCallback((ideaId: string, action: IdeaMapAction) => {
+        // Save and undo keep the card open to show the new state; skipping is done with it.
+        if (action === 'skip') setPopupIdeaId(null);
+        onIdeaAction?.(ideaId, action);
+    }, [onIdeaAction]);
+
+    const handleOpenActivityDetails = useCallback((activityId: string) => {
+        setPopupActivityId(null);
+        onActivityMarkerSelectRef.current?.(activityId);
+    }, []);
 
     return (
         <div
@@ -3202,13 +2670,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 backgroundColor: mapSurfaceBackgroundColor,
             }}
         >
-            {isMapboxBasemapEnabled && (
+            {presetSettled && isMapboxBasemapEnabled && (
                 <MapboxBasemapSync
                     accessToken={mapboxAccessToken}
-                    googleMap={googleMapRef.current}
+                    googleMap={isStandaloneMapbox ? null : googleMapRef.current}
+                    standalone={isStandaloneMapbox}
+                    introBounds={isStandaloneMapbox ? fitBoundsPoints : undefined}
                     mapStyle={activeStyle}
                     mapDockMode={mapDockMode}
                     mapViewportSize={mapViewportSize}
+                    detailOverrides={basemapDetail}
+                    lookAxes={mapLookAxes}
+                    preferGlobeProjection={useGlobeProjection}
+                    showTerrain={showTerrain}
+                    pitch={mapPitch}
                     interactive
                     onLoadError={handleMapboxBasemapError}
                     onMapReadyChange={handleMapboxMapReadyChange}
@@ -3234,9 +2709,29 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     <ItineraryMapInstanceBridge mapId={mapInstanceId} onMapInstanceChange={handleMapInstanceChange} />
                 </GoogleMap>
             )}
+            {isActivityPopupOpen && popupActivity && activityPopupAnchor && (
+                <ActivityMapPopup
+                    item={popupActivity}
+                    anchor={activityPopupAnchor}
+                    containerSize={activityPopupContainerSize}
+                    markerCoordinatesSource={activityMarkerSourceById.get(popupActivity.id) || 'city'}
+                    onClose={handleCloseActivityPopup}
+                    onOpenDetails={handleOpenActivityDetails}
+                />
+            )}
+            {popupIdea && ideaPopupAnchor && !isPaywalled && (
+                <IdeaMapPopup
+                    idea={popupIdea}
+                    anchor={ideaPopupAnchor}
+                    containerSize={ideaPopupContainerSize}
+                    canEdit={canEditIdeas && Boolean(onIdeaAction)}
+                    onClose={handleCloseIdeaPopup}
+                    onAction={handleIdeaAction}
+                />
+            )}
             {shouldShowMapLoadingOverlay && (
                 <div
-                    className="absolute inset-0 flex items-center justify-center text-sm text-gray-500"
+                    className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
                     style={{ backgroundColor: mapSurfaceBackgroundColor }}
                 >
                     Loading map…
@@ -3244,153 +2739,226 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             )}
             {loadError && (
                 <div
-                    className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-red-500"
+                    className="absolute inset-0 z-20 flex items-center justify-center p-4 text-center text-sm text-red-500"
                     style={{ backgroundColor: mapSurfaceBackgroundColor }}
                 >
                     Error loading map: {loadError.message}
                 </div>
             )}
             
+            {/*
+              * The way out of a focused city. Bottom-centre rather than beside
+              * the control stack: on a phone this has to be reachable with the
+              * thumb that is already holding the device, and it sits above the
+              * itinerary sheet so a half-open sheet never buries it.
+              */}
+            {isCityFocusMode && onClearSelection && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[41] flex justify-center px-4">
+                    <Button
+                        type="button"
+                        variant="floating"
+                        size="sm"
+                        onClick={onClearSelection}
+                        data-testid="map-clear-city-focus"
+                        data-floating-map-control="true"
+                        className="pointer-events-auto rounded-full bg-card/95 ps-3 pe-4 text-xs font-semibold text-foreground shadow-lg backdrop-blur hover:border-accent-300 hover:bg-card hover:text-accent-700 dark:hover:border-accent-400/30 dark:hover:text-accent-200"
+                        {...getAnalyticsDebugAttributes('trip_view__map_city_focus--clear', { surface: 'map_canvas' })}
+                    >
+                        <Route size={15} />
+                        {t('tripView.mapCustomize.showWholeJourney')}
+                    </Button>
+                </div>
+            )}
+
             {/* Controls */}
             <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">
                     {onMapDockModeToggle && (
-                        <button
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-lg"
                             onClick={onMapDockModeToggle}
                             data-testid="map-dock-toggle-button"
                             data-floating-map-control="true"
-                            className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600"
-                            aria-label={mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
+                            className="rounded-lg"
+                            aria-label={mapDockMode === 'docked' ? t('tripView.mapControls.minimizePreview') : t('tripView.mapControls.maximizePreview')}
                             {...getAnalyticsDebugAttributes(
                                 mapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
                                 { surface: 'map_controls' },
                             )}
                         >
                             {mapDockMode === 'docked' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                            <span className="sr-only">{mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}</span>
-                        </button>
+                            <span className="sr-only">{mapDockMode === 'docked' ? t('tripView.mapControls.minimizePreview') : t('tripView.mapControls.maximizePreview')}</span>
+                        </Button>
                     )}
                     {showLayoutControls && onLayoutChange && (
                         <>
-                            <button type="button"
+                            <Button
+                                type="button"
+                                variant="floating"
+                                size="icon-lg"
                                 onClick={() => onLayoutChange('vertical')}
-                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
+                                className="rounded-lg"
+                                aria-label={t('tripView.mapControls.layoutVertical')}
+                                aria-pressed={layoutMode === 'vertical'}
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
-                            ><ArrowUpDown size={18} /></button>
-                            <button type="button"
+                            ><ArrowUpDown size={18} /></Button>
+                            <Button
+                                type="button"
+                                variant="floating"
+                                size="icon-lg"
                                 onClick={() => onLayoutChange('horizontal')}
-                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
+                                className="rounded-lg"
+                                aria-label={t('tripView.mapControls.layoutHorizontal')}
+                                aria-pressed={layoutMode === 'horizontal'}
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
-                            ><ArrowLeftRight size={18} /></button>
+                            ><ArrowLeftRight size={18} /></Button>
                         </>
                     )}
 
                     {onToggleExpanded && (
-                        <button type="button"
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
                             onClick={onToggleExpanded}
-                            className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600"
-                            title={isExpanded ? 'Shrink map' : 'Expand map'}
-                            aria-label={isExpanded ? 'Shrink map' : 'Expand map'}
+                            className="rounded-lg"
+                            title={isExpanded ? t('tripView.mapControls.shrinkMap') : t('tripView.mapControls.expandMap')}
+                            aria-label={isExpanded ? t('tripView.mapControls.shrinkMap') : t('tripView.mapControls.expandMap')}
                         >
                             {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                        </button>
+                        </Button>
                     )}
 
-                    <button type="button"
+                    {userLocation.isOffered && (
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
+                            onClick={handleUserLocationControl}
+                            disabled={mapActionsDisabled}
+                            data-testid="map-user-location-button"
+                            data-floating-map-control="true"
+                            data-out-of-view={isUserLocationOutOfView ? 'true' : undefined}
+                            className={isUserLocationOutOfView
+                                ? 'relative rounded-lg border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-300'
+                                : 'relative rounded-lg'}
+                            aria-label={userLocationControlLabel}
+                            title={userLocationControlLabel}
+                            {...getAnalyticsDebugAttributes(
+                                userLocationFix ? 'trip_view__map_user_location--recenter' : 'trip_view__map_user_location--enable',
+                                { surface: 'map_controls' },
+                            )}
+                        >
+                            {userLocation.status === 'denied'
+                                ? <LocateOff size={18} />
+                                : userLocationFix
+                                    ? <LocateFixed size={18} className={userLocation.status === 'locating' ? 'animate-pulse' : undefined} />
+                                    : <Locate size={18} className={userLocation.status === 'locating' ? 'animate-pulse' : undefined} />}
+                            {isUserLocationOutOfView && (
+                                <span aria-hidden="true" className="absolute -top-1 -end-1 size-2.5 rounded-full border-2 border-card bg-blue-500" />
+                            )}
+                            <span className="sr-only">{userLocationControlLabel}</span>
+                        </Button>
+                    )}
+
+                    <Button
+                        type="button"
+                        variant="floating"
+                        size="icon-lg"
                         onClick={handleFit}
                         disabled={mapActionsDisabled}
-                        className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-white disabled:hover:text-gray-300"
-                        aria-label="Fit to itinerary"
-                    ><Focus size={18} /></button>
+                        className="rounded-lg"
+                        aria-label={t('tripView.mapControls.fitToItinerary')}
+                    ><Focus size={18} /></Button>
                     
-                    {/* Style Switcher */}
-                    {onStyleChange && (
-                      <div className="relative">
-                          <button type="button"
-                              onClick={() => {
-                                  if (mapActionsDisabled) return;
-                                  setIsStyleMenuOpen(!isStyleMenuOpen);
-                              }}
-                              disabled={mapActionsDisabled}
-                              className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
-                                  mapActionsDisabled
-                                      ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
-                                      : isStyleMenuOpen
-                                          ? 'bg-accent-50 border-accent-300 text-accent-600'
-                                          : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
-                              }`}
-                              aria-label="Map style"
-                          ><Layers size={18} /></button>
-                          {isStyleMenuOpen && !mapActionsDisabled && (
-                              <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-40 overflow-hidden flex flex-col z-20">
-                                  <button type="button" onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
-                                  <button type="button" onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
-                                  <button type="button" onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
-                                  <button type="button" onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (light)</button>
-                                  <button type="button" onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (dark)</button>
-                                  <button type="button" onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
-                                  {!isPaywalled && onRouteModeChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
-                                          <button type="button" onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
-                                          <button type="button" onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
-                                      </>
-                                  )}
-                                  {!isPaywalled && onShowCityNamesChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Labels</div>
-                                          <button type="button"
-                                              onClick={() => { onShowCityNamesChange(!showCityNames); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${showCityNames ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              City names {showCityNames ? 'On' : 'Off'}
-                                          </button>
-                                      </>
-                                  )}
-                                  {onMapColorModeChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Colors</div>
-                                          <button type="button"
-                                              onClick={() => { onMapColorModeChange('trip'); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'trip' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              Trip colors
-                                          </button>
-                                          <button type="button"
-                                              onClick={() => { onMapColorModeChange('brand'); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'brand' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              Brand accent
-                                          </button>
-                                      </>
-                                  )}
-                              </div>
-                          )}
-                      </div>
+                    {/*
+                      * One button, one sheet. The popover this replaces was a
+                      * 40px column of 10px labels holding style, route mode and
+                      * colour — unreadable on a phone and with nowhere to put
+                      * the settings the renderers already support.
+                      */}
+                    {onOpenCustomize && (
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
+                            onClick={onOpenCustomize}
+                            disabled={mapActionsDisabled}
+                            data-testid="map-customize-button"
+                            data-floating-map-control="true"
+                            className="rounded-lg"
+                            aria-label={customizeLabel}
+                            aria-haspopup="dialog"
+                            aria-expanded={isCustomizeOpen}
+                            title={customizeLabel}
+                            {...getAnalyticsDebugAttributes('trip_view__map_customize--open', { surface: 'map_controls' })}
+                        >
+                            <Layers size={18} />
+                            <span className="sr-only">{customizeLabel}</span>
+                        </Button>
+                    )}
+                    {!isPaywalled && onShowCityNamesChange && (
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
+                            onClick={() => onShowCityNamesChange(!showCityNames)}
+                            disabled={mapActionsDisabled}
+                            className="rounded-lg"
+                            aria-label={showCityNames ? t('tripView.mapControls.hideLabels') : t('tripView.mapControls.showLabels')}
+                            aria-pressed={showCityNames}
+                            title={showCityNames ? t('tripView.mapControls.hideLabels') : t('tripView.mapControls.showLabels')}
+                            {...getAnalyticsDebugAttributes('trip_view__map_labels--toggle', {
+                                surface: 'map_controls',
+                                active: showCityNames,
+                            })}
+                        >
+                            {showCityNames ? <TagsIcon size={18} /> : <Tag size={18} />}
+                            <span className="sr-only">{showCityNames ? t('tripView.mapControls.hideLabels') : t('tripView.mapControls.showLabels')}</span>
+                        </Button>
                     )}
                     {!isPaywalled && (
-                        <button
+                        <Button
                             type="button"
-                            onClick={() => setActivityMarkersEnabled((current) => !current)}
+                            variant="floating"
+                            size="icon-lg"
+                            onClick={toggleActivityMarkers}
                             disabled={mapActionsDisabled}
-                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
-                                mapActionsDisabled
-                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
-                                    : activityMarkersEnabled
-                                        ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
-                            }`}
-                            aria-label={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
-                            title={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
+                            className="rounded-lg"
+                            aria-pressed={activityMarkersEnabled}
+                            aria-label={activityMarkersEnabled ? t('tripView.mapControls.hideActivityMarkers') : t('tripView.mapControls.showActivityMarkers')}
+                            title={activityMarkersEnabled ? t('tripView.mapControls.hideActivityMarkers') : t('tripView.mapControls.showActivityMarkers')}
                             {...getAnalyticsDebugAttributes('trip_view__map_activity_markers--toggle', {
                                 surface: 'map_controls',
                                 active: activityMarkersEnabled,
                             })}
                         >
                             <MapPinArea size={18} weight="bold" />
-                            <span className="sr-only">{activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}</span>
-                        </button>
+                            <span className="sr-only">{activityMarkersEnabled ? t('tripView.mapControls.hideActivityMarkers') : t('tripView.mapControls.showActivityMarkers')}</span>
+                        </Button>
+                    )}
+                    {!isPaywalled && ideaLayerAvailable && (
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
+                            onClick={() => onShowIdeaMarkersChange?.(!showIdeaMarkers)}
+                            disabled={mapActionsDisabled}
+                            className="rounded-lg"
+                            aria-pressed={showIdeaMarkers}
+                            aria-label={showIdeaMarkers ? t('tripView.mapControls.hideIdeaMarkers') : t('tripView.mapControls.showIdeaMarkers')}
+                            title={showIdeaMarkers ? t('tripView.mapControls.hideIdeaMarkers') : t('tripView.mapControls.showIdeaMarkers')}
+                            data-testid="map-idea-markers-toggle"
+                            {...getAnalyticsDebugAttributes('trip_view__map_idea_markers--toggle', {
+                                surface: 'map_controls',
+                                active: showIdeaMarkers,
+                            })}
+                        >
+                            <Lightbulb size={18} />
+                            <span className="sr-only">{showIdeaMarkers ? t('tripView.mapControls.hideIdeaMarkers') : t('tripView.mapControls.showIdeaMarkers')}</span>
+                        </Button>
                     )}
                 </div>
             </div>

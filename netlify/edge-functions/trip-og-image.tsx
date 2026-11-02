@@ -1,6 +1,6 @@
 /* eslint-disable react-doctor/only-export-components */
 import React from "https://esm.sh/react@18.3.1";
-import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
+import { renderOgImage } from "../edge-lib/og-image-response.ts";
 import { buildLocalHeadingFontUrls, type BaseHeadingFontWeight } from "../edge-lib/og-font-utils.ts";
 import {
   buildDisplayPath,
@@ -11,6 +11,7 @@ import {
   getMapboxAccessTokenFromEnv,
   getMapsApiKeyFromEnv,
   isMapColorMode,
+  readTripMapColorMode,
   isOgMapStyle,
   isOgRouteMode,
   type MapColorMode,
@@ -278,15 +279,14 @@ const getTitleSpec = (title: string): { lines: string[]; fontSize: number } => {
     maxCharsPerLine = 33;
   }
 
-  return {
-    lines: wrapTitle(normalized, maxCharsPerLine, 3),
-    fontSize,
-  };
+  const lines = wrapTitle(normalized, maxCharsPerLine, 3);
+  return { lines, fontSize: Math.min(fontSize, lines.length === 3 ? 44 : 56) };
 };
 
 const iconCircleStyle: React.CSSProperties = {
   width: 36,
   height: 36,
+  flexShrink: 0,
   borderRadius: 9999,
   background: "rgba(79, 70, 229, 0.16)",
   color: "#312e81",
@@ -312,6 +312,10 @@ const METRIC_ROUTE_ICON_URI = svgToDataUri(
   `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#312e81' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='19' r='3'/><path d='M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15'/><circle cx='18' cy='5' r='3'/></svg>`,
 );
 
+const METRIC_DAY_TRIP_ICON_URI = svgToDataUri(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#312e81' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z'/></svg>`,
+);
+
 const FOOTER_PLANE_ICON_URI = svgToDataUri(
   `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#ffffff' stroke='none'><path d='M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z'/></svg>`,
 );
@@ -330,10 +334,15 @@ const metricRow = (icon: React.ReactNode, value: string) => (
     <div style={iconCircleStyle}>{icon}</div>
     <div
       style={{
-        fontSize: 29,
+        fontSize: 24,
         color: "#1f2937",
         display: "flex",
         lineHeight: 1.2,
+        flex: 1,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
       }}
     >
       {value}
@@ -492,7 +501,7 @@ export default async (request: Request): Promise<Response> => {
           mapboxAccessToken,
           mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
           routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
-          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip.trip),
           mapRuntimeSelection: mapRuntime.effectiveSelection,
           showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
           showCities: showCitiesOverride ??
@@ -517,7 +526,7 @@ export default async (request: Request): Promise<Response> => {
           mapboxAccessToken,
           mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
           routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
-          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? readTripMapColorMode(sharedTrip.trip),
           mapRuntimeSelection: mapRuntime.effectiveSelection,
           showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
           showCities: showCitiesOverride ??
@@ -548,7 +557,7 @@ export default async (request: Request): Promise<Response> => {
     );
     const displayUrl = truncateText(`${url.host}${routePath}`, 56);
 
-    return new ImageResponse(
+    return await renderOgImage(
       (
         <div
           style={{
@@ -569,7 +578,7 @@ export default async (request: Request): Promise<Response> => {
               display: "flex",
               flexDirection: "column",
               borderRadius: 28,
-              padding: "36px 42px 34px",
+              padding: "28px 36px",
               background: "rgba(255, 255, 255, 0.82)",
               border: "1px solid rgba(148, 163, 184, 0.28)",
             }}
@@ -578,11 +587,12 @@ export default async (request: Request): Promise<Response> => {
               style={{
                 display: "flex",
                 alignSelf: "flex-start",
-                padding: "10px 18px",
+                flexShrink: 0,
+                padding: "8px 14px",
                 borderRadius: 9999,
                 background: "#4f46e5",
                 color: "#ffffff",
-                fontSize: 21,
+                fontSize: 18,
                 fontWeight: 700,
                 lineHeight: 1.2,
                 fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
@@ -602,12 +612,12 @@ export default async (request: Request): Promise<Response> => {
                 lineHeight: 1.08,
                 letterSpacing: -1.4,
                 color: "#0f172a",
-                textWrap: "pretty",
+                flexShrink: 0,
                 fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
               }}
             >
               {titleLines.map((line, index) => (
-                <div key={`title-line-${line}-${index}`} style={{ display: "flex" }}>
+                <div key={`title-line-${line}-${index}`} style={{ display: "flex", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {line}
                 </div>
               ))}
@@ -617,12 +627,17 @@ export default async (request: Request): Promise<Response> => {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: 14,
-                marginTop: 26,
+                // A third row still has to fit under a three-line title.
+                gap: summary.dayTripsLabel ? 10 : 14,
+                marginTop: 18,
+                flexShrink: 0,
               }}
             >
               {metricRow(iconImage(METRIC_CALENDAR_ICON_URI, "Calendar"), durationAndMonths)}
               {metricRow(iconImage(METRIC_ROUTE_ICON_URI, "Route"), distanceLabel)}
+              {summary.dayTripsLabel
+                ? metricRow(iconImage(METRIC_DAY_TRIP_ICON_URI, "Day trips"), truncateText(summary.dayTripsLabel, 40))
+                : null}
             </div>
 
             <div
@@ -632,7 +647,8 @@ export default async (request: Request): Promise<Response> => {
                 alignItems: "center",
                 justifyContent: "space-between",
                 borderTop: "1px solid rgba(148, 163, 184, 0.36)",
-                paddingTop: 20,
+                paddingTop: 16,
+                flexShrink: 0,
                 gap: 20,
               }}
             >
@@ -663,7 +679,7 @@ export default async (request: Request): Promise<Response> => {
                 </div>
                 <div
                   style={{
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: 700,
                     color: "#111827",
                     display: "flex",
@@ -676,7 +692,8 @@ export default async (request: Request): Promise<Response> => {
 
               <div
                 style={{
-                  fontSize: 20,
+                  fontSize: 14,
+                  maxWidth: 260,
                   color: "#475569",
                   display: "flex",
                   minWidth: 0,

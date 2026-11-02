@@ -8,7 +8,7 @@ const fromSelectEqMock = vi.fn(() => ({ maybeSingle: fromSelectMaybeSingleMock }
 const fromSelectMock = vi.fn(() => ({ eq: fromSelectEqMock }));
 const fromUpdateEqMock = vi.fn().mockResolvedValue({ data: null, error: null });
 const fromUpdateMock = vi.fn(() => ({ eq: fromUpdateEqMock }));
-const fromMock = vi.fn(() => ({ update: fromUpdateMock, select: fromSelectMock }));
+const fromMock = vi.fn((_table: string) => ({ update: fromUpdateMock, select: fromSelectMock }));
 
 const ensureDbSessionMock = vi.fn().mockResolvedValue(undefined);
 const dbUpsertTripMock = vi.fn().mockResolvedValue('trip-queued-1');
@@ -24,7 +24,7 @@ const finishAttemptLogMock = vi.fn().mockResolvedValue(undefined);
 vi.mock('../../services/supabaseClient', () => ({
   supabase: {
     rpc: (...args: unknown[]) => claimRpcMock(...args),
-    from: (...args: unknown[]) => fromMock(...args),
+    from: (table: string) => fromMock(table),
   },
 }));
 

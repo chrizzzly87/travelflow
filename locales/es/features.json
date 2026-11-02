@@ -1,16 +1,11 @@
 {
   "hero": {
-    "badge": "Planificación de viajes interactiva",
-    "titleBefore": "Crea viajes que ya se sienten",
-    "titleHighlight": "listos para salir",
-    "description": "TravelFlow convierte ideas de destinos en una ruta a la que tu grupo realmente puede reaccionar. Crea el primer itinerario con IA, ajústalo en un mapa y una línea de tiempo en vivo, y comparte un enlace que siga viéndose pulido cuando llegue el momento de decidir.",
+    "eyebrow": "Trazar · Ajustar · Compartir",
+    "titleBefore": "Cada viaje,",
+    "titleHighlight": "planeado en un solo sitio.",
+    "description": "Traza la ruta, dale forma en el mapa y compártela con quien venga.",
     "primaryCta": "Empezar a planear",
-    "secondaryCta": "Ver viajes de ejemplo",
-    "proof": [
-      "Borradores de itinerario con IA en segundos",
-      "Ajusta la ruta hasta que encaje",
-      "Un solo enlace claro antes de que el chat explote"
-    ]
+    "secondaryCta": "Ver viajes de ejemplo"
   },
   "globe": {
     "accessibility": "Vista previa interactiva del globo con rutas desde tu punto de partida hacia ideas de viaje alrededor del mundo.",
@@ -52,105 +47,59 @@
       "alt": "Vista previa de un viaje mochilero de 30 días por el Sudeste Asiático"
     }
   },
-  "bento": {
-    "badge": "Planifica con impulso",
-    "title": "Las piezas del viaje por fin se quedan en un solo lugar",
-    "subtitle": "En vez de saltar entre docs, mapas, capturas y chats a medias, TravelFlow mantiene la ruta, el ritmo y el contexto del viaje juntos.",
+  "capabilities": {
+    "eyebrow": "Cómo funciona",
+    "title": "Cómo toma forma un viaje",
+    "subtitle": "Sin documentos. Sin capturas. Sin una segunda herramienta.",
     "items": [
       {
-        "id": "airport",
-        "eyebrow": "",
-        "title": "Tu proximo vuelo ya espera",
-        "description": "TravelFlow te ayuda a organizar todo el viaje, desde el primer vuelo hasta los traslados, las estancias y esos pequenos planes entre medias. Empezamos con el aeropuerto mas cercano para que convertir una idea en una ruta real se sienta mucho menos caotico.",
-        "detail": "Empieza cerca. Suena a lo grande."
+        "id": "draft",
+        "eyebrow": "Trazar",
+        "title": "Trazado en segundos",
+        "description": "Di adónde y cuánto tiempo. La ruta vuelve con ciudades, ritmo y tiempos de viaje."
       },
       {
-        "id": "itinerary",
-        "eyebrow": "Borrador con IA",
-        "title": "Empieza con una ruta, no con una página en blanco",
-        "description": "Describe el viaje en lenguaje natural y obtén un primer itinerario creíble con flujo entre ciudades, ritmo y contexto ya conectados.",
-        "detail": "Un primer borrador al que tu grupo puede reaccionar enseguida"
+        "id": "shape",
+        "eyebrow": "Ajustar",
+        "title": "Ajustado a mano",
+        "description": "Mueve una parada. Alarga una estancia. El mapa y la línea de tiempo se mueven juntos."
       },
       {
-        "id": "timeline",
-        "eyebrow": "Ediciones en vivo",
-        "title": "Ajusta el plan sin romperlo",
-        "description": "Alarga una estancia, cambia el orden de una ciudad o modifica el ritmo. TravelFlow mantiene mapa y línea de tiempo sincronizados para que cada cambio siga teniendo sentido.",
-        "detail": "Mapa y tiempos siguen sincronizados"
-      },
-      {
-        "id": "inspiration",
-        "eyebrow": "Inspiración reutilizable",
-        "title": "Toma ideas probadas y hazlas tuyas",
-        "description": "Usa rutas con energía real como punto de partida en vez de reconstruir un viaje creíble desde cero cada vez.",
-        "detail": "Empieza con energía de viaje real"
-      },
-      {
-        "id": "sharing",
-        "eyebrow": "Revisión del grupo",
-        "title": "Comparte algo que tu grupo entienda rápido",
-        "description": "Envía un solo enlace con la ruta, el ritmo y las notas ya colocadas para que el feedback ocurra sobre el viaje real y no sobre capturas sueltas.",
-        "detail": "Sin cuenta obligatoria"
-      },
-      {
-        "id": "relive",
-        "eyebrow": "Reserva y cierre",
-        "title": "Termina con un plan que siga viéndose pulido",
-        "description": "Cuando la ruta está lista, el contexto práctico sigue ahí: enlaces, notas y una versión más limpia para la entrega final.",
-        "detail": "Listo para compartir, guardar o imprimir"
+        "id": "share",
+        "eyebrow": "Compartir",
+        "title": "Compartido en un enlace",
+        "description": "Sin crear cuenta, sin exportar nada. Todos ven el mismo plan."
       }
-    ],
-    "airportCard": {
-      "label": "Salida mas cercana",
-      "defaultBadge": "Ruta sonada",
-      "loadingBadge": "Buscando la tuya",
-      "readyBadge": "Mas cerca de ti",
-      "defaultStatus": "Empieza cerca de casa. Desde ahi, el resto puede abrirse.",
-      "loadingStatus": "Buscando el despegue mas cercano para ti.",
-      "readyCityStatus": "Empezando cerca de {city}. Desde ahi, el resto puede abrirse.",
-      "readyCountryStatus": "Empezando desde {country}. Desde ahi, el resto puede abrirse.",
-      "fallbackStatus": "Empieza cerca de casa. Desde ahi, el resto puede abrirse.",
-      "defaultChip": "Tu lado del mapa",
-      "cityChip": "Cerca de {city}",
-      "countryChip": "Desde {country}"
-    }
+    ]
   },
-  "workflow": {
-    "badge": "De la chispa a un plan listo para el grupo",
-    "title": "Un solo flujo para crear, ajustar y compartir",
-    "subtitle": "TravelFlow funciona mejor cuando quieres que la parte emocionante y la parte práctica de planear vivan en el mismo lugar.",
-    "steps": [
+  "airport": {
+    "eyebrow": "Tu punto de partida",
+    "title": "Empieza en tu aeropuerto.",
+    "description": "TravelFlow encuentra el más cercano y construye la ruta desde ahí.",
+    "originLabel": "Lo más cerca de ti",
+    "destinationLabel": "A donde sea"
+  },
+  "outcomes": {
+    "eyebrow": "Lo que obtienes",
+    "title": "Con qué te quedas",
+    "items": [
       {
-        "step": "01",
-        "title": "Empieza con un destino, un mood o una ruta copiada",
-        "description": "Parte de una lista de países, una idea de temporada o un concepto todavía borroso. Aún no necesitas conocer la secuencia perfecta."
+        "title": "Una ruta viva",
+        "description": "Cada día en el mapa, con el tiempo de viaje entre paradas."
       },
       {
-        "step": "02",
-        "title": "Ajusta el ritmo con mapa y línea de tiempo juntos",
-        "description": "Mira la ruta en el globo y termina de afinarla en la línea de tiempo hasta que encaje con traslados, energía y preferencias del grupo."
+        "title": "Enlaces de reserva",
+        "description": "En las actividades que lo necesitan."
       },
       {
-        "step": "03",
-        "title": "Comparte una versión que ya se vea intencional",
-        "description": "Cuando llega el momento de pedir feedback o reservar, el mismo plan ya trae mapa, estructura y el contexto extra que la gente suele pedir."
+        "title": "Una versión para imprimir",
+        "description": "Lo bastante clara para llevarla cuando no hay señal."
       }
-    ],
-    "glance": {
-      "eyebrow": "Lo que ve tu grupo",
-      "title": "Un plan que ya parece listo para compartir",
-      "description": "Mapa, ritmo por días y contexto práctico se mantienen alineados para que las reacciones lleguen más rápido y con menos confusión.",
-      "items": [
-        "Ruta en vivo con contexto de ritmo",
-        "Enlaces listos para reservar cuando hacen falta",
-        "Una vista de impresión más limpia para la versión final"
-      ]
-    }
+    ]
   },
   "cta": {
-    "badge": "Constrúyelo mientras la idea sigue fresca",
-    "title": "Empieza por la ruta. Mantén el mood del viaje.",
-    "subtitle": "Diseña tu próximo viaje en minutos y sigue refinándolo en el mismo lugar en vez de reconstruirlo en cinco herramientas.",
+    "title": "Empieza con una frase.",
+    "subtitle": "Traza la ruta en minutos. Mantén todo el viaje en un solo sitio.",
     "button": "Empezar a planear"
   }
 }

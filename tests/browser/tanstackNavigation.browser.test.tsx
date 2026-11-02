@@ -1,0 +1,145 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, Outlet, RouterProvider } from '@tanstack/react-router';
+import { Link, NavLink, useLocation, useNavigate, useParams, useSearchParams } from '../../app/navigation';
+
+import { parseRouteSearch, stringifyRouteSearch } from '../../app/routing/search';
+afterEach(cleanup);
+function Probe() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const params = useParams();
+    const [search, setSearch] = useSearchParams();
+    return <>
+        <output data-testid="location">{JSON.stringify(location)}</output>
+        <output data-testid="params">{JSON.stringify(params)}</output>
+        <Link to="/de/blog/hello%20world?tag=a&tag=b#section" state={{ from: '/pricing' }}>Article</Link>
+        <NavLink to="/de/blog">Blog</NavLink>
+        <button onClick={() => navigate('/trip/taipei%20trip?x=1', { state: { trip: 'persist' } })}>Trip</button>
+        <button onClick={() => navigate('/pricing', { replace: true })}>Replace</button>
+        <button onClick={() => navigate(-1)}>Back</button>
+        <button onClick={() => setSearch(previous => { previous.set('page', '2'); return previous; }, { replace: true })}>Search</button>
+        <output data-testid="search">{search.getAll('tag').join(',')}</output>
+    </>;
+}
+function setup(initial = '/pricing') {
+    const root = createRootRoute({ component: Outlet });
+    const routes = ['/pricing', '/trip/$tripId', '/de/blog/$slug'].map(path => createRoute({ getParentRoute: () => root, path, component: Probe }));
+    const router = createRouter({ parseSearch: parseRouteSearch, stringifySearch: stringifyRouteSearch, routeTree: root.addChildren(routes), history: createMemoryHistory({ initialEntries: [initial] }) });
+    const view = render(<RouterProvider router={router} />);
+    return { router, view };
+}
+describe('TanStack navigation migration contract', () => {
+    it('keeps the shared location stable when loaders refresh without a URL change', async () => {
+        const locations: ReturnType<typeof useLocation>[] = [];
+        function LocationProbe() {
+            const location = useLocation();
+            locations.push(location);
+            return <output>{location.pathname}</output>;
+        }
+        const root = createRootRoute({ component: LocationProbe });
+        const router = createRouter({ routeTree: root, history: createMemoryHistory({ initialEntries: ['/'] }) });
+        const view = render(<RouterProvider router={router} />);
+        await view.findByText('/');
+        const initial = locations.at(-1);
+        await act(async () => { await router.invalidate(); });
+        expect(locations.every(location => location === initial)).toBe(true);
+    });
+    it('preserves encoded parameters, history state and replace/back behavior', async () => {
+        const { router, view } = setup();
+        fireEvent.click(await view.findByText('Trip', { selector: 'button' }));
+        await waitFor(() => expect(view.getByTestId('params').textContent).toContain('taipei trip'));
+        expect(JSON.parse(view.getByTestId('location').textContent!).state).toEqual({ trip: 'persist' });
+        expect(router.state.location.searchStr).toBe('?x=1');
+        fireEvent.click(view.getByText('Replace'));
+        await waitFor(() => expect(router.state.location.pathname).toBe('/pricing'));
+        fireEvent.click(view.getByText('Back'));
+        await waitFor(() => expect(router.state.location.pathname).toBe('/pricing'));
+        expect(router.history.location.state.__TSR_index).toBe(0);
+    });
+    it('retains repeated query values, fragments and link state across native link clicks', async () => {
+        const { router, view } = setup();
+        fireEvent.click(await view.findByText('Article'));
+        await waitFor(() => expect(view.getByTestId('search').textContent).toBe('a,b'));
+        expect(JSON.parse(view.getByTestId('location').textContent!).hash).toBe('#section');
+        expect(JSON.parse(view.getByTestId('location').textContent!).state).toEqual({ from: '/pricing' });
+        expect(view.getByText('Blog')).toHaveAttribute('aria-current', 'page');
+        fireEvent.click(view.getByText('Search'));
+        await waitFor(() => expect(router.state.location.searchStr).toContain('page=2'));
+        expect(view.getByTestId('search')).toHaveTextContent('a,b');
+    });
+    it('matches nested native admin routes without a second route interpreter', async () => {
+        const root = createRootRoute({ component: Outlet });
+        const admin = createRoute({ getParentRoute: () => root, path: '/admin', component: Outlet });
+        const users = createRoute({ getParentRoute: () => admin, path: 'users', component: () => <h1>Users</h1> });
+        const router = createRouter({ routeTree: root.addChildren([admin.addChildren([users])]), history: createMemoryHistory({ initialEntries: ['/admin/users'] }) });
+        const view = render(<RouterProvider router={router} />);
+        expect(await view.findByRole('heading', { name: 'Users' })).toBeVisible();
+    });
+    it('keeps a page that is being left from writing its search onto the destination (#586)', async () => {
+        function NormalizingProfile() {
+            const [search, setSearch] = useSearchParams();
+            const navigate = useNavigate();
+            React.useEffect(() => {
+                if (search.get('tab') === 'recent') return;
+                const next = new URLSearchParams(search);
+                next.set('tab', 'recent');
+                setSearch(next, { replace: true });
+            }, [search, setSearch]);
+            return <button onClick={() => navigate('/trip/abc')}>Open trip</button>;
+        }
+        let releaseTrip!: () => void;
+        const tripLoaded = new Promise<void>(resolve => { releaseTrip = resolve; });
+        const root = createRootRoute({ component: Outlet });
+        const profile = createRoute({ getParentRoute: () => root, path: '/profile', component: NormalizingProfile });
+        const trip = createRoute({ getParentRoute: () => root, path: '/trip/$tripId', loader: () => tripLoaded, component: () => <h1>Trip</h1> });
+        const router = createRouter({ parseSearch: parseRouteSearch, stringifySearch: stringifyRouteSearch, defaultPendingMs: Infinity, routeTree: root.addChildren([profile, trip]), history: createMemoryHistory({ initialEntries: ['/profile'] }) });
+        const view = render(<RouterProvider router={router} />);
+        await waitFor(() => expect(router.state.location.searchStr).toBe('?tab=recent'));
+        fireEvent.click(await view.findByText('Open trip'));
+        await waitFor(() => expect(router.state.location.pathname).toBe('/trip/abc'));
+        await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+        await act(async () => { releaseTrip(); await tripLoaded; });
+        expect(await view.findByRole('heading', { name: 'Trip' })).toBeVisible();
+        expect(router.state.location.href).toBe('/trip/abc');
+    });
+    it('presents the on-screen URL to a page while the next one loads', async () => {
+        const seen: string[] = [];
+        function VersionedTrip() {
+            const location = useLocation();
+            seen.push(`${location.pathname}${location.search}`);
+            return <Link to="/profile">Profile</Link>;
+        }
+        let releaseProfile!: () => void;
+        const profileLoaded = new Promise<void>(resolve => { releaseProfile = resolve; });
+        const root = createRootRoute({ component: Outlet });
+        const trip = createRoute({ getParentRoute: () => root, path: '/trip/$tripId', component: VersionedTrip });
+        const profile = createRoute({ getParentRoute: () => root, path: '/profile', loader: () => profileLoaded, component: () => <h1>Profile</h1> });
+        const router = createRouter({ parseSearch: parseRouteSearch, stringifySearch: stringifyRouteSearch, defaultPendingMs: Infinity, routeTree: root.addChildren([trip, profile]), history: createMemoryHistory({ initialEntries: ['/trip/abc?v=old'] }) });
+        const view = render(<RouterProvider router={router} />);
+        fireEvent.click(await view.findByText('Profile'));
+        await waitFor(() => expect(router.state.location.pathname).toBe('/profile'));
+        await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+        expect(seen.every(entry => entry === '/trip/abc?v=old')).toBe(true);
+        await act(async () => { releaseProfile(); await profileLoaded; });
+        expect(await view.findByRole('heading', { name: 'Profile' })).toBeVisible();
+    });
+    it('preloads a link with its real search instead of folding the query into the path', async () => {
+        const loaded: Array<{ tripId: string; v?: unknown }> = [];
+        const root = createRootRoute({ component: () => <><Link to="/trip/abc?v=2">Versioned</Link><Outlet /></> });
+        const index = createRoute({ getParentRoute: () => root, path: '/', component: () => null });
+        const trip = createRoute({ getParentRoute: () => root, path: '/trip/$tripId', loaderDeps: ({ search }) => ({ v: (search as Record<string, unknown>).v }), loader: ({ params, deps }) => { loaded.push({ tripId: params.tripId, v: deps.v }); }, component: () => <h1>Trip</h1> });
+        const router = createRouter({ parseSearch: parseRouteSearch, stringifySearch: stringifyRouteSearch, routeTree: root.addChildren([index, trip]), history: createMemoryHistory({ initialEntries: ['/'] }) });
+        const view = render(<RouterProvider router={router} />);
+        const link = await view.findByText('Versioned');
+        expect(link).toHaveAttribute('href', '/trip/abc?v=2');
+        fireEvent.mouseEnter(link);
+        await waitFor(() => expect(loaded).toContainEqual({ tripId: 'abc', v: '2' }));
+        fireEvent.click(link);
+        expect(await view.findByRole('heading', { name: 'Trip' })).toBeVisible();
+        expect(router.state.location.search).toEqual({ v: '2' });
+        expect(loaded.every(entry => entry.tripId === 'abc')).toBe(true);
+    });
+});

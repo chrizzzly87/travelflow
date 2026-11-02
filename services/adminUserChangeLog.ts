@@ -24,37 +24,37 @@ const SECONDARY_FACET_MAP: Record<string, UserChangeSecondaryFacet> = {
     'trip.transport.updated': {
         code: 'trip.transport.updated',
         label: 'Transport updated',
-        className: 'border-cyan-300 bg-cyan-50 text-cyan-800',
+        className: 'border-cyan-300 bg-cyan-50 text-cyan-800 dark:bg-cyan-400/12 dark:text-cyan-200 dark:border-cyan-400/30',
     },
     'trip.activity.updated': {
         code: 'trip.activity.updated',
         label: 'Activity updated',
-        className: 'border-amber-300 bg-amber-50 text-amber-800',
+        className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
     },
     'trip.activity.deleted': {
         code: 'trip.activity.deleted',
         label: 'Activity deleted',
-        className: 'border-rose-300 bg-rose-50 text-rose-800',
+        className: 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
     },
     'trip.segment.deleted': {
         code: 'trip.segment.deleted',
         label: 'Segment deleted',
-        className: 'border-orange-300 bg-orange-50 text-orange-800',
+        className: 'border-orange-300 bg-orange-50 text-orange-800 dark:bg-orange-400/12 dark:text-orange-200 dark:border-orange-400/30',
     },
     'trip.city.updated': {
         code: 'trip.city.updated',
         label: 'City updated',
-        className: 'border-blue-300 bg-blue-50 text-blue-800',
+        className: 'border-blue-300 bg-blue-50 text-blue-800 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30',
     },
     'trip.trip_dates.updated': {
         code: 'trip.trip_dates.updated',
         label: 'Trip dates updated',
-        className: 'border-indigo-300 bg-indigo-50 text-indigo-800',
+        className: 'border-indigo-300 bg-indigo-50 text-indigo-800 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30',
     },
     'trip.visibility.updated': {
         code: 'trip.visibility.updated',
         label: 'Visibility updated',
-        className: 'border-violet-300 bg-violet-50 text-violet-800',
+        className: 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30',
     },
 };
 
@@ -433,45 +433,45 @@ export const resolveUserChangeActionPresentation = (
     const normalizedAction = record.action.trim().toLowerCase();
 
     if (normalizedAction === 'trip.archived' || normalizedAction === 'trip.archive') {
-        return { label: 'Archived trip', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+        return { label: 'Archived trip', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
     }
 
     if (normalizedAction === 'trip.archive_failed') {
-        return { label: 'Archive failed', className: 'border-rose-300 bg-rose-50 text-rose-800' };
+        return { label: 'Archive failed', className: 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30' };
     }
 
     if (normalizedAction === 'trip.created' || normalizedAction === 'trip.create') {
-        return { label: 'Created trip', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+        return { label: 'Created trip', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
     }
 
     if (normalizedAction === 'trip.updated' || normalizedAction === 'trip.update') {
-        return { label: 'Updated trip', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+        return { label: 'Updated trip', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
     }
 
     if (normalizedAction === 'trip.deleted' || normalizedAction === 'trip.delete') {
-        return { label: 'Deleted trip', className: 'border-rose-300 bg-rose-50 text-rose-800' };
+        return { label: 'Deleted trip', className: 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30' };
     }
 
     if (normalizedAction === 'trip.share_created' || normalizedAction === 'trip.share.create') {
-        return { label: 'Shared trip', className: 'border-violet-300 bg-violet-50 text-violet-800' };
+        return { label: 'Shared trip', className: 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30' };
     }
 
     if (normalizedAction === 'profile.updated') {
-        return { label: 'Updated profile', className: 'border-indigo-300 bg-indigo-50 text-indigo-800' };
+        return { label: 'Updated profile', className: 'border-indigo-300 bg-indigo-50 text-indigo-800 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30' };
     }
     if (normalizedAction === 'legal.terms.accepted') {
-        return { label: 'Accepted Terms', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+        return { label: 'Accepted Terms', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
     }
     if (normalizedAction === 'legal.terms.reset_by_admin') {
-        return { label: 'Reset Terms acceptance', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+        return { label: 'Reset Terms acceptance', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
     }
     if (normalizedAction === 'profile.username_cooldown.reset_by_admin') {
-        return { label: 'Revoked username cooldown', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+        return { label: 'Revoked username cooldown', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
     }
 
     return {
         label: normalizeActionLabel(record.action),
-        className: 'border-slate-300 bg-slate-100 text-slate-800',
+        className: 'border-border bg-secondary text-foreground',
     };
 };
 

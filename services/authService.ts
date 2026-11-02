@@ -617,7 +617,8 @@ export const signInWithEmailPassword = async (
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'login_password', result: 'start', provider: 'password', email });
-    const attemptSignIn = async () => supabase.auth.signInWithPassword({ email, password });
+    const client = supabase;
+    const attemptSignIn = async () => client.auth.signInWithPassword({ email, password });
     let { data, error } = await attemptSignIn();
     let recoveredFromSessionNotFound = false;
     if (error && isSessionNotFoundError(error)) {
@@ -773,7 +774,8 @@ export const signInWithOAuth = async (
         // Continue OAuth even if claim creation fails.
     }
 
-    const startStandardOAuth = () => supabase.auth.signInWithOAuth({
+    const client = supabase;
+    const startStandardOAuth = () => client.auth.signInWithOAuth({
         provider,
         options: { redirectTo },
     });

@@ -75,19 +75,19 @@ export const AppModal: React.FC<AppModalProps> = ({
                 onOpenAutoFocus={handleOpenAutoFocus}
                 onEscapeKeyDown={onEscapeKeyDown}
             >
-                <DialogHeader className={`border-b border-gray-100 p-4 ${headerClassName ?? ''}`.trim()}>
+                <DialogHeader className={`border-b border-border p-4 ${headerClassName ?? ''}`.trim()}>
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <DialogTitle className="text-lg font-bold text-gray-900">{title}</DialogTitle>
+                            <DialogTitle className="text-lg font-bold text-foreground">{title}</DialogTitle>
                             {description ? (
-                                <DialogDescription className="mt-0.5 text-xs text-gray-500">{description}</DialogDescription>
+                                <DialogDescription className="mt-0.5 text-xs text-muted-foreground">{description}</DialogDescription>
                             ) : null}
                         </div>
                         <button
                             ref={closeButtonRef}
                             type="button"
                             onClick={onClose}
-                            className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100"
+                            className="rounded p-1 text-muted-foreground transition-colors hover:bg-secondary"
                             aria-label={closeLabel}
                         >
                             <X size={18} />
@@ -98,7 +98,7 @@ export const AppModal: React.FC<AppModalProps> = ({
                     {children}
                 </div>
                 {footer ? (
-                    <div className="border-t border-gray-100 bg-white p-4">
+                    <div className="border-t border-border bg-card p-4">
                         {footer}
                     </div>
                 ) : null}

@@ -1,6 +1,6 @@
 /* eslint-disable react-doctor/only-export-components */
 import React from "https://esm.sh/react@18.3.1";
-import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
+import { renderOgImage } from "../edge-lib/og-image-response.ts";
 import { APP_NAME } from "../../config/appGlobals.ts";
 import {
   buildLocalHeadingFontUrls,
@@ -404,7 +404,7 @@ export default async (request: Request): Promise<Response> => {
 
     const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);
 
-    return new ImageResponse(
+    return await renderOgImage(
       (
         <div
           style={{

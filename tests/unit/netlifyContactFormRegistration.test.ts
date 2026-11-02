@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ContactFormRegistration } from '../../src/document/ContactFormRegistration';
 import { describe, expect, it } from 'vitest';
 
-describe('index.html Netlify contact form scaffold', () => {
-  it('contains the static contact form registration markup for SPA deployments', () => {
-    const indexHtmlPath = resolve(process.cwd(), 'index.html');
-    const html = readFileSync(indexHtmlPath, 'utf8');
+describe('native document Netlify form registration', () => {
+  it('contains the static contact form registration markup for prerendered documents', () => {
+    const html = renderToStaticMarkup(React.createElement(ContactFormRegistration));
 
     expect(html).toContain('name="contact"');
     expect(html).toContain('data-netlify="true"');

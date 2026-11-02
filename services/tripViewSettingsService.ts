@@ -41,6 +41,18 @@ const readPersistedFiniteNumber = (key: string): number | undefined => {
     return toOptionalFiniteNumber(stored);
 };
 
+/**
+ * The map style an administrator set as the app-wide default. A style the
+ * visitor picked themselves always wins; this only decides where they start.
+ */
+let runtimeDefaultMapStyle: IViewSettings['mapStyle'] | null = null;
+
+export const setRuntimeDefaultMapStyle = (mapStyle: IViewSettings['mapStyle']): void => {
+    runtimeDefaultMapStyle = isMapStyleValue(mapStyle) ? mapStyle : null;
+};
+
+export const getRuntimeDefaultMapStyle = (): IViewSettings['mapStyle'] | null => runtimeDefaultMapStyle;
+
 export const readPersistedTripViewSettings = (): Partial<IViewSettings> | undefined => {
     if (typeof window === 'undefined') return undefined;
 
@@ -52,6 +64,7 @@ export const readPersistedTripViewSettings = (): Partial<IViewSettings> | undefi
     const persistedTimelineView = readLocalStorageItem('tf_timeline_view');
 
     if (isMapStyleValue(persistedMapStyle)) partial.mapStyle = persistedMapStyle;
+    else if (runtimeDefaultMapStyle) partial.mapStyle = runtimeDefaultMapStyle;
     if (isRouteModeValue(persistedRouteMode)) partial.routeMode = persistedRouteMode;
     if (isLayoutModeValue(persistedLayoutMode)) partial.layoutMode = persistedLayoutMode;
     if (isTimelineModeValue(persistedTimelineMode)) partial.timelineMode = persistedTimelineMode;

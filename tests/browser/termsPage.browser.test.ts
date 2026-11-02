@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
@@ -45,7 +46,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),
@@ -146,7 +147,7 @@ describe('pages/TermsPage acceptance flow', () => {
   it('submits acceptance and continues to the intended route when acceptance is required', async () => {
     const user = userEvent.setup();
 
-    render(React.createElement(TermsPage));
+    await render(React.createElement(TermsPage));
 
     expect(screen.getByText('Version: 2026-03-03')).toBeInTheDocument();
     expect(screen.getByText('Last updated: 2026-03-03')).toBeInTheDocument();
@@ -162,14 +163,14 @@ describe('pages/TermsPage acceptance flow', () => {
     expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-123', { replace: true });
   });
 
-  it('hides acceptance CTA for users who already accepted the current terms', () => {
+  it('hides acceptance CTA for users who already accepted the current terms', async () => {
     mocks.auth.access = {
       termsCurrentVersion: '2026-03-03',
       termsAcceptedVersion: '2026-03-03',
       termsAcceptanceRequired: false,
     };
 
-    render(React.createElement(TermsPage));
+    await render(React.createElement(TermsPage));
 
     expect(screen.queryByRole('button', { name: 'Accept current Terms and continue' })).not.toBeInTheDocument();
   });
@@ -184,7 +185,7 @@ describe('pages/TermsPage acceptance flow', () => {
       termsAcceptanceRequired: true,
     };
 
-    render(React.createElement(TermsPage));
+    await render(React.createElement(TermsPage));
 
     await user.click(screen.getByRole('button', { name: 'Accept current Terms and continue' }));
 

@@ -206,7 +206,8 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
       compact,
     });
 
-    let bestCandidate: CandidateLabelLayout | null = null;
+    // Assigned inside tryAnchor; the explicit widening keeps TS from narrowing it to null.
+    let bestCandidate = null as CandidateLabelLayout | null;
     let bestPenalty = Number.POSITIVE_INFINITY;
     const preferredAnchor: TripMapCityLabelAnchor = label.point.y <= estimatedBox.height + baseOffsetPx + 18
       ? 'below'
@@ -294,4 +295,13 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
   });
 
   return results;
+};
+
+/** Every city label currently sits above its pin; the legs are not consulted. */
+export const resolveCityLabelAnchor = (
+  _city: google.maps.LatLngLiteral,
+  _previous?: google.maps.LatLngLiteral | null,
+  _next?: google.maps.LatLngLiteral | null,
+): TripMapCityLabelAnchor => {
+  return 'above';
 };

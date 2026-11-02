@@ -310,6 +310,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
       aiMeta: {
         provider: 'openai',
         model: 'gpt-4.1',
+        generatedAt: '2026-01-01T00:00:00.000Z',
         generation: {
           state: 'queued',
           inputSnapshot: buildTrip().aiMeta!.generation!.inputSnapshot,
@@ -404,6 +405,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
       aiMeta: {
         provider: 'openai',
         model: 'gpt-4.1',
+        generatedAt: '2026-01-01T00:00:00.000Z',
         generation: {
           state: 'queued',
           inputSnapshot: buildTrip().aiMeta!.generation!.inputSnapshot,
@@ -477,6 +479,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
       aiMeta: {
         provider: 'openai',
         model: 'gpt-4.1',
+        generatedAt: '2026-01-01T00:00:00.000Z',
         generation: {
           state: 'queued',
           inputSnapshot: buildTrip().aiMeta!.generation!.inputSnapshot,

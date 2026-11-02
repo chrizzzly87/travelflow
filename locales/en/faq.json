@@ -1,0 +1,87 @@
+{
+  "hero": {
+    "title": "Frequently asked questions.",
+    "description": "Find quick answers for support, billing, privacy, and planning questions."
+  },
+  "help": {
+    "title": "Still need help?",
+    "description": "Contact us with your question and we will route it to the right team.",
+    "cta": "Open Contact"
+  },
+  "contactExcerpt": {
+    "title": "Frequently asked questions",
+    "description": "Here are quick answers to common contact and support topics."
+  },
+  "sections": {
+    "general": "General",
+    "billing": "Billing",
+    "privacy": "Privacy & Data",
+    "product": "Product & Planning"
+  },
+  "items": {
+    "general-what-include-bug-report": {
+      "question": "What should I include when reporting a website or app problem?",
+      "answer": "Include what you expected, what happened instead, and the page you were on. If possible, add the exact text, button name, or feature you used so we can reproduce it quickly."
+    },
+    "general-report-translation-issue": {
+      "question": "How do I report translation issues?",
+      "answer": "Use the Contact page and choose “{reasonBugReport}”, then select “{subTranslationWrongMisleading}”. This routes your report to the right queue immediately."
+    },
+    "general-support-response-time": {
+      "question": "How fast does support respond?",
+      "answer": "We usually reply within 2-3 business days. Complex issues can take longer if we need to investigate technical logs or coordinate with partners."
+    },
+    "general-need-account-for-contact": {
+      "question": "Do I need an account to contact support?",
+      "answer": "No. You can contact us without an account. If you are signed in, we include your account context automatically to speed up troubleshooting."
+    },
+    "billing-change-plan": {
+      "question": "How do I change my subscription plan?",
+      "answer": "Send a message through Contact and choose “{reasonBillingAccount}” with “{subSubscriptionChange}”. We will guide you through the available options."
+    },
+    "billing-update-payment-method": {
+      "question": "How do I update my payment method?",
+      "answer": "Use “{reasonBillingAccount}” and select “{subPaymentFailed}” or “{subInvoiceReceipt}”, depending on your case. Include the last 4 digits and date if available."
+    },
+    "billing-cancel-subscription": {
+      "question": "How do I cancel my subscription?",
+      "answer": "Open Contact, choose “{reasonBillingAccount}”, and pick “{subSubscriptionChange}”. We will confirm timing and any remaining access period."
+    },
+    "billing-refund-policy": {
+      "question": "How do refund requests work?",
+      "answer": "Choose “{reasonBillingAccount}” and “{subRefundQuestion}” in Contact. Add your transaction date and the account email used during checkout."
+    },
+    "privacy-request-export-delete": {
+      "question": "How can I request data export or deletion?",
+      "answer": "Use “{reasonDataPrivacy}” on the Contact form and pick either “{subDataExport}” or “{subDataDeletion}”. We may ask you to verify account ownership."
+    },
+    "privacy-cookie-consent": {
+      "question": "Where can I manage cookie and consent settings?",
+      "answer": "You can update consent in the cookie controls and review details on the Cookie Policy page."
+    },
+    "privacy-contact-data-usage": {
+      "question": "How do you use contact form data?",
+      "answer": "We use contact form data only to process and reply to your request. We do not use it for unrelated marketing outreach."
+    },
+    "privacy-security-concern": {
+      "question": "How should I report a security concern?",
+      "answer": "Use the Contact form and select “{reasonDataPrivacy}” with “{subSecurityConcern}”, or choose “{reasonOther}” with “{subResponsibleDisclosure}”. Include reproduction details if safe to share."
+    },
+    "product-map-route-different": {
+      "question": "Why can map routes look different than expected?",
+      "answer": "Routes depend on provider availability, map data quality, and temporary transport constraints. If a route looks wrong, report it under “{reasonBugReport}” and pick “{subMapRoutingIssue}”."
+    },
+    "product-feature-suggestions": {
+      "question": "Where should I suggest product improvements?",
+      "answer": "Use the Contact form with “{reasonFeatureRequest}” and pick the topic that best fits your idea. This helps us prioritize roadmap work faster."
+    },
+    "product-slow-performance": {
+      "question": "What should I do if the app feels slow or unstable?",
+      "answer": "Report the issue as “{reasonBugReport}” and choose “{subPerformanceIssue}”. Mention browser, device type, and the page where you noticed the slowdown."
+    },
+    "product-share-trip": {
+      "question": "How can I share a trip with someone else?",
+      "answer": "Open your trip and use the share actions to generate a link. If sharing fails, report it under “{reasonBugReport}” and include the trip page path."
+    }
+  }
+}

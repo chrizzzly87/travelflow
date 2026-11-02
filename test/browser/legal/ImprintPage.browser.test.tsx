@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../components/marketing/MarketingLayout', () => ({
@@ -16,7 +17,7 @@ const renderImprint = async (language: 'de' | 'en', initialEntry: string) => {
   await preloadLocaleNamespaces(language, ['legal']);
   await i18n.changeLanguage(language);
 
-  return render(
+  return await render(
     <I18nextProvider i18n={i18n}>
       <MemoryRouter initialEntries={[initialEntry]}>
         <ImprintPage />

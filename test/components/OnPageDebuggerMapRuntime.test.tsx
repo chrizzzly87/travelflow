@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OnPageDebugger } from '../../components/OnPageDebugger';
@@ -128,7 +128,6 @@ describe('components/OnPageDebugger map runtime controls', () => {
     expect(buildMapRuntimeDebugOverride({ preset: 'default' }, {
       ...runtime,
       override: { preset: 'mapbox_visual_google_services' },
-      requestedPreset: 'mapbox_visual_google_services',
       requestedSelection: {
         renderer: 'mapbox',
         routes: 'google',

@@ -7,12 +7,19 @@ interface HeroWebGLBackgroundProps {
 // Temporary fallback while WebGL background is deactivated for performance.
 export const HeroWebGLBackground: React.FC<HeroWebGLBackgroundProps> = ({ className = '' }) => {
     return (
-        <div className={`absolute inset-0 overflow-hidden ${className}`} aria-hidden="true">
+        <div className={`absolute inset-0 overflow-hidden ${className} dark:opacity-40 dark:mix-blend-screen`} aria-hidden="true">
             <div
                 className="absolute inset-0"
                 style={{
                     background:
                         'radial-gradient(circle at 15% 20%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.38) 38%, rgba(255,255,255,0.14) 62%, rgba(255,255,255,0) 78%), linear-gradient(145deg, rgba(214,232,255,0.55) 0%, rgba(233,245,255,0.62) 35%, rgba(220,245,236,0.45) 100%)',
+                }}
+            />
+            <div
+                className="absolute inset-0 hidden dark:block"
+                style={{
+                    background:
+                        'radial-gradient(circle at 15% 20%, rgba(129,140,248,0.10) 0%, rgba(129,140,248,0) 60%), radial-gradient(circle at 85% 80%, rgba(96,165,250,0.08) 0%, rgba(96,165,250,0) 55%)',
                 }}
             />
             <div

@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from '@/app/navigation';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { PlaneWindowAnimation } from './PlaneWindowAnimation';
+import { PlaneWindow } from './PlaneWindow/PlaneWindow';
 import { buildPath } from '../../config/routes';
-import { warmRouteAssets } from '../../services/navigationPrefetch';
+import { useAuth } from '../../hooks/useAuth';
 
 const heroTitleGradient: GradientStop[] = [
     { color: '#0f766e', position: 0 },
@@ -63,12 +64,12 @@ const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => 
                 spread={3.5}
                 pauseBetween={1800}
                 baseColor="currentColor"
-                className="text-slate-900"
+                className="text-foreground dark:text-foreground"
             >
                 {children}
             </GradientShimmer>
         ) : (
-            <span className="text-slate-900">{children}</span>
+            <span className="text-foreground dark:text-foreground">{children}</span>
         )}
         <svg
             aria-hidden="true"
@@ -100,7 +101,25 @@ const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => 
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
+    const { isAuthenticated } = useAuth();
     const [showPlaneWindow, setShowPlaneWindow] = useState(true);
+
+    // Homepage only, and re-evaluated on every route change.
+    //
+    // An earlier version read window.location.pathname inside useMemo([]), which
+    // snapshots the path once at mount and never looks again. If the hero mounts
+    // while the app is still on '/', it stays "home" forever — which is how the
+    // plane window ended up baked into the prerendered /features HTML and showed
+    // up on a direct load of that page but not when navigating to it. Reading the
+    // router location keeps this honest across navigations.
+    const heroLocation = useSafeRouteLocation();
+    const isHomeRoute = useMemo(() => {
+        const pathname = heroLocation.pathname
+            || (typeof window !== 'undefined' ? window.location.pathname : '/');
+        const segments = (pathname || '/').split('/').filter(Boolean);
+        // '/' or a bare locale prefix such as '/de'.
+        return segments.length === 0 || (segments.length === 1 && /^[a-z]{2}$/.test(segments[0]));
+    }, [heroLocation.pathname]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -125,66 +144,67 @@ export const HeroSection: React.FC = () => {
     const heroCtaDebugAttributes = (ctaName: string) =>
         getAnalyticsDebugAttributes(`home__hero_cta--${ctaName}`);
 
-    const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildPath('createTrip'), 'manual');
-    };
 
     return (
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
             <div className="relative flex items-center gap-8 lg:gap-12">
                 <div className="max-w-3xl flex-1">
-                    <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
+                    <div>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             <Sparkle size={14} weight="duotone" />
                             {t('hero.badge')}
                         </span>
                     </div>
 
-                    <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
-                        <h1 className="mt-6 text-balance text-5xl font-semibold text-slate-900 md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+                    <div>
+                        <h1 className="mt-6 text-balance text-5xl font-semibold text-foreground dark:text-foreground md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                             {t('hero.titleBefore')} {' '}
                             <HeroTitleHighlight>{t('hero.titleHighlight')}</HeroTitleHighlight>
                         </h1>
                     </div>
 
-                    <div className="animate-hero-stagger" style={{ '--stagger': '160ms' } as React.CSSProperties}>
-                        <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-slate-600 md:text-xl">
+                    <div>
+                        <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground dark:text-muted-foreground md:text-xl">
                             {t('hero.description')}
                         </p>
                     </div>
 
-                    <div className="mt-10 flex flex-wrap items-center gap-4 animate-hero-stagger" style={{ '--stagger': '240ms' } as React.CSSProperties}>
+                    <div className="mt-10 flex flex-wrap items-center gap-4">
                         <Link
                             to={buildPath('createTrip')}
                             onClick={() => handleCtaClick('start_planning')}
-                            onMouseEnter={prewarmCreateTripRoute}
-                            onFocus={prewarmCreateTripRoute}
-                            onTouchStart={prewarmCreateTripRoute}
-                            className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 active:scale-[0.96]"
+
+
+
+                            className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300 dark:hover:shadow-none"
                             {...heroCtaDebugAttributes('start_planning')}
                         >
                             {t('common:buttons.startPlanning')}
                         </Link>
-                        <a
+                        {isAuthenticated ? <Link to="/profile"
+                            onClick={() => handleCtaClick('my_trips')}
+                            className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:shadow-sm active:scale-[0.96]"
+                            {...heroCtaDebugAttributes('my_trips')}
+                        >{t('common:nav.myTrips')}</Link> : <a
                             href="#examples"
                             onClick={() => handleCtaClick('see_examples')}
-                            className="rounded-2xl border border-slate-300 bg-white px-7 py-3.5 text-base font-bold text-slate-700 transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:text-slate-900 hover:shadow-sm active:scale-[0.96]"
+                            className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:text-foreground hover:shadow-sm active:scale-[0.96] dark:border-border dark:bg-card dark:text-foreground dark:hover:border-border dark:hover:text-foreground dark:shadow-none"
                             {...heroCtaDebugAttributes('see_examples')}
                         >
                             {t('common:buttons.seeExampleTrips')}
-                        </a>
+                        </a>}
                     </div>
 
                     <div className="mt-8 flex flex-wrap gap-2.5 animate-hero-stagger" style={{ '--stagger': '360ms' } as React.CSSProperties}>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm animate-float" style={{ '--float-delay': '0ms' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none" style={{ '--float-delay': '0ms' } as React.CSSProperties}>
                             <RocketLaunch size={14} weight="duotone" className="text-accent-500" />
                             {t('hero.floating.ai')}
                         </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm animate-float" style={{ '--float-delay': '600ms' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none" style={{ '--float-delay': '600ms' } as React.CSSProperties}>
                             <ShareNetwork size={14} weight="duotone" className="text-accent-500" />
                             {t('hero.floating.share')}
                         </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm animate-float" style={{ '--float-delay': '1200ms' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none" style={{ '--float-delay': '1200ms' } as React.CSSProperties}>
                             <LinkSimple size={14} weight="duotone" className="text-accent-500" />
                             {t('hero.floating.booking')}
                         </span>
@@ -192,7 +212,7 @@ export const HeroSection: React.FC = () => {
                 </div>
 
                 <div className="hidden lg:block w-[280px] xl:w-[320px] shrink-0 animate-hero-stagger" style={{ '--stagger': '400ms' } as React.CSSProperties}>
-                    {showPlaneWindow ? <PlaneWindowAnimation /> : null}
+                    {showPlaneWindow && isHomeRoute ? <PlaneWindow /> : null}
                 </div>
             </div>
         </section>

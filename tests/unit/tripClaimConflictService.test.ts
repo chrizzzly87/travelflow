@@ -185,4 +185,27 @@ describe('services/tripClaimConflictService', () => {
       },
     });
   });
+
+  it('preserves a surprise setup without inventing a wizard mode', () => {
+    const trip = makeTrip({
+      flow: 'surprise', destinationLabel: 'Island escape', startDate: '2026-09-01', endDate: '2026-09-08',
+      createdAt: '2026-03-11T08:00:00.000Z',
+      payload: { options: {
+        destinationOrder: ['Mallorca, Spain'], selectedIslandNames: ['Mallorca, Spain'],
+        startDestination: 'Mallorca, Spain', enforceIslandOnly: true, budget: 'Medium',
+        travelerType: 'solo', travelerDetails: { soloComfort: 'comfort' },
+        transportPreferences: ['train'], tripVibeTags: ['relaxed'], notes: 'Keep it easy',
+      } },
+    });
+    const path = buildCreateSimilarTripPath({ trip, pathname: '/fr/trip/trip-1' });
+    expect(path.startsWith('/fr/create-trip?prefill=')).toBe(true);
+    const prefill = readPrefillFromPath(path);
+    expect(prefill?.mode).toBeUndefined();
+    expect(prefill).toMatchObject({
+      countries: ['Mallorca'], vibes: ['relaxed'], budget: 'Medium', notes: 'Keep it easy',
+      meta: { draft: { startDestination: 'Mallorca', selectedIslandNames: ['Mallorca'],
+        enforceIslandOnly: true, travelerType: 'solo', travelerDetails: { soloComfort: 'comfort' }, transportPreferences: ['train'] } },
+    });
+  });
+
 });

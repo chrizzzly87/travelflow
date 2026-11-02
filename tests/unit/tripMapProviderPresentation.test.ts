@@ -15,7 +15,9 @@ describe('components/maps/tripMapProviderPresentation', () => {
 
     expect(mapbox.cityLabels.offsetMultiplier).toBeGreaterThan(google.cityLabels.offsetMultiplier);
     expect(mapbox.cityLabels.minOffsetPx).toBeGreaterThan(google.cityLabels.minOffsetPx);
-    expect(mapbox.flights.curve.samples).toBeGreaterThan(google.flights.curve.samples);
+    // `samples` is optional on the shared curve options; both providers set it.
+    expect(google.flights.curve.samples).toBeTypeOf('number');
+    expect(mapbox.flights.curve.samples).toBeGreaterThan(google.flights.curve.samples ?? Infinity);
     expect(mapbox.flights.groundShadow.weightMultiplier).toBeGreaterThan(google.flights.groundShadow.weightMultiplier);
   });
 

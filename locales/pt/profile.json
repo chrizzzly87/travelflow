@@ -127,6 +127,7 @@
     "privateDescription": "Este viajante ocultou o perfil público por enquanto.",
     "notFoundTitle": "Perfil não encontrado",
     "notFoundDescription": "Não encontramos um perfil para este usuário.",
+    "metaDescription": "Veja as viagens públicas e os destaques de viagem de {name} no TravelFlow.",
     "ctaExploreInspirations": "Explorar inspirações",
     "ctaBackProfile": "Ir para seu perfil",
     "tripsTitle": "Viagens públicas",

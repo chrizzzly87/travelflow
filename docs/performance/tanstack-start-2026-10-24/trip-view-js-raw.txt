@@ -1,0 +1,34 @@
+# Local built site (`pnpm -s flags:sync && npx vite build`, served by scripts/serve-built-site.mjs on :4183), 2026-10-24.
+# baseline = origin/claude/tanstack-start-finish (TripView-CO-YHTqT.js)
+# after    = claude/trip-route-js-561 commit aad3e724 (TripView-UomTK_8Y.js)
+#
+# Playwright Chromium, 1280x900, browser cache disabled, service workers blocked.
+# Sizes are CDP encodedDataLength (the local server gzips). scriptRequests/scriptKB include
+# Google Maps scripts, whose count varies run to run; appScript* counts only /assets/ chunks.
+# rawKB/unusedRawKB are decoded /assets/ bytes and their V8 coverage after load, network idle
+# and 1.5 s. readyMs = navigation start to a visible "Open trip details" button; it is bimodal
+# (~460 or ~935 ms) on both revisions and is not used for any claim.
+# trip = /trip/<lz-string encoded one-city fixture from e2e/production-critical.spec.ts>.
+{"label":"baseline","page":"example","run":1,"readyMs":2127,"fcpMs":1700,"scriptRequests":168,"scriptKB":1851.5,"appScriptRequests":149,"appScriptKB":1187,"tripViewKB":159.2,"rawKB":3884.9,"unusedRawKB":2599.1}
+{"label":"baseline","page":"example","run":2,"readyMs":468,"fcpMs":104,"scriptRequests":162,"scriptKB":1595.7,"appScriptRequests":149,"appScriptKB":1187,"tripViewKB":159.2,"rawKB":3884.9,"unusedRawKB":2598.9}
+{"label":"baseline","page":"example","run":3,"readyMs":481,"fcpMs":100,"scriptRequests":162,"scriptKB":1595.8,"appScriptRequests":149,"appScriptKB":1187,"tripViewKB":159.2,"rawKB":3884.9,"unusedRawKB":2599}
+{"label":"baseline","page":"trip","run":1,"readyMs":456,"fcpMs":100,"scriptRequests":161,"scriptKB":1595.5,"appScriptRequests":148,"appScriptKB":1186.8,"tripViewKB":159.2,"rawKB":3882.3,"unusedRawKB":2597.3}
+{"label":"baseline","page":"trip","run":2,"readyMs":939,"fcpMs":104,"scriptRequests":161,"scriptKB":1595.6,"appScriptRequests":148,"appScriptKB":1186.8,"tripViewKB":159.2,"rawKB":3882.3,"unusedRawKB":2597.4}
+{"label":"baseline","page":"trip","run":3,"readyMs":457,"fcpMs":100,"scriptRequests":162,"scriptKB":1691.9,"appScriptRequests":148,"appScriptKB":1186.8,"tripViewKB":159.2,"rawKB":3882.3,"unusedRawKB":2597.4}
+{"label":"after","page":"example","run":1,"readyMs":933,"fcpMs":120,"scriptRequests":161,"scriptKB":1660.9,"appScriptRequests":147,"appScriptKB":1155.8,"tripViewKB":131.6,"rawKB":3776.4,"unusedRawKB":2529.1}
+{"label":"after","page":"example","run":2,"readyMs":978,"fcpMs":104,"scriptRequests":160,"scriptKB":1564.6,"appScriptRequests":147,"appScriptKB":1155.8,"tripViewKB":131.6,"rawKB":3776.4,"unusedRawKB":2529.2}
+{"label":"after","page":"example","run":3,"readyMs":924,"fcpMs":96,"scriptRequests":160,"scriptKB":1564.6,"appScriptRequests":147,"appScriptKB":1155.8,"tripViewKB":131.6,"rawKB":3776.4,"unusedRawKB":2529.2}
+{"label":"after","page":"trip","run":1,"readyMs":457,"fcpMs":104,"scriptRequests":159,"scriptKB":1564.4,"appScriptRequests":146,"appScriptKB":1155.6,"tripViewKB":131.6,"rawKB":3773.9,"unusedRawKB":2527.6}
+{"label":"after","page":"trip","run":2,"readyMs":445,"fcpMs":96,"scriptRequests":159,"scriptKB":1564.4,"appScriptRequests":146,"appScriptKB":1155.6,"tripViewKB":131.6,"rawKB":3773.9,"unusedRawKB":2527.6}
+{"label":"after","page":"trip","run":3,"readyMs":929,"fcpMs":100,"scriptRequests":159,"scriptKB":1564.4,"appScriptRequests":146,"appScriptKB":1155.6,"tripViewKB":131.6,"rawKB":3773.9,"unusedRawKB":2527.5}
+
+# Lighthouse 12.8.2, mobile defaults, --only-categories=performance, headless Chrome,
+# http://127.0.0.1:4183/example/portugal-coast. scripts/scriptKB include third-party map
+# scripts. unusedJsKB is Lighthouse's whole-page estimate (it varies with map script timing);
+# tripViewUnusedKB is its estimate for the TripView chunk alone.
+{"label":"baseline","run":"1","score":63,"fcp":5048,"lcp":5588,"tbt":187,"scripts":165,"scriptKB":1595.8,"unusedJsKB":665.8,"tripViewUnusedKB":94.5}
+{"label":"baseline","run":"2","score":66,"fcp":4956,"lcp":5406,"tbt":65,"scripts":165,"scriptKB":1595.7,"unusedJsKB":762.2,"tripViewUnusedKB":94.5}
+{"label":"baseline","run":"3","score":67,"fcp":4956,"lcp":5406,"tbt":59,"scripts":165,"scriptKB":1595.7,"unusedJsKB":665.8,"tripViewUnusedKB":94.5}
+{"label":"after","run":"1","score":64,"fcp":4955,"lcp":5405,"tbt":165,"scripts":163,"scriptKB":1564.5,"unusedJsKB":597.3,"tripViewUnusedKB":78.4}
+{"label":"after","run":"2","score":66,"fcp":5061,"lcp":5611,"tbt":38,"scripts":160,"scriptKB":1564.6,"unusedJsKB":681.3,"tripViewUnusedKB":78.4}
+{"label":"after","run":"3","score":65,"fcp":5057,"lcp":5605,"tbt":40,"scripts":163,"scriptKB":1564.6,"unusedJsKB":649.6,"tripViewUnusedKB":78.4}

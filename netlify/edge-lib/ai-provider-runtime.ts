@@ -1,4 +1,5 @@
 import type { StructuredOutputJsonSchema } from "../../shared/aiTripItinerarySchema.ts";
+import type { AiReasoningEffort } from "../../shared/aiReasoning.ts";
 
 export interface ProviderUsage {
   promptTokens?: number;
@@ -39,6 +40,7 @@ export interface ProviderGenerationOptions {
   timeoutMs: number;
   maxOutputTokens?: number;
   jsonSchema?: StructuredOutputJsonSchema;
+  reasoningEffort?: AiReasoningEffort;
 }
 
 export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
@@ -68,7 +70,19 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
   ]),
   openrouter: new Set([
     "openrouter/free",
-    "openai/gpt-oss-20b:free",
+    "openai/gpt-6-luna",
+    "openai/gpt-6.1-sol",
+    "anthropic/claude-haiku-5.5",
+    "anthropic/claude-sonnet-5.5",
+    "anthropic/claude-opus-5.5",
+    "google/gemini-3.8-flash",
+    "x-ai/grok-4.7",
+    "deepseek/deepseek-v4.1-flash",
+    "z-ai/glm-5.3-flash",
+    "z-ai/glm-5.3",
+    "qwen/qwen3.8-flash",
+    "qwen/qwen3.8-max-prime",
+    "mistralai/mistral-large-4-0",
     "openai/gpt-5.4-nano",
     "openai/gpt-5.4-mini",
     "openai/gpt-5.6-sol",
@@ -78,22 +92,28 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "openai/gpt-5.6-luna",
     "openai/gpt-5.6-luna-pro",
     "openai/gpt-chat-latest",
+    "anthropic/claude-opus-5",
+    "anthropic/claude-sonnet-5",
     "anthropic/claude-opus-4.8",
-    "anthropic/claude-opus-4.8-fast",
     "openai/gpt-5.5",
     "google/gemini-3.5-flash",
+    "google/gemini-3.7-flash",
+    "google/gemini-3.6-flash",
+    "google/gemini-3.5-flash-lite",
     "google/gemini-3.1-flash-lite",
-    "qwen/qwen3-coder:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
     "z-ai/glm-5",
     "z-ai/glm-5.2",
+    "deepseek/deepseek-v4-pro-0813",
+    "deepseek/deepseek-v4-flash-0731",
     "deepseek/deepseek-v3.2",
     "x-ai/grok-4.3",
     "x-ai/grok-4.5",
-    "x-ai/grok-4.1-fast",
-    "x-ai/grok-4.20-beta",
+    "x-ai/grok-4.6",
+    "x-ai/grok-4.20",
     "minimax/minimax-m2.5",
     "moonshotai/kimi-k2.5",
+    "moonshotai/kimi-k3",
     "qwen/qwen3.5-9b",
     "qwen/qwen3.5-plus-20260420",
   ]),
@@ -146,8 +166,33 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MAX_ATTEMPTS = 3;
 const OPENROUTER_RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const PROVIDER_PARSE_RETRY_MAX_ATTEMPTS = 2;
+const OPENROUTER_MODELS_WITHOUT_TEMPERATURE = new Set([
+  "openai/gpt-6-luna",
+  "openai/gpt-6.1-sol",
+  "anthropic/claude-haiku-5.5",
+  "anthropic/claude-sonnet-5.5",
+  "anthropic/claude-opus-5.5",
+  "anthropic/claude-sonnet-5",
+  "google/gemini-3.7-flash",
+  "google/gemini-3.6-flash",
+  "google/gemini-3.5-flash-lite",
+  "openai/gpt-5.6-luna",
+  "openai/gpt-5.6-luna-pro",
+  "openai/gpt-5.6-terra",
+  "openai/gpt-5.6-terra-pro",
+  "openai/gpt-5.6-sol",
+  "openai/gpt-5.6-sol-pro",
+]);
 
 export const readEnv = (name: string): string => {
+  try {
+    const netlifyValue = (globalThis as { Netlify?: { env?: { get: (key: string) => string | undefined } } }).Netlify?.env?.get(name);
+    if (typeof netlifyValue === "string" && netlifyValue.length > 0) {
+      return netlifyValue;
+    }
+  } catch {
+    // Continue to compatibility fallbacks used by tests and local tooling.
+  }
   try {
     const denoValue = (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name);
     if (typeof denoValue === "string" && denoValue.length > 0) {
@@ -204,8 +249,8 @@ IMPORTANT RETRY INSTRUCTIONS:
 - No markdown fences, no prose, no explanation.
 - Keep output compact to avoid truncation.
 - Keep tripTitle at or below 80 characters.
-- Keep each city.description compact with one short checkbox bullet per required heading.
-- Keep travelSegments.description at or below 60 characters.
+- Keep each city recommendation list concise.
+- Return only transportMode and numeric duration for each travel segment.
 - Keep activities.description at or below 90 characters.
 `.trim();
 
@@ -287,6 +332,36 @@ const buildOpenAiResponsesTextFormat = (
     }
     : undefined
 );
+
+const PROVIDER_SCHEMA_UNSUPPORTED_KEYS: Record<"gemini" | "anthropic", ReadonlySet<string>> = {
+  gemini: new Set(["exclusiveMinimum", "exclusiveMaximum", "minLength", "maxLength", "pattern"]),
+  anthropic: new Set([
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "minimum",
+    "maximum",
+    "minLength",
+    "maxLength",
+    "pattern",
+  ]),
+};
+
+export const buildProviderCompatibleSchema = (
+  schema: Record<string, unknown>,
+  provider: "gemini" | "anthropic",
+): Record<string, unknown> => {
+  const unsupported = PROVIDER_SCHEMA_UNSUPPORTED_KEYS[provider];
+  const visit = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(visit);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => !unsupported.has(key))
+        .map(([key, child]) => [key, visit(child)]),
+    );
+  };
+  return visit(schema) as Record<string, unknown>;
+};
 
 const isAbortError = (error: unknown): boolean => {
   if (error instanceof DOMException && error.name === "AbortError") return true;
@@ -530,6 +605,17 @@ const extractAnthropicText = (content: unknown): string => {
     .join("\n");
 };
 
+const extractAnthropicToolInput = (content: unknown, toolName: string): Record<string, unknown> | null => {
+  if (!Array.isArray(content)) return null;
+  for (const entry of content) {
+    const typed = asRecord(entry);
+    if (!typed || typed.type !== "tool_use" || typed.name !== toolName) continue;
+    const input = asRecord(typed.input);
+    if (input) return input;
+  }
+  return null;
+};
+
 const estimateGeminiCost = (
   model: string,
   promptTokens: number | undefined,
@@ -610,6 +696,46 @@ export const ensureModelAllowed = (
   return null;
 };
 
+const readApprovedOpenRouterModels = async (): Promise<Set<string>> => {
+  const supabaseUrl = readEnv("VITE_SUPABASE_URL").replace(/\/$/, "");
+  const anonKey = readEnv("VITE_SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !anonKey) return new Set();
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_public_runtime_settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      },
+      body: "{}",
+    });
+    if (!response.ok) return new Set();
+    const payload = await response.json();
+    const row = Array.isArray(payload) ? payload[0] : payload;
+    const list = Array.isArray(row?.ai_approved_openrouter_models)
+      ? row.ai_approved_openrouter_models
+      : [];
+    const models = new Set<string>(list.flatMap((entry: unknown) => (
+      typeof entry === "string" && entry.trim() ? [entry.trim()] : []
+    )));
+    return models;
+  } catch {
+    return new Set();
+  }
+};
+
+export const ensureModelAllowedForGeneration = async (
+  provider: string,
+  model: string,
+): Promise<ProviderGenerationFailurePayload | null> => {
+  const staticError = ensureModelAllowed(provider, model);
+  if (!staticError || provider !== "openrouter") return staticError;
+  const approvedModels = await readApprovedOpenRouterModels();
+  return approvedModels.has(model) ? null : staticError;
+};
+
 const generateWithGemini = async (
   prompt: string,
   model: string,
@@ -669,6 +795,7 @@ const generateWithGemini = async (
             contents: [{ role: "user", parts: [{ text: promptBody }] }],
             generationConfig: {
               responseMimeType: "application/json",
+              ...(jsonSchema ? { responseJsonSchema: buildProviderCompatibleSchema(jsonSchema.schema, "gemini") } : {}),
               maxOutputTokens: maxOutputTokens,
               temperature: strictParseRetry || jsonSchema ? 0 : 0.2,
             },
@@ -1132,6 +1259,7 @@ const generateWithAnthropic = async (
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
+  jsonSchema?: StructuredOutputJsonSchema,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("ANTHROPIC_API_KEY");
   if (!apiKey) {
@@ -1150,6 +1278,7 @@ const generateWithAnthropic = async (
   const requestStartedAt = Date.now();
   let strictParseRetry = false;
   let ultraCompactParseRetry = false;
+  const submitToolName = "submit_trip_itinerary";
 
   for (let attempt = 1; attempt <= PROVIDER_PARSE_RETRY_MAX_ATTEMPTS; attempt += 1) {
     const attemptTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
@@ -1194,6 +1323,19 @@ const generateWithAnthropic = async (
                   : prompt,
               },
             ],
+            ...(jsonSchema ? {
+              tools: [{
+                name: submitToolName,
+                description: "Submit the completed TravelFlow itinerary plan.",
+                input_schema: buildProviderCompatibleSchema(jsonSchema.schema, "anthropic"),
+                strict: jsonSchema.strict ?? true,
+              }],
+              tool_choice: {
+                type: "tool",
+                name: submitToolName,
+                disable_parallel_tool_use: true,
+              },
+            } : {}),
           }),
         },
         attemptTimeoutMs,
@@ -1239,7 +1381,33 @@ const generateWithAnthropic = async (
     const stopReason = typeof (payload as Record<string, unknown>)?.stop_reason === "string"
       ? String((payload as Record<string, unknown>).stop_reason)
       : "";
-    const rawText = extractAnthropicText((payload as Record<string, unknown>)?.content);
+    const content = (payload as Record<string, unknown>)?.content;
+    const toolInput = jsonSchema ? extractAnthropicToolInput(content, submitToolName) : null;
+    const rawText = extractAnthropicText(content);
+
+    if (toolInput) {
+      const usageMeta = ((payload as Record<string, unknown>)?.usage || {}) as Record<string, unknown>;
+      const promptTokens = Number(usageMeta.input_tokens);
+      const completionTokens = Number(usageMeta.output_tokens);
+      return {
+        ok: true,
+        value: {
+          data: toolInput,
+          meta: {
+            provider: "anthropic",
+            model,
+            providerModel,
+            usage: {
+              promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
+              completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
+              totalTokens: Number.isFinite(promptTokens) && Number.isFinite(completionTokens)
+                ? promptTokens + completionTokens
+                : undefined,
+            },
+          },
+        },
+      };
+    }
 
     let parsed: Record<string, unknown>;
     try {
@@ -1314,6 +1482,8 @@ const generateWithOpenRouter = async (
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
+  jsonSchema?: StructuredOutputJsonSchema,
+  reasoningEffort?: AiReasoningEffort,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("OPENROUTER_API_KEY");
   if (!apiKey) {
@@ -1370,8 +1540,23 @@ const generateWithOpenRouter = async (
           body: JSON.stringify({
             model,
             max_tokens: maxOutputTokens,
-            temperature: 0,
-            response_format: { type: "json_object" },
+            ...(OPENROUTER_MODELS_WITHOUT_TEMPERATURE.has(model) ? {} : { temperature: 0 }),
+            response_format: jsonSchema
+              ? {
+                type: "json_schema",
+                json_schema: jsonSchema,
+              }
+              : { type: "json_object" },
+            ...(reasoningEffort ? {
+              reasoning: {
+                effort: reasoningEffort,
+                exclude: true,
+              },
+            } : {}),
+            provider: {
+              require_parameters: true,
+              sort: "throughput",
+            },
             messages: [
               {
                 role: "system",
@@ -1524,7 +1709,7 @@ export const generateProviderItinerary = async (
   const model = PROVIDER_MODEL_ALIASES[provider]?.[requestedModel] ?? requestedModel;
   const maxOutputTokens = resolveOutputTokenBudget(provider, options.jsonSchema, options.maxOutputTokens);
 
-  const allowlistError = ensureModelAllowed(provider, model);
+  const allowlistError = await ensureModelAllowedForGeneration(provider, model);
   if (allowlistError) {
     return {
       ok: false,
@@ -1540,7 +1725,15 @@ export const generateProviderItinerary = async (
     return await generateWithOpenAi(options.prompt, model, options.timeoutMs, maxOutputTokens, options.jsonSchema);
   }
   if (provider === "anthropic") {
-    return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens);
+    return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens, options.jsonSchema);
   }
-  return await generateWithOpenRouter(options.prompt, provider, model, options.timeoutMs, maxOutputTokens);
+  return await generateWithOpenRouter(
+    options.prompt,
+    provider,
+    model,
+    options.timeoutMs,
+    maxOutputTokens,
+    options.jsonSchema,
+    options.reasoningEffort,
+  );
 };

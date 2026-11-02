@@ -4,6 +4,7 @@ import { dbUpsertUserSettings } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { normalizePassportStickerSelection } from './passportService';
 import { supabase } from './supabaseClient';
+import { mapProfileTripRow as mapTripRow } from '../shared/publicProfileRows';
 
 export type ProfileGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
 export type ProfileAccountStatus = 'active' | 'disabled' | 'deleted';
@@ -347,30 +348,6 @@ const maskPrivateProfileForPublicPreview = (profile: UserProfileRecord): UserPro
     };
 };
 
-const mapTripRow = (row: Record<string, unknown>): ITrip | null => {
-    const rawTrip = row.data as ITrip | undefined;
-    if (!rawTrip || typeof rawTrip !== 'object') return null;
-    if (typeof rawTrip.id !== 'string') return null;
-
-    const tripExpiresAt = typeof row.trip_expires_at === 'string'
-        ? row.trip_expires_at
-        : (typeof rawTrip.tripExpiresAt === 'string' ? rawTrip.tripExpiresAt : null);
-
-    return {
-        ...rawTrip,
-        id: typeof row.id === 'string' ? row.id : rawTrip.id,
-        showOnPublicProfile: row.show_on_public_profile !== false && rawTrip.showOnPublicProfile !== false,
-        status: row.status === 'archived' || row.status === 'expired'
-            ? row.status
-            : (rawTrip.status || 'active'),
-        tripExpiresAt,
-        sourceKind: typeof row.source_kind === 'string' ? row.source_kind as ITrip['sourceKind'] : rawTrip.sourceKind,
-        sourceTemplateId: typeof row.source_template_id === 'string'
-            ? row.source_template_id
-            : (rawTrip.sourceTemplateId ?? null),
-    };
-};
-
 const parseRpcSingle = <T = Record<string, unknown>>(data: unknown): T | null => {
     if (Array.isArray(data)) {
         if (data.length === 0) return null;
@@ -472,14 +449,15 @@ const isCurrentViewerAdmin = async (): Promise<boolean> => {
 };
 
 export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null> => {
-    if (!supabase) return null;
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const client = supabase;
+    if (!client) return null;
+    const { data: authData, error: authError } = await client.auth.getUser();
     if (authError || !authData.user) return null;
     const userId = authData.user.id;
     const emailFallback = authData.user.email ?? null;
 
     const { data, error } = await runProfileSelectWithFallback((selectColumns) => (
-        supabase
+        client
             .from('profiles')
             .select(selectColumns)
             .eq('id', userId)
@@ -692,8 +670,9 @@ export const checkUsernameAvailability = async (
         }
     }
 
+    const client = supabase;
     const lookupTaken = async (candidate: string): Promise<Record<string, unknown> | null> => {
-        const { data, error } = await supabase
+        const { data, error } = await client
             .from('profiles')
             .select('id, username')
             .eq('username', candidate)
@@ -728,12 +707,13 @@ export const checkUsernameAvailability = async (
 };
 
 const findProfileByUsername = async (username: string): Promise<UserProfileRecord | null> => {
-    if (!supabase) return null;
+    const client = supabase;
+    if (!client) return null;
     const normalized = normalizeUsername(username);
     if (!normalized) return null;
 
     const canonicalProfile = await loadProfileByQuery((selectColumns) => (
-        supabase
+        client
             .from('profiles')
             .select(selectColumns)
             .eq('username', normalized)
@@ -742,7 +722,7 @@ const findProfileByUsername = async (username: string): Promise<UserProfileRecor
     if (canonicalProfile) return canonicalProfile;
 
     return loadProfileByQuery((selectColumns) => (
-        supabase
+        client
             .from('profiles')
             .select(selectColumns)
             .eq('username', `@${normalized}`)
@@ -751,9 +731,10 @@ const findProfileByUsername = async (username: string): Promise<UserProfileRecor
 };
 
 const findProfileByUserId = async (userId: string): Promise<UserProfileRecord | null> => {
-    if (!supabase) return null;
+    const client = supabase;
+    if (!client) return null;
     return loadProfileByQuery((selectColumns) => (
-        supabase
+        client
             .from('profiles')
             .select(selectColumns)
             .eq('id', userId)
@@ -783,8 +764,8 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
     }
 
     const viewerIsAdmin = await isCurrentViewerAdmin();
-    const canViewerAccessProfile = (profile: UserProfileRecord | null): profile is UserProfileRecord =>
-        Boolean(profile && (profile.publicProfileEnabled || viewerIsAdmin));
+    const canViewerAccessProfile = (profile: UserProfileRecord): boolean =>
+        profile.publicProfileEnabled || viewerIsAdmin;
 
     const rpcAttempt = await supabase.rpc('profile_resolve_public_handle', {
         p_handle: normalized,

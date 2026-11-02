@@ -33,7 +33,7 @@ interface DynamicAllowlistRule {
 }
 
 const ROOT = process.cwd();
-const SOURCE_TARGETS = ['App.tsx', 'i18n.ts', 'components', 'pages', 'services', 'config', 'hooks', 'lib'];
+const SOURCE_TARGETS = ['app', 'i18n.ts', 'components', 'pages', 'services', 'config', 'hooks', 'lib'];
 const KEY_PREFIXES = ['tf_', 'travelflow_', 'admin.', 'sb-'];
 const STORAGE_CALL_PATTERN = /(?:window\.)?(localStorage|sessionStorage)\.(?:getItem|setItem|removeItem)\(\s*([^,)]+)\s*(?:,|\))/g;
 const CONST_STRING_PATTERN = /\bconst\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*(["'`])([^"'`]+)\2/g;

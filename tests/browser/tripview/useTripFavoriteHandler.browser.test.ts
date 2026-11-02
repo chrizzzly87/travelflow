@@ -17,7 +17,7 @@ describe('components/tripview/useTripFavoriteHandler', () => {
       layoutMode: 'vertical' as const,
       timelineView: 'vertical' as const,
       mapStyle: 'standard' as const,
-      routeMode: 'driving' as const,
+      routeMode: 'simple' as const,
       showCityNames: true,
       zoomLevel: 1,
     };

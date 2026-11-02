@@ -56,8 +56,9 @@ export const useTripItemUpdateHandlers = ({
             }
         }
 
+        const previousFields: Record<string, unknown> = { ...item };
         const hasEffectiveChanges = Object.entries(sanitizedUpdates).some(([key, nextValue]) => {
-            const previousValue = (item as Record<string, unknown>)[key];
+            const previousValue = previousFields[key];
             if (Array.isArray(previousValue) || Array.isArray(nextValue)) {
                 return JSON.stringify(previousValue ?? null) !== JSON.stringify(nextValue ?? null);
             }

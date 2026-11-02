@@ -19,10 +19,10 @@ This experiment keeps the planner map mounted once on desktop and animates the s
 
 ## Key files
 
-- `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/TripFloatingMapPreview.tsx`
-- `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/TripViewPlannerWorkspace.tsx`
-- `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/floatingMapPreviewState.ts`
-- `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/useTripResizeControls.ts`
+- `components/tripview/TripFloatingMapPreview.tsx`
+- `components/tripview/TripViewPlannerWorkspace.tsx`
+- `components/tripview/floatingMapPreviewState.ts`
+- `components/tripview/useTripResizeControls.ts`
 
 ## Fast disable / removal path
 

@@ -3,6 +3,30 @@
 All Netlify Edge Functions live in `netlify/edge-functions/`.
 Shared helpers live in `netlify/edge-lib/`.
 
+## Relative imports must carry explicit file extensions
+
+Deno's edge bundler does **not** resolve extensionless specifiers. Vite and `tsc` do (this repo sets `moduleResolution: "bundler"` and `allowImportingTsExtensions`), so an extensionless import compiles and tests fine locally and only fails on Netlify:
+
+```
+error: Module not found "file:///opt/build/repo/shared/aiReasoning".
+```
+
+When that happens the whole edge bundle fails, so **no edge functions deploy at all** and every `/api/*` route falls through to the app shell — which looks like unrelated application breakage rather than a build error.
+
+Rules for any module reachable from `netlify/edge-functions/`, including files in `shared/`, `services/`, `config/`, `lib/` and `data/`:
+
+- **Value imports must include the extension**: `import { thing } from "../shared/thing.ts";`
+- **`import type` is exempt** — type-only statements are erased before bundling, which is why many extensionless `import type { X } from "../types"` specifiers in this repo are harmless.
+- Converting an `import type` to a value import on an edge-reachable path is a breaking change unless you add the extension at the same time.
+
+`pnpm edge:validate` enforces this: it walks every relative import transitively from each edge function entry and fails on an extensionless value import or a specifier that does not exist on disk.
+
+### History
+
+The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.ts`, which pulled in `services/openRouterModelCatalogService.ts`, which imported `"../shared/aiReasoning"` with no extension. Every Netlify build failed from then on, and because the edge bundle never built, the destination API silently returned the HTML shell.
+
+2026-09-17: `shared/recommendationRows.ts` was written for the browser first and imported `"./recommendations"` for a value (`COST_BAND_VALUES`). The moment two edge functions started using it, the Netlify build failed — `pnpm test:core` and `vite build` had both been green locally. `pnpm edge:validate` caught it in one run; it is worth running by hand after wiring any existing `shared/` module into an edge function.
+
 ## Inventory
 
 | Function file | Route(s) | Purpose | Type |
@@ -13,48 +37,39 @@ Shared helpers live in `netlify/edge-lib/`.
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
 | `ai-generate-enqueue.ts` | `/api/internal/ai/generation-enqueue` | Authenticated async queue enqueue endpoint that server-owns the first background-worker dispatch right after a trip-generation job is queued. | API |
 | `ai-generate-worker.ts` | `/api/internal/ai/generation-worker` | Internal async queue worker endpoint for server-owned trip-generation job execution | API |
-| `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings/comments, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
+| `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings/comments, telemetry summaries for the admin **AI telemetry** screen (`/telemetry?windowHours=&source=&provider=`, at most 2,000 rows per window plus an unscoped month-to-date cost series), and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
 | `admin-audit-export.ts` | `/api/internal/admin/audit/replay-export` | Internal admin audit replay export API that builds server-side forensic bundles and writes persisted `admin.audit.export` audit entries. | API |
-| `site-og-meta.ts` | Explicit static+localized allowlist in `netlify.toml` (home, marketing pages, legal pages, `/create-trip`, `/example/*`, localized variants) | Injects SEO & Open Graph meta tags with static-first OG image lookup and dynamic fallback | Middleware |
+| `admin-ai-worker-health.ts` | `/api/internal/admin/ai-worker-health` | Read-only worker-health feed for the admin **Worker health** screen: the latest `async_worker_health_checks` rows (`?limit=`, capped at 50) plus the summary verdict from `edge-lib/async-worker-health.ts`. Bearer-token admin check via `get_current_user_access`. The rows are written by the scheduled `ai-generate-worker-cron` function, not by this endpoint. | API |
+| `admin-airports.ts` | `/api/internal/admin/airports` | Admin airport reference catalog: `GET` reads the airport list and catalog metadata (falls back to the bundled repo snapshot when Supabase is not configured); `POST` with `action: "sync"` re-syncs the catalog and `action: "update"` edits one airport. Admin role checked via `get_current_user_access`. | API |
+| `admin-destinations.ts` | `/api/internal/admin/destinations` | Admin destination catalog: `GET` loads it, `POST` saves changes. Proves the caller's admin role via `get_current_user_access`, then writes on the service role. | API |
+| `admin-billing-paddle-reconcile.ts` | `/api/internal/admin/billing/paddle/reconcile` | `POST`-only admin action that reconciles subscription state against the Paddle API (live or sandbox). | API |
+| `site-og-meta.ts` | Unbound in Start | Historical HTML middleware; the shared metadata resolver now feeds the native document | Historical |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
-| `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
+| `trip-og-meta.ts` | Unbound in Start | Historical HTML middleware; public summary resolver reused through a validated server function | Historical |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
 | `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip/site OG image endpoints directly | Dev tool |
-| `trip-map-preview.ts` | `/api/trip-map-preview` | Proxies Google Static Maps API; returns 302 redirect to styled map | API proxy |
+| `trip-map-preview.ts` | `/api/trip-map-preview` | Renders a trip's static map and returns the image bytes under our own origin, cached durably at the CDN so one render serves every viewer until the trip changes. Falls back to an uncacheable redirect when the provider render cannot be fetched. See `docs/TRIP_MAP_PREVIEW_CACHING.md`. | API proxy |
 | `trip-share-resolve.ts` | `/api/trip-share-resolve` | Resolves active share token by trip id for non-owner route handoff | API |
 | `runtime-location.ts` | `/api/runtime/location` | Returns the current request’s normalized Netlify GeoIP snapshot for client bootstrap and debugger diagnostics | API |
+| `place-photo.ts` | `/api/place-photo` | Resolves a Google Places photo resource name to its hosted image with a 302, keeping the Maps key server-side. The `ref` allowlist pattern is what prevents an open redirect into any Google path — photo ids are opaque and long, so the pattern bounds the character set, not a guessed length. | API proxy |
+| `recommendations.ts` | `/api/recommendations` | Public read of the place-recommendation library for one country. Uses the **anon** key so row-level security decides visibility rather than a query filter; only `status = 'published'` rows can leave. | API |
+| `admin-recommendations.ts` | `/api/internal/admin/recommendations` | Admin CRUD for the recommendation library — list (drafts included), save, change status, delete, bulk import. Proves the caller's admin role with their own token via `get_current_user_access`, then writes on the service role. | API |
 
 **Shared helper:** `netlify/edge-lib/trip-og-data.ts` — Supabase RPC calls, HTML escaping, URL builders, map API key access.
 
 ## Architecture
 
-```
-Blog pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.html
-                         │
-                         ├─▶ static OG manifest lookup (`/images/og/site/generated/manifest.json`)
-                         │         │
-                         │         └─▶ `/images/og/site/generated/*.png` (preferred)
-                         │
-                         └─▶ fallback OG URL (`/api/og/site?...`) when no static match
+The Start root document owns public metadata. Site metadata comes from the shared
+resolver; public trip/share summaries cross the validated server function in
+`src/server/tripMetadata.ts`. Existing `site-og-meta.ts` and `trip-og-meta.ts`
+implementations are no longer bound to HTML routes. Do not restore an HTML rewrite
+layer or an SPA fallback on top of native Start routing.
 
-Example template pages (`/example/*`) ──▶ site-og-meta.ts ──▶ force dynamic OG (`/api/og/trip?...`)
-                         │
-                         └─▶ skips static-site manifest so example previews match trip/share card layout
-
-Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA index.html
-                         │
-                         ▼ (OG image URL points to)
-                    trip-og-image.tsx
-
-/api/trip-map-preview ──▶ trip-map-preview.ts ──302──▶ Google Static Maps
-/api/trip-share-resolve ──▶ trip-share-resolve.ts ──JSON──▶ share token + canonical /s path
-/api/runtime/location ──▶ runtime-location.ts ──JSON──▶ normalized Netlify geo snapshot
-```
-
-- **Middleware functions** (`*-meta.ts`) call `context.next()` to get the SPA HTML, then rewrite `<head>` tags before returning the response.
-- **Image generators** (`*-image.tsx`) return standalone `ImageResponse` objects (server-rendered React → PNG).
-- **API proxies** (`trip-map-preview.ts`) return redirects or direct responses; no middleware chaining.
+Image generators (`*-image.tsx`) still return PNG responses. API proxies and
+explicit API Edge Function bindings remain in `netlify.toml`; their authorization
+and provider isolation are independent of document rendering. See
+[Start deployment](NETLIFY_TANSTACK_START.md) for the adapter boundary.
 
 ## Configuration rules
 
@@ -72,12 +87,11 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 - Use explicit path allowlists (for example: `/`, `/blog`, `/blog/*`, `/api/og/*`) and keep static/internal platform paths outside edge middleware.
 - CI fails if a catch-all edge binding is added.
 
-### Site metadata scope policy
+### Document metadata ownership
 
-- `site-og-meta` must only be mapped to the explicit static/example allowlist in `netlify.toml`.
-- Allowed groups: `/`, static marketing pages, legal pages, `/blog*`, `/inspirations*`, `/create-trip`, `/example/*`, and locale-prefixed variants for active locales.
-- Forbidden: catch-all patterns, admin/profile/api routes, or broad locale catch-alls (for example `/de/*`).
-- CI fails if `site-og-meta` is configured outside the approved allowlist.
+Do not bind `site-og-meta` or `trip-og-meta` to document paths.
+Keep native `head` output and status codes intact. Static OG-image generation remains
+useful: image generation and HTML metadata ownership are separate concerns.
 
 ## Static OG build workflow
 
@@ -190,11 +204,10 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 
 | Function | Cache-Control | Notes |
 |---|---|---|
-| `site-og-meta.ts` | `s-maxage=900, stale-while-revalidate=86400` | 15 min CDN, 1 day stale |
+| Native Start document (public area) | `public, max-age=0, must-revalidate` + `Netlify-CDN-Cache-Control: public, durable, s-maxage=3600, stale-while-revalidate=86400` | Per-area policy in `app/routing/cachePolicy.ts` |
+| Native Start document (all other areas) | `no-store` | Root default: account, admin, trip and creation documents |
 | `site-og-image.tsx` | `s-maxage=43200, stale-while-revalidate=604800` | 12 hour CDN, 7 day stale |
 | `/images/og/site/generated/*` | `max-age=31536000, immutable` | Build-time generated static OG assets |
-| `trip-og-meta.ts` (shared) | `s-maxage=300, stale-while-revalidate=86400` | 5 min CDN, 1 day stale |
-| `trip-og-meta.ts` (private) | `s-maxage=120, stale-while-revalidate=3600` | 2 min CDN, 1 hour stale |
 | `trip-og-image.tsx` (versioned) | `s-maxage=31536000` | 1 year immutable |
 | `trip-og-image.tsx` (default) | `s-maxage=1800, stale-while-revalidate=86400` | 30 min CDN, 1 day stale |
 | `trip-map-preview.ts` | `max-age=86400` | 24 hour browser + CDN |

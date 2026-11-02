@@ -414,7 +414,7 @@ describe('shared/blogViewTransitions', () => {
 
     it('starts a view transition with typed options when supported and falls back otherwise', async () => {
         const applyUpdate = vi.fn();
-        let resolveFinished: (() => void) | null = null;
+        let resolveFinished = null as (() => void) | null;
         const finished = new Promise<void>((resolve) => {
             resolveFinished = resolve;
         });

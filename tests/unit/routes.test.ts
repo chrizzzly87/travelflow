@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import {
   buildLocalizedCreateTripPath,
   buildLocalizedMarketingPath,
@@ -36,6 +37,7 @@ describe('config/routes', () => {
       buildPath('inspirationsFestivals'),
       buildPath('inspirationsWeekendGetaways'),
       buildPath('inspirationsCountryDetail', { countryName: 'Costa Rica' }),
+      buildPath('inspirationsDestinationDetail', { countrySlug: 'spain', destinationSlug: 'mallorca' }),
       buildPath('updates'),
       buildPath('blog'),
       buildPath('blogPost', { slug: 'sample-post' }),
@@ -114,7 +116,8 @@ describe('config/routes', () => {
     expect(getNamespacesForMarketingPath('/pricing')).toEqual(['common', 'pricing']);
     expect(getNamespacesForMarketingPath('/de/blog/spring-guide')).toEqual(['common', 'blog']);
     expect(getNamespacesForMarketingPath('/terms')).toEqual(['common', 'legal']);
-    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common']);
+    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common', 'faq']);
+    expect(getNamespacesForMarketingPath('/de/contact')).toEqual(['common', 'pages', 'faq']);
     expect(getNamespacesForMarketingPath('/login')).toEqual(['common', 'auth']);
     expect(getNamespacesForMarketingPath('/inspirations')).toEqual(['common', 'pages']);
     expect(getNamespacesForToolPath('/create-trip')).toEqual(['common', 'createTrip']);
@@ -122,6 +125,21 @@ describe('config/routes', () => {
     expect(getNamespacesForToolPath('/checkout?tier=tier_mid')).toEqual(['common', 'pricing', 'profile', 'auth']);
     expect(getNamespacesForToolPath('/u/traveler')).toEqual(['common', 'profile']);
     expect(getNamespacesForToolPath('/trip/abc')).toEqual(['common']);
+  });
+
+  it.each(['/features/', '/pricing/', '/blog/', '/inspirations/', '/faq/', '/updates/'])('keeps the same page when a hosted trailing-slash path changes language: %s', (pathname) => {
+    expect(isLocalizedMarketingPath(pathname)).toBe(true);
+    expect(buildLocalizedLocation({ pathname, targetLocale: 'de', search: '?tag=one&tag=two', hash: '#details' }))
+      .toBe(`/de${pathname.slice(0, -1)}?tag=one&tag=two#details`);
+    expect(localizeMarketingPath(`/de${pathname}`, 'en')).toBe(pathname.slice(0, -1));
+  });
+
+  it('normalizes hosted trailing slashes before choosing route namespaces', () => {
+    expect(stripLocalePrefix('/de/features/')).toBe('/features');
+    expect(stripLocalePrefix('/de/')).toBe('/');
+    expect(getNamespacesForMarketingPath('/features/')).toEqual(['common', 'features']);
+    expect(getNamespacesForMarketingPath('/de/pricing/')).toEqual(['common', 'pricing']);
+    expect(getNamespacesForMarketingPath('/faq/')).toEqual(['common', 'faq']);
   });
 
   it('marks onboarding-exempt paths', () => {

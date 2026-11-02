@@ -114,6 +114,22 @@ export const buildTripMapLocationContextQueries = (
   return dedupeCaseInsensitive(queries);
 };
 
+export const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
+  const uniqueLocations = dedupeCaseInsensitive(trip.items.flatMap((item) => {
+    if (item.type !== 'city') return [];
+    const location = normalizeText(item.location);
+    return location ? [location] : [];
+  }));
+  if (uniqueLocations.length === 0) return undefined;
+
+  const generationState = trip.aiMeta?.generation?.state;
+  if (generationState === 'queued' || generationState === 'running') {
+    const payload = asRecord(trip.aiMeta?.generation?.inputSnapshot?.payload);
+    return normalizeText(payload?.initialMapCountryFocus) || uniqueLocations[0];
+  }
+  return uniqueLocations.join(' || ');
+};
+
 export const buildCityGeocodeQueryCandidates = ({
   city,
   items,

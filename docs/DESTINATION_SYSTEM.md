@@ -142,6 +142,26 @@ These are purely for rendering. All form prefill logic uses `destinationCodes` /
 
 ---
 
+## Festival Event Dates
+
+`DestinationEvent` (`shared/destinationGuides.ts`) carries optional date information so the UI can state either a real date or an honest generalization. The same type backs `data/countryTravelData.json` events via `CountryTravelEvent`.
+
+| Field | Use |
+|-------|-----|
+| `day` | Fixed single-day events (Bastille Day = `14`) |
+| `startDay` / `endDay` | Fixed multi-day events inside one month (Songkran = `13`–`15`) |
+| `durationDays` | Window length, paired with `knownDates` |
+| `recurrence.kind` | `fixed`, `lunar`, `movable`, or `seasonal` |
+| `recurrence.rule` | Plain-language rule, e.g. "Last Wednesday of August" |
+| `knownDates` | `{ "2027": "2027-02-06" }` — sourced start dates for specific years |
+| `monthQualifier` | `early`, `mid`, `late`, `throughout` — how "usually in <month>" reads |
+
+**Accuracy rule: never fabricate a precise date.** If a date cannot be sourced confidently, leave `day` / `startDay` / `knownDates` unset and let the event resolve as approximate. Half the catalogue is movable or lunar; guessing a day would be worse than saying "usually in March".
+
+`services/festivalDateService.ts` resolves the next (or currently running) occurrence from these fields with an injected clock, and `services/festivalCatalogService.ts` promotes any event carrying a `recurrence` into the festivals index at `/inspirations/events-and-festivals`. Events without a `recurrence` stay out of the index, which is how the generic per-country filler entries are excluded.
+
+---
+
 ## Trip Prefill Pipeline
 
 ```
@@ -163,7 +183,7 @@ Inspiration card click
         │  decodeTripPrefill(encoded) → TripPrefillData
         │  (validates country names against DESTINATION_OPTIONS)
         ▼
-   CreateTripClassicLabPage pre-fills fields
+   CreateTripClassicPage pre-fills fields
 ```
 
 ### `TripPrefillData` — `types.ts:139`
@@ -198,7 +218,7 @@ interface TripPrefillData {
 
 ### SEO
 
-The edge function `netlify/edge-functions/site-og-meta.ts` strips the `prefill` query param from the canonical URL to prevent duplicate indexing.
+The shared metadata builder `netlify/edge-lib/site-og-metadata.ts` (used by the native document head in `src/document/routeDocument.ts`) strips the `prefill` query param from the canonical URL to prevent duplicate indexing.
 
 ---
 
@@ -213,6 +233,8 @@ Create Trip uses a separate seasonal recommendation layer for empty-state destin
 | `data/destinationRecommendationProfiles.ts` | Curated baseline popularity scores and destination-specific month overrides |
 | `services/destinationService.ts` | Recommendation month selection, score calculation, ranking, and search integration |
 | `data/countryTravelData.ts` | Seasonal best/shoulder/avoid months plus event metadata used as score modifiers |
+
+> Monthly temperature and rainfall normals plus a per-month `high` / `shoulder` / `low` season signal live in a separate dataset — see [`docs/COUNTRY_CLIMATE_DATA.md`](./COUNTRY_CLIMATE_DATA.md) and `services/countryClimateService.ts`. That season signal is derived from the same curated `bestMonths` / `shoulderMonths` / `avoidMonths` documented here, so the two layers stay consistent.
 
 ### Recommendation pool
 
@@ -314,6 +336,29 @@ The current system is month-driven, but it is designed to support additional lay
 
 ---
 
+## Destination Guide Discoverability
+
+Destination guide pages are data-driven, so they never appear in the static marketing route
+route allowlist. Three places keep them crawlable, all fed from `data/destinationGuides.json`:
+
+| Concern | Where | Behaviour |
+|---------|-------|-----------|
+| Sitemap | `scripts/generate-sitemap.ts` | Emits `/inspirations/country/<slug>` for every country guide and `/inspirations/country/<countrySlug>/<childSlug>` for children that carry curated content, each with hreflang alternates for all supported locales |
+| Structured data | `services/destinationStructuredData.ts` rendered by `components/inspirations/DestinationGuideView.tsx` | `TouristDestination` JSON-LD with region/country, curated highlights, and `Event` entries at month precision |
+| Server rendering | Native public route (Start SSR) | Country guides render on demand through SSR with native `head` metadata; they are not in the prerender allowlist (`app/routing/publicPrerender.ts`) |
+
+One deliberate limit keeps the sitemap sane:
+
+- Children derived from the airport reference inherit all of their data from the parent country
+  and are excluded from the sitemap to avoid submitting near-duplicate stub pages. They remain
+  reachable through the country page's internal links.
+
+When adding a country to `TOP_COUNTRY_CODES`, no sitemap or route change is needed — both
+read the regenerated dataset. Do check that any page querying `listDestinationGuides` uses a
+limit large enough to include the new entry.
+
+---
+
 ## File Reference
 
 | File | Role |
@@ -323,6 +368,8 @@ The current system is month-driven, but it is designed to support additional lay
 | `data/popularIslandDestinations.json` | Island seed data with optional ISO 3166-2 codes |
 | `data/inspirationsData.ts` | All inspiration content: categories, months, festivals, getaways, country groups, quick ideas |
 | `pages/InspirationsPage.tsx` | Renders cards, calls `resolveDestinationCodes()`, builds prefill URLs |
-| `pages/CreateTripClassicLabPage.tsx` | Reads `?prefill=` param, pre-fills form fields |
+| `pages/CreateTripClassicPage.tsx` | Reads `?prefill=` param, pre-fills form fields |
 | `components/CountrySelect.tsx` | Destination picker, searches `DESTINATION_OPTIONS` |
-| `netlify/edge-functions/site-og-meta.ts` | Strips `prefill` from canonical URLs |
+| `netlify/edge-lib/site-og-metadata.ts` | Site metadata builder; strips `prefill` from canonical URLs |
+| `data/countryClimateNormals.json` | Monthly temperature/rainfall normals + curated season signal per country |
+| `services/countryClimateService.ts` | Memoized read API for the climate dataset (see `docs/COUNTRY_CLIMATE_DATA.md`) |

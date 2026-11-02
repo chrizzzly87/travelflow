@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/app/navigation';
 import { readLocalStorageItem } from '../../services/browserStorageService';
 import { isSimulatedLoggedIn, toggleSimulatedLogin } from '../../services/simulatedLoginService';
 import {

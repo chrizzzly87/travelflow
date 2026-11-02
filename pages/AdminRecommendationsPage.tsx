@@ -1,0 +1,759 @@
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { AdminUserFacingError, toAdminErrorMessage } from '../services/adminErrorMessages';
+import {
+    CheckCircle,
+    DotsThreeVertical,
+    DownloadSimple,
+    FloppyDisk,
+    ImageBroken,
+    PencilSimple,
+    Plus,
+    SpinnerGap,
+    Trash,
+} from '@phosphor-icons/react';
+
+import { AdminShell } from '../components/admin/AdminShell';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AdminSectionHeader } from '../components/admin/AdminSectionHeader';
+import { AdminStatCard } from '../components/admin/AdminStatCard';
+import { AdminStatusBadge, type AdminStatusTone } from '../components/admin/AdminStatusBadge';
+import { AdminEmptyState } from '../components/admin/AdminEmptyState';
+import { AdminErrorAlert } from '../components/admin/AdminErrorAlert';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminEditorListItem } from '../components/admin/AdminEditorListItem';
+import {
+    countByStatus,
+    formatAdminAbsoluteTime,
+    formatAdminRelativeTime,
+    isEditorDraftEqual,
+    isStackedEditorLayout,
+} from '../components/admin/adminContentEditorModel';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
+import { showAppToast } from '../components/ui/appToast';
+import { useAppDialog } from '../components/AppDialogProvider';
+import { cn } from '../lib/utils';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    adminDeleteRecommendation,
+    adminGetRecommendationCatalog,
+    adminImportRecommendations,
+    adminSaveRecommendation,
+    adminSetRecommendationStatus,
+    type AdminRecommendationRow,
+} from '../services/adminService';
+import { COST_BAND_VALUES, type RecommendationStatus } from '../shared/recommendations';
+
+const STATUSES: RecommendationStatus[] = ['draft', 'in_review', 'published', 'rejected', 'retired'];
+
+const STATUS_LABEL: Record<RecommendationStatus, string> = {
+    draft: 'Draft',
+    in_review: 'In review',
+    published: 'Published',
+    rejected: 'Rejected',
+    retired: 'Retired',
+};
+
+const STATUS_TONE: Record<RecommendationStatus, AdminStatusTone> = {
+    published: 'success',
+    in_review: 'warning',
+    draft: 'neutral',
+    rejected: 'danger',
+    retired: 'neutral',
+};
+
+const resolveStatus = (value: string | null | undefined): RecommendationStatus => (
+    STATUSES.includes(value as RecommendationStatus) ? value as RecommendationStatus : 'draft'
+);
+
+/** A labelled form field: the label wraps the control so the name is programmatic. */
+const EditorField: React.FC<{ label: React.ReactNode; className?: string; children: React.ReactNode }> = ({ label, className, children }) => (
+    <label className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        {children}
+    </label>
+);
+
+/** The editor works on strings; the table works on JSON. This is the seam. */
+interface EditorState {
+    id: string;
+    slug: string;
+    countryCode: string;
+    cityName: string;
+    title: string;
+    summary: string;
+    description: string;
+    highlights: string;
+    activityTypes: string;
+    tags: string;
+    costBand: string;
+    typicalDurationMinutes: string;
+    address: string;
+    lat: string;
+    lng: string;
+    googlePlaceId: string;
+    imageUrl: string;
+    imageAttribution: string;
+    status: RecommendationStatus;
+}
+
+const toList = (value: unknown): string[] => (Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : []);
+
+const blankEditor = (countryCode: string): EditorState => ({
+    id: '',
+    slug: '',
+    countryCode,
+    cityName: '',
+    title: '',
+    summary: '',
+    description: '',
+    highlights: '',
+    activityTypes: '',
+    tags: '',
+    costBand: '',
+    typicalDurationMinutes: '',
+    address: '',
+    lat: '',
+    lng: '',
+    googlePlaceId: '',
+    imageUrl: '',
+    imageAttribution: '',
+    status: 'draft',
+});
+
+const rowToEditor = (row: AdminRecommendationRow): EditorState => {
+    const image = (row.image && typeof row.image === 'object' ? row.image : {}) as Record<string, unknown>;
+    return {
+        id: row.id,
+        slug: row.slug,
+        countryCode: row.country_code,
+        cityName: row.city_name ?? '',
+        title: row.title,
+        summary: row.summary ?? '',
+        description: row.description ?? '',
+        // One per line: a bullet list is edited as a list, not as JSON.
+        highlights: toList(row.highlights).join('\n'),
+        activityTypes: toList(row.activity_types).join(', '),
+        tags: toList(row.tags).join(', '),
+        costBand: row.cost_band ?? '',
+        typicalDurationMinutes: row.typical_duration_minutes == null ? '' : String(row.typical_duration_minutes),
+        address: row.address ?? '',
+        lat: row.lat == null ? '' : String(row.lat),
+        lng: row.lng == null ? '' : String(row.lng),
+        googlePlaceId: row.google_place_id ?? '',
+        imageUrl: typeof image.url === 'string' ? image.url : '',
+        imageAttribution: typeof image.attribution === 'string' ? image.attribution : '',
+        status: (STATUSES.includes(row.status as RecommendationStatus) ? row.status : 'draft') as RecommendationStatus,
+    };
+};
+
+const splitLines = (value: string): string[] => value
+    .split('\n')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+const splitCommas = (value: string): string[] => value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+const editorToPayload = (editor: EditorState): Record<string, unknown> => ({
+    ...(editor.id ? { id: editor.id } : {}),
+    slug: editor.slug || undefined,
+    countryCode: editor.countryCode,
+    cityName: editor.cityName,
+    title: editor.title,
+    summary: editor.summary,
+    description: editor.description,
+    highlights: splitLines(editor.highlights),
+    activityTypes: splitCommas(editor.activityTypes),
+    tags: splitCommas(editor.tags),
+    costBand: editor.costBand || null,
+    typicalDurationMinutes: editor.typicalDurationMinutes === '' ? null : Number(editor.typicalDurationMinutes),
+    address: editor.address,
+    formattedAddress: editor.address,
+    lat: editor.lat === '' ? null : Number(editor.lat),
+    lng: editor.lng === '' ? null : Number(editor.lng),
+    googlePlaceId: editor.googlePlaceId,
+    image: editor.imageUrl
+        ? { url: editor.imageUrl, provider: 'google_places', attribution: editor.imageAttribution || null }
+        : null,
+    origin: 'manual',
+    status: editor.status,
+});
+
+/** A titled group inside the editor, so a long form reads as four short ones. */
+const EditorSection: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
+    <section className="flex flex-col gap-3">
+        <AdminSectionHeader as="h3" title={title} description={description} />
+        {children}
+    </section>
+);
+
+type StatusFilter = 'all' | RecommendationStatus;
+
+export const AdminRecommendationsPage: React.FC = () => {
+    const dialog = useAppDialog();
+    const [rows, setRows] = useState<AdminRecommendationRow[]>([]);
+    const [countries, setCountries] = useState<string[]>([]);
+    const [country, setCountry] = useState('TW');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const [query, setQuery] = useState('');
+    const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase());
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [editor, setEditor] = useState<EditorState>(() => blankEditor('TW'));
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const editorRef = useRef<HTMLDivElement | null>(null);
+
+    // Only the latest request may write: switching the country filter while an
+    // earlier catalog is still in flight must not let the stale one land last.
+    const latestLoadRef = useRef(0);
+    const load = async (nextCountry: string) => {
+        const requestId = latestLoadRef.current + 1;
+        latestLoadRef.current = requestId;
+        setLoading(true);
+        setError(null);
+        try {
+            const catalog = await adminGetRecommendationCatalog(nextCountry);
+            if (requestId !== latestLoadRef.current) return;
+            setRows(catalog.rows);
+            setCountries(catalog.countries);
+        } catch (loadError) {
+            if (requestId !== latestLoadRef.current) return;
+            setError(toAdminErrorMessage(loadError, 'Could not load the recommendation library.', 'admin-recommendations'));
+        } finally {
+            if (requestId === latestLoadRef.current) setLoading(false);
+        }
+    };
+
+    // The catalog is a network read keyed by the country filter, which is
+    // exactly what an effect is for.
+    useEffect(() => { void load(country); }, [country]);
+
+    // Search narrows first; status counts describe what that search left.
+    const searched = useMemo(() => rows.filter((row) => (
+        !deferredQuery
+        || `${row.title} ${row.slug} ${row.city_name ?? ''} ${toList(row.tags).join(' ')}`
+            .toLocaleLowerCase()
+            .includes(deferredQuery)
+    )), [deferredQuery, rows]);
+    const statusCounts = useMemo(() => countByStatus<AdminRecommendationRow, RecommendationStatus>(searched, (row) => resolveStatus(row.status)), [searched]);
+    const filtered = useMemo(
+        () => (statusFilter === 'all' ? searched : searched.filter((row) => resolveStatus(row.status) === statusFilter)),
+        [searched, statusFilter],
+    );
+
+    const counts = useMemo(() => ({
+        published: rows.filter((row) => row.status === 'published').length,
+        needsReview: rows.filter((row) => row.status === 'draft' || row.status === 'in_review').length,
+        withoutImage: rows.filter((row) => !row.image).length,
+        publishedWithoutImage: rows.filter((row) => !row.image && row.status === 'published').length,
+    }), [rows]);
+
+    const selectedRow = selectedId ? rows.find((row) => row.id === selectedId) || null : null;
+    // A new draft's baseline keeps its own country, so switching the country
+    // filter does not mark an untouched draft as changed.
+    const baseline = selectedRow ? rowToEditor(selectedRow) : blankEditor(editor.countryCode);
+    const isDirty = !isEditorDraftEqual(editor, baseline);
+
+    const confirmDiscard = async (): Promise<boolean> => {
+        if (!isDirty) return true;
+        return dialog.confirm({
+            title: 'Discard unsaved changes?',
+            message: 'Your edits to this recommendation have not been saved.',
+            confirmLabel: 'Discard changes',
+            cancelLabel: 'Keep editing',
+            tone: 'danger',
+        });
+    };
+
+    const revealEditor = () => {
+        // Below xl the editor sits under a long list; bring it into view.
+        if (isStackedEditorLayout()) editorRef.current?.scrollIntoView({ block: 'start' });
+    };
+
+    const select = async (row: AdminRecommendationRow) => {
+        if (row.id === selectedId) return;
+        if (!(await confirmDiscard())) return;
+        setSelectedId(row.id);
+        setEditor(rowToEditor(row));
+        setError(null);
+        trackEvent('admin__recommendations--select');
+        revealEditor();
+    };
+
+    const startNew = async () => {
+        if (!(await confirmDiscard())) return;
+        setSelectedId(null);
+        setEditor(blankEditor(country));
+        setError(null);
+        trackEvent('admin__recommendations--new');
+        revealEditor();
+    };
+
+    const save = async () => {
+        setSaving(true);
+        setError(null);
+        try {
+            const saved = await adminSaveRecommendation(editorToPayload(editor));
+            setRows((current) => {
+                const without = current.filter((row) => row.id !== saved.id);
+                return [saved, ...without];
+            });
+            setSelectedId(saved.id);
+            setEditor(rowToEditor(saved));
+            trackEvent('admin__recommendations--save', { status: editor.status });
+            showAppToast({ title: 'Recommendation saved', tone: 'success' });
+        } catch (saveError) {
+            setError(toAdminErrorMessage(saveError, 'Could not save the recommendation.', 'admin-recommendations'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    /**
+     * Publishes the saved row without saving the form. Only the status in the
+     * editor follows, so unsaved edits stay in the form instead of being
+     * replaced by the server copy.
+     */
+    const publishNow = async () => {
+        if (!selectedRow) return;
+        setPublishing(true);
+        setError(null);
+        try {
+            const updated = await adminSetRecommendationStatus(selectedRow.id, 'published');
+            setRows((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
+            const nextStatus = resolveStatus(updated.status);
+            setEditor((current) => (current.id === updated.id ? { ...current, status: nextStatus } : current));
+            trackEvent('admin__recommendations--publish_now');
+            showAppToast({ title: 'Recommendation published', tone: 'success' });
+        } catch (statusError) {
+            setError(toAdminErrorMessage(statusError, 'Could not change the status.', 'admin-recommendations'));
+        } finally {
+            setPublishing(false);
+        }
+    };
+
+    const remove = async () => {
+        if (!selectedId) return;
+        const confirmed = await dialog.confirm({
+            title: 'Delete this recommendation?',
+            message: 'It disappears from every traveller’s deck. Ideas already kept on a trip are unaffected, because those are copies.',
+            confirmLabel: 'Delete',
+            tone: 'danger',
+        });
+        if (!confirmed) return;
+
+        setSaving(true);
+        try {
+            await adminDeleteRecommendation(selectedId);
+            setRows((current) => current.filter((row) => row.id !== selectedId));
+            setSelectedId(null);
+            setEditor(blankEditor(country));
+            trackEvent('admin__recommendations--delete');
+            showAppToast({ title: 'Recommendation deleted', tone: 'success' });
+        } catch (deleteError) {
+            setError(toAdminErrorMessage(deleteError, 'Could not delete the recommendation.', 'admin-recommendations'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    /**
+     * Seeds an empty country from the copy bundled with the app. Rows arrive
+     * as they are in the dataset — usually `in_review` — so nothing becomes
+     * visible to a traveller until somebody publishes it.
+     */
+    const importBundled = async () => {
+        const confirmed = await dialog.confirm({
+            title: `Import the bundled ${country} dataset?`,
+            message: 'Existing rows with the same id are overwritten, including any edits made here. Imported rows keep their dataset status, so nothing is published automatically.',
+            confirmLabel: 'Import',
+        });
+        if (!confirmed) return;
+
+        setSaving(true);
+        setError(null);
+        try {
+            // The bundled file, not the ordinary loader: once the table exists
+            // and is empty, that loader correctly answers "nothing published",
+            // which is exactly the wrong answer for a seed.
+            const { loadBundledRecommendationDataset } = await import('../services/recommendationsService');
+            const dataset = await loadBundledRecommendationDataset(country);
+            const entries = dataset?.recommendations ?? [];
+            if (entries.length === 0) throw new AdminUserFacingError(`No bundled dataset is available for ${country}.`);
+            const imported = await adminImportRecommendations(entries as unknown as Record<string, unknown>[]);
+            trackEvent('admin__recommendations--import_bundled', { country });
+            showAppToast({ title: `Imported ${imported} recommendations`, tone: 'success' });
+            await load(country);
+        } catch (importError) {
+            setError(toAdminErrorMessage(importError, 'Could not import the dataset.', 'admin-recommendations'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const field = (key: keyof EditorState) => (
+        event: { target: { value: string } },
+    ) => setEditor((current) => ({ ...current, [key]: event.target.value }));
+
+    const countryOptions = Array.from(new Set([country, 'TW', ...countries])).filter(Boolean).sort();
+    const hasActiveFilter = statusFilter !== 'all' || query.trim() !== '';
+    const resetFilters = () => {
+        setStatusFilter('all');
+        setQuery('');
+        trackEvent('admin__recommendations--reset_filters');
+    };
+    const editorStatus = resolveStatus(editor.status);
+    const savedStatus = selectedRow ? resolveStatus(selectedRow.status) : null;
+
+    return (
+        <AdminShell
+            title="Recommendations"
+            description="The shared library of place ideas behind the trip Ideas deck. Travellers only ever see published entries."
+            searchValue={query}
+            onSearchValueChange={setQuery}
+            showDateRange={false}
+            actions={(
+                <>
+                    <AdminReloadButton onClick={() => void load(country)} isLoading={loading} label="Refresh" />
+                    <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="outline" size="icon" aria-label="More actions" data-tooltip="More actions">
+                                <DotsThreeVertical weight="bold" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[220px]">
+                            <DropdownMenuItem
+                                disabled={saving || loading}
+                                onSelect={() => void importBundled()}
+                                {...getAnalyticsDebugAttributes('admin__recommendations--import_bundled')}
+                            >
+                                <DownloadSimple /> Import bundled {country} dataset
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button type="button" onClick={() => void startNew()} {...getAnalyticsDebugAttributes('admin__recommendations--new')}>
+                        <Plus /> New recommendation
+                    </Button>
+                </>
+            )}
+        >
+            <div className="flex flex-col gap-4">
+                <div className="grid gap-4 sm:grid-cols-3">
+                    <AdminStatCard
+                        label="Published"
+                        icon={<CheckCircle />}
+                        value={counts.published}
+                        hint={`Visible to travellers planning ${country}.`}
+                        isLoading={loading}
+                    />
+                    <AdminStatCard
+                        label="Needs review"
+                        icon={<PencilSimple />}
+                        value={counts.needsReview}
+                        hint={counts.needsReview > 0 ? 'Drafts and entries in review. Publish or reject them.' : 'Nothing waiting for review.'}
+                        hintTone={counts.needsReview > 0 ? 'warning' : 'neutral'}
+                        isLoading={loading}
+                    />
+                    <AdminStatCard
+                        label="Without a photo"
+                        icon={<ImageBroken />}
+                        value={counts.withoutImage}
+                        hint={counts.publishedWithoutImage > 0
+                            ? `${counts.publishedWithoutImage} of them are published. Their cards fall back to a map.`
+                            : 'Cards without a photo fall back to a map.'}
+                        hintTone={counts.publishedWithoutImage > 0 ? 'warning' : 'neutral'}
+                        isLoading={loading}
+                    />
+                </div>
+
+                {error && <AdminErrorAlert message={error} />}
+
+                <div className="grid gap-4 xl:min-h-[640px] xl:grid-cols-[minmax(340px,0.8fr)_minmax(0,1.2fr)]">
+                    <AdminSurfaceCard className="flex min-h-0 min-w-0 flex-col p-0">
+                        <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
+                            <Select value={country} onValueChange={(value) => { setCountry(value); trackEvent('admin__recommendations--country', { country: value }); }}>
+                                <SelectTrigger aria-label="Country" className="w-auto min-w-24"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {countryOptions.map((code) => (
+                                        <SelectItem key={code} value={code}>{code}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                                <SelectTrigger aria-label="Status" className="w-auto min-w-36"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All statuses</SelectItem>
+                                    {STATUSES.map((status) => (
+                                        <SelectItem key={status} value={status}>
+                                            {STATUS_LABEL[status]}
+                                            <span className="ms-1 tabular-nums text-muted-foreground">({statusCounts[status] ?? 0})</span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {hasActiveFilter && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={resetFilters}
+                                    {...getAnalyticsDebugAttributes('admin__recommendations--reset_filters')}
+                                >
+                                    Reset
+                                </Button>
+                            )}
+                            <span className="ms-auto text-xs tabular-nums text-muted-foreground" aria-live="polite">
+                                {loading ? '' : `${filtered.length.toLocaleString()} of ${rows.length.toLocaleString()}`}
+                            </span>
+                        </div>
+
+                        <div className="max-h-[720px] flex-1 overflow-y-auto p-2">
+                            {loading && (
+                                <div className="flex h-48 items-center justify-center text-muted-foreground" role="status" aria-label="Loading recommendations">
+                                    <SpinnerGap size={24} className="animate-spin" />
+                                </div>
+                            )}
+                            {!loading && rows.length === 0 && (
+                                <AdminEmptyState
+                                    className="m-2"
+                                    title={`Nothing in ${country} yet`}
+                                    description="Seed this country from the dataset bundled with the app, or write the first entry yourself."
+                                    action={(
+                                        <div className="flex flex-wrap justify-center gap-2">
+                                            <Button type="button" variant="outline" size="sm" onClick={() => void importBundled()} disabled={saving}>
+                                                <DownloadSimple /> Import bundled
+                                            </Button>
+                                            <Button type="button" size="sm" onClick={() => void startNew()}>
+                                                <Plus /> New recommendation
+                                            </Button>
+                                        </div>
+                                    )}
+                                />
+                            )}
+                            {!loading && rows.length > 0 && filtered.length === 0 && (
+                                <AdminEmptyState
+                                    className="m-2"
+                                    title="No matching recommendations"
+                                    description="Clear the search or reset the filters to see the rest of this country."
+                                    action={<Button type="button" variant="outline" size="sm" onClick={resetFilters}>Reset filters</Button>}
+                                />
+                            )}
+                            {!loading && filtered.map((row) => {
+                                const status = resolveStatus(row.status);
+                                return (
+                                    <AdminEditorListItem
+                                        key={row.id}
+                                        active={selectedId === row.id}
+                                        onClick={() => void select(row)}
+                                        data-testid="admin-recommendation-row"
+                                        title={row.title}
+                                        subtitle={[row.city_name, row.country_code, row.image ? 'Photo' : 'No photo'].filter(Boolean).join(' · ')}
+                                        badge={<AdminStatusBadge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</AdminStatusBadge>}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </AdminSurfaceCard>
+
+                    <AdminSurfaceCard ref={editorRef} className="flex min-w-0 scroll-mt-4 flex-col gap-4 p-0">
+                        <AdminSectionHeader
+                            className="border-b border-border p-4"
+                            title={editor.title || (selectedId ? 'Untitled' : 'New recommendation')}
+                            description={(
+                                <span className="flex flex-wrap items-center gap-2">
+                                    {savedStatus
+                                        ? <AdminStatusBadge tone={STATUS_TONE[savedStatus]}>{STATUS_LABEL[savedStatus]}</AdminStatusBadge>
+                                        : <span>Not saved yet</span>}
+                                    {selectedRow?.updated_at && (
+                                        <span data-tooltip={formatAdminAbsoluteTime(selectedRow.updated_at)}>
+                                            Updated {formatAdminRelativeTime(selectedRow.updated_at)}
+                                        </span>
+                                    )}
+                                    {editor.id && <span className="break-all font-mono text-xs">{editor.id}</span>}
+                                </span>
+                            )}
+                            actions={selectedRow && savedStatus !== 'published' ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => void publishNow()}
+                                    disabled={publishing || saving}
+                                    aria-busy={publishing || undefined}
+                                    data-tooltip="Publishes the saved version. Unsaved edits stay in the form."
+                                    {...getAnalyticsDebugAttributes('admin__recommendations--publish_now')}
+                                >
+                                    {publishing ? <SpinnerGap className="animate-spin" /> : <CheckCircle />} Publish now
+                                </Button>
+                            ) : null}
+                        />
+
+                        <div className="flex flex-col gap-6 px-4">
+                            <EditorSection title="Basics">
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <EditorField label="Title">
+                                        <Input value={editor.title} onChange={field('title')} placeholder="Din Tai Fung (Xinsheng Branch)" />
+                                    </EditorField>
+                                    <EditorField label="City">
+                                        <Input value={editor.cityName} onChange={field('cityName')} placeholder="Taipei" />
+                                    </EditorField>
+                                    <EditorField label="Country code">
+                                        <Input value={editor.countryCode} onChange={field('countryCode')} placeholder="TW" maxLength={2} />
+                                    </EditorField>
+                                    <EditorField label="Status">
+                                        <Select value={editorStatus} onValueChange={(value) => setEditor((current) => ({ ...current, status: value as RecommendationStatus }))}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {STATUSES.map((status) => (
+                                                    <SelectItem key={status} value={status}>{STATUS_LABEL[status]}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </EditorField>
+                                </div>
+                            </EditorSection>
+
+                            <EditorSection title="Card copy" description="What the traveller reads on the card.">
+                                <EditorField label="One-line summary">
+                                    <Input value={editor.summary} onChange={field('summary')} placeholder="Famous soup dumplings, expect a queue" />
+                                </EditorField>
+
+                                <EditorField label="Description">
+                                    <Textarea
+                                        value={editor.description}
+                                        onChange={field('description')}
+                                        rows={6}
+                                        className="resize-y leading-6 [field-sizing:fixed]"
+                                        placeholder="A paragraph or two. This is what the card shows."
+                                    />
+                                </EditorField>
+
+                                <EditorField label="Recommendations — one per line">
+                                    <Textarea
+                                        value={editor.highlights}
+                                        onChange={field('highlights')}
+                                        rows={5}
+                                        className="resize-y leading-6 [field-sizing:fixed]"
+                                        placeholder={'Order the xiaolongbao\nGo before noon to skip the queue'}
+                                    />
+                                </EditorField>
+                            </EditorSection>
+
+                            <EditorSection title="Classification">
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <EditorField label="Activity types — comma separated">
+                                        <Input value={editor.activityTypes} onChange={field('activityTypes')} placeholder="food, sightseeing" />
+                                    </EditorField>
+                                    <EditorField label="Tags — comma separated">
+                                        <Input value={editor.tags} onChange={field('tags')} placeholder="food-drink, taipei" />
+                                    </EditorField>
+                                    <EditorField label="Cost">
+                                        <Select
+                                            value={editor.costBand || 'none'}
+                                            onValueChange={(value) => setEditor((current) => ({ ...current, costBand: value === 'none' ? '' : value }))}
+                                        >
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">Not set</SelectItem>
+                                                {COST_BAND_VALUES.map((band) => (
+                                                    <SelectItem key={band} value={band}>{band === 'free' ? 'Free' : band}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </EditorField>
+                                    <EditorField label="Typical duration (minutes)">
+                                        <Input
+                                            value={editor.typicalDurationMinutes}
+                                            onChange={field('typicalDurationMinutes')}
+                                            inputMode="numeric"
+                                            placeholder="75"
+                                        />
+                                    </EditorField>
+                                </div>
+                            </EditorSection>
+
+                            <EditorSection title="Location" description="Leave the coordinates filled in and the card draws its own map.">
+                                <EditorField label="Address">
+                                    <Input value={editor.address} onChange={field('address')} placeholder="No. 277, Section 2, Xinyi Rd, Taipei" />
+                                </EditorField>
+
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    <EditorField label="Latitude">
+                                        <Input value={editor.lat} onChange={field('lat')} inputMode="decimal" placeholder="25.033889" />
+                                    </EditorField>
+                                    <EditorField label="Longitude">
+                                        <Input value={editor.lng} onChange={field('lng')} inputMode="decimal" placeholder="121.532134" />
+                                    </EditorField>
+                                    <EditorField label="Google place id">
+                                        <Input value={editor.googlePlaceId} onChange={field('googlePlaceId')} placeholder="ChIJ..." />
+                                    </EditorField>
+                                </div>
+                            </EditorSection>
+
+                            <EditorSection title="Photo">
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <EditorField label="Photo URL">
+                                        <Input
+                                            value={editor.imageUrl}
+                                            onChange={field('imageUrl')}
+                                            placeholder="/api/place-photo?ref=places/.../photos/..."
+                                        />
+                                    </EditorField>
+                                    <EditorField label="Photo credit">
+                                        <Input value={editor.imageAttribution} onChange={field('imageAttribution')} placeholder="Photographer name" />
+                                    </EditorField>
+                                </div>
+                                <p className="text-xs leading-5 text-muted-foreground">
+                                    Photos are referenced, never copied. Paste a
+                                    {' '}<code className="break-all rounded bg-secondary px-1">/api/place-photo?ref=places/&lt;placeId&gt;/photos/&lt;photoId&gt;</code>{' '}
+                                    path and credit the photographer.
+                                </p>
+                            </EditorSection>
+                        </div>
+
+                        <div className="sticky bottom-0 mt-auto flex flex-wrap items-center gap-2 rounded-b-lg border-t border-border bg-card px-4 py-3">
+                            <Button
+                                type="button"
+                                onClick={() => void save()}
+                                disabled={saving || !editor.title.trim()}
+                                aria-busy={saving || undefined}
+                                {...getAnalyticsDebugAttributes('admin__recommendations--save')}
+                            >
+                                {saving ? <SpinnerGap className="animate-spin" /> : <FloppyDisk />}
+                                {selectedId ? 'Save changes' : 'Create recommendation'}
+                            </Button>
+                            {isDirty && <span className="text-xs text-muted-foreground" role="status">Unsaved changes</span>}
+                            {selectedId && (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    className={cn('ms-auto')}
+                                    onClick={() => void remove()}
+                                    disabled={saving}
+                                    {...getAnalyticsDebugAttributes('admin__recommendations--delete')}
+                                >
+                                    <Trash /> Delete
+                                </Button>
+                            )}
+                        </div>
+                    </AdminSurfaceCard>
+                </div>
+            </div>
+        </AdminShell>
+    );
+};

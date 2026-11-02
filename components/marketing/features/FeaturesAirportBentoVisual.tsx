@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
+import { ArrowRight } from '@phosphor-icons/react';
 import { SplitFlap, SPLIT_FLAP_CHARSET_ALPHA } from '../../ui/SplitFlap';
 import type { AirportReference, NearbyAirportResult } from '../../../shared/airportReference';
 import { fetchNearbyAirports } from '../../../services/nearbyAirportsService';
@@ -33,11 +33,16 @@ interface AirportVisualState {
     phase: AirportVisualPhase;
 }
 
-const hasFiniteCoordinates = (latitude: number | null, longitude: number | null): boolean => (
+const toFiniteCoordinates = (
+    latitude: number | null,
+    longitude: number | null,
+): { lat: number; lng: number } | null => (
     typeof latitude === 'number'
     && typeof longitude === 'number'
     && Number.isFinite(latitude)
     && Number.isFinite(longitude)
+        ? { lat: latitude, lng: longitude }
+        : null
 );
 
 const cleanAirportCode = (value: string | null | undefined): string | null => {
@@ -73,8 +78,6 @@ export const FeaturesAirportBentoVisual: React.FC<{
         resolvedCode: DEFAULT_AIRPORT_CODE,
         phase: 'idle',
     });
-    const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
-    const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
     React.useEffect(() => {
         const intervalId = window.setInterval(() => {
@@ -108,7 +111,8 @@ export const FeaturesAirportBentoVisual: React.FC<{
             const resolvedCity = typeof city === 'string' && city.trim() ? city.trim() : null;
             const resolvedCountry = typeof countryName === 'string' && countryName.trim() ? countryName.trim() : null;
 
-            if (!hasFiniteCoordinates(latitude, longitude)) {
+            const coordinates = toFiniteCoordinates(latitude, longitude);
+            if (!coordinates) {
                 startTransition(() => {
                     setVisualState({
                         city: resolvedCity,
@@ -122,8 +126,8 @@ export const FeaturesAirportBentoVisual: React.FC<{
 
             try {
                 let response = await fetchNearbyAirports({
-                    lat: latitude,
-                    lng: longitude,
+                    lat: coordinates.lat,
+                    lng: coordinates.lng,
                     limit: AIRPORT_LOOKUP_LIMIT,
                     minimumServiceTier: 'major',
                 });
@@ -131,8 +135,8 @@ export const FeaturesAirportBentoVisual: React.FC<{
 
                 if (response.airports.length === 0) {
                     response = await fetchNearbyAirports({
-                        lat: latitude,
-                        lng: longitude,
+                        lat: coordinates.lat,
+                        lng: coordinates.lng,
                         limit: AIRPORT_LOOKUP_LIMIT,
                         minimumServiceTier: 'regional',
                     });
@@ -194,7 +198,12 @@ export const FeaturesAirportBentoVisual: React.FC<{
 
     return (
         <div className="min-w-0 w-full select-none">
+            {/* The whole route reads ltr in every locale: an IATA code is a Latin
+                identifier, and inheriting RTL both reversed DXB into "BXD" and put the
+                destination ahead of the origin. With the row pinned, the arrow always
+                points from origin to destination. */}
             <div
+                dir="ltr"
                 data-testid="features-airport-route"
                 className="flex w-full items-center justify-between gap-3 sm:gap-5 lg:justify-end"
             >
@@ -208,8 +217,8 @@ export const FeaturesAirportBentoVisual: React.FC<{
                     className="tracking-[0.08em] drop-shadow-[0_10px_18px_rgba(15,23,42,0.12)]"
                     {...ORIGIN_SPLIT_FLAP_PROPS}
                 />
-                <span className="flex shrink-0 items-center justify-center text-slate-400" aria-hidden="true">
-                    <ArrowIcon size={24} weight="regular" />
+                <span className="flex shrink-0 items-center justify-center text-muted-foreground dark:text-muted-foreground" aria-hidden="true">
+                    <ArrowRight size={24} weight="regular" />
                 </span>
                 <SplitFlap
                     value={destinationCode}

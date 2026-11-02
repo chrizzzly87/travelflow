@@ -11,6 +11,7 @@ export type RouteKey =
     | 'inspirationsFestivals'
     | 'inspirationsWeekendGetaways'
     | 'inspirationsCountryDetail'
+    | 'inspirationsDestinationDetail'
     | 'updates'
     | 'blog'
     | 'blogPost'
@@ -27,6 +28,7 @@ export type RouteKey =
     | 'checkout'
     | 'createTripClassicLab'
     | 'createTripWizard'
+    | 'trips'
     | 'tripDetail'
     | 'tripLegacy'
     | 'exampleTrip'
@@ -48,6 +50,7 @@ export type RouteKey =
 
 type RouteParamsByKey = {
     inspirationsCountryDetail: { countryName: string };
+    inspirationsDestinationDetail: { countrySlug: string; destinationSlug: string };
     blogPost: { slug: string };
     tripDetail: { tripId: string };
     exampleTrip: { templateId: string };
@@ -67,7 +70,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/inspirations\/countries$/,
     /^\/inspirations\/events-and-festivals$/,
     /^\/inspirations\/weekend-getaways$/,
-    /^\/inspirations\/country\/[^/]+$/,
+    /^\/inspirations\/country\/[^/]+(?:\/[^/]+)?$/,
     /^\/updates$/,
     /^\/blog$/,
     /^\/blog\/[^/]+$/,
@@ -83,8 +86,8 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/cookies$/,
 ];
 
-const TOOL_ROUTE_PREFIXES = ['/create-trip', '/checkout', '/trip', '/s', '/example', '/admin', '/profile', '/u', '/api'];
-const ONBOARDING_EXEMPT_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example'];
+const TOOL_ROUTE_PREFIXES = ['/create-trip', '/import-trip', '/checkout', '/trips', '/trip', '/s', '/example', '/draft', '/admin', '/profile', '/u', '/api'];
+const ONBOARDING_EXEMPT_ROUTE_PREFIXES = ['/create-trip', '/import-trip', '/trips', '/trip', '/s', '/example', '/draft'];
 
 export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
     'home',
@@ -96,6 +99,7 @@ export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
     'inspirationsFestivals',
     'inspirationsWeekendGetaways',
     'inspirationsCountryDetail',
+    'inspirationsDestinationDetail',
     'updates',
     'blog',
     'blogPost',
@@ -138,6 +142,10 @@ export const buildPath = <K extends RouteKey>(
             return '/inspirations/weekend-getaways';
         case 'inspirationsCountryDetail':
             return `/inspirations/country/${encodeSegment((params as RouteParamsByKey['inspirationsCountryDetail']).countryName)}`;
+        case 'inspirationsDestinationDetail': {
+            const destinationParams = params as RouteParamsByKey['inspirationsDestinationDetail'];
+            return `/inspirations/country/${encodeSegment(destinationParams.countrySlug)}/${encodeSegment(destinationParams.destinationSlug)}`;
+        }
         case 'updates':
             return '/updates';
         case 'blog':
@@ -162,6 +170,8 @@ export const buildPath = <K extends RouteKey>(
             return '/terms';
         case 'cookies':
             return '/cookies';
+        case 'trips':
+            return '/trips';
         case 'createTrip':
             return '/create-trip';
         case 'checkout':
@@ -229,6 +239,12 @@ export const buildLocalizedCreateTripPath = (locale: AppLanguage): string => {
     return `/${locale}${path}`;
 };
 
+export const buildLocalizedTripsPath = (locale: AppLanguage): string => {
+    const path = buildPath('trips');
+    if (locale === DEFAULT_LOCALE) return path;
+    return `/${locale}${path}`;
+};
+
 export const extractLocaleFromPath = (pathname: string): AppLanguage | null => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length === 0) return null;
@@ -237,9 +253,12 @@ export const extractLocaleFromPath = (pathname: string): AppLanguage | null => {
 };
 
 export const stripLocalePrefix = (pathname: string): string => {
-    const locale = extractLocaleFromPath(pathname);
-    if (!locale) return pathname || '/';
-    const stripped = pathname.replace(new RegExp(`^/${locale}(?=/|$)`), '') || '/';
+    // Static hosts can append a directory slash. Helpers consume canonical paths
+    // so locale changes and namespace selection agree with native route matching.
+    const path = pathname.replace(/\/+$/, '') || '/';
+    const locale = extractLocaleFromPath(path);
+    if (!locale) return path;
+    const stripped = path.replace(new RegExp(`^/${locale}(?=/|$)`), '') || '/';
     return stripped.startsWith('/') ? stripped : `/${stripped}`;
 };
 
@@ -289,14 +308,16 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
     if (stripped === '/pricing') return ['common', 'pricing'];
     if (stripped.startsWith('/blog')) return ['common', 'blog'];
     if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
-    if (stripped === '/faq') return ['common'];
+    if (stripped === '/faq') return ['common', 'faq'];
+    if (stripped === '/contact') return ['common', 'pages', 'faq'];
     if (stripped === '/login') return ['common', 'auth'];
     return ['common', 'pages'];
 };
 
 export const getNamespacesForToolPath = (pathname: string): string[] => {
     const stripped = stripLocalePrefix(pathname);
-    if (stripped.startsWith('/create-trip')) return ['common', 'createTrip'];
+    if (stripped.startsWith('/trips')) return ['common'];
+    if (stripped.startsWith('/create-trip') || stripped.startsWith('/import-trip')) return ['common', 'createTrip'];
     if (stripped.startsWith('/checkout')) return ['common', 'pricing', 'profile', 'auth'];
     if (stripped.startsWith('/profile')) return ['common', 'profile'];
     if (stripped.startsWith('/u/')) return ['common', 'profile'];

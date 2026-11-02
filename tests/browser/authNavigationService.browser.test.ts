@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildLoginPathWithNext,
+  resolveAccountLoginNextPath,
   buildPasswordResetRedirectUrl,
   buildPathFromLocationParts,
   clearPendingAuthRedirect,
@@ -50,10 +51,18 @@ describe('services/authNavigationService', () => {
       language: 'en',
       resolvedLanguage: 'en',
     })).toEqual({
-      nextPath: '/create-trip',
+      nextPath: '/profile',
       loginPath: '/login',
-      loginTarget: '/login?next=%2Fcreate-trip',
+      loginTarget: '/login?next=%2Fprofile',
     });
+  });
+
+  it('uses the profile for public account entry while preserving explicit trip and creation URLs', () => {
+    expect(resolveAccountLoginNextPath({ pathname: '/' })).toBe('/profile');
+    expect(resolveAccountLoginNextPath({ pathname: '/de/features', search: '?from=home', hash: '#benefits' })).toBe('/profile');
+    expect(resolveAccountLoginNextPath({ pathname: '/trip/abc', search: '?claim=queue', hash: '#map' })).toBe('/trip/abc?claim=queue#map');
+    expect(buildLoginPathWithNext({ pathname: '/admin/users', search: '?page=2' }).nextPath).toBe('/admin/users?page=2');
+    expect(resolvePreferredNextPath('/create-trip/wizard?prefill=draft', '/profile')).toBe('/create-trip/wizard?prefill=draft');
   });
 
   it('classifies login and safe auth return paths', () => {
@@ -116,7 +125,7 @@ describe('services/authNavigationService', () => {
 
   it('resolves preferred next path and builds reset redirect url', () => {
     expect(resolvePreferredNextPath(null, '/login', '/trip/ok')).toBe('/trip/ok');
-    expect(resolvePreferredNextPath(undefined, null)).toBe('/create-trip');
+    expect(resolvePreferredNextPath(undefined, null)).toBe('/profile');
 
     const redirect = buildPasswordResetRedirectUrl('/trip/123');
     expect(redirect).toContain('/auth/reset-password');

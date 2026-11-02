@@ -3,13 +3,21 @@ import { describe, expect, it } from 'vitest';
 
 import { __shouldUploadLocalTripSnapshot } from '../../services/dbService';
 import { makeTrip } from '../helpers/tripFixtures';
+import type { ITrip, TripGenerationState } from '../../types';
 
-const withGenerationState = (state: 'queued' | 'running' | 'failed' | 'succeeded') => ({
+const withGenerationState = (state: TripGenerationState): Pick<ITrip, 'aiMeta'> => ({
     aiMeta: {
+        provider: 'gemini',
+        model: 'gemini-test',
+        generatedAt: '2026-01-01T00:00:00.000Z',
         generation: {
             state,
             latestAttempt: {
+                id: 'attempt-1',
+                flow: 'classic',
+                source: 'test',
                 state,
+                startedAt: '2026-01-01T00:00:00.000Z',
             },
         },
     },

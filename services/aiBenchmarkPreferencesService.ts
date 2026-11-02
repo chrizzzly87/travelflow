@@ -38,8 +38,16 @@ export interface BenchmarkPreferencesPayload {
     selectedPresetId: string;
 }
 
-export const BENCHMARK_DEFAULT_MODEL_IDS = [
+const BENCHMARK_LEGACY_DEFAULT_MODEL_IDS = [
     'openai:gpt-5.4',
+    'openrouter:anthropic/claude-opus-5',
+    'openrouter:anthropic/claude-sonnet-5',
+    'openrouter:x-ai/grok-4.6',
+    'openrouter:deepseek/deepseek-v4-pro-0813',
+    'openrouter:deepseek/deepseek-v4-flash-0731',
+    'openrouter:google/gemini-3.7-flash',
+    'openrouter:google/gemini-3.5-flash-lite',
+    'openrouter:moonshotai/kimi-k3',
     'openrouter:openai/gpt-5.6-luna-pro',
     'openrouter:openai/gpt-5.6-terra-pro',
     'openrouter:openai/gpt-5.6-sol-pro',
@@ -61,14 +69,43 @@ export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'qwen:qwen/qwen3.5-plus-02-15',
 ];
 
-const BENCHMARK_PREVIOUS_DEFAULT_MODEL_IDS = [
-    'openai:gpt-5.4',
-    'gemini:gemini-3.1-pro-preview',
-    'gemini:gemini-3-pro-preview',
-    'openai:gpt-5.2-pro',
-    'anthropic:claude-sonnet-4.6',
-    'perplexity:perplexity/sonar',
-    'qwen:qwen/qwen3.5-plus-02-15',
+export const BENCHMARK_DEFAULT_MODEL_IDS = [
+    'openrouter:openai/gpt-6-luna',
+    'openrouter:anthropic/claude-haiku-5.5',
+    'openrouter:x-ai/grok-4.7',
+    'openrouter:google/gemini-3.8-flash',
+    'openrouter:deepseek/deepseek-v4.1-flash',
+    'openrouter:z-ai/glm-5.3-flash',
+    'openrouter:qwen/qwen3.8-max-prime',
+    'openrouter:moonshotai/kimi-k3',
+];
+
+const BENCHMARK_PREVIOUS_DEFAULT_MODEL_ID_SETS = [
+    BENCHMARK_LEGACY_DEFAULT_MODEL_IDS,
+    BENCHMARK_LEGACY_DEFAULT_MODEL_IDS.filter((modelId) => ![
+        'openrouter:google/gemini-3.7-flash',
+        'openrouter:google/gemini-3.5-flash-lite',
+        'openrouter:moonshotai/kimi-k3',
+    ].includes(modelId)),
+    BENCHMARK_LEGACY_DEFAULT_MODEL_IDS.filter((modelId) => ![
+        'openrouter:anthropic/claude-opus-5',
+        'openrouter:anthropic/claude-sonnet-5',
+        'openrouter:x-ai/grok-4.6',
+        'openrouter:deepseek/deepseek-v4-pro-0813',
+        'openrouter:deepseek/deepseek-v4-flash-0731',
+        'openrouter:google/gemini-3.7-flash',
+        'openrouter:google/gemini-3.5-flash-lite',
+        'openrouter:moonshotai/kimi-k3',
+    ].includes(modelId)),
+    [
+        'openai:gpt-5.4',
+        'gemini:gemini-3.1-pro-preview',
+        'gemini:gemini-3-pro-preview',
+        'openai:gpt-5.2-pro',
+        'anthropic:claude-sonnet-4.6',
+        'perplexity:perplexity/sonar',
+        'qwen:qwen/qwen3.5-plus-02-15',
+    ],
 ];
 
 export const DEFAULT_BENCHMARK_MASK_SCENARIO: BenchmarkMaskScenario = {
@@ -239,6 +276,8 @@ export const normalizeModelTargetIds = (
         ? deduped.filter((entry) => options.allowedModelIds?.has(entry))
         : deduped;
 
+    if (Array.isArray(value) && value.length === 0) return [];
+
     const fallback = options?.fallbackModelIds?.filter(Boolean) || BENCHMARK_DEFAULT_MODEL_IDS;
     const allowedFallback = options?.allowedModelIds
         ? fallback.filter((entry) => options.allowedModelIds?.has(entry))
@@ -247,14 +286,16 @@ export const normalizeModelTargetIds = (
     if (filtered.length > 0) {
         if (!options?.mergeFallbackModelIds) return filtered;
 
-        const legacyDefaults = options?.allowedModelIds
-            ? BENCHMARK_PREVIOUS_DEFAULT_MODEL_IDS.filter((entry) => options.allowedModelIds?.has(entry))
-            : BENCHMARK_PREVIOUS_DEFAULT_MODEL_IDS;
-        const isLegacyDefaultSelection = (
-            legacyDefaults.length > 0
-            && filtered.length === legacyDefaults.length
-            && legacyDefaults.every((entry, index) => filtered[index] === entry)
-        );
+        const isLegacyDefaultSelection = BENCHMARK_PREVIOUS_DEFAULT_MODEL_ID_SETS.some((defaultSet) => {
+            const allowedDefaultSet = options?.allowedModelIds
+                ? defaultSet.filter((entry) => options.allowedModelIds?.has(entry))
+                : defaultSet;
+            return (
+                allowedDefaultSet.length > 0
+                && filtered.length === allowedDefaultSet.length
+                && allowedDefaultSet.every((entry, index) => filtered[index] === entry)
+            );
+        });
 
         if (!isLegacyDefaultSelection) return filtered;
 

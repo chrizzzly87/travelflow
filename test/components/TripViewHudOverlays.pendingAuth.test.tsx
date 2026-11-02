@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
+import { preloadTripClaimConflictDialog } from '../../components/tripview/tripClaimRecoveryBoundary';
 import { TripViewHudOverlays } from '../../components/tripview/TripViewHudOverlays';
 
 const trackEventMock = vi.fn();
@@ -12,7 +13,7 @@ vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/app/navigation', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),
@@ -74,13 +75,13 @@ const makeProps = (overrides?: Partial<TripViewHudOverlaysProps>): TripViewHudOv
   generationProgressMessage: 'Checking timing',
   loadingDestinationSummary: 'Japan',
   tripDateRange: 'Mar 10, 2026 – Mar 20, 2026',
-  tripTotalDaysLabel: '10',
+  tripSpanCompactLabel: '10 days',
+  isAgentLauncherVisible: false,
   pendingAuthModalStage: 'hidden',
   onContinuePendingAuth: () => undefined,
   isPendingAuthContinueDisabled: false,
   claimConflictModalVisible: false,
   claimConflictShowLoginCta: false,
-  claimConflictCreateSimilarPath: '/create-trip',
   onClaimConflictLogin: () => undefined,
   ...overrides,
 });
@@ -123,14 +124,50 @@ describe('TripViewHudOverlays pending auth modal', () => {
     expect(trackEventMock).toHaveBeenCalled();
   });
 
-  it('shows the claimed-by-another-user modal with a create-similar action', () => {
+  it.each(['loading', 'locked'] as const)('renders the %s stage as a modal dialog that Escape cannot dismiss', (stage) => {
+    render(
+      <TripViewHudOverlays
+        {...makeProps({
+          pendingAuthModalStage: stage,
+        })}
+      />,
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: stage === 'loading' ? 'Preparing your trip' : 'Creating trips is only for registered users',
+    });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.getByRole('dialog')).toBe(dialog);
+  });
+
+  it('keeps the paywall lock card non-modal so the page around it stays usable', () => {
+    render(
+      <TripViewHudOverlays
+        {...makeProps({
+          isPaywallLocked: true,
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const card = screen.getByTestId('trip-paywall-lock-card');
+    expect(card.tagName).toBe('SECTION');
+    expect(card).toHaveAttribute('aria-labelledby', 'trip-paywall-overlay-title');
+    expect(within(card).getByRole('heading', { level: 2 })).toHaveAttribute('id', 'trip-paywall-overlay-title');
+  });
+
+  it('shows the claimed-by-another-user modal with a complete create-similar action', async () => {
+    await preloadTripClaimConflictDialog();
     const onClaimConflictLogin = vi.fn();
     render(
       <TripViewHudOverlays
         {...makeProps({
           claimConflictModalVisible: true,
           claimConflictShowLoginCta: true,
-          claimConflictCreateSimilarPath: '/create-trip/wizard?prefill=abc',
+          claimConflictTrip: { title: 'Claimed trip' },
+          claimConflictPathname: '/trip/trip-1',
           onClaimConflictLogin,
         })}
       />,
@@ -138,7 +175,7 @@ describe('TripViewHudOverlays pending auth modal', () => {
 
     expect(screen.getByText('This trip draft was already claimed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign in with the original account' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Create similar trip' })).toHaveAttribute('href', '/create-trip/wizard?prefill=abc');
+    expect(screen.getByRole('link', { name: 'Create similar trip' })).toHaveAttribute('href', '/create-trip');
     fireEvent.click(screen.getByRole('button', { name: 'Sign in with the original account' }));
     expect(onClaimConflictLogin).toHaveBeenCalledTimes(1);
   });

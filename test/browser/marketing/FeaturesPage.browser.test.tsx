@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
+import { renderWithRouter as render } from '@/tests/helpers/renderWithRouter';
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/tests/helpers/routerHarness';
 import featuresLocale from '../../../locales/en/features.json';
 
 const trackEventMock = vi.fn();
-const warmRouteAssetsMock = vi.fn();
 const originalGetContext = HTMLCanvasElement.prototype.getContext;
 const originalIntersectionObserver = globalThis.IntersectionObserver;
 const observerInstances: MockIntersectionObserver[] = [];
@@ -96,9 +96,6 @@ vi.mock('../../../services/analyticsService', () => ({
     getAnalyticsDebugAttributes: () => ({}),
 }));
 
-vi.mock('../../../services/navigationPrefetch', () => ({
-    warmRouteAssets: (...args: unknown[]) => warmRouteAssetsMock(...args),
-}));
 
 vi.mock('../../../services/runtimeLocationService', () => ({
     getRuntimeLocationSnapshot: () => runtimeLocationSnapshot,
@@ -145,7 +142,6 @@ describe('pages/FeaturesPage', () => {
     beforeEach(() => {
         cleanup();
         trackEventMock.mockReset();
-        warmRouteAssetsMock.mockReset();
         ensureRuntimeLocationLoadedMock.mockReset();
         fetchNearbyAirportsMock.mockReset();
         ensureRuntimeLocationLoadedMock.mockResolvedValue(runtimeLocationSnapshot);
@@ -168,8 +164,8 @@ describe('pages/FeaturesPage', () => {
         });
     });
 
-    it('renders the new hero CTAs and tracks hero clicks', () => {
-        render(
+    it('renders the new hero CTAs and tracks hero clicks', async () => {
+        await render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
             </MemoryRouter>
@@ -186,13 +182,15 @@ describe('pages/FeaturesPage', () => {
     });
 
     it('shows the globe fallback card when interactive globe setup fails', async () => {
-        render(
+        await render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
             </MemoryRouter>
         );
 
-        expect(screen.getByRole('heading', { name: /ready to go/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', {
+            name: `${featuresLocale.hero.titleBefore} ${featuresLocale.hero.titleHighlight}`,
+        })).toBeInTheDocument();
 
         await waitFor(() => {
             expect(screen.getByText(featuresLocale.globe.fallbackTitle)).toBeInTheDocument();
@@ -201,8 +199,8 @@ describe('pages/FeaturesPage', () => {
         expect(screen.getByText(featuresLocale.globe.fallbackDescription)).toBeInTheDocument();
     });
 
-    it('keeps the globe compact enough for the original hero layout while reducing dead space', () => {
-        render(
+    it('keeps the globe compact enough for the original hero layout while reducing dead space', async () => {
+        await render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
             </MemoryRouter>
@@ -264,14 +262,14 @@ describe('pages/FeaturesPage', () => {
                 },
             ],
         });
-        render(
+        await render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
             </MemoryRouter>
         );
         const airportCard = screen.getByTestId('features-airport-card');
 
-        expect(airportCard.className).toContain('md:col-span-6');
+        expect(airportCard.className).toContain('animate-scroll-fade-up');
         expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
         expect(screen.getByRole('img', { name: 'CDG' })).toBeInTheDocument();
         expect(screen.getByTestId('features-airport-route').className).toContain('justify-between');
@@ -307,8 +305,8 @@ describe('pages/FeaturesPage', () => {
         expect(screen.queryByText(/starting near berlin/i)).not.toBeInTheDocument();
     });
 
-    it('keeps the origin marker above the globe canvas', () => {
-        render(
+    it('keeps the origin marker above the globe canvas', async () => {
+        await render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
             </MemoryRouter>

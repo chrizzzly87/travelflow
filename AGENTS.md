@@ -1,57 +1,111 @@
 # AGENTS.md
 
-This repository uses markdown release files as the source of truth for product updates.
+Instructions for every coding agent in this repository. This file is the source of truth.
+`CLAUDE.md` only imports it and adds Claude-specific notes.
 
-## Agent requirements
-- Follow `docs/UPDATE_FORMAT.md` for all release entries.
-- Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
-- Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
-- Follow `docs/MAPS_INTEGRATION_WORKFLOW.md` for all new or updated map surfaces (planner, profile/admin cards, blog/marketing).
-- Keep route slugs English-only for canonical URLs. Do not add localized slug aliases or compatibility redirects (for example `/impressum`) unless a dedicated issue explicitly requests it. Locale support is prefix-only (`/{locale}/...`) on top of English slugs.
-- Treat `lib/legal/cookies.config.ts` as the single source of truth for browser persistence disclosures (cookies + localStorage + sessionStorage). Any new/changed/removed storage key must be updated there and reflected by the legal cookie policy page.
-- Run `pnpm storage:validate` when browser storage keys are introduced or changed; do not merge storage keys that are not registered.
-- When a PR resolves a GitHub issue, include a closing keyword in the PR description (for example `Closes #123`) so merge to `main` auto-closes the issue.
-- When creating or editing GitHub PR descriptions with `gh`, always use a Markdown body file (`--body-file`) or stdin heredoc with real newlines; never pass escaped `\n` or escaped backticks in inline `--body` strings.
-- For user-facing copy changes in marketing/planner surfaces, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
-- Admin workspace copy (`/admin/*`, admin tables, drawers, and admin-only controls) is English-only by default and is exempt from EN/DE style sign-off and translation requirements unless the user explicitly asks for localization.
-- For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.
-- When adding locale keys for localized user-facing surfaces, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and validate namespace placement (`common/pages/legal` vs route-specific namespace). Admin-only UI copy is excluded unless localization is explicitly requested.
-- Run `pnpm i18n:validate` for locale-related changes before finalizing.
-- For behavioral code changes (business logic, state flow, permissions, data transforms), add or update Vitest coverage in the same PR.
-- For bug fixes, add a regression test that fails on the pre-fix behavior and passes with the fix.
-- Docs-only, copy-only, and style-only changes are exempt from mandatory new tests.
-- For behavioral changes, run `pnpm test:core` before finalizing whenever feasible.
-- In fresh git worktrees, run `pnpm worktree:sync-env` before starting env-dependent tooling if `.env` or `.env.local` is missing. This repo also installs a `post-checkout` hook to copy those files automatically when worktrees are created.
-- For PRs that add new files under `services/` or `config/`, include a corresponding `tests/**` entry in the PR checklist/description.
-- For TripView/route-loader orchestration work, follow `docs/TESTING_PHASE2_SCOPE.md` when planning component/hook regression coverage.
-- Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not request bilingual sign-off for release notes unless the user explicitly asks for it.
-- Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.
-- For clickable UI on marketing/planner flows, add analytics using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` in the established format unless explicitly excluded.
-- Reuse existing shared components/hooks before creating new UI patterns. For confirmation/prompt flows, use the styled app dialog system (`useAppDialog` from `components/AppDialogProvider`) instead of native browser prompts.
-- Do not introduce native HTML `<select>` controls in product UI. Always use the shared styled Select (`components/ui/select`, shadcn/Radix) for dropdowns to keep visual and interaction behavior consistent across the app.
-- After completing any feature/fix/change, update `content/updates/*.md`.
-- Maintain exactly one release note file per worktree/feature. Do not create multiple incremental release-note files for the same work.
-- Keep that single release note in `status: draft` while the feature is still in progress.
-- Prefer publishing release metadata in the same PR when the release is being finalized. Use a follow-up update only if the feature has already merged without final metadata or the publish timestamp/version must be corrected afterward.
-- Use `[x]` for website-visible user-facing items.
-- Use `[ ]` for hidden internal items.
-- Keep technical identifiers out of visible items (no route paths, code symbols, endpoints, or environment keys in `[x]` lines).
-- Prefix every change line message with an emoji as defined in `docs/UPDATE_FORMAT.md`.
-- Bump the release `version` whenever a new release is published.
-- Keep versions strictly increasing; never reuse prior versions.
-- Set `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise main merge timestamp), but **always before 23:00 UTC**. Timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
-- Keep entries concise, prioritized, and accurate.
-- For new UI components and layout changes, explicitly check whether direction-aware styling is needed.
-- Prefer CSS logical properties (for example `margin-inline`, `padding-inline`, `inset-inline`) over left/right-specific properties when it makes sense.
-- If it is unclear whether logical properties are appropriate for a change, stop and ask the user for clarification before finalizing.
+## Project
+- This repository (`travelflow` / `travelflow-codex`) is **TravelFlow**. Always call it TravelFlow.
+- It deploys only to Netlify project `travelflowapp`:
+  - site ID `1abc3d37-f6af-4810-9097-489b2a282ac6`;
+  - URL `https://travelflowapp.netlify.app`.
+- Before any deploy, run `netlify status` and stop unless `Current project:` reads `travelflowapp`. Resolve the target from the repo, never from memory.
+- Stack:
+  - TanStack Start 1.169 and TanStack Router 1.170 on React 19, Vite 8, Tailwind 4;
+  - Supabase for the database and auth;
+  - Netlify functions and edge functions.
+- Node 22 (`.node-version`). Node 26 breaks the `StorageEvent` tests; use Node 22 before trusting a local failure.
 
-## Scope
-These instructions apply to all coding agents and LLM assistants working in this repo.
+## Where things live
+- **Routes:**
+  - `src/virtualRoutes.ts` defines the route graph. `src/routeTree.gen.ts` is generated; never edit it.
+  - `src/routes/areas/*` own rendering, access and lifecycle per area. Public pages are server-rendered; auth, account, admin, trips, create and library are `ssr: false`.
+  - Leaf routes in `src/routes/**` stay thin and render page modules from `pages/`.
+- **Architecture rules:** `docs/TANSTACK_START_ARCHITECTURE.md`. Netlify output and routing: `docs/NETLIFY_TANSTACK_START.md`.
+- **Navigation:**
+  - Use native TanStack APIs in new route-aware code.
+  - `app/navigation.tsx` is the URL-string adapter for existing call sites. Never add a second router, route table or global prefetch graph.
+- **Shared UI** is in `components/ui/`. Check `docs/DESIGN_SYSTEM_COMPONENTS.md` before hand-building UI. The admin visual contract is `docs/DESIGN.md`.
+- **Domain logic** lives in `features/*`, `services/*` and `shared/*`. Keep page modules and the app shell free of planner/admin business logic.
 
-## Skill usage policy
-- Use `vercel-react-best-practices` for React performance/refactor tasks to guide high-impact decisions, but apply only rules relevant to the current change.
-- Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React changes; treat reported errors as fix-before-merge and triage warnings by impact/scope.
-- For new React feature work, record the React Doctor score before and after the change when feasible, and consult `vercel-react-best-practices` so the feature does not make React quality worse.
-- Avoid adding `useEffect` unless the component must synchronize with an external system such as network state, browser APIs, timers, subscriptions, or imperative third-party widgets. Prefer render-time derivation, event handlers, `useMemo` for expensive pure calculations, `useSyncExternalStore` for external stores, and `key`-based resets; every remaining effect should have tight dependencies and cleanup when it owns external resources.
-- Use `find-skills` only when current skills/workflows do not clearly cover the task and a capability discovery step is needed.
-- Avoid skill/tool churn: do not run unrelated skills for routine edits.
+## Rules by task
+- **UI:**
+  - Use `Button`, `Input`, `Textarea`, `Select`, `Badge`, `Dialog`/`AppModal` and `Spinner`. Busy actions use `Button loading`.
+  - Never use a native `<select>` or native `confirm`/`prompt`; use `useAppDialog`.
+  - Overlays are dialogs: `role="dialog"`, `aria-modal`, focus trap, Escape, mobile backdrop, focus restored to the trigger. `DialogContent` already handles `aria-modal` and focus return.
+  - Prefer CSS logical properties (`ms`/`me`, `ps`/`pe`, `inset-inline`). Ask if direction handling is unclear.
+  - Components used with Radix `asChild`, or focused/measured by a library, must forward refs.
+- **Server rendering:**
+  - Server output and the first client render must match. Never read storage, `window` or `new Date()` during render on a server-rendered page. Use `useHydrated`, or `useRenderNow()` for "today".
+  - Keep request data and i18n instances per request; no request data in module singletons.
+  - Public pages are CDN-cached (`app/routing/cachePolicy.ts`). A public page that starts reading cookies or headers during SSR must vary or opt out.
+  - Server functions validate input and return only public or authorized data.
+- **Effects:** add `useEffect` only to sync with an external system (network, browser APIs, timers, subscriptions, imperative widgets). Prefer render-time derivation, event handlers, `useSyncExternalStore` and `key` resets.
+- **Copy:**
+  - Follow `docs/UX_COPY_GUIDELINES.md`.
+  - New or rewritten user-facing copy needs EN and DE style sign-off from the user unless they opt out.
+  - Exempt from sign-off: admin copy (English-only, not localized) and release notes.
+- **i18n:**
+  - Follow `docs/I18N_PAGE_WORKFLOW.md`.
+  - Add every new key to all active locales: `en es de fr pt ru it pl ko fa ur`. Choose the namespace deliberately.
+  - Placeholders are single-brace `{name}`, never `{{name}}`.
+  - ICU plural/select syntax renders raw, because `i18next-icu` is not registered. Use `key_one`/`key_other` (plus `_few`/`_many` where the locale needs them) with `count`.
+  - Canonical slugs are English. Locales are path prefixes only; no localized slug aliases.
+- **Analytics:** clickable marketing/planner UI gets `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.
+- **Browser storage:**
+  - Register every key in `lib/legal/cookies.config.ts`; unregistered writes are silently refused.
+  - Run `pnpm storage:validate`.
+- **Activities and day trips:**
+  - Read `docs/ACTIVITIES_AND_DAY_TRIPS.md` first.
+  - Resolve a stay only through `shared/activityStay.ts`.
+  - Add every new timeline-item field to the Trip Agent's strict `timelineItemSchema` in `shared/tripAgent.ts`.
+- **Maps:** follow `docs/MAPS_INTEGRATION_WORKFLOW.md`. For trip-card previews, follow `docs/TRIP_MAP_PREVIEW_CACHING.md`:
+  - the endpoint returns image bytes;
+  - every query parameter changes the picture;
+  - cards use `buildSettledMiniMapUrl`.
+- **AI features:** read `docs/AI_AGENT_FEATURE_GUARDRAILS.md` before touching model calls, streaming or stored model output.
+  - Never stream, store or render hidden reasoning.
+  - No raw exceptions in responses; return a code plus an authored sentence.
+  - No `VITE_` credentials server-side.
+  - Stay under Netlify's 60 s synchronous limit.
+  - Rebuild state from its record, not a transcript.
+- **Database:**
+  - `supabase/migrations/*.sql` are never applied by a deploy. Verify locally (`supabase/tests/`), follow `docs/SUPABASE_RUNBOOK.md`, and say plainly that a migration is pending.
+  - Postgres has no autonomous transactions: return a status and let the caller raise.
+- **Content data:** destination guides and recommendations are served from Supabase. Bundled JSON is only a seed.
+  - Follow `docs/DESTINATION_INGESTION_RUNBOOK.md` or `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`.
+  - Verify with `curl` against `/api/destinations/<slug>` or `/api/recommendations?country=XX`.
+
+## Tests and gates
+- Behaviour changes need Vitest coverage in the same PR. Bug fixes need a regression test that fails before the fix. Docs, copy and style-only edits are exempt.
+- For TripView or route-loader orchestration, scope tests with `docs/TESTING_PHASE2_SCOPE.md`.
+- PRs that add files under `services/` or `config/` list the matching `tests/**` entries in the description.
+- Commands:
+  - `pnpm typecheck` must stay at 0 errors. No `@ts-ignore`/`@ts-nocheck`, blanket `any`, or tsconfig weakening.
+  - `pnpm test:core`.
+  - `pnpm i18n:validate` for locale changes.
+  - `pnpm updates:validate` for release notes.
+- Before pushing, run `pnpm ci:local` (about 3–4 min). It mirrors `.github/workflows/pr-quality.yml` stage for stage; keep its STAGES list in step with the workflow.
+  - `--fast` skips the build and browser suites.
+  - `--only=<stage>` and `--from=<stage>` target or resume one stage.
+- A manual `pnpm build:netlify` rewrites two blog images and generated data. Check `git status` before `git add -A`.
+- `react-doctor` (`pnpm dlx react-doctor@latest . --verbose --diff`) is advisory, not a gate.
+
+## Release notes (`content/updates/*.md`, format in `docs/UPDATE_FORMAT.md`)
+- Every user-facing change ships with exactly one note per feature. It stays `status: draft` while the PR is open.
+- After merge, publish it: `status: published`, the next `version`, and `published_at` set to the production deploy time (or the merge time).
+  - Always before 23:00 UTC; later times display as the next day in CET.
+  - Strictly after the previous release.
+- Visible lines (`- [x] [Type] …`):
+  - describe a clear user benefit, from the user's side;
+  - contain no paths, symbols, endpoints or env keys.
+- Internal lines use `- [ ] [Internal] …`.
+- Start each line with an emoji that matches its content. Put highlights first and fixes after.
+
+## Git, PRs and deploys
+- Write PR bodies with `--body-file` or a heredoc, never escaped `\n`.
+- Use `Closes #123` only for issues the PR really resolves. Tick issue checkboxes against the issue's own wording.
+- State exactly what was verified. "Not bundled" is not "removed from package.json".
+- After merging to `main`, confirm a production deploy of that commit reached `ready` on `travelflowapp`.
+- Verify API behaviour on a deploy preview or production. CLI alias deploys (`--no-build --alias`) serve no edge functions, so `/api/*` returns the app shell.
+- Preview-host Lighthouse LCP is unreliable (Netlify toolbar, referrer-restricted map key). Measure production or a local build (`node scripts/serve-built-site.mjs`).
+- In a fresh worktree, run `pnpm worktree:sync-env` if `.env` or `.env.local` is missing.

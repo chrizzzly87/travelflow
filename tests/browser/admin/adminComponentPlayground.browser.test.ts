@@ -66,7 +66,7 @@ describe('pages/AdminComponentPlaygroundPage', () => {
   it('marks the hidden playground noindex and keeps it out of admin navigation', () => {
     render(React.createElement(AdminComponentPlaygroundPage));
 
-    expect(screen.getByRole('heading', { name: 'Component Playground' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Component playground' })).toBeInTheDocument();
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex,nofollow,noarchive');
     expect(ADMIN_NAV_ITEMS.some((item) => item.path === '/admin/component-playground')).toBe(false);
     expect(mocks.trackEvent).toHaveBeenCalledWith('admin__component_playground--open');

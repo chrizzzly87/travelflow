@@ -263,7 +263,7 @@ export const buildTripCalendarExport = ({
     const activityOwnerCityMap = buildActivityOwnerCityMap(trip);
 
     let events: CalendarIcsEvent[] = [];
-    let fileNameSuffix = scope;
+    let fileNameSuffix: string = scope;
 
     if (scope === 'activity') {
         if (!activityId) return null;

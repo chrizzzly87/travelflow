@@ -1,13 +1,8 @@
 import { useState } from 'react';
 
-export const useTripViewModeState = () => {
-    const [viewMode, setViewMode] = useState<'planner' | 'print'>(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('mode') === 'print' ? 'print' : 'planner';
-        }
-        return 'planner';
-    });
+/** `initialMode` comes from the route's validated search (`mode=print`). */
+export const useTripViewModeState = (initialMode: 'planner' | 'print' = 'planner') => {
+    const [viewMode, setViewMode] = useState<'planner' | 'print'>(initialMode);
 
     return {
         viewMode,

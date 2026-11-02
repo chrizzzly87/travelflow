@@ -125,6 +125,18 @@ const buildAccess = (user: E2EAuthSandboxUser): UserAccessContext => ({
     termsAcceptedAt: new Date().toISOString(),
     termsAcceptanceRequired: false,
     termsNoticeRequired: false,
+    // A sandbox user is a free user with no subscription, like a fresh account.
+    billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+    },
 });
 
 const resolveActiveUser = (state: E2EAuthSandboxState): E2EAuthSandboxUser | null => (

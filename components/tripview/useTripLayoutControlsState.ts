@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 import { readLocalStorageItem } from '../../services/browserStorageService';
-import type { IViewSettings, MapStyle, RouteMode } from '../../types';
+import { readUserDefaultMapCustomization } from './mapCustomizationStorage';
+import { normalizeMapCustomization } from '../../shared/mapPreferences';
+import type { IMapCustomization, IViewSettings, MapStyle, RouteMode } from '../../types';
 
 interface UseTripLayoutControlsStateOptions {
     initialViewSettings?: IViewSettings;
@@ -24,13 +26,16 @@ export const useTripLayoutControlsState = ({
         return 'simple';
     });
 
+    // Off unless the traveller asked for them: the labels crowd the route on a
+    // phone, and a trip that has never had the setting touched should open on
+    // the map itself. A trip or a device that carries the setting keeps it.
     const [showCityNames, setShowCityNames] = useState<boolean>(() => {
         if (initialViewSettings?.showCityNames !== undefined) return initialViewSettings.showCityNames;
         if (typeof window !== 'undefined') {
             const stored = readLocalStorageItem('tf_city_names');
             if (stored !== null) return stored === 'true';
         }
-        return true;
+        return false;
     });
 
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
@@ -94,6 +99,13 @@ export const useTripLayoutControlsState = ({
         initialViewSettings?.zoomBehavior === 'manual' ? 'manual' : 'fit'
     ));
 
+    // A trip's own map look wins; one that has never been customized opens on
+    // the traveller's saved default, so a new trip resembles their last.
+    const [mapCustomization, setMapCustomization] = useState<IMapCustomization>(() => {
+        const fromTrip = normalizeMapCustomization(initialViewSettings?.mapCustomization);
+        return Object.keys(fromTrip).length > 0 ? fromTrip : readUserDefaultMapCustomization();
+    });
+
     return {
         layoutMode,
         setLayoutMode,
@@ -117,5 +129,7 @@ export const useTripLayoutControlsState = ({
         setTimelineHeight,
         detailsWidth,
         setDetailsWidth,
+        mapCustomization,
+        setMapCustomization,
     };
 };

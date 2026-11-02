@@ -14,7 +14,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../services/analyticsService', () => ({
   trackEvent: (...args: unknown[]) => mocks.trackEvent(...args),
-  getAnalyticsDebugAttributes: (...args: unknown[]) => mocks.getAnalyticsDebugAttributes(...args),
+  getAnalyticsDebugAttributes: (eventName: string, payload?: Record<string, unknown>) =>
+    mocks.getAnalyticsDebugAttributes(eventName, payload),
 }));
 
 vi.mock('../../components/IdealTravelTimeline', () => ({

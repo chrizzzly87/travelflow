@@ -298,20 +298,16 @@ export default async (request: Request): Promise<Response> => {
           providerSubscriptionId: typeof existingSummary.provider_subscription_id === 'string' ? existingSummary.provider_subscription_id : null,
           providerStatus: typeof existingSummary.provider_status === 'string' ? existingSummary.provider_status : null,
           status: typeof existingSummary.status === 'string' ? existingSummary.status : null,
-          currentPeriodStart: typeof existingSummary.current_period_start === 'string' ? existingSummary.current_period_start : null,
           currentPeriodEnd: typeof existingSummary.current_period_end === 'string' ? existingSummary.current_period_end : null,
           cancelAt: typeof existingSummary.cancel_at === 'string' ? existingSummary.cancel_at : null,
           canceledAt: typeof existingSummary.canceled_at === 'string' ? existingSummary.canceled_at : null,
           graceEndsAt: typeof existingSummary.grace_ends_at === 'string' ? existingSummary.grace_ends_at : null,
           providerPriceId: typeof existingSummary.provider_price_id === 'string' ? existingSummary.provider_price_id : null,
-          providerProductId: typeof existingSummary.provider_product_id === 'string' ? existingSummary.provider_product_id : null,
-          amount: typeof existingSummary.amount === 'number' ? existingSummary.amount : null,
-          currency: typeof existingSummary.currency === 'string' ? existingSummary.currency : null,
         }
       : null,
   });
 
-  if (authorization.tierKey !== 'tier_free' && existingDecision.action !== 'purchase') {
+  if (authorization.tierKey !== 'tier_free' && existingDecision.action !== 'acquire') {
     return json(409, {
       ok: false,
       error: existingDecision.action === 'current'

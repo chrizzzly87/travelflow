@@ -18,4 +18,27 @@ describe('pages/AdminAuditPage labels and grouping', () => {
     expect(__ADMIN_AUDIT_TESTING__.getActionGroupLabel('billing.subscription.updated')).toBe('Billing & subscriptions');
     expect(__ADMIN_AUDIT_TESTING__.getActionGroupLabel('trip.created')).toBe('User trip actions');
   });
+
+  it('stores an action filter that covers every action as no filter', () => {
+    const { normalizeActionFilters } = __ADMIN_AUDIT_TESTING__;
+    const all = ['admin.user.invite', 'trip.created', 'trip.updated'];
+    expect(normalizeActionFilters([...all], all)).toEqual([]);
+    expect(normalizeActionFilters(['trip.updated', 'admin.user.invite', 'trip.created'], all)).toEqual([]);
+    expect(normalizeActionFilters(['trip.created'], all)).toEqual(['trip.created']);
+    expect(normalizeActionFilters([], all)).toEqual([]);
+    // A URL filter for an action not loaded yet is kept as written.
+    expect(normalizeActionFilters(['admin.tier.reapply'], [])).toEqual(['admin.tier.reapply']);
+  });
+
+  it('formats audit timestamps relative to now', () => {
+    const { formatAuditRelativeTime } = __ADMIN_AUDIT_TESTING__;
+    const now = Date.parse('2026-10-24T12:00:00.000Z');
+    expect(formatAuditRelativeTime('2026-10-24T11:59:40.000Z', now)).toBe('just now');
+    expect(formatAuditRelativeTime('2026-10-24T11:15:00.000Z', now)).toBe('45 minutes ago');
+    expect(formatAuditRelativeTime('2026-10-24T09:00:00.000Z', now)).toBe('3 hours ago');
+    expect(formatAuditRelativeTime('2026-10-23T12:00:00.000Z', now)).toBe('yesterday');
+    expect(formatAuditRelativeTime('2026-10-10T12:00:00.000Z', now)).toBe('2 weeks ago');
+    expect(formatAuditRelativeTime(null, now)).toBe('—');
+    expect(formatAuditRelativeTime('not-a-date', now)).toBe('—');
+  });
 });

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useReducer, useRef } from 'react';
 import { Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
-import { useGoogleMaps } from './GoogleMapsLoader';
+import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { AppModal } from './ui/app-modal';
 import { getStoredAppLanguage } from '../utils';
 import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../services/locationSearchService';
@@ -103,7 +103,11 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     const cityInputId = 'add-city-input';
     const mapLanguage = getStoredAppLanguage();
     
-    const { isLoaded } = useGoogleMaps();
+    const { isLoaded: googleLoaded } = useGoogleMaps();
+    const { runtime } = useMapRuntime();
+    // Mapbox city search needs no Google script. Read from the provider so the
+    // modal re-renders when the admin preset arrives after mount.
+    const isSearchReady = googleLoaded || runtime.effectiveSelection.locationSearch === 'mapbox';
 
     const resetModalState = useCallback(() => {
         lookupRequestIdRef.current += 1;
@@ -133,7 +137,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
         }
 
         const query = state.inputValue.trim();
-        if (!isLoaded || query.length < 2) {
+        if (!isSearchReady || query.length < 2) {
             dispatch({ type: 'suggestionsIdle' });
             return;
         }
@@ -153,7 +157,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
         return () => {
             window.clearTimeout(timeoutId);
         };
-    }, [isLoaded, isOpen, mapLanguage, state.inputValue]);
+    }, [isSearchReady, isOpen, mapLanguage, state.inputValue]);
 
     const handleSuggestionSelect = (suggestion: CityLookupSuggestion) => {
         onAdd(suggestion.name, suggestion.coordinates.lat, suggestion.coordinates.lng);
@@ -163,7 +167,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     const handleManualSubmit = async () => {
         const query = state.inputValue.trim();
         if (!query) return;
-        if (!isLoaded) {
+        if (!isSearchReady) {
             dispatch({
                 type: 'mapUnavailable',
                 error: 'Map services are still loading. Please try again in a moment.',
@@ -211,14 +215,14 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             size="sm"
             mobileSheet={false}
             bodyClassName="p-6"
-            headerClassName="bg-gray-50 p-4"
+            headerClassName="bg-secondary p-4"
             onOpenAutoFocus={(event) => {
                 event.preventDefault();
                 inputRef.current?.focus();
             }}
         >
             {state.error && (
-                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700">
+                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700 dark:bg-yellow-400/12 dark:text-yellow-200 dark:border-yellow-400/25">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                     <div>{state.error}</div>
                 </div>
@@ -226,7 +230,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             
             <div className="space-y-4">
                 <div>
-                    <label htmlFor={cityInputId} className="mb-2 block text-xs font-bold uppercase text-gray-500">
+                    <label htmlFor={cityInputId} className="mb-2 block text-xs font-bold uppercase text-muted-foreground">
                         {state.isManualMode ? "City Name" : "Search City"}
                     </label>
                     <div className="relative">
@@ -241,11 +245,11 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                                 dispatch({ type: 'inputChanged', value: e.target.value });
                             }}
                             onKeyDown={handleKeyDown}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-gray-800 outline-none placeholder-gray-400 focus:ring-2 focus:ring-accent-500"
+                            className="w-full rounded-xl border border-border bg-secondary py-3 pl-10 pr-4 text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-accent-500"
                             placeholder="e.g. Kyoto, Japan"
                         />
-                        <div className="absolute left-3 top-3.5 text-gray-400">
-                            {!isLoaded || state.isSearchingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                        <div className="absolute left-3 top-3.5 text-muted-foreground">
+                            {!isSearchReady || state.isSearchingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                         </div>
                         
                         {state.isManualMode && (
@@ -260,25 +264,25 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                         )}
                     </div>
                     {(state.isSearchingSuggestions || state.suggestions.length > 0) && (
-                        <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto dark:shadow-none">
                             {state.isSearchingSuggestions && (
-                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities…</div>
+                                <div className="px-3 py-2 text-xs text-muted-foreground">Searching cities…</div>
                             )}
                             {!state.isSearchingSuggestions && state.suggestions.map((suggestion) => (
                                 <button
                                     key={suggestion.id}
                                     type="button"
                                     onClick={() => handleSuggestionSelect(suggestion)}
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                    className="w-full text-left px-3 py-2 hover:bg-secondary border-b border-border last:border-b-0"
                                 >
-                                    <div className="text-sm font-semibold text-gray-800">{suggestion.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{suggestion.label}</div>
+                                    <div className="text-sm font-semibold text-foreground">{suggestion.name}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{suggestion.label}</div>
                                 </button>
                             ))}
                         </div>
                     )}
-                    <p className="mt-2 text-xs text-gray-400">
-                        {!isLoaded
+                    <p className="mt-2 text-xs text-muted-foreground">
+                        {!isSearchReady
                             ? "Loading Map services…"
                             : "Start typing to search and select a city suggestion."}
                     </p>
