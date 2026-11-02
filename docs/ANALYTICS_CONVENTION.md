@@ -163,8 +163,8 @@ sub-surface such as a row menu or a sheet). One row per surface; the actions are
 | `admin__recommendations--` | `select`, `new`, `save`, `publish_now`, `delete`, `import_bundled`, `reset_filters`, `country` | — | `pages/AdminRecommendationsPage.tsx` |
 | `admin__legal_terms--` | `publish`, `set_current`, `use_as_basis`, `discard_draft` | `{ rollout }` on `publish`/`set_current` | `pages/AdminLegalTermsPage.tsx` |
 | `admin__settings--` | `save`, `discard` | — | `pages/AdminGlobalSettingsPage.tsx` |
-| `admin__ai_benchmark--` | `run`, `stop`, `export`, `new_session`, `delete_session`, `open_run`, `reset_filters`, `show_unrated`, `add_models`, `run_single`, `app_default_model`, `open_telemetry` | `{ source }`, `{ include_logs }` | `pages/AdminAiBenchmarkPage.tsx` |
-| `admin__ai_benchmark_run--` | `rate`, `rerun`, `download`, `abort`, `open_trip`, `save_note` | `{ rating }` on `rate` | `components/admin/AiBenchmarkRunSheet.tsx` |
+| `admin__ai_benchmark--` | `run`, `stop`, `export`, `new_session`, `delete_session`, `open_run`, `reset_filters`, `show_unrated`, `add_models`, `run_single`, `app_default_model`, `open_telemetry` | `{ source }`, `{ include_logs }` | `components/admin/ai-benchmark/` (`useAiBenchmarkRunActions.ts`, `useAiBenchmarkSetupActions.ts` and the tab components) |
+| `admin__ai_benchmark_run--` | `rate`, `rerun`, `download`, `abort`, `open_trip`, `save_note` | `{ rating }` on `rate` | `components/admin/AiBenchmarkRunSheet.tsx`, `components/admin/ai-benchmark/AiBenchmarkRunRow.tsx` |
 | `admin__ai_telemetry--` | `worker_health`, `reset_filters`, `trend_tab`, `breakdown_tab`, `leader`, `focus_provider` | — | `pages/AdminAiTelemetryPage.tsx` |
 | `admin__worker_health--` | `ai_telemetry`, `reset_filters` | — | `pages/AdminAiWorkerHealthPage.tsx` |
 | `admin__og_tools--` | `tab`, `inspect`, `copy_command`, `load_trip` | `{ tab }`, `{ source }`, `{ command }` | `pages/AdminOgToolsPage.tsx` |
