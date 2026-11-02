@@ -2,8 +2,8 @@
 id: rel-2026-11-01-profile-previews-and-planner-refactor
 version: v0.217.0
 title: "Profile link previews and clearer trip warnings"
-date: 2026-11-01
-published_at: 2026-11-01T21:00:00Z
+date: 2026-11-02
+published_at: 2026-11-02T06:45:00Z
 status: published
 notify_in_app: false
 in_app_hours: 24
