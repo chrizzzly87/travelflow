@@ -70,6 +70,20 @@ describe('tripMapCamera', () => {
     );
   });
 
+  it('mapbox fitBounds leaves out options the caller did not set', () => {
+    // Mapbox merges options over its defaults, so an explicit `maxZoom: undefined`
+    // wipes the default, `cameraForBounds` returns nothing and the fit is a no-op.
+    const { map } = makeMapboxMap();
+    const padding = { top: 1, right: 2, bottom: 3, left: 4 };
+    createMapboxTripMapCamera(map as never).fitBounds(
+      [{ lat: 48, lng: 11 }, { lat: 52, lng: 13 }],
+      padding,
+    );
+    const options = map.fitBounds.mock.calls[0][1];
+    expect(options).toEqual({ padding });
+    expect(Object.keys(options)).toEqual(['padding']);
+  });
+
   it('fitBounds with no points does nothing', () => {
     const mapbox = makeMapboxMap();
     createMapboxTripMapCamera(mapbox.map as never).fitBounds([], 10);

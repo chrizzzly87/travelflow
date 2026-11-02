@@ -102,7 +102,7 @@ describe('components/maps/tripMapCityLabelLayout', () => {
     });
   });
 
-  it('hides the least important crowded Mapbox label when a dense cluster cannot be laid out cleanly', () => {
+  it('keeps every label in a dense Mapbox cluster instead of hiding the crowded ones', () => {
     const layouts = resolveTripMapProjectedCityLabelLayouts({
       provider: 'mapbox',
       baseOffsetPx: 24,
@@ -132,9 +132,9 @@ describe('components/maps/tripMapCityLabelLayout', () => {
       ],
     });
 
-    expect(layouts.get('bangkok')?.hidden).not.toBe(true);
-    expect(layouts.get('siem-reap')?.hidden).not.toBe(true);
-    const hiddenLabels = ['phnom-penh', 'ho-chi-minh-city'].filter((key) => layouts.get(key)?.hidden === true);
-    expect(hiddenLabels.length).toBeGreaterThanOrEqual(1);
+    expect(layouts.size).toBe(4);
+    ['bangkok', 'siem-reap', 'phnom-penh', 'ho-chi-minh-city'].forEach((key) => {
+      expect(layouts.get(key)).not.toHaveProperty('hidden');
+    });
   });
 });

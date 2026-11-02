@@ -224,6 +224,33 @@ describe('components/ItineraryMap standalone Mapbox (mapbox_all)', () => {
     expect(googleAccessCount).toBe(0);
   });
 
+  it('redraws the markers once Mapbox goes idle after a zoom lands mid tile load', async () => {
+    const view = renderMap([PARIS, BERLIN, VIENNA]);
+    await waitForMapReady();
+
+    const map = FakeMapboxMap.latest()!;
+    const parisMarker = () => view.container.querySelector('[data-tf-marker-id="city:Paris"]');
+    await waitFor(() => expect(parisMarker()).not.toBeNull());
+    // A real map has long gone idle after loading; settle the load-time listeners.
+    act(() => map.emit('idle'));
+    await waitFor(() => expect(parisMarker()).not.toBeNull());
+
+    // Mapbox reports the style as not loaded while tiles stream in, so the
+    // redraw a zoom triggers clears every marker and cannot draw new ones yet.
+    act(() => {
+      map.styleLoaded = false;
+      map.zoom = 12;
+      map.emit('zoom');
+    });
+    await waitFor(() => expect(parisMarker()).toBeNull());
+
+    act(() => {
+      map.styleLoaded = true;
+      map.emit('idle');
+    });
+    await waitFor(() => expect(parisMarker()).not.toBeNull());
+  });
+
   it('a one-city trip pans instead of fitting and still becomes ready', async () => {
     renderMap([PARIS]);
     await waitForMapReady();

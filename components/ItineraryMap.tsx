@@ -915,8 +915,23 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         // 1. Clear existing markers & routes
         clearRenderedMapVisuals();
         if (!canRenderMapVisuals) {
+            // `isStyleLoaded()` is also false while tiles load, so a re-run mid-zoom
+            // lands here with every marker already cleared. Nothing else re-runs this
+            // effect once loading ends, so redraw when the map next goes idle.
+            const waitForMapboxIdle = Boolean(
+                mapInitialized
+                && isMapboxBasemapEnabled
+                && isMapboxSurfaceReady
+                && mapboxMap
+                && mapboxModule,
+            );
+            const redrawWhenIdle = () => {
+                if (!isEffectDisposed) setMapboxStyleReloadNonce((value) => value + 1);
+            };
+            if (waitForMapboxIdle) mapboxMap?.once('idle', redrawWhenIdle);
             return () => {
                 isEffectDisposed = true;
+                if (waitForMapboxIdle) mapboxMap?.off('idle', redrawWhenIdle);
                 clearRenderedMapVisuals();
             };
         }
@@ -1700,7 +1715,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
             cityLabelDescriptors.forEach(({ markerPosition, key, labelName, subLabel, defaultAnchor }) => {
                 const labelLayout = mapboxCityLabelLayouts.get(key);
-                if (labelLayout?.hidden) return;
                 const labelAnchor = labelLayout?.anchor ?? defaultAnchor;
                 const labelOffsetPx = labelLayout?.offsetPx ?? baseLabelOffsetPx;
                 const compact = labelLayout?.compact ?? false;
