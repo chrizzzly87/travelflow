@@ -1,10 +1,10 @@
 ---
 id: rel-2026-11-01-standalone-mapbox
-version: v0.214.0
+version: v0.218.0
 title: "Trip maps keep working without Google Maps"
 date: 2026-11-01
-published_at: 2026-11-01T12:00:00Z
-status: draft
+published_at: 2026-11-02T06:16:31Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Trip maps run on Mapbox on their own, so the map and city search stay available while Google Maps is unavailable, and routes show as straight lines."
