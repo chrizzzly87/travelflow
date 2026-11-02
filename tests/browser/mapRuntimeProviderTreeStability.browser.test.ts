@@ -1,11 +1,19 @@
 // @vitest-environment jsdom
 import React, { useEffect, useRef, useState } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   apiProviderMounts: 0,
 }));
+
+// This test exercises the Google gate. Without this mock the provider fetches
+// the administrator's map preset from the Supabase project in the developer's
+// `.env.local`, and a Mapbox preset there switches the gate off.
+vi.mock('../../services/aiRuntimeSettingsService', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, loadPublicAiRuntimeSettings: async () => ({}) };
+});
 
 vi.mock('@vis.gl/react-google-maps', () => ({
   APIProvider: ({ children }: { children: React.ReactNode }) => {
@@ -25,9 +33,17 @@ vi.mock('../../utils', async (importOriginal) => {
 });
 
 import { GoogleMapsApiGate, MapRuntimeProvider } from '../../components/MapRuntimeProvider';
+import { setRuntimeMapPreset } from '../../services/mapRuntimeService';
+
+// The administrator preset outranks the build-time env default, so this pins
+// Google whatever Mapbox token or preset the environment carries.
+beforeEach(() => {
+  setRuntimeMapPreset('google_all');
+});
 
 afterEach(() => {
   mocks.apiProviderMounts = 0;
+  setRuntimeMapPreset(null);
 });
 
 /**
