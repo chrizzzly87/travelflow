@@ -92,10 +92,12 @@ export const createMapboxTripMapCamera = (map: mapboxgl.Map): TripMapCamera => {
         });
         return;
       }
+      // Only pass what the caller set: Mapbox merges these over its defaults,
+      // and an explicit `maxZoom: undefined` makes the whole fit a silent no-op.
       map.fitBounds(resolveMapboxTripBounds(points), {
         padding,
-        maxZoom: options?.maxZoom,
-        animate: options?.animate,
+        ...(options?.maxZoom !== undefined ? { maxZoom: options.maxZoom } : {}),
+        ...(options?.animate !== undefined ? { animate: options.animate } : {}),
       });
     },
     panTo(point, options) {

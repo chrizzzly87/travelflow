@@ -17,7 +17,6 @@ export interface TripMapProjectedCityLabelLayout {
   offsetPx: number;
   compact: boolean;
   tier: number;
-  hidden?: boolean;
 }
 
 interface ResolveTripMapProjectedCityLabelLayoutsOptions {
@@ -58,7 +57,6 @@ const MAPBOX_ABOVE_TIER_STEP_PX = 18;
 const MAPBOX_BELOW_TIER_STEP_PX = 14;
 const MAPBOX_MAX_ABOVE_TIERS = 4;
 const MAPBOX_MAX_BELOW_TIERS = 2;
-const MAPBOX_HIDE_LABEL_TOTAL_PENALTY = 5;
 
 const expandRect = (rect: LabelRect, padding: number): LabelRect => ({
   left: rect.left - padding,
@@ -271,22 +269,6 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
     });
 
     if (!bestCandidate) {
-      return;
-    }
-
-    if (
-      !label.subLabel
-      && compact
-      && (
-        bestCandidate.totalPenalty >= MAPBOX_HIDE_LABEL_TOTAL_PENALTY
-        || bestCandidate.collisionPenalty >= 2
-        || (bestCandidate.collisionPenalty >= 1 && placedRects.length >= 2)
-      )
-    ) {
-      results.set(label.key, {
-        ...bestCandidate.layout,
-        hidden: true,
-      });
       return;
     }
 
